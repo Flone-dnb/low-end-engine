@@ -1,0 +1,98 @@
+cmake_minimum_required(VERSION 3.16)
+
+project(engine_lib)
+
+# Make sure we are running a 64-bit system.
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR "We don't support 32 bit systems.")
+endif()
+
+# Define some relative paths.
+set(RELATIVE_EXT_PATH "../../ext")
+set(RELATIVE_CMAKE_HELPERS_PATH "../.cmake")
+
+# Include essential stuff.
+include(${RELATIVE_CMAKE_HELPERS_PATH}/essential.cmake)
+
+# Include helper functions.
+include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
+
+# -------------------------------------------------------------------------------------------------
+#                                          TARGET SOURCES
+# -------------------------------------------------------------------------------------------------
+
+# Sources.
+set(PROJECT_SOURCES
+    src/Renderer.h
+    src/Renderer.cpp
+    src/Window.cpp
+    src/Window.h
+    src/SdlManager.hpp
+    src/Error.cpp
+    src/Error.h
+    # add your .h/.cpp files here
+)
+
+# Define target.
+add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
+
+# -------------------------------------------------------------------------------------------------
+#                                         CONFIGURE TARGET
+# -------------------------------------------------------------------------------------------------
+
+# Set target folder.
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
+
+# Enable more warnings and warnings as errors.
+enable_more_warnings()
+
+# Set C++ standard.
+set(PROJECT_CXX_STANDARD_VERSION 20)
+set(CMAKE_CXX_STANDARD ${PROJECT_CXX_STANDARD_VERSION})
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_${PROJECT_CXX_STANDARD_VERSION})
+message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_STANDARD}")
+
+# Add includes.
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH})
+target_include_directories(${PROJECT_NAME} PUBLIC src)
+
+# -------------------------------------------------------------------------------------------------
+#                                           TOOLS
+# -------------------------------------------------------------------------------------------------
+
+# Enable Address Sanitizer in `Debug` builds on non-Windows OS.
+if(NOT IS_RELEASE_BUILD AND NOT WIN32)
+    enable_address_sanitizer()
+endif()
+
+# Enable Clang-tidy in `Release` builds.
+if (IS_RELEASE_BUILD)
+    enable_clang_tidy(${CMAKE_CURRENT_LIST_DIR}/../../.clang-tidy)
+endif()
+
+# -------------------------------------------------------------------------------------------------
+#                                       DEPENDENCIES
+# -------------------------------------------------------------------------------------------------
+
+# Add SDL.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"SDL\"...")
+# Set the output directory for built objects.
+# This makes sure that the dynamic library goes into the build directory automatically.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/SDL/include)
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2)
+add_subdirectory(${RELATIVE_EXT_PATH}/SDL ${DEPENDENCY_BUILD_DIR_NAME}/SDL SYSTEM EXCLUDE_FROM_ALL)
+set_target_properties(SDL2 PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+
+# Add GLAD.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"GLAD\"...")
+set(GLAD_TARGET_NAME glad)
+add_library(${GLAD_TARGET_NAME} STATIC
+    ${RELATIVE_EXT_PATH}/glad_gles3/src/glad.c
+    ${RELATIVE_EXT_PATH}/glad_gles3/include/glad/glad.h
+)
+target_include_directories(${GLAD_TARGET_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/glad_gles3/include)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${GLAD_TARGET_NAME})
+add_dependencies(${PROJECT_NAME} ${GLAD_TARGET_NAME})
+set_target_properties(${GLAD_TARGET_NAME} PROPERTIES FOLDER ${EXTERNAL_FOLDER})
