@@ -49,17 +49,19 @@ target_include_directories(${PROJECT_NAME} PUBLIC src)
 # -------------------------------------------------------------------------------------------------
 
 # Enable Address Sanitizer in `Debug` builds on non-Windows OS.
-if(NOT IS_RELEASE_BUILD AND NOT WIN32)
+if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
     enable_address_sanitizer()
 endif()
 
 # Enable Clang-tidy in `Release` builds.
-if (IS_RELEASE_BUILD)
+if (IS_RELEASE_BUILD AND NOT DISABLE_DEV_STUFF)
     enable_clang_tidy(${CMAKE_CURRENT_LIST_DIR}/../../.clang-tidy)
 endif()
 
 # Enable doxygen.
-enable_doxygen(${CMAKE_CURRENT_SOURCE_DIR}/../../docs)
+if (NOT IS_RELEASE_BUILD)
+    enable_doxygen(${CMAKE_CURRENT_SOURCE_DIR}/../../docs)
+endif()
 
 # -------------------------------------------------------------------------------------------------
 #                                       DEPENDENCIES

@@ -60,13 +60,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC src)
 #                                           TOOLS
 # -------------------------------------------------------------------------------------------------
 
-# Enable Address Sanitizer in `Debug` builds on non-Windows OS.
-if(NOT IS_RELEASE_BUILD AND NOT WIN32)
+if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
     enable_address_sanitizer()
 endif()
 
-# Enable Clang-tidy in `Release` builds.
-if (IS_RELEASE_BUILD)
+if (IS_RELEASE_BUILD AND NOT DISABLE_DEV_STUFF)
     enable_clang_tidy(${CMAKE_CURRENT_LIST_DIR}/../../.clang-tidy)
 endif()
 
@@ -82,17 +80,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/SDL/include)
 target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2)
-add_subdirectory(${RELATIVE_EXT_PATH}/SDL ${DEPENDENCY_BUILD_DIR_NAME}/SDL SYSTEM EXCLUDE_FROM_ALL)
+add_subdirectory(${RELATIVE_EXT_PATH}/SDL ${DEPENDENCY_BUILD_DIR_NAME}/SDL EXCLUDE_FROM_ALL)
 set_target_properties(SDL2 PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add GLAD.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"GLAD\"...")
 set(GLAD_TARGET_NAME glad)
 add_library(${GLAD_TARGET_NAME} STATIC
-    ${RELATIVE_EXT_PATH}/glad_gles3/src/glad.c
-    ${RELATIVE_EXT_PATH}/glad_gles3/include/glad/glad.h
+    ${RELATIVE_EXT_PATH}/glad_gles31/src/glad.c
+    ${RELATIVE_EXT_PATH}/glad_gles31/include/glad/glad.h
 )
-target_include_directories(${GLAD_TARGET_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/glad_gles3/include)
+target_include_directories(${GLAD_TARGET_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/glad_gles31/include)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${GLAD_TARGET_NAME})
 add_dependencies(${PROJECT_NAME} ${GLAD_TARGET_NAME})
 set_target_properties(${GLAD_TARGET_NAME} PROPERTIES FOLDER ${EXTERNAL_FOLDER})

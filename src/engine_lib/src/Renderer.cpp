@@ -4,7 +4,7 @@
 #include "Window.h"
 
 // External.
-#include "glad_gles3/include/glad/glad.h"
+#include "glad/glad.h"
 
 std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow) {
     // Create context.
@@ -31,7 +31,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 
 void Renderer::drawNextFrame() {
     // Clear.
-    glClearColor(1.0f, 0.4f, 0.0f, 1.0f);
+    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     SDL_GL_SwapWindow(pWindow->getSdlWindow());

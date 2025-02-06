@@ -57,6 +57,7 @@ void Window::processEvents() {
             if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
                 SDL_GameControllerClose(SDL_GameControllerFromInstanceID(event.cdevice.which));
             }
+
             if (event.type == SDL_CONTROLLERBUTTONDOWN &&
                 event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK) {
                 bQuitRequested = true;

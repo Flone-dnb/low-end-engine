@@ -1,6 +1,8 @@
 build
-.vscode
-.cache
-*.kdev4
 *.user
+*.vs
 *.TMP
+out
+CMakeSettings.json
+*.autosave
+.cache
