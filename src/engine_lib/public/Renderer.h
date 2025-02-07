@@ -5,7 +5,7 @@
 #include <variant>
 
 // Custom.
-#include "Error.h"
+#include "misc/Error.h"
 
 // External.
 #include "SDL.h"

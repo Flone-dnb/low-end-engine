@@ -5,7 +5,7 @@
 #include <variant>
 
 // Custom.
-#include "Error.h"
+#include "misc/Error.h"
 
 struct SDL_Window;
 class Renderer;

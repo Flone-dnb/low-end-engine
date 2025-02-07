@@ -23,13 +23,13 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 
 # Sources.
 set(PROJECT_SOURCES
-    src/Renderer.h
-    src/Renderer.cpp
-    src/Window.cpp
-    src/Window.h
-    src/SdlManager.hpp
-    src/Error.cpp
-    src/Error.h
+    public/Renderer.h
+    private/Renderer.cpp
+    private/Window.cpp
+    public/Window.h
+    private/SdlManager.hpp
+    private/misc/Error.cpp
+    public/misc/Error.h
     # add your .h/.cpp files here
 )
 
@@ -54,7 +54,8 @@ message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_S
 
 # Add includes.
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH})
-target_include_directories(${PROJECT_NAME} PUBLIC src)
+target_include_directories(${PROJECT_NAME} PUBLIC public)
+target_include_directories(${PROJECT_NAME} PUBLIC private)
 
 # -------------------------------------------------------------------------------------------------
 #                                           TOOLS
