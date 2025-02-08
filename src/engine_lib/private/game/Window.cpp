@@ -1,8 +1,9 @@
-#include "Window.h"
+#include "game/Window.h"
 
 // Custom.
-#include "Renderer.h"
-#include "SdlManager.hpp"
+#include "render/Renderer.h"
+#include "game/GameManager.h"
+#include "render/SdlManager.hpp"
 
 // External.
 #include "SDL.h"
@@ -29,19 +30,24 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
 
     auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow));
 
-    // Create renderer.
-    auto result = Renderer::create(pWindow.get());
-    if (std::holds_alternative<Error>(result)) [[unlikely]] {
-        auto error = std::get<Error>(std::move(result));
-        error.addCurrentLocationToErrorStack();
-        return error;
-    }
-    pWindow->pRenderer = std::get<std::unique_ptr<Renderer>>(std::move(result));
-
     return pWindow;
 }
 
 void Window::processEvents() {
+    // Create game manager.
+    auto result = GameManager::create(this);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        error.showError();
+        throw std::runtime_error(error.getFullErrorMessage());
+    }
+    const auto pGameManager = std::get<std::unique_ptr<GameManager>>(std::move(result));
+
+    // Save reference to the renderer.
+    const auto pRenderer = pGameManager->getRenderer();
+
+    // Run game loop.
     bool bQuitRequested = false;
     while (!bQuitRequested) {
         // Process available window events.

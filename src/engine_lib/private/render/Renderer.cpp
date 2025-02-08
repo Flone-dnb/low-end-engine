@@ -1,7 +1,7 @@
-#include "Renderer.h"
+#include "render/Renderer.h"
 
 // Custom.
-#include "Window.h"
+#include "game/Window.h"
 
 // External.
 #include "glad/glad.h"
@@ -38,3 +38,5 @@ void Renderer::drawNextFrame() {
 }
 
 Renderer::~Renderer() { SDL_GL_DeleteContext(pContext); }
+
+void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }

@@ -8,7 +8,6 @@
 #include "misc/Error.h"
 
 struct SDL_Window;
-class Renderer;
 
 /** Manages a game window. */
 class Window {
@@ -54,9 +53,6 @@ private:
      * @param pCreatedWindow Created SDL window.
      */
     Window(SDL_Window* pCreatedWindow);
-
-    /** Renderer for this window. */
-    std::unique_ptr<Renderer> pRenderer;
 
     /** SDL window. */
     SDL_Window* pSdlWindow = nullptr;

@@ -35,6 +35,16 @@ public:
         std::string_view sMessage,
         const std::source_location location = std::source_location::current()); // NOLINT
 
+#if defined(WIN32)
+    /**
+     * Constructs a new Error object from `HRESULT`.
+     *
+     * @param hResult   `HRESULT` that contains an error.
+     * @param location  Should not be specified explicitly (use default value).
+     */
+    Error(const HRESULT hResult, const std::source_location location = std::source_location::current());
+#endif
+
     Error() = delete;
     virtual ~Error() = default;
 

@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 // Custom.
-#include "Window.h"
+#include "game/Window.h"
 
 // External.
 #if defined(WIN32)

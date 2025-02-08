@@ -10,6 +10,35 @@ Error::Error(std::string_view sMessage, const std::source_location location) {
     stack.push_back(sourceLocationToInfo(location));
 }
 
+#if defined(WIN32)
+Error::Error(const HRESULT hResult, const std::source_location location) {
+    LPSTR pErrorText = nullptr;
+
+    FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        hResult,
+        MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+        reinterpret_cast<LPSTR>(&pErrorText),
+        0,
+        nullptr);
+
+    // Add error code to the beginning of the message.
+    std::stringstream hexStream;
+    hexStream << std::hex << hResult;
+    sMessage = std::format("0x{}: ", hexStream.str());
+
+    if (pErrorText != nullptr) {
+        sMessage += std::string_view(pErrorText);
+        LocalFree(pErrorText);
+    } else {
+        sMessage += "unknown error";
+    }
+
+    stack.push_back(sourceLocationToInfo(location));
+}
+#endif
+
 void Error::addCurrentLocationToErrorStack(const std::source_location location) {
     stack.push_back(sourceLocationToInfo(location));
 }

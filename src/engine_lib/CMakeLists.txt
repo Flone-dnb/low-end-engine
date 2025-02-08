@@ -23,13 +23,29 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 
 # Sources.
 set(PROJECT_SOURCES
-    public/Renderer.h
-    private/Renderer.cpp
-    private/Window.cpp
-    public/Window.h
-    private/SdlManager.hpp
+    public/render/Renderer.h
+    private/render/Renderer.cpp
+    private/game/Window.cpp
+    public/game/Window.h
+    private/render/SdlManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h
+    public/misc/Globals.h
+    private/misc/Globals.cpp
+    private/misc/ProjectPaths.cpp
+    public/misc/ProjectPaths.h
+    public/math/GLMath.hpp
+    public/math/MathHelpers.hpp
+    public/io/Logger.h
+    private/io/Logger.cpp
+    private/game/GameManager.cpp
+    private/game/GameManager.h
+    public/game/GameInstance.h
+    private/game/GameInstance.cpp
+    private/game/World.cpp
+    private/game/World.h
+    private/game/node/Node.cpp
+    public/game/node/Node.h
     # add your .h/.cpp files here
 )
 
@@ -95,3 +111,17 @@ target_include_directories(${GLAD_TARGET_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH
 target_link_libraries(${PROJECT_NAME} PUBLIC ${GLAD_TARGET_NAME})
 add_dependencies(${PROJECT_NAME} ${GLAD_TARGET_NAME})
 set_target_properties(${GLAD_TARGET_NAME} PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+
+# Add GLM.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"GLM\"...")
+add_subdirectory(${RELATIVE_EXT_PATH}/glm ${DEPENDENCY_BUILD_DIR_NAME}/glm SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm)
+set_target_properties(glm PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+
+# Add spdlog.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"SPDLOG\"...")
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "" FORCE)
+set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
+add_subdirectory(${RELATIVE_EXT_PATH}/spdlog ${DEPENDENCY_BUILD_DIR_NAME}/spdlog SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
+set_target_properties(spdlog PROPERTIES FOLDER ${EXTERNAL_FOLDER})

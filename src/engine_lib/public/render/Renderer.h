@@ -14,17 +14,26 @@ class Window;
 
 /** OpenGL ES renderer. */
 class Renderer {
-    // Only window can create a renderer.
+    // Only game manager can create a renderer.
+    friend class GameManager;
+
+    // Window calls `drawNextFrame`.
     friend class Window;
 
 public:
     ~Renderer();
 
+    /**
+     * Blocks the current thread until the GPU finishes executing all queued graphics commands up to this
+     * point.
+     */
+    void waitForGpuToFinishWorkUpToThisPoint();
+
 private:
     /**
      * Creates a new renderer.
      *
-     * @param pWindow Window that creates this renderer.
+     * @param pWindow Valid pointer to the window.
      *
      * @return Error if something went wrong, otherwise created renderer.
      */
@@ -33,7 +42,7 @@ private:
     /**
      * Initializes the renderer.
      *
-     * @param pWindow         Window that creates this renderer.
+     * @param pWindow         Valid pointer to the window.
      * @param pCreatedContext Created OpenGL context.
      */
     Renderer(Window* pWindow, SDL_GLContext pCreatedContext);
@@ -44,6 +53,6 @@ private:
     /** OpenGL context. */
     SDL_GLContext pContext = nullptr;
 
-    /** Do not delete (free) this pointer. Window that created this renderer, always valid pointer. */
+    /** Do not delete (free) this pointer. Always valid pointer. */
     Window* const pWindow = nullptr;
 };
