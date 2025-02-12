@@ -6,9 +6,9 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 
 # Roadmap
 
-- [ ] Node system (Godot-like ECS alternative)
-- [ ] Handling user input events
-- [ ] Config management (progress, settings, etc.)
+- [X] Node system (Godot-like ECS alternative)
+- [X] Handling user input events
+- [X] Config management (progress, settings, etc.)
 - [ ] Forward renderer using OpenGL ES 3.1
 - [ ] Profiler
 - [ ] Texture import

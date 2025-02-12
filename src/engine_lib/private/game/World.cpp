@@ -29,26 +29,30 @@ void World::destroyWorld() {
     mtxRootNode.second = nullptr;
 }
 
+ReceivingInputNodesGuard World::getReceivingInputNodes() {
+    return ReceivingInputNodesGuard(&mtxIsIteratingOverNodes, &mtxReceivingInputNodes);
+}
+
 void World::tickTickableNodes(float timeSincePrevCallInSec) {
-    executeTasksAfterNodeTick();
+    std::scoped_lock guard(mtxTickableNodes.first, mtxIsIteratingOverNodes.first);
 
-    const auto callTickOnGroup = [&](std::unordered_set<Node*>* pTickGroup) {
-        for (auto it = pTickGroup->begin(); it != pTickGroup->end(); ++it) {
-            (*it)->onBeforeNewFrame(timeSincePrevCallInSec);
-        }
-    };
-
+    mtxIsIteratingOverNodes.second = true;
     {
-        std::scoped_lock guard(mtxTickableNodes.first);
+        executeTasksAfterNodeTick();
+
+        const auto callTickOnGroup = [&](std::unordered_set<Node*>* pTickGroup) {
+            for (auto it = pTickGroup->begin(); it != pTickGroup->end(); ++it) {
+                (*it)->onBeforeNewFrame(timeSincePrevCallInSec);
+            }
+        };
+
         callTickOnGroup(&mtxTickableNodes.second.firstTickGroup);
-    }
-    executeTasksAfterNodeTick();
+        executeTasksAfterNodeTick();
 
-    {
-        std::scoped_lock guard(mtxTickableNodes.first);
         callTickOnGroup(&mtxTickableNodes.second.secondTickGroup);
+        executeTasksAfterNodeTick();
     }
-    executeTasksAfterNodeTick();
+    mtxIsIteratingOverNodes.second = false;
 }
 
 void World::executeTasksAfterNodeTick() {
@@ -123,22 +127,28 @@ void World::onNodeSpawned(Node* pNode) {
         mtxSpawnedNodes.second[iNodeId] = pNode;
     }
 
-    std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first);
+    {
+        std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first, mtxIsIteratingOverNodes.first);
 
-    // Add to our arrays as deferred task. Why I've decided to do it as a deferred task:
-    // if we are right now iterating over an array of nodes that world stores (for ex. ticking, where
-    // one node inside of its tick function decided to spawn another node would cause us to get here)
-    // without deferred task we will modify array that we are iterating over which will cause
-    // bad things.
-    mtxTasksToExecuteAfterNodeTick.second.push([this, pNode]() {
-        if (pNode->isCalledEveryFrame()) {
-            addTickableNode(pNode);
-        }
+        const auto executeOperation = [this, pNode]() {
+            if (pNode->isCalledEveryFrame()) {
+                addTickableNode(pNode);
+            }
 
-        if (pNode->isReceivingInput()) {
-            addNodeToReceivingInputArray(pNode);
+            if (pNode->isReceivingInput()) {
+                addNodeToReceivingInputArray(pNode);
+            }
+        };
+
+        if (mtxIsIteratingOverNodes.second) {
+            // Add to our arrays as "deferred" task because we are currently iterating over an array of
+            // tickable nodes, without this "deferred" task we will modify array that we are iterating over
+            // which will cause bad things to happen.
+            mtxTasksToExecuteAfterNodeTick.second.push(executeOperation);
+        } else {
+            executeOperation();
         }
-    });
+    }
 }
 
 void World::onNodeDespawned(Node* pNode) {
@@ -175,23 +185,29 @@ void World::onNodeDespawned(Node* pNode) {
         mtxSpawnedNodes.second.erase(it);
     }
 
-    std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first);
+    {
+        std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first, mtxIsIteratingOverNodes.first);
 
-    // Remove to our arrays as deferred task (see onNodeSpawned for the reason).
-    // Additionally, engine guarantees that all deferred tasks will be finished before GC runs
-    // so it's safe to do so.
-    mtxTasksToExecuteAfterNodeTick.second.push([this, pNode]() {
-        // Force iterate over all ticking nodes and remove this node if it's marked as ticking in our
-        // arrays.
-        // We don't check `Node::isCalledEveryFrame` here simply because the node can disable it
-        // and despawn right after disabling it. If we check `Node::isCalledEveryFrame` we
-        // might not remove the node from our arrays and it will continue ticking (error).
-        // We even have a test for this bug.
-        removeTickableNode(pNode);
+        const auto executeOperation = [this, pNode]() {
+            // Force iterate over all ticking nodes and remove this node if it's marked as ticking in our
+            // arrays.
+            // We don't check `Node::isCalledEveryFrame` here simply because the node can disable it
+            // and despawn right after disabling it. If we check `Node::isCalledEveryFrame` we
+            // might not remove the node from our arrays and it will continue ticking (error).
+            // We even have a test for this bug.
+            removeTickableNode(pNode);
 
-        // Not checking for `Node::isReceivingInput` for the same reason as above.
-        removeNodeFromReceivingInputArray(pNode);
-    });
+            // Not checking for `Node::isReceivingInput` for the same reason as above.
+            removeNodeFromReceivingInputArray(pNode);
+        };
+
+        if (mtxIsIteratingOverNodes.second) {
+            // Modify our array as "deferred" task (see onNodeSpawned for the reason).
+            mtxTasksToExecuteAfterNodeTick.second.push(executeOperation);
+        } else {
+            executeOperation();
+        }
+    }
 }
 
 void World::onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode) {
@@ -209,33 +225,117 @@ void World::onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode) {
     // Save previous state.
     const auto bPreviousIsCalledEveryFrame = !pNode->isCalledEveryFrame();
 
-    std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first);
+    {
+        std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first, mtxIsIteratingOverNodes.first);
 
-    // Modify our arrays as deferred task (see onNodeSpawned for the reason).
-    mtxTasksToExecuteAfterNodeTick.second.push([this, pNode, iNodeId, bPreviousIsCalledEveryFrame]() {
-        // Make sure this node is still spawned.
-        const auto bIsSpawned = isNodeSpawned(iNodeId);
-        if (!bIsSpawned) {
-            // If it had "is called every frame" enabled it was removed from our arrays during despawn.
-            return;
+        const auto executeOperation = [this, pNode, iNodeId, bPreviousIsCalledEveryFrame]() {
+            // Make sure this node is still spawned.
+            const auto bIsSpawned = isNodeSpawned(iNodeId);
+            if (!bIsSpawned) {
+                // If it had "is called every frame" enabled it was removed from our arrays during despawn.
+                return;
+            }
+
+            // Get current setting state.
+            const auto bIsCalledEveryFrame = pNode->isCalledEveryFrame();
+
+            if (bIsCalledEveryFrame == bPreviousIsCalledEveryFrame) {
+                // The node changed the setting back, nothing to do.
+                return;
+            }
+
+            if (!bPreviousIsCalledEveryFrame && bIsCalledEveryFrame) {
+                // Was disabled but now enabled.
+                addTickableNode(pNode);
+            } else if (bPreviousIsCalledEveryFrame && !bIsCalledEveryFrame) {
+                // Was enabled but now disabled.
+                removeTickableNode(pNode);
+            }
+        };
+
+        if (mtxIsIteratingOverNodes.second) {
+            // Modify our array as "deferred" task (see onNodeSpawned for the reason).
+            mtxTasksToExecuteAfterNodeTick.second.push(executeOperation);
+        } else {
+            executeOperation();
         }
+    }
+}
 
-        // Get current setting state.
-        const auto bIsCalledEveryFrame = pNode->isCalledEveryFrame();
+void World::addNodeToReceivingInputArray(Node* pNode) {
+    std::scoped_lock guard(mtxReceivingInputNodes.first);
 
-        if (bIsCalledEveryFrame == bPreviousIsCalledEveryFrame) {
-            // The node changed the setting back, nothing to do.
-            return;
+    mtxReceivingInputNodes.second.insert(pNode);
+}
+
+void World::removeNodeFromReceivingInputArray(Node* pNode) {
+    std::scoped_lock guard(mtxReceivingInputNodes.first);
+
+    // Find in array.
+    const auto it = mtxReceivingInputNodes.second.find(pNode);
+    if (it == mtxReceivingInputNodes.second.end()) {
+        // Not found.
+        // This might happen if the node had the setting disabled and then quickly
+        // enabled and disabled it back
+        return;
+    }
+
+    // Remove from array.
+    mtxReceivingInputNodes.second.erase(it);
+}
+
+void World::onSpawnedNodeChangedIsReceivingInput(Node* pNode) {
+    // Get node ID.
+    const auto optionalNodeId = pNode->getNodeId();
+
+    // Make sure ID is valid.
+    if (!optionalNodeId.has_value()) [[unlikely]] {
+        Error error(std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
+        error.showError();
+        throw std::runtime_error(error.getFullErrorMessage());
+    }
+
+    // Save node ID.
+    const auto iNodeId = optionalNodeId.value();
+
+    // Save previous state.
+    const auto bPreviousIsReceivingInput = !pNode->isReceivingInput();
+
+    {
+        std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first, mtxIsIteratingOverNodes.first);
+
+        const auto executeOperation = [this, pNode, iNodeId, bPreviousIsReceivingInput]() {
+            // Make sure this node is still spawned.
+            const auto bIsSpawned = isNodeSpawned(iNodeId);
+            if (!bIsSpawned) {
+                // If it had "receiving input" enabled it was removed from our array during despawn.
+                return;
+            }
+
+            // Get current setting state.
+            const auto bIsReceivingInput = pNode->isReceivingInput();
+
+            if (bIsReceivingInput == bPreviousIsReceivingInput) {
+                // The node changed the setting back, nothing to do.
+                return;
+            }
+
+            if (!bPreviousIsReceivingInput && bIsReceivingInput) {
+                // Was disabled but now enabled.
+                addNodeToReceivingInputArray(pNode);
+            } else if (bPreviousIsReceivingInput && !bIsReceivingInput) {
+                // Was enabled but now disabled.
+                removeNodeFromReceivingInputArray(pNode);
+            }
+        };
+
+        if (mtxIsIteratingOverNodes.second) {
+            // Modify our array as "deferred" task (see onNodeSpawned for the reason).
+            mtxTasksToExecuteAfterNodeTick.second.push(executeOperation);
+        } else {
+            executeOperation();
         }
-
-        if (!bPreviousIsCalledEveryFrame && bIsCalledEveryFrame) {
-            // Was disabled but now enabled.
-            addTickableNode(pNode);
-        } else if (bPreviousIsCalledEveryFrame && !bIsCalledEveryFrame) {
-            // Was enabled but now disabled.
-            removeTickableNode(pNode);
-        }
-    });
+    }
 }
 
 void World::addTickableNode(Node* pNode) {

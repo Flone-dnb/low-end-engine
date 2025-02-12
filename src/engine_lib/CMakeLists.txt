@@ -38,6 +38,8 @@ set(PROJECT_SOURCES
     public/math/MathHelpers.hpp
     public/io/Logger.h
     private/io/Logger.cpp
+    public/io/ConfigManager.h
+    private/io/ConfigManager.cpp
     private/game/GameManager.cpp
     private/game/GameManager.h
     public/game/GameInstance.h
@@ -46,6 +48,10 @@ set(PROJECT_SOURCES
     private/game/World.h
     private/game/node/Node.cpp
     public/game/node/Node.h
+    public/input/InputManager.h
+    public/input/KeyboardKey.hpp
+    public/input/MouseButton.hpp
+    private/input/InputManager.cpp
     # add your .h/.cpp files here
 )
 
@@ -125,3 +131,11 @@ set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/spdlog ${DEPENDENCY_BUILD_DIR_NAME}/spdlog SYSTEM)
 target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+
+# Add toml11.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"TOML11\"...")
+if (MSVC)
+    target_compile_options(${PROJECT_NAME} PUBLIC /Zc:__cplusplus)
+endif()
+add_subdirectory(${RELATIVE_EXT_PATH}/toml11 ${DEPENDENCY_BUILD_DIR_NAME}/toml11 SYSTEM)
+set_target_properties(toml11 PROPERTIES FOLDER ${EXTERNAL_FOLDER})

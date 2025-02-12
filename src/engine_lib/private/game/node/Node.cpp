@@ -19,13 +19,21 @@ static std::atomic<size_t> iAvailableNodeId{0};
 
 Node::Node() : Node("Node") {}
 
-Node::Node(std::string_view sName) : sNodeName(sName) { mtxIsCalledEveryFrame.second = false; }
+Node::Node(std::string_view sName) : sNodeName(sName) {
+    mtxIsCalledEveryFrame.second = false;
+    mtxIsReceivingInput.second = false;
+}
 
 void Node::setNodeName(const std::string& sName) { this->sNodeName = sName; }
 
 bool Node::isCalledEveryFrame() {
     std::scoped_lock guard(mtxIsCalledEveryFrame.first);
     return mtxIsCalledEveryFrame.second;
+}
+
+bool Node::isReceivingInput() {
+    std::scoped_lock guard(mtxIsReceivingInput.first);
+    return mtxIsReceivingInput.second;
 }
 
 bool Node::isSpawned() {
@@ -57,7 +65,7 @@ bool Node::isChildOf(Node* pNode) {
     std::scoped_lock guard(mtxParentNode.first);
 
     // Check if we have a parent.
-    if (!mtxParentNode.second) {
+    if (mtxParentNode.second == nullptr) {
         return false;
     }
 
@@ -95,6 +103,27 @@ void Node::setIsCalledEveryFrame(bool bEnable) {
     pWorldWeSpawnedIn->onSpawnedNodeChangedIsCalledEveryFrame(this);
 }
 
+void Node::setIsReceivingInput(bool bEnable) {
+    std::scoped_lock guard(mtxIsSpawned.first, mtxIsReceivingInput.first);
+
+    // Make sure the value is indeed changed.
+    if (bEnable == mtxIsReceivingInput.second) {
+        // Nothing to do.
+        return;
+    }
+
+    // Change the setting.
+    mtxIsReceivingInput.second = bEnable;
+
+    // Check if we are spawned.
+    if (!mtxIsSpawned.second) {
+        return;
+    }
+
+    // Notify the world.
+    pWorldWeSpawnedIn->onSpawnedNodeChangedIsReceivingInput(this);
+}
+
 void Node::setTickGroup(TickGroup tickGroup) {
     // Make sure the node is not spawned.
     std::scoped_lock guard(mtxIsSpawned.first);
@@ -127,6 +156,20 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
     }
 
     return pWorldWeSpawnedIn->pGameManager->getGameInstance();
+}
+
+std::pair<
+    std::recursive_mutex,
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>*
+Node::getActionEventBindings() {
+    return &mtxBindedActionEvents;
+}
+
+std::pair<
+    std::recursive_mutex,
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>*
+Node::getAxisEventBindings() {
+    return &mtxBindedAxisEvents;
 }
 
 std::recursive_mutex* Node::getSpawnDespawnMutex() { return &mtxIsSpawned.first; }
@@ -216,12 +259,38 @@ void Node::despawn() {
     pWorldWeSpawnedIn = nullptr;
 }
 
+void Node::onInputActionEvent(unsigned int iActionId, KeyboardModifiers modifiers, bool bIsPressedDown) {
+    std::scoped_lock guard(mtxBindedActionEvents.first);
+
+    // See if this action event is registered.
+    const auto it = mtxBindedActionEvents.second.find(iActionId);
+    if (it == mtxBindedActionEvents.second.end()) {
+        return;
+    }
+
+    // Trigger user logic.
+    it->second(modifiers, bIsPressedDown);
+}
+
+void Node::onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers modifiers, float input) {
+    std::scoped_lock guard(mtxBindedAxisEvents.first);
+
+    // See if this axis event is registered.
+    const auto it = mtxBindedAxisEvents.second.find(iAxisEventId);
+    if (it == mtxBindedAxisEvents.second.end()) {
+        return;
+    }
+
+    // Trigger user logic.
+    it->second(modifiers, input);
+}
+
 World* Node::askParentsAboutWorldPointer() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     // Ask parent node for the valid world pointer.
     std::scoped_lock parentGuard(mtxParentNode.first);
-    if (!mtxParentNode.second) [[unlikely]] {
+    if (mtxParentNode.second == nullptr) [[unlikely]] {
         Error err(std::format(
             "node \"{}\" can't find a pointer to a valid world instance because "
             "there is no parent node",

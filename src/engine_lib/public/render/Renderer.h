@@ -8,7 +8,7 @@
 #include "misc/Error.h"
 
 // External.
-#include "SDL.h"
+#include "SDL_video.h"
 
 class Window;
 
@@ -27,7 +27,7 @@ public:
      * Blocks the current thread until the GPU finishes executing all queued graphics commands up to this
      * point.
      */
-    void waitForGpuToFinishWorkUpToThisPoint();
+    static void waitForGpuToFinishWorkUpToThisPoint();
 
 private:
     /**

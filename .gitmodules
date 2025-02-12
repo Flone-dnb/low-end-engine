@@ -10,3 +10,6 @@
 [submodule "ext/spdlog"]
 	path = ext/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "ext/toml11"]
+	path = ext/toml11
+	url = https://github.com/ToruNiina/toml11.git

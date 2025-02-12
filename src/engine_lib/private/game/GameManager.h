@@ -6,6 +6,9 @@
 #include <mutex>
 
 // Custom.
+#include "input/KeyboardKey.hpp"
+#include "input/MouseButton.hpp"
+#include "input/InputManager.h"
 #include "misc/Error.h"
 
 class Renderer;
@@ -93,11 +96,73 @@ private:
     void onBeforeNewFrame(float timeSincePrevCallInSec);
 
     /**
+     * Called when the window (that owns this object) receives keyboard input.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    void onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Called when the window (that owns this object) receives mouse input.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the button down event occurred or button up.
+     */
+    void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Called when the window received mouse movement.
+     *
+     * @param iXOffset Mouse X movement delta in pixels.
+     * @param iYOffset Mouse Y movement delta in pixels.
+     */
+    void onMouseMove(int iXOffset, int iYOffset);
+
+    /**
+     * Called when the window receives mouse scroll movement.
+     *
+     * @param iOffset Movement offset. Positive is away from the user, negative otherwise.
+     */
+    void onMouseScrollMove(int iOffset);
+
+    /**
+     * Called when the window focus was changed.
+     *
+     * @param bIsFocused  Whether the window has gained or lost the focus.
+     */
+    void onWindowFocusChanged(bool bIsFocused) const;
+
+    /**
      * Called when a window that owns this game instance
      * was requested to close (no new frames will be rendered).
      * Prefer to do your destructor logic here.
      */
     void onWindowClose() const;
+
+    /**
+     * Triggers action events from keyboard/mouse input.
+     *
+     * @param key            Keyboard/mouse key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    void triggerActionEvents(
+        std::variant<KeyboardKey, MouseButton> key, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Triggers axis events from keyboard input.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    void triggerAxisEvents(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /** Binds action/axis names with input keys. */
+    InputManager inputManager;
 
     /** Created renderer. */
     std::unique_ptr<Renderer> pRenderer;

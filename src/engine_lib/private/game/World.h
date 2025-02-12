@@ -10,6 +10,49 @@
 class Node;
 class GameManager;
 
+/** Tiny RAII-like class that locks a mutex and changes a boolean while alive. */
+class ReceivingInputNodesGuard {
+public:
+    ReceivingInputNodesGuard() = delete;
+    ReceivingInputNodesGuard(const ReceivingInputNodesGuard&) = delete;
+    ReceivingInputNodesGuard& operator=(const ReceivingInputNodesGuard&) = delete;
+
+    /**
+     * Initializes the object.
+     *
+     * @param pMutexToLock Mutex with boolean to change.
+     * @param pNodes       Nodes that receive input.
+     */
+    ReceivingInputNodesGuard(
+        std::pair<std::mutex, bool>* pMutexToLock,
+        std::pair<std::recursive_mutex, std::unordered_set<Node*>>* pNodes)
+        : pMutexToLock(pMutexToLock), pNodes(pNodes) {
+        pMutexToLock->first.lock();
+        pMutexToLock->second = true;
+        pNodes->first.lock();
+    }
+
+    /**
+     * Returns all spawned nodes that receive input.
+     *
+     * @return Nodes.
+     */
+    std::unordered_set<Node*>* getNodes() const { return &pNodes->second; }
+
+    ~ReceivingInputNodesGuard() {
+        pMutexToLock->second = false;
+        pMutexToLock->first.unlock();
+        pNodes->first.unlock();
+    }
+
+private:
+    /** Mutex with boolean to change. */
+    std::pair<std::mutex, bool>* pMutexToLock = nullptr;
+
+    /** Input receiving nodes. */
+    std::pair<std::recursive_mutex, std::unordered_set<Node*>>* const pNodes = nullptr;
+};
+
 /** Represents a game world. Owns world's root node. */
 class World {
     // Nodes notify the world about being spawned/despawned.
@@ -32,6 +75,13 @@ public:
 
     /** Clears pointer to the root node which causes the world to recursively be despawned and destroyed. */
     void destroyWorld();
+
+    /**
+     * Returns spawned nodes that receiving input.
+     *
+     * @return Nodes.
+     */
+    ReceivingInputNodesGuard getReceivingInputNodes();
 
     /**
      * Called before a new frame is rendered.
@@ -87,17 +137,6 @@ private:
     void onNodeDespawned(Node* pNode);
 
     /**
-     * Called from Node to notify the World about a spawned node changed its "is called every frame"
-     * setting.
-     *
-     * @warning Should be called AFTER the node has changed its setting and the new state should not
-     * be changed while this function is running.
-     *
-     * @param pNode Node that is changing its setting.
-     */
-    void onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode);
-
-    /**
      * Adds the specified node to @ref mtxTickableNodes.
      *
      * @param pNode Node to add.
@@ -112,13 +151,54 @@ private:
     void removeTickableNode(Node* pNode);
 
     /**
+     * Called from Node to notify the World about a spawned node changed its "is called every frame"
+     * setting.
+     *
+     * @warning Should be called AFTER the node has changed its setting and the new state should not
+     * be changed while this function is running.
+     *
+     * @param pNode Node that is changing its setting.
+     */
+    void onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode);
+
+    /**
+     * Adds the specified node to the array of "receiving input" nodes
+     * (see @ref getReceivingInputNodes).
+     *
+     * @param pNode Node to add.
+     */
+    void addNodeToReceivingInputArray(Node* pNode);
+
+    /**
+     * Looks if the specified node exists in the array of "receiving input" nodes
+     * and removes the node from the array (see @ref mtxReceivingInputNodes).
+     *
+     * @param pNode Node to remove.
+     */
+    void removeNodeFromReceivingInputArray(Node* pNode);
+
+    /**
+     * Called from Node to notify the World about a spawned node changed its "is receiving input"
+     * setting.
+     *
+     * @warning Should be called AFTER the node has changed its setting and the new state should not
+     * be changed while this function is running.
+     *
+     * @param pNode Node that is changing its setting.
+     */
+    void onSpawnedNodeChangedIsReceivingInput(Node* pNode);
+
+    /**
      * Must be called after finishing iterating over all "tickable" nodes of one node group to finish
      * possible node spawn/despawn logic.
      */
     void executeTasksAfterNodeTick();
 
     /** Nodes that should be called every frame. */
-    std::pair<std::mutex, TickableNodes> mtxTickableNodes;
+    std::pair<std::recursive_mutex, TickableNodes> mtxTickableNodes;
+
+    /** Array of currently spawned nodes that receive input. */
+    std::pair<std::recursive_mutex, std::unordered_set<Node*>> mtxReceivingInputNodes;
 
     /**
      * Functions to execute after nodes did their per-frame logic.
@@ -137,6 +217,11 @@ private:
 
     /** Stores pairs of "Node ID" - "Spawned Node". */
     std::pair<std::mutex, std::unordered_map<size_t, Node*>> mtxSpawnedNodes;
+
+    /**
+     * True if we are currently in a loop where we call every "ticking" node or a node that receiving input.
+     */
+    std::pair<std::mutex, bool> mtxIsIteratingOverNodes;
 
     /** Do not delete (free) this pointer. Always valid pointer to game manager. */
     GameManager* const pGameManager = nullptr;

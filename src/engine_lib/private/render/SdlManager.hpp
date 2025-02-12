@@ -4,7 +4,8 @@
 #include <stdexcept>
 
 // External.
-#include "SDL/include/SDL.h"
+#define SDL_MAIN_HANDLED
+#include "SDL.h"
 #include "glad/glad.h"
 
 /** Handles SDL initialization and shutdown. */

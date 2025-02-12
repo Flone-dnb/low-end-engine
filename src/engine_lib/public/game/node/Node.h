@@ -5,6 +5,11 @@
 #include <mutex>
 #include <vector>
 #include <optional>
+#include <unordered_map>
+#include <functional>
+
+// Custom.
+#include "input/KeyboardKey.hpp"
 
 class GameInstance;
 
@@ -24,6 +29,9 @@ enum class TickGroup { FIRST, SECOND };
 class Node {
     // World is able to spawn root node.
     friend class World;
+
+    // GameManager will propagate functions to all nodes in the world such as `onBeforeNewFrame`.
+    friend class GameManager;
 
 public:
     /** Creates a new node with a default name. */
@@ -92,6 +100,13 @@ public:
      * @return Whether the @ref onBeforeNewFrame should be called each frame or not.
      */
     bool isCalledEveryFrame();
+
+    /**
+     * Returns whether this node receives input or not.
+     *
+     * @return Whether this node receives input or not.
+     */
+    bool isReceivingInput();
 
     /**
      * Returns whether this node is spawned in the world or not.
@@ -198,14 +213,48 @@ protected:
     virtual void onBeforeNewFrame(float timeSincePrevFrameInSec) {}
 
     /**
-     * Determines if the @ref onBeforeNewFrame should be called each frame or not
-     * (disabled by default).
+     * Called when the window received mouse movement.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param xOffset  Mouse X movement delta in pixels (plus if moved to the right,
+     * minus if moved to the left).
+     * @param yOffset  Mouse Y movement delta in pixels (plus if moved up,
+     * minus if moved down).
+     */
+    virtual void onMouseMove(double xOffset, double yOffset) {}
+
+    /**
+     * Called when the window receives mouse scroll movement.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iOffset Movement offset.
+     */
+    virtual void onMouseScrollMove(int iOffset) {}
+
+    /**
+     * Determines if the @ref onBeforeNewFrame should be called each frame or not.
      *
      * @remark Safe to call any time (while spawned/despawned).
+     * @remark Nodes are not called every frame by default.
      *
      * @param bEnable `true` to enable @ref onBeforeNewFrame, `false` to disable.
      */
     void setIsCalledEveryFrame(bool bEnable);
+
+    /**
+     * Determines if the input related functions, such as @ref onMouseMove, @ref onMouseScrollMove,
+     * @ref onInputActionEvent and @ref onInputAxisEvent will be called or not.
+     *
+     * @remark Safe to call any time (while spawned/despawned).
+     * @remark Nodes do not receive input by default.
+     *
+     * @param bEnable Whether the input function should be enabled or not.
+     */
+    void setIsReceivingInput(bool bEnable);
 
     /**
      * Sets the tick group in which the node will reside.
@@ -238,6 +287,59 @@ protected:
     GameInstance* getGameInstanceWhileSpawned();
 
     /**
+     * Returns map of action events that this node is bound to (must be used with mutex).
+     * Bound callbacks will be automatically called when an action event is triggered.
+     *
+     * @remark Input events will be only triggered if the node is spawned.
+     * @remark Input events will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
+     * will be considered to trigger events in the node.
+     *
+     * Example:
+     * @code
+     * const auto iForwardActionId = 0;
+     * const auto pActionEvents = getActionEventBindings();
+     *      * std::scoped_lock guard(pActionEvents->first);
+     * pActionEvents->second[iForwardActionId] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+     *     moveForward(modifiers, bIsPressedDown);
+     * };
+     * @endcode
+     *
+     * @return Bound action events.
+     */
+    std::pair<
+        std::recursive_mutex,
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>*
+    getActionEventBindings();
+
+    /**
+     * Returns map of axis events that this node is bound to (must be used with mutex).
+     * Bound callbacks will be automatically called when an axis event is triggered.
+     *
+     * @remark Input events will be only triggered if the node is spawned.
+     * @remark Input events will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
+     * will be considered to trigger events in the node.
+     * @remark Input parameter is a value in range [-1.0f; 1.0f] that describes input.
+     *
+     * Example:
+     * @code
+     * const auto iForwardAxisEventId = 0;
+     * const auto pAxisEvents = getAxisEventBindings();
+     *      * std::scoped_lock guard(pAxisEvents->first);
+     * pAxisEvents->second[iForwardAxisEventId] = [&](KeyboardModifiers modifiers, float input) {
+     *     moveForward(modifiers, input);
+     * };
+     * @endcode
+     *
+     * @return Bound action events.
+     */
+    std::pair<
+        std::recursive_mutex,
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>*
+    getAxisEventBindings();
+
+    /**
      * Returns mutex that is generally used to protect/prevent spawning/despawning.
      *
      * @warning Do not delete (free) returned pointer.
@@ -254,12 +356,50 @@ private:
     void despawn();
 
     /**
+     * Called when a window that owns this game instance receives user
+     * input and the input key exists as an action event in the InputManager.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iActionId      Unique ID of the input action event (from input manager).
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    void onInputActionEvent(unsigned int iActionId, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Called when a window that owns this game instance receives user
+     * input and the input key exists as an axis event in the InputManager.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iAxisEventId  Unique ID of the input axis event (from input manager).
+     * @param modifiers     Keyboard modifier keys.
+     * @param input         A value in range [-1.0f; 1.0f] that describes input.
+     */
+    void onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers modifiers, float input);
+
+    /**
      * Asks this node's parent and goes up the node hierarchy
      * up to the root node if needed to find a valid pointer to world.
      *
      * @return Valid world pointer.
      */
     World* askParentsAboutWorldPointer();
+
+    /** Map of action events that this node is bound to. Must be used with mutex. */
+    std::pair<
+        std::recursive_mutex,
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>
+        mtxBindedActionEvents;
+
+    /** Map of axis events that this node is bound to. Must be used with mutex. */
+    std::pair<
+        std::recursive_mutex,
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>
+        mtxBindedAxisEvents;
 
     /** Attached child nodes. */
     std::pair<std::recursive_mutex, std::vector<std::unique_ptr<Node>>> mtxChildNodes;
@@ -269,6 +409,12 @@ private:
 
     /** Determines if the @ref onBeforeNewFrame should be called each frame or not. */
     std::pair<std::recursive_mutex, bool> mtxIsCalledEveryFrame;
+
+    /**
+     * Determines if the input related functions, such as @ref onMouseMove, @ref onMouseScrollMove,
+     * @ref onInputActionEvent and @ref onInputAxisEvent will be called or not.
+     */
+    std::pair<std::recursive_mutex, bool> mtxIsReceivingInput;
 
     /** Whether this node is spawned in the world or not. */
     std::pair<std::recursive_mutex, bool> mtxIsSpawned;

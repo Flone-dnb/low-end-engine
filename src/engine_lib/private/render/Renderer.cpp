@@ -31,7 +31,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 
 void Renderer::drawNextFrame() {
     // Clear.
-    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+    glClearColor(0.0F, 1.0F, 0.0F, 1.0F);
     glClear(GL_COLOR_BUFFER_BIT);
 
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
