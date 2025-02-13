@@ -176,6 +176,8 @@ std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
 
 SDL_Window* Window::getSdlWindow() const { return pSdlWindow; }
 
+GameManager* Window::getGameManager() const { return pGameManager.get(); }
+
 void Window::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const {
     pGameManager->onMouseInput(button, modifiers, bIsPressedDown);
 }

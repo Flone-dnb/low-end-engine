@@ -42,15 +42,15 @@ GameManager::~GameManager() {
 
     // Destroy world if it exists.
     {
-        std::scoped_lock guard(mtxWorld.first);
+        std::scoped_lock guard(mtxWorldData.first);
 
-        if (mtxWorld.second != nullptr) {
+        if (mtxWorldData.second.pWorld != nullptr) {
             // Destroy world before game instance, so that no node will reference game instance.
             // Not clearing the pointer because some nodes can still reference world.
-            mtxWorld.second->destroyWorld();
+            mtxWorldData.second.pWorld->destroyWorld();
 
             // Can safely destroy the world object now.
-            mtxWorld.second = nullptr;
+            mtxWorldData.second.pWorld = nullptr;
         }
     }
 
@@ -59,6 +59,15 @@ GameManager::~GameManager() {
 
     // After game instance, destroy the renderer.
     pRenderer = nullptr;
+}
+
+void GameManager::createWorld(const std::function<void(const std::optional<Error>&)>& onCreated) {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    // Create new world on next tick because we might be currently iterating over "tickable" nodes
+    // or nodes that receiving input so avoid modifying those arrays in this case.
+    mtxWorldData.second.pendingWorldCreationTask =
+        WorldCreationTask{.onCreated = onCreated, .pathToNodeTreeToLoad = {}};
 }
 
 void GameManager::onGameStarted() {
@@ -71,16 +80,29 @@ void GameManager::onGameStarted() {
 }
 
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
+    {
+        std::scoped_lock guard(mtxWorldData.first);
+
+        // Create a new world if needed.
+        if (mtxWorldData.second.pendingWorldCreationTask.has_value()) {
+            // Explicitly destroying instead of `nullptr` because some nodes can still reference world.
+            mtxWorldData.second.pWorld->destroyWorld();
+            mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
+
+            mtxWorldData.second.pendingWorldCreationTask->onCreated({});
+        }
+    }
+
     // Tick game instance.
     pGameInstance->onBeforeNewFrame(timeSincePrevCallInSec);
 
     {
         // Tick nodes.
-        std::scoped_lock guard(mtxWorld.first);
-        if (mtxWorld.second == nullptr) {
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.pWorld == nullptr) {
             return;
         }
-        mtxWorld.second->tickTickableNodes(timeSincePrevCallInSec);
+        mtxWorldData.second.pWorld->tickTickableNodes(timeSincePrevCallInSec);
     }
 }
 
@@ -106,9 +128,9 @@ void GameManager::onMouseMove(int iXOffset, int iYOffset) {
     pGameInstance->onMouseMove(iXOffset, iYOffset);
 
     // Call on nodes that receive input.
-    std::scoped_lock guard(mtxWorld.first);
-    if (mtxWorld.second) {
-        const auto nodesGuard = mtxWorld.second->getReceivingInputNodes();
+    std::scoped_lock guard(mtxWorldData.first);
+    if (mtxWorldData.second.pWorld != nullptr) {
+        const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
         const auto pNodes = nodesGuard.getNodes();
         for (const auto& pNode : *pNodes) {
             pNode->onMouseMove(iXOffset, iYOffset);
@@ -121,9 +143,9 @@ void GameManager::onMouseScrollMove(int iOffset) {
     pGameInstance->onMouseScrollMove(iOffset);
 
     // Call on nodes that receive input.
-    std::scoped_lock guard(mtxWorld.first);
-    if (mtxWorld.second) {
-        const auto nodesGuard = mtxWorld.second->getReceivingInputNodes();
+    std::scoped_lock guard(mtxWorldData.first);
+    if (mtxWorldData.second.pWorld != nullptr) {
+        const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
         const auto pNodes = nodesGuard.getNodes();
         for (const auto& pNode : *pNodes) {
             pNode->onMouseScrollMove(iOffset);
@@ -220,9 +242,9 @@ void GameManager::triggerActionEvents(
         pGameInstance->onInputActionEvent(iActionId, modifiers, bNewActionState);
 
         // Notify nodes that receive input.
-        std::scoped_lock guard(mtxWorld.first);
-        if (mtxWorld.second != nullptr) {
-            const auto nodesGuard = mtxWorld.second->getReceivingInputNodes();
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.pWorld != nullptr) {
+            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
             for (const auto& pNode : *pNodes) {
                 pNode->onInputActionEvent(iActionId, modifiers, bNewActionState);
@@ -323,9 +345,9 @@ void GameManager::triggerAxisEvents(KeyboardKey key, KeyboardModifiers modifiers
         pGameInstance->onInputAxisEvent(iAxisEventId, modifiers, static_cast<float>(iAxisInputState));
 
         // Notify nodes that receive input.
-        std::scoped_lock guard(mtxWorld.first);
-        if (mtxWorld.second != nullptr) {
-            const auto nodesGuard = mtxWorld.second->getReceivingInputNodes();
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.pWorld != nullptr) {
+            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
             for (const auto& pNode : *pNodes) {
                 pNode->onInputAxisEvent(iAxisEventId, modifiers, static_cast<float>(iAxisInputState));

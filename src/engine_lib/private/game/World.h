@@ -24,7 +24,7 @@ public:
      * @param pNodes       Nodes that receive input.
      */
     ReceivingInputNodesGuard(
-        std::pair<std::mutex, bool>* pMutexToLock,
+        std::pair<std::recursive_mutex, bool>* pMutexToLock,
         std::pair<std::recursive_mutex, std::unordered_set<Node*>>* pNodes)
         : pMutexToLock(pMutexToLock), pNodes(pNodes) {
         pMutexToLock->first.lock();
@@ -47,7 +47,7 @@ public:
 
 private:
     /** Mutex with boolean to change. */
-    std::pair<std::mutex, bool>* pMutexToLock = nullptr;
+    std::pair<std::recursive_mutex, bool>* pMutexToLock = nullptr;
 
     /** Input receiving nodes. */
     std::pair<std::recursive_mutex, std::unordered_set<Node*>>* const pNodes = nullptr;
@@ -65,13 +65,11 @@ public:
     World& operator=(const World&) = delete;
 
     /**
-     * Creates a new world that contains only one node - root node.
+     * Initializes world.
      *
      * @param pGameManager Object that owns this world.
-     *
-     * @return Pointer to the new world instance.
      */
-    static std::unique_ptr<World> createWorld(GameManager* pGameManager);
+    World(GameManager* pGameManager);
 
     /** Clears pointer to the root node which causes the world to recursively be despawned and destroyed. */
     void destroyWorld();
@@ -114,13 +112,6 @@ private:
         /** Nodes of the second tick group. */
         std::unordered_set<Node*> secondTickGroup;
     };
-
-    /**
-     * Initializes world.
-     *
-     * @param pGameManager Object that owns this world.
-     */
-    World(GameManager* pGameManager);
 
     /**
      * Called from Node to notify the World about a new node being spawned.
@@ -221,7 +212,7 @@ private:
     /**
      * True if we are currently in a loop where we call every "ticking" node or a node that receiving input.
      */
-    std::pair<std::mutex, bool> mtxIsIteratingOverNodes;
+    std::pair<std::recursive_mutex, bool> mtxIsIteratingOverNodes;
 
     /** Do not delete (free) this pointer. Always valid pointer to game manager. */
     GameManager* const pGameManager = nullptr;

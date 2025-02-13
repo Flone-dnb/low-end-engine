@@ -71,6 +71,13 @@ public:
     SDL_Window* getSdlWindow() const;
 
     /**
+     * Returns game manager.
+     *
+     * @return `nullptr` if not created yet or was destroyed, otherwise valid pointer.
+     */
+    GameManager* getGameManager() const;
+
+    /**
      * Called when the window receives mouse input.
      *
      * @remark Made public so you can simulate input in your tests.

@@ -1,6 +1,14 @@
 #include "game/GameInstance.h"
 
+// Custom.
+#include "game/Window.h"
+#include "game/GameManager.h"
+
 GameInstance::GameInstance(Window* pWindow) : pWindow(pWindow) {}
+
+void GameInstance::createWorld(const std::function<void(const std::optional<Error>&)>& onCreated) {
+    pWindow->getGameManager()->createWorld(onCreated);
+}
 
 std::pair<
     std::recursive_mutex,

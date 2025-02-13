@@ -4,10 +4,12 @@
 #include <unordered_map>
 #include <mutex>
 #include <functional>
+#include <optional>
 
 // Custom.
 #include "input/KeyboardKey.hpp"
 #include "input/MouseButton.hpp"
+#include "misc/Error.h"
 
 class Window;
 
@@ -111,6 +113,18 @@ protected:
      * the world will be destroyed and will be inaccessible (`nullptr`).
      */
     virtual void onWindowClose() {}
+
+    /**
+     * Creates a new world that contains only one node - root node.
+     *
+     * @remark Replaces the old world (if existed).
+     *
+     * @param onCreated Callback function that will be called after the world is
+     * created. Contains optional error (if world creation failed) as the only argument. Use
+     * GameInstance member functions as callback functions for created worlds, because all nodes
+     * and other game objects will be destroyed while the world is changing.
+     */
+    void createWorld(const std::function<void(const std::optional<Error>&)>& onCreated);
 
     /**
      * Returns map of action events that this GameInstance is bound to (must be used with mutex).

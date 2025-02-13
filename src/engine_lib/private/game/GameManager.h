@@ -4,6 +4,8 @@
 #include <memory>
 #include <variant>
 #include <mutex>
+#include <functional>
+#include <filesystem>
 
 // Custom.
 #include "input/KeyboardKey.hpp"
@@ -30,6 +32,18 @@ public:
     GameManager& operator=(const GameManager&) = delete;
 
     ~GameManager();
+
+    /**
+     * Creates a new world that contains only one node - root node.
+     *
+     * @remark Replaces the old world (if existed).
+     *
+     * @param onCreated Callback function that will be called after the world is
+     * created. Contains optional error (if world creation failed) as the only argument. Use
+     * GameInstance member functions as callback functions for created worlds, because all nodes
+     * and other game objects will be destroyed while the world is changing.
+     */
+    void createWorld(const std::function<void(const std::optional<Error>&)>& onCreated);
 
     /**
      * Returns window that owns this object.
@@ -59,6 +73,30 @@ public:
     GameInstance* getGameInstance() const;
 
 private:
+    /** Groups data used during world creation. */
+    struct WorldCreationTask {
+        /** Callback to call after the world is created or loaded. */
+        std::function<void(const std::optional<Error>&)> onCreated;
+
+        /** If empty then create an empty world (only root node), otherwise load the node tree. */
+        std::optional<std::filesystem::path> pathToNodeTreeToLoad;
+    };
+
+    /** Groups world-related data. */
+    struct WorldData {
+        /**
+         * Not empty if we need to create/load a new world.
+         *
+         * @remark We don't create/load worlds right away but instead create/load them on the next tick
+         * because when a world creation task is received we might be iterating over "tickable" nodes
+         * or nodes that receive input so we avoid modifying those arrays in that case.
+         */
+        std::optional<WorldCreationTask> pendingWorldCreationTask;
+
+        /** Current world. */
+        std::unique_ptr<World> pWorld;
+    };
+
     /**
      * Creates a new game manager.
      *
@@ -171,7 +209,7 @@ private:
     std::unique_ptr<GameInstance> pGameInstance;
 
     /** Game world, stores world's node tree. */
-    std::pair<std::recursive_mutex, std::unique_ptr<World>> mtxWorld;
+    std::pair<std::recursive_mutex, WorldData> mtxWorldData;
 
     /** Do not delete this pointer. Window that owns this object, always valid pointer. */
     Window* const pWindow = nullptr;

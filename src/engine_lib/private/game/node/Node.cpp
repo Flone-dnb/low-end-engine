@@ -6,6 +6,9 @@
 #include "game/World.h"
 #include "game/GameManager.h"
 
+/** Total amount of alive nodes. */
+static std::atomic<size_t> iTotalAliveNodeCount{0};
+
 /**
  * Stores the next node ID that can be used.
  *
@@ -17,11 +20,28 @@
  */
 static std::atomic<size_t> iAvailableNodeId{0};
 
+size_t Node::getAliveNodeCount() { return iTotalAliveNodeCount.load(); }
+
 Node::Node() : Node("Node") {}
 
 Node::Node(std::string_view sName) : sNodeName(sName) {
     mtxIsCalledEveryFrame.second = false;
     mtxIsReceivingInput.second = false;
+
+    // Increment total node counter.
+    const size_t iNodeCount = iTotalAliveNodeCount.fetch_add(1) + 1;
+#undef max
+    if (iNodeCount + 1 == std::numeric_limits<size_t>::max()) [[unlikely]] {
+        Logger::get().warn(std::format(
+            "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
+            "an overflow",
+            iNodeCount + 1));
+    }
+}
+
+Node::~Node() {
+    // Decrement total node counter.
+    iTotalAliveNodeCount.fetch_sub(1);
 }
 
 void Node::setNodeName(const std::string& sName) { this->sNodeName = sName; }

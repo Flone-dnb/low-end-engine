@@ -4,6 +4,7 @@
 #include "game/node/Node.h"
 #include "io/Logger.h"
 #include "misc/Error.h"
+#include "render/Renderer.h"
 
 World::~World() {
     std::scoped_lock gaurd(mtxRootNode.first);
@@ -24,9 +25,19 @@ void World::destroyWorld() {
     Logger::get().info("world is being destroyed, despawning world's root node...");
     Logger::get().flushToDisk();
 
+    // Just in case wait for all GPU work to finish.
+    Renderer::waitForGpuToFinishWorkUpToThisPoint();
+
     std::scoped_lock guard(mtxRootNode.first);
     mtxRootNode.second->despawn();
     mtxRootNode.second = nullptr;
+
+    // Make sure that all nodes were destroyed.
+    const auto iAliveNodeCount = Node::getAliveNodeCount();
+    if (iAliveNodeCount != 0) [[unlikely]] {
+        Logger::get().error(
+            std::format("the world was destroyed but there are still {} node(s) alive", iAliveNodeCount));
+    }
 }
 
 ReceivingInputNodesGuard World::getReceivingInputNodes() {

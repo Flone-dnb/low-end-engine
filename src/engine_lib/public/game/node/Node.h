@@ -34,6 +34,13 @@ class Node {
     friend class GameManager;
 
 public:
+    /**
+     * Returns the total amount of currently alive (allocated) nodes.
+     *
+     * @return Number of alive nodes right now.
+     */
+    static size_t getAliveNodeCount();
+
     /** Creates a new node with a default name. */
     Node();
 
@@ -49,7 +56,7 @@ public:
     Node(Node&&) = delete;
     Node& operator=(Node&&) = delete;
 
-    virtual ~Node() = default;
+    virtual ~Node();
 
     /**
      * Sets node's name.
