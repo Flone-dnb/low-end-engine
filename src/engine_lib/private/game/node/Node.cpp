@@ -308,6 +308,10 @@ void Node::onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers modifie
 World* Node::askParentsAboutWorldPointer() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
+    if (pWorldWeSpawnedIn != nullptr) {
+        return pWorldWeSpawnedIn;
+    }
+
     // Ask parent node for the valid world pointer.
     std::scoped_lock parentGuard(mtxParentNode.first);
     if (mtxParentNode.second == nullptr) [[unlikely]] {

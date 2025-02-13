@@ -52,3 +52,5 @@ void GameInstance::onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers
 }
 
 Window* GameInstance::getWindow() const { return pWindow; }
+
+InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }

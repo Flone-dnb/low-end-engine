@@ -3,6 +3,7 @@
 
 // Custom.
 #include "game/Window.h"
+#include "EditorGameInstance.h"
 
 // External.
 #if defined(WIN32)
@@ -19,7 +20,7 @@ int main() {
 #endif
 
     // Create window.
-    auto result = Window::create("Editor");
+    auto result = Window::create(EditorGameInstance::getEditorWindowTitle());
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -28,7 +29,7 @@ int main() {
     }
     const auto pWindow = std::get<std::unique_ptr<Window>>(std::move(result));
 
-    pWindow->processEvents();
+    pWindow->processEvents<EditorGameInstance>();
 
     return 0;
 }

@@ -12,6 +12,8 @@
 #include "input/MouseButton.hpp"
 #include "input/InputManager.h"
 #include "misc/Error.h"
+#include "game/GameInstance.h"
+#include "render/Renderer.h"
 
 class Renderer;
 class GameInstance;
@@ -53,6 +55,15 @@ public:
      * @return Always valid pointer to the window that owns this object.
      */
     Window* getWindow() const;
+
+    /**
+     * Returns game's input manager, manages input events of game instance and nodes.
+     *
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer.
+     */
+    InputManager* getInputManager();
 
     /**
      * Returns game's renderer.
@@ -104,6 +115,8 @@ private:
      *
      * @return Error if something went wrong, otherwise created game manager.
      */
+    template <typename MyGameInstance>
+        requires std::derived_from<MyGameInstance, GameInstance>
     static std::variant<std::unique_ptr<GameManager>, Error> create(Window* pWindow);
 
     /**
@@ -214,3 +227,22 @@ private:
     /** Do not delete this pointer. Window that owns this object, always valid pointer. */
     Window* const pWindow = nullptr;
 };
+
+template <typename MyGameInstance>
+    requires std::derived_from<MyGameInstance, GameInstance>
+inline std::variant<std::unique_ptr<GameManager>, Error> GameManager::create(Window* pWindow) {
+    // Create renderer.
+    auto result = Renderer::create(pWindow);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        return error;
+    }
+    auto pRenderer = std::get<std::unique_ptr<Renderer>>(std::move(result));
+
+    // Create game instance.
+    auto pGameInstance = std::make_unique<MyGameInstance>(pWindow);
+
+    return std::unique_ptr<GameManager>(
+        new GameManager(pWindow, std::move(pRenderer), std::move(pGameInstance)));
+}

@@ -19,6 +19,8 @@ World::World(GameManager* pGameManager) : pGameManager(pGameManager) {
     Logger::get().flushToDisk();
 
     mtxRootNode.second = std::make_unique<Node>("Root Node");
+    mtxRootNode.second->pWorldWeSpawnedIn = this;
+    mtxRootNode.second->spawn();
 }
 
 void World::destroyWorld() {

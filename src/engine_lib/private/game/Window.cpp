@@ -1,11 +1,5 @@
 #include "game/Window.h"
 
-// Custom.
-#include "render/Renderer.h"
-#include "game/GameManager.h"
-#include "io/Logger.h"
-#include "render/SdlManager.hpp"
-
 std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName) {
     // Initialize SDL.
     SdlManager::init();
@@ -29,54 +23,6 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
     auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow));
 
     return pWindow;
-}
-
-void Window::processEvents() {
-    // Create game manager.
-    auto result = GameManager::create(this);
-    if (std::holds_alternative<Error>(result)) [[unlikely]] {
-        auto error = std::get<Error>(std::move(result));
-        error.addCurrentLocationToErrorStack();
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
-    }
-    pGameManager = std::get<std::unique_ptr<GameManager>>(std::move(result));
-
-    pGameManager->onGameStarted();
-
-    // Save reference to the renderer.
-    const auto pRenderer = pGameManager->getRenderer();
-
-    // Used for tick.
-    unsigned long long iCurrentTimeCounter = SDL_GetPerformanceCounter();
-    unsigned long long iPrevTimeCounter = 0;
-
-    // Run game loop.
-    bQuitRequested = false;
-    while (!bQuitRequested) {
-        // Process available window events.
-        SDL_Event event;
-        while (SDL_PollEvent(&event) != 0) {
-            bQuitRequested = processWindowEvent(event);
-        }
-
-        // Tick.
-        iPrevTimeCounter = iCurrentTimeCounter;
-        iCurrentTimeCounter = SDL_GetPerformanceCounter();
-        const auto deltaTimeInMs = (iCurrentTimeCounter - iPrevTimeCounter) * 1000 / // NOLINT
-                                   static_cast<double>(SDL_GetPerformanceFrequency());
-        pGameManager->onBeforeNewFrame(static_cast<float>(deltaTimeInMs * 0.001)); // NOLINT
-
-        // Draw.
-        pRenderer->drawNextFrame();
-    }
-
-    // Notify game manager about window closed.
-    pGameManager->onWindowClose();
-
-    // Destroy game manager.
-    pGameManager = nullptr;
-    Logger::get().info("game manager is destroyed");
 }
 
 void Window::setCursorVisibility(bool bIsVisible) {

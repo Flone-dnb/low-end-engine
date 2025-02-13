@@ -1,28 +1,9 @@
 ﻿#include "GameManager.h"
 
 // Custom.
-#include "game/GameInstance.h"
-#include "render/Renderer.h"
 #include "io/Logger.h"
 #include "game/World.h"
 #include "game/node/Node.h"
-
-std::variant<std::unique_ptr<GameManager>, Error> GameManager::create(Window* pWindow) {
-    // Create renderer.
-    auto result = Renderer::create(pWindow);
-    if (std::holds_alternative<Error>(result)) [[unlikely]] {
-        auto error = std::get<Error>(std::move(result));
-        error.addCurrentLocationToErrorStack();
-        return error;
-    }
-    auto pRenderer = std::get<std::unique_ptr<Renderer>>(std::move(result));
-
-    // Create game instance.
-    auto pGameInstance = std::unique_ptr<GameInstance>(new GameInstance(pWindow));
-
-    return std::unique_ptr<GameManager>(
-        new GameManager(pWindow, std::move(pRenderer), std::move(pGameInstance)));
-}
 
 GameManager::GameManager(
     Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance)
@@ -85,11 +66,16 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
         // Create a new world if needed.
         if (mtxWorldData.second.pendingWorldCreationTask.has_value()) {
-            // Explicitly destroying instead of `nullptr` because some nodes can still reference world.
-            mtxWorldData.second.pWorld->destroyWorld();
+            // Create new world.
+            if (mtxWorldData.second.pWorld != nullptr) {
+                // Explicitly destroying instead of `nullptr` because some nodes can still reference world.
+                mtxWorldData.second.pWorld->destroyWorld();
+            }
             mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
 
+            // Done.
             mtxWorldData.second.pendingWorldCreationTask->onCreated({});
+            mtxWorldData.second.pendingWorldCreationTask = {};
         }
     }
 
@@ -357,6 +343,8 @@ void GameManager::triggerAxisEvents(KeyboardKey key, KeyboardModifiers modifiers
 }
 
 Window* GameManager::getWindow() const { return pWindow; }
+
+InputManager* GameManager::getInputManager() { return &inputManager; }
 
 Renderer* GameManager::getRenderer() const { return pRenderer.get(); }
 

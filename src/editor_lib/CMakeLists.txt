@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(editor)
+project(editor_lib)
 
 # Define some relative paths.
 set(RELATIVE_EXT_PATH "../../ext")
@@ -16,14 +16,15 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 #                                          TARGET SOURCES
 # -------------------------------------------------------------------------------------------------
 
-# Sources.
+# Specify project sources.
 set(PROJECT_SOURCES
-    src/main.cpp
+    public/EditorGameInstance.h
+    private/EditorGameInstance.cpp
     # add your .h/.cpp files here
 )
 
 # Define target.
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
 
 # -------------------------------------------------------------------------------------------------
 #                                         CONFIGURE TARGET
@@ -42,39 +43,29 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_${PROJECT_CXX_STANDARD_VE
 message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_STANDARD}")
 
 # Add includes.
-target_include_directories(${PROJECT_NAME} PUBLIC src)
+target_include_directories(${PROJECT_NAME} PUBLIC public)
+target_include_directories(${PROJECT_NAME} PUBLIC private)
 
 # -------------------------------------------------------------------------------------------------
 #                                           TOOLS
 # -------------------------------------------------------------------------------------------------
 
-# Enable Address Sanitizer in `Debug` builds on non-Windows OS.
 if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
     enable_address_sanitizer()
 endif()
 
-# Enable Clang-tidy in `Release` builds.
 if (IS_RELEASE_BUILD AND NOT DISABLE_DEV_STUFF)
     enable_clang_tidy(${CMAKE_CURRENT_LIST_DIR}/../../.clang-tidy)
-endif()
-
-# Enable doxygen.
-if (NOT IS_RELEASE_BUILD)
-    enable_doxygen(${CMAKE_CURRENT_SOURCE_DIR}/../../docs)
 endif()
 
 # -------------------------------------------------------------------------------------------------
 #                                       DEPENDENCIES
 # -------------------------------------------------------------------------------------------------
 
-# Add editor library.
-set(EDITOR_LIB_TARGET editor_lib)
-if (NOT TARGET ${EDITOR_LIB_TARGET}) # define target only if not defined yet
-    message(STATUS "${PROJECT_NAME}: started adding ${EDITOR_LIB_TARGET}...\n----------------------------------------------\n")
-    add_subdirectory(../${EDITOR_LIB_TARGET} ${DEPENDENCY_BUILD_DIR_NAME}/${EDITOR_LIB_TARGET})
-    message(STATUS "\n\n----------------------------------------------\n${PROJECT_NAME}: finished adding ${EDITOR_LIB_TARGET}")
-else()
-    message(STATUS "${PROJECT_NAME}: ${EDITOR_LIB_TARGET} already defined, just using it without redefining")
-endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC ${EDITOR_LIB_TARGET})
-add_dependencies(${PROJECT_NAME} ${EDITOR_LIB_TARGET})
+# Add engine library.
+set(ENGINE_TARGET engine_lib)
+message(STATUS "${PROJECT_NAME}: started adding ${ENGINE_TARGET}...\n----------------------------------------------\n")
+add_subdirectory(../${ENGINE_TARGET} ${DEPENDENCY_BUILD_DIR_NAME}/${ENGINE_TARGET})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${ENGINE_TARGET})
+add_dependencies(${PROJECT_NAME} ${ENGINE_TARGET})
+message(STATUS "\n\n----------------------------------------------\n${PROJECT_NAME}: finished adding ${ENGINE_TARGET}")

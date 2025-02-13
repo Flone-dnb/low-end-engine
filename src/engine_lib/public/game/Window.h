@@ -9,6 +9,13 @@
 #include "misc/Error.h"
 #include "input/MouseButton.hpp"
 #include "input/KeyboardKey.hpp"
+#include "game/GameInstance.h"
+#include "render/Renderer.h"
+#include "game/GameManager.h"
+#include "io/Logger.h"
+
+// External.
+#include "render/SdlManager.hpp"
 
 class GameManager;
 
@@ -31,6 +38,8 @@ public:
      *
      * @remark This function will return control after the window was closed.
      */
+    template <typename MyGameInstance>
+        requires std::derived_from<MyGameInstance, GameInstance>
     void processEvents();
 
     /**
@@ -155,3 +164,53 @@ private:
     /** Used in the window message loop. */
     bool bQuitRequested = false;
 };
+
+template <typename MyGameInstance>
+    requires std::derived_from<MyGameInstance, GameInstance>
+inline void Window::processEvents() {
+    // Create game manager.
+    auto result = GameManager::create<MyGameInstance>(this);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        error.showError();
+        throw std::runtime_error(error.getFullErrorMessage());
+    }
+    pGameManager = std::get<std::unique_ptr<GameManager>>(std::move(result));
+
+    pGameManager->onGameStarted();
+
+    // Save reference to the renderer.
+    const auto pRenderer = pGameManager->getRenderer();
+
+    // Used for tick.
+    unsigned long long iCurrentTimeCounter = SDL_GetPerformanceCounter();
+    unsigned long long iPrevTimeCounter = 0;
+
+    // Run game loop.
+    bQuitRequested = false;
+    while (!bQuitRequested) {
+        // Process available window events.
+        SDL_Event event;
+        while (SDL_PollEvent(&event) != 0) {
+            bQuitRequested = processWindowEvent(event);
+        }
+
+        // Tick.
+        iPrevTimeCounter = iCurrentTimeCounter;
+        iCurrentTimeCounter = SDL_GetPerformanceCounter();
+        const auto deltaTimeInMs = (iCurrentTimeCounter - iPrevTimeCounter) * 1000 / // NOLINT
+                                   static_cast<double>(SDL_GetPerformanceFrequency());
+        pGameManager->onBeforeNewFrame(static_cast<float>(deltaTimeInMs * 0.001)); // NOLINT
+
+        // Draw.
+        pRenderer->drawNextFrame();
+    }
+
+    // Notify game manager about window closed.
+    pGameManager->onWindowClose();
+
+    // Destroy game manager.
+    pGameManager = nullptr;
+    Logger::get().info("game manager is destroyed");
+}

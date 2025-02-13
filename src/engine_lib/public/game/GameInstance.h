@@ -12,6 +12,7 @@
 #include "misc/Error.h"
 
 class Window;
+class InputManager;
 
 /**
  * Main game class, exists while the game window is not closed
@@ -35,9 +36,22 @@ public:
     /**
      * Returns a reference to the window this game instance is using.
      *
-     * @return A pointer to the window, should not be deleted.
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer.
      */
     Window* getWindow() const;
+
+    /**
+     * Returns a reference to the input manager this game instance is using.
+     * Input manager allows binding IDs with multiple input keys that
+     * you can receive in @ref onInputActionEvent.
+     *
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer.
+     */
+    InputManager* getInputManager() const;
 
 protected:
     /**

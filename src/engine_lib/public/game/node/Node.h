@@ -299,7 +299,7 @@ protected:
      *
      * @remark Input events will be only triggered if the node is spawned.
      * @remark Input events will not be called if @ref setIsReceivingInput was not enabled.
-     * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
+     * @remark Only events in GameInstance's InputManager (@ref GameInstance::getInputManager)
      * will be considered to trigger events in the node.
      *
      * Example:
@@ -325,7 +325,7 @@ protected:
      *
      * @remark Input events will be only triggered if the node is spawned.
      * @remark Input events will not be called if @ref setIsReceivingInput was not enabled.
-     * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
+     * @remark Only events in GameInstance's InputManager (@ref GameInstance::getInputManager)
      * will be considered to trigger events in the node.
      * @remark Input parameter is a value in range [-1.0f; 1.0f] that describes input.
      *
