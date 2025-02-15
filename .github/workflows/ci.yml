@@ -1,0 +1,38 @@
+name: All
+
+on: [push, pull_request, pull_request_review]
+
+jobs:
+  build-tests-windows:
+    name: Build and run tests on Windows
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Pull submodules
+      run: git submodule update --init --recursive
+    - name: Create build directory
+      run: mkdir build
+    - name: Build (debug)
+      run: |
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug ..
+        cmake --build . --target ALL_BUILD --config Debug
+      working-directory: build
+    - name: Test (debug)
+      run: |
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug ..
+        cmake --build . --target engine_tests --config Debug
+        ./OUTPUT/engine_tests/Debug/engine_tests.exe
+      working-directory: build
+    - name: Build (release)
+      run: |
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
+        cmake --build . --target ALL_BUILD --config Release
+      working-directory: build
+    - name: Test (release)
+      run: |
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
+        cmake --build . --target engine_tests --config Release
+        Copy-Item -Path ../res -Recurse -Destination ./OUTPUT/engine_tests/Release/ -Container
+        ./OUTPUT/engine_tests/Release/engine_tests.exe
+      working-directory: build

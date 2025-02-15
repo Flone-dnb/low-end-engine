@@ -19,7 +19,7 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 # Sources.
 set(PROJECT_SOURCES
     src/main.cpp
-    src/test1.cpp
+    src/input/InputManager.cpp
     # add your .h/.cpp files here
 )
 
