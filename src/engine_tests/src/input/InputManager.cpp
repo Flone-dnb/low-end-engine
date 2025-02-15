@@ -5,80 +5,85 @@
 #include "catch2/catch_test_macros.hpp"
 
 TEST_CASE("add action") {
-    const unsigned int iAction1Id = 0;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction1Keys = {
+    // Prepare trigger buttons and action events.
+    const unsigned int iActionEvent1Id = 0;
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vActionEvent1Buttons = {
         KeyboardKey::KEY_0, KeyboardKey::KEY_Z};
 
-    const unsigned int iAction2Id = 1;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction2Keys = {MouseButton::LEFT};
+    const unsigned int iActionEvent2Id = 1;
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vActionEvent2Buttons = {
+        MouseButton::LEFT};
 
+    const unsigned int iActionEvent3Id = 2;
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vActionEvent3Buttons = {
+        GamepadButton::X};
+
+    // Register action events.
     InputManager manager;
-    auto optional = manager.addActionEvent(iAction1Id, vAction1Keys);
-    REQUIRE(!optional.has_value());
-    optional = manager.addActionEvent(iAction2Id, vAction2Keys);
-    REQUIRE(!optional.has_value());
+    auto optionalError = manager.addActionEvent(iActionEvent1Id, vActionEvent1Buttons);
+    REQUIRE(!optionalError.has_value());
+    optionalError = manager.addActionEvent(iActionEvent2Id, vActionEvent2Buttons);
+    REQUIRE(!optionalError.has_value());
+    optionalError = manager.addActionEvent(iActionEvent3Id, vActionEvent3Buttons);
+    REQUIRE(!optionalError.has_value());
 
-    const auto vEvent1Keys = manager.getActionEvent(iAction1Id);
-    const auto vEvent2Keys = manager.getActionEvent(iAction2Id);
+    // Make sure buttons were added.
+    const auto vEvent1Keys = manager.getActionEvent(iActionEvent1Id);
+    const auto vEvent2Keys = manager.getActionEvent(iActionEvent2Id);
+    const auto vEvent3Keys = manager.getActionEvent(iActionEvent3Id);
     REQUIRE(!vEvent1Keys.empty());
     REQUIRE(!vEvent2Keys.empty());
+    REQUIRE(!vEvent3Keys.empty());
 
-    // Compare keys (order may be different).
-    REQUIRE(vEvent1Keys.size() == vAction1Keys.size());
-    for (const auto& wantKey : vAction1Keys) {
-        bool bFound = false;
-        for (const auto& foundKey : vEvent1Keys) {
-            if (foundKey == wantKey) {
-                bFound = true;
-                break;
-            }
-        }
-        REQUIRE(bFound);
-    }
-
-    // Compare keys (order may be different).
-    REQUIRE(vEvent2Keys.size() == vAction2Keys.size());
-    for (const auto& wantKey : vAction2Keys) {
-        bool bFound = false;
-        for (const auto& foundKey : vEvent2Keys) {
-            if (foundKey == wantKey) {
-                bFound = true;
-                break;
-            }
-        }
-        REQUIRE(bFound);
-    }
+    // Compare keys.
+    REQUIRE(vEvent1Keys == vActionEvent1Buttons);
+    REQUIRE(vEvent2Keys == vActionEvent2Buttons);
+    REQUIRE(vEvent3Keys == vActionEvent3Buttons);
 }
 
 TEST_CASE("remove action") {
-    const unsigned int iAction1Id = 0;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction1Keys = {
+    // Prepare trigger buttons and action events.
+    const unsigned int iActionEvent1Id = 0;
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vActionEvent1Buttons = {
         KeyboardKey::KEY_0, KeyboardKey::KEY_Z};
 
-    const unsigned int iAction2Id = 1;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction2Keys = {MouseButton::LEFT};
+    const unsigned int iActionEvent2Id = 1;
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vActionEvent2Buttons = {
+        MouseButton::LEFT};
 
+    const unsigned int iActionEvent3Id = 2;
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vActionEvent3Buttons = {
+        GamepadButton::X};
+
+    // Register action events.
     InputManager manager;
-    auto optional = manager.addActionEvent(iAction1Id, vAction1Keys);
-    REQUIRE(!optional.has_value());
-    optional = manager.addActionEvent(iAction2Id, vAction2Keys);
-    REQUIRE(!optional.has_value());
+    auto optionalError = manager.addActionEvent(iActionEvent1Id, vActionEvent1Buttons);
+    REQUIRE(!optionalError.has_value());
+    optionalError = manager.addActionEvent(iActionEvent2Id, vActionEvent2Buttons);
+    REQUIRE(!optionalError.has_value());
+    optionalError = manager.addActionEvent(iActionEvent3Id, vActionEvent3Buttons);
+    REQUIRE(!optionalError.has_value());
 
-    REQUIRE(!manager.removeActionEvent(iAction1Id));
+    // Remove action event.
+    REQUIRE(!manager.removeActionEvent(iActionEvent1Id));
+    REQUIRE(manager.getAllActionEvents().size() == 2);
 
-    REQUIRE(manager.getAllActionEvents().size() == 1);
-
-    const auto vEventKeys = manager.getActionEvent(iAction2Id);
-    REQUIRE(!vEventKeys.empty());
-    REQUIRE(vEventKeys == vAction2Keys);
+    // Check that other events are correct.
+    const auto vEvent2Keys = manager.getActionEvent(iActionEvent2Id);
+    const auto vEvent3Keys = manager.getActionEvent(iActionEvent3Id);
+    REQUIRE(!vEvent2Keys.empty());
+    REQUIRE(!vEvent3Keys.empty());
+    REQUIRE(vEvent2Keys == vActionEvent2Buttons);
+    REQUIRE(vEvent3Keys == vActionEvent3Buttons);
 }
 
 TEST_CASE("fail to add an action event with already used ID") {
     const unsigned int iAction1Id = 0;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction1Keys = {
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vAction1Keys = {
         KeyboardKey::KEY_0, KeyboardKey::KEY_Z};
 
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction2Keys = {MouseButton::LEFT};
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vAction2Keys = {
+        MouseButton::LEFT};
 
     InputManager manager;
     auto optional = manager.addActionEvent(iAction1Id, vAction1Keys);
@@ -106,11 +111,11 @@ TEST_CASE("fail to add an action event with already used ID") {
 
 TEST_CASE("modify action") {
     const unsigned int iAction1Id = 0;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction1Keys = {
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vAction1Keys = {
         KeyboardKey::KEY_0, KeyboardKey::KEY_Z};
 
-    const std::variant<KeyboardKey, MouseButton> oldKey = KeyboardKey::KEY_Z;
-    const std::variant<KeyboardKey, MouseButton> newKey = MouseButton::LEFT;
+    const std::variant<KeyboardKey, MouseButton, GamepadButton> oldKey = KeyboardKey::KEY_Z;
+    const std::variant<KeyboardKey, MouseButton, GamepadButton> newKey = MouseButton::LEFT;
 
     InputManager manager;
     auto optional = manager.addActionEvent(iAction1Id, vAction1Keys);
@@ -119,7 +124,7 @@ TEST_CASE("modify action") {
     optional = manager.modifyActionEventKey(iAction1Id, oldKey, newKey);
     REQUIRE(!optional.has_value());
 
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vExpectedKeys = {
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vExpectedKeys = {
         KeyboardKey::KEY_0, MouseButton::LEFT};
 
     const auto vEventKeys = manager.getActionEvent(iAction1Id);
@@ -319,10 +324,11 @@ TEST_CASE("fail modify axis with wrong/flipped keys") {
 TEST_CASE("test saving and loading") {
     // Prepare default action/axis events.
     const unsigned int iAction1Id = 0;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vDefaultAction1Keys = {MouseButton::LEFT};
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vDefaultAction1Keys = {
+        MouseButton::LEFT};
 
     const unsigned int iAction2Id = 1;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vDefaultAction2Keys = {
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vDefaultAction2Keys = {
         MouseButton::RIGHT, KeyboardKey::KEY_R};
 
     const unsigned int iAxis1Id = 0;
@@ -331,8 +337,8 @@ TEST_CASE("test saving and loading") {
         std::make_pair<KeyboardKey, KeyboardKey>(KeyboardKey::KEY_UP, KeyboardKey::KEY_DOWN)};
 
     // Modify some events.
-    const std::variant<KeyboardKey, MouseButton> oldAction2Key = MouseButton::RIGHT;
-    const std::variant<KeyboardKey, MouseButton> newAction2Key = KeyboardKey::KEY_A;
+    const std::variant<KeyboardKey, MouseButton, GamepadButton> oldAction2Key = MouseButton::RIGHT;
+    const std::variant<KeyboardKey, MouseButton, GamepadButton> newAction2Key = KeyboardKey::KEY_A;
 
     constexpr std::pair<KeyboardKey, KeyboardKey> oldAxis1Key =
         std::make_pair<KeyboardKey, KeyboardKey>(KeyboardKey::KEY_UP, KeyboardKey::KEY_DOWN);
@@ -340,9 +346,10 @@ TEST_CASE("test saving and loading") {
         std::make_pair<KeyboardKey, KeyboardKey>(KeyboardKey::KEY_T, KeyboardKey::KEY_G);
 
     // Expected.
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vExpectedAction1Keys = {MouseButton::LEFT};
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vExpectedAction1Keys = {
+        MouseButton::LEFT};
 
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vExpectedAction2Keys = {
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vExpectedAction2Keys = {
         KeyboardKey::KEY_A, KeyboardKey::KEY_R};
 
     const std::vector<std::pair<KeyboardKey, KeyboardKey>> vExpectedAxis1Keys = {
@@ -452,11 +459,12 @@ TEST_CASE("test saving and loading") {
 
 TEST_CASE("is key used") {
     const unsigned int iAction1Id = 0;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction1Keys = {
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vAction1Keys = {
         KeyboardKey::KEY_0, KeyboardKey::KEY_Z};
 
     const unsigned int iAction2Id = 1;
-    const std::vector<std::variant<KeyboardKey, MouseButton>> vAction2Keys = {KeyboardKey::KEY_LEFT};
+    const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vAction2Keys = {
+        KeyboardKey::KEY_LEFT};
 
     const unsigned int iAxis2Id = 0;
     const std::vector<std::pair<KeyboardKey, KeyboardKey>> vAxes2 = {

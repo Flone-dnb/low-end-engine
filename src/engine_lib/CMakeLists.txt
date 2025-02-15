@@ -51,6 +51,7 @@ set(PROJECT_SOURCES
     public/input/InputManager.h
     public/input/KeyboardKey.hpp
     public/input/MouseButton.hpp
+    public/input/GamepadButton.hpp
     private/input/InputManager.cpp
     # add your .h/.cpp files here
 )

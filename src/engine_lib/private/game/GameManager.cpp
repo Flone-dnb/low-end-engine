@@ -101,6 +101,18 @@ void GameManager::onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, 
     triggerAxisEvents(key, modifiers, bIsPressedDown);
 }
 
+void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
+    Logger::get().info(
+        std::format("button \"{}\", pressed: {}", getGamepadButtonName(button), bIsPressedDown));
+
+    // Trigger raw (no events) input processing function.
+    pGameInstance->onGamepadInput(button, bIsPressedDown);
+
+    // Trigger input events.
+    triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
+    // triggerAxisEvents(key, KeyboardModifiers(0), bIsPressedDown);
+}
+
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     // Trigger raw (no events) input processing function.
     pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
@@ -139,6 +151,18 @@ void GameManager::onMouseScrollMove(int iOffset) {
     }
 }
 
+void GameManager::onGamepadConnected(std::string_view sGamepadName) {
+    Logger::get().info(std::format("gamepad \"{}\" was connected", sGamepadName));
+
+    pGameInstance->onGamepadConnected(sGamepadName);
+}
+
+void GameManager::onGamepadDisconnected() {
+    Logger::get().info("gamepad was disconnected");
+
+    pGameInstance->onGamepadDisconnected();
+}
+
 void GameManager::onWindowFocusChanged(bool bIsFocused) const {
     pGameInstance->onWindowFocusChanged(bIsFocused);
 }
@@ -146,12 +170,15 @@ void GameManager::onWindowFocusChanged(bool bIsFocused) const {
 void GameManager::onWindowClose() const { pGameInstance->onWindowClose(); }
 
 void GameManager::triggerActionEvents(
-    std::variant<KeyboardKey, MouseButton> key, KeyboardModifiers modifiers, bool bIsPressedDown) {
+    std::variant<KeyboardKey, MouseButton, GamepadButton> button,
+    KeyboardModifiers modifiers,
+    bool bIsPressedDown) {
     std::scoped_lock guard(inputManager.mtxActionEvents);
 
-    // Make sure this key is registered in some action.
-    const auto it = inputManager.actionEvents.find(key);
+    // Make sure this button is registered in some action.
+    const auto it = inputManager.actionEvents.find(button);
     if (it == inputManager.actionEvents.end()) {
+        // That's okay, this button is not used in input events.
         return;
     }
 
@@ -169,45 +196,56 @@ void GameManager::triggerActionEvents(
             continue;
         }
 
-        // Stores various keys that can activate this action (for example we can have
-        // buttons W and ArrowUp activating the same event named "moveForward").
-        std::pair<std::vector<ActionState>, bool /* action state */>& actionStatePair = actionStateIt->second;
+        // Various keys can activate an action (for example we can have buttons W and ArrowUp activating the
+        // same event named "moveForward") but an action event will have a single state (pressed/not pressed)
+        // depending on all buttons that can trigger the event.
+        auto& [vTriggerButtons, bActionEventLastState] = actionStateIt->second;
 
-        // Find an action key that matches the received one.
+        // Find a button that matches the received one.
         bool bFoundKey = false;
-        for (auto& actionKey : actionStatePair.first) {
-            if (actionKey.key == key) {
-                // Mark key's state.
-                actionKey.bIsPressed = bIsPressedDown;
+        for (auto& triggerButton : vTriggerButtons) {
+            if (triggerButton.key == button) {
+                // Found it, mark a new state for this button.
+                triggerButton.bIsPressed = bIsPressedDown;
                 bFoundKey = true;
                 break;
             }
         }
 
-        // Log an error if the key is not found.
+        // We should have found a trigger button.
         if (!bFoundKey) [[unlikely]] {
-            if (std::holds_alternative<KeyboardKey>(key)) {
+            if (std::holds_alternative<KeyboardKey>(button)) {
                 Logger::get().error(std::format(
-                    "could not find the key `{}` in key states for action event with ID {}",
-                    getKeyName(std::get<KeyboardKey>(key)),
+                    "could not find the keyboard button `{}` in trigger buttons for action event with ID {}",
+                    getKeyName(std::get<KeyboardKey>(button)),
                     iActionId));
-            } else {
+            } else if (std::holds_alternative<KeyboardKey>(button)) {
                 Logger::get().error(std::format(
-                    "could not find mouse button `{}` in key states for action event with ID {}",
-                    static_cast<int>(std::get<MouseButton>(key)),
+                    "could not find the mouse button `{}` in trigger buttons for action event with ID {}",
+                    static_cast<int>(std::get<MouseButton>(button)),
                     iActionId));
+            } else if (std::holds_alternative<GamepadButton>(button)) {
+                Logger::get().error(std::format(
+                    "could not find the gamepad button `{}` in trigger buttons for action event with ID {}",
+                    static_cast<int>(std::get<GamepadButton>(button)),
+                    iActionId));
+            } else [[unlikely]] {
+                Error error("unhandled case");
+                error.showError();
+                throw std::runtime_error(error.getFullErrorMessage());
             }
         }
 
-        // Save received key state as action state.
+        // Prepare to save the received button state as the new state of this action event.
         bool bNewActionState = bIsPressedDown;
 
         if (!bIsPressedDown) {
-            // The key is not pressed but this does not mean that we need to broadcast
-            // a notification about changed state. See if other button are pressed.
-            for (const auto actionKey : actionStatePair.first) {
+            // We received "button released" input but this does not mean that we need to broadcast
+            // a notification about changed action event state. First, see if other button are pressed.
+            for (const auto actionKey : vTriggerButtons) {
                 if (actionKey.bIsPressed) {
-                    // Save action state.
+                    // At least one of the trigger buttons is still pressed so the action event state
+                    // should still be "pressed".
                     bNewActionState = true;
                     break;
                 }
@@ -215,14 +253,12 @@ void GameManager::triggerActionEvents(
         }
 
         // See if action state is changed.
-        if (bNewActionState == actionStatePair.second) {
+        if (bNewActionState == bActionEventLastState) {
             continue;
         }
 
-        // Action state was changed, notify the game.
-
         // Save new action state.
-        actionStatePair.second = bNewActionState;
+        bActionEventLastState = bNewActionState;
 
         // Notify game instance.
         pGameInstance->onInputActionEvent(iActionId, modifiers, bNewActionState);
@@ -250,7 +286,7 @@ void GameManager::triggerAxisEvents(KeyboardKey key, KeyboardModifiers modifiers
 
     // Copying array of axis events because it can be modified in `onInputAxisEvent` by user code
     // while we are iterating over it (the user should be able to modify it).
-    // This should not be that bad due to the fact that axis events is just a small array of ints.
+    // This should not be that bad due to the fact that an axis event is just a very small array of values.
     const auto axisCopy = it->second;
     for (const auto& [iAxisEventId, bTriggersPlusInput] : axisCopy) {
         // Get state of the action.

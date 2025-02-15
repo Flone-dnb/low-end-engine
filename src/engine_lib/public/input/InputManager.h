@@ -11,6 +11,7 @@
 // Custom.
 #include "input/KeyboardKey.hpp"
 #include "input/MouseButton.hpp"
+#include "input/GamepadButton.hpp"
 #include "misc/Error.h"
 
 /** Holds the current state of an action event. */
@@ -21,9 +22,9 @@ public:
     /**
      * Initialize action state.
      *
-     * @param key  Action key.
+     * @param key Action key.
      */
-    ActionState(std::variant<KeyboardKey, MouseButton> key) {
+    ActionState(std::variant<KeyboardKey, MouseButton, GamepadButton> key) {
         this->key = key;
         bIsPressed = false;
     }
@@ -32,7 +33,7 @@ public:
     bool bIsPressed;
 
     /** Action key. */
-    std::variant<KeyboardKey, MouseButton> key;
+    std::variant<KeyboardKey, MouseButton, GamepadButton> key;
 };
 
 /** Holds the current state of an axis event. */
@@ -84,7 +85,7 @@ public:
     /**
      * Adds a new action event.
      *
-     * Action event allows binding mouse button(s) and/or keyboard key(s)
+     * Action event allows binding mouse button(s) and/or keyboard key(s) and/or gamepad button(s)
      * with an ID. When one of the specified buttons is pressed you will receive
      * an action event with the specified ID.
      *
@@ -94,14 +95,14 @@ public:
      * to change one button of the action.
      *
      * @param iActionId   Unique ID of the new action event.
-     * @param vKeys       Keyboard/mouse keys/buttons associated with this action.
-     * If empty, no event will be added.
+     * @param vKeys       Buttons associated with this action.
      *
      * @return Returns an error if passed 'vKeys' argument is empty or if an
      * action event with this ID is already registered.
      */
-    [[nodiscard]] std::optional<Error>
-    addActionEvent(unsigned int iActionId, const std::vector<std::variant<KeyboardKey, MouseButton>>& vKeys);
+    [[nodiscard]] std::optional<Error> addActionEvent(
+        unsigned int iActionId,
+        const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>& vKeys);
 
     /**
      * Adds a new axis event.
@@ -138,8 +139,8 @@ public:
      */
     [[nodiscard]] std::optional<Error> modifyActionEventKey(
         unsigned int iActionId,
-        std::variant<KeyboardKey, MouseButton> oldKey,
-        std::variant<KeyboardKey, MouseButton> newKey);
+        std::variant<KeyboardKey, MouseButton, GamepadButton> oldKey,
+        std::variant<KeyboardKey, MouseButton, GamepadButton> newKey);
 
     /**
      * Change axis event's key.
@@ -202,7 +203,7 @@ public:
      * @return A pair of action and axis event IDs that the specified key is used in.
      */
     std::pair<std::vector<unsigned int>, std::vector<unsigned int>>
-    isKeyUsed(const std::variant<KeyboardKey, MouseButton>& key);
+    isKeyUsed(const std::variant<KeyboardKey, MouseButton, GamepadButton>& key);
 
     /**
      * Looks for an action event with the specified ID, if one is found a copy of this action's
@@ -214,7 +215,7 @@ public:
      * @return Empty if no keys were associated with this event, otherwise keys associated with the
      * action event.
      */
-    std::vector<std::variant<KeyboardKey, MouseButton>> getActionEvent(unsigned int iActionId);
+    std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> getActionEvent(unsigned int iActionId);
 
     /**
      * Looks for an axis event with the specified ID, if one is found a copy of this axis's
@@ -261,7 +262,7 @@ public:
      *
      * @return A copy of all action events.
      */
-    std::unordered_map<unsigned int, std::vector<std::variant<KeyboardKey, MouseButton>>>
+    std::unordered_map<unsigned int, std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>>
     getAllActionEvents();
 
     /**
@@ -301,7 +302,8 @@ private:
      * @return Error if something went wrong.
      */
     [[nodiscard]] std::optional<Error> overwriteActionEvent(
-        unsigned int iActionId, const std::vector<std::variant<KeyboardKey, MouseButton>>& vKeys);
+        unsigned int iActionId,
+        const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>& vKeys);
 
     /**
      * Adds a new axis event. If an axis event with this ID already exists it will be removed
@@ -323,27 +325,19 @@ private:
     [[nodiscard]] std::optional<Error> overwriteAxisEvent(
         unsigned int iAxisEventId, const std::vector<std::pair<KeyboardKey, KeyboardKey>>& vAxis);
 
-    /**
-     * Map that stores pairs of "key that triggers event" - "registered events".
-     *
-     * TODO: add GamepadKey into variant when gamepad will be supported and save/load them in
-     * TODO: saveToFile/loadFromFile (+ add tests).
-     */
-    std::unordered_map<std::variant<KeyboardKey, MouseButton>, std::vector<unsigned int>> actionEvents;
+    /** Map that stores pairs of "button that triggers event" - "registered input event IDs". */
+    std::unordered_map<std::variant<KeyboardKey, MouseButton, GamepadButton>, std::vector<unsigned int>>
+        actionEvents;
 
     /**
      * Stores pairs of "action event ID" and a pair of "registered keys" - "last input
      * (pressed/released)".
      */
-    std::unordered_map<unsigned int, std::pair<std::vector<ActionState>, bool /* action state */>>
-        actionState;
+    std::unordered_map<unsigned int, std::pair<std::vector<ActionState>, bool>> actionState;
 
     /**
      * Map that stores pair of "keyboard key that triggers event" - "array of registered events
      * with an input value that should be triggered (either +1 (`true`) or -1 (`false`))".
-     *
-     * TODO: add GamepadAxis when gamepad will be supported and save/load
-     * TODO: them in saveToFile/loadFromFile (+ add tests).
      */
     std::unordered_map<KeyboardKey, std::vector<std::pair<unsigned int, bool>>> axisEvents;
 
@@ -351,7 +345,7 @@ private:
      * Stores pairs of "axis event ID" and a pair of "registered keys" - "last input in
      * range [-1; 1]".
      */
-    std::unordered_map<unsigned int, std::pair<std::vector<AxisState>, int /* axis state */>> axisState;
+    std::unordered_map<unsigned int, std::pair<std::vector<AxisState>, int>> axisState;
 
     /** Mutex for actions editing. */
     std::recursive_mutex mtxActionEvents;

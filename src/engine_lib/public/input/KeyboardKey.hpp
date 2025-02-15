@@ -7,9 +7,7 @@
 #include "SDL_keycode.h"
 #include "SDL_events.h"
 
-/**
- * Provides a mapping from SDL keyboard modifiers to a class.
- */
+/** Provides a mapping from SDL keyboard modifiers to a class. */
 class KeyboardModifiers {
 public:
     KeyboardModifiers() = delete;
@@ -61,12 +59,10 @@ private:
     uint16_t iModifiers;
 };
 
-/** Provides a mapping from SDL keyboard action macros to an enum. */
-enum class KeyboardAction { PRESSED = SDL_PRESSED, RELEASED = SDL_RELEASED };
-
 /**
- * Provides a mapping from GLFW keyboard key macros to an enum.
- * Use @getKeyName to get key name.
+ * Mapping from SDL keyboard keys.
+ *
+ * @remark Also see @ref getKeyName.
  */
 enum class KeyboardKey {
     KEY_UNKNOWN = SDLK_UNKNOWN,

@@ -1,5 +1,13 @@
 #include "game/Window.h"
 
+// Custom.
+#include "input/MouseButton.hpp"
+#include "input/GamepadButton.hpp"
+#include "input/KeyboardKey.hpp"
+
+// External.
+#include "render/SdlManager.hpp"
+
 std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName) {
     // Initialize SDL.
     SdlManager::init();
@@ -36,22 +44,22 @@ void Window::close() { bQuitRequested = true; }
 bool Window::processWindowEvent(const SDL_Event& event) {
     switch (event.type) {
     case (SDL_MOUSEMOTION): {
-        onMouseMove(event.motion.xrel, event.motion.yrel);
+        pGameManager->onMouseMove(event.motion.xrel, event.motion.yrel);
         break;
     }
     case (SDL_MOUSEBUTTONDOWN): {
-        onMouseInput(
+        pGameManager->onMouseInput(
             static_cast<MouseButton>(event.button.button), KeyboardModifiers(SDL_GetModState()), true);
         break;
     }
     case (SDL_MOUSEBUTTONUP): {
-        onMouseInput(
+        pGameManager->onMouseInput(
             static_cast<MouseButton>(event.button.button), KeyboardModifiers(SDL_GetModState()), false);
         break;
     }
     case (SDL_KEYDOWN): {
         if (event.key.repeat == 0) {
-            onKeyboardInput(
+            pGameManager->onKeyboardInput(
                 static_cast<KeyboardKey>(event.key.keysym.sym),
                 KeyboardModifiers(event.key.keysym.mod),
                 true);
@@ -59,28 +67,45 @@ bool Window::processWindowEvent(const SDL_Event& event) {
         break;
     }
     case (SDL_KEYUP): {
-        onKeyboardInput(
+        pGameManager->onKeyboardInput(
             static_cast<KeyboardKey>(event.key.keysym.sym), KeyboardModifiers(event.key.keysym.mod), false);
         break;
     }
     case (SDL_MOUSEWHEEL): {
-        onMouseScrollMove(event.wheel.y);
+        pGameManager->onMouseScrollMove(event.wheel.y);
+        break;
+    }
+    case (SDL_CONTROLLERBUTTONDOWN): {
+        pGameManager->onGamepadInput(static_cast<GamepadButton>(event.cbutton.button), true);
+        break;
+    }
+    case (SDL_CONTROLLERBUTTONUP): {
+        pGameManager->onGamepadInput(static_cast<GamepadButton>(event.cbutton.button), false);
         break;
     }
     case (SDL_WINDOWEVENT): {
         if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-            onWindowFocusChanged(true);
+            pGameManager->onWindowFocusChanged(true);
         } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-            onWindowFocusChanged(false);
+            pGameManager->onWindowFocusChanged(false);
         }
         break;
     }
     case (SDL_CONTROLLERDEVICEADDED): {
-        SDL_GameControllerOpen(event.cdevice.which);
+        if (pConnectedGamepad == nullptr) {
+            pConnectedGamepad = SDL_GameControllerOpen(event.cdevice.which);
+            const auto pControllerName = SDL_GameControllerName(pConnectedGamepad);
+            pGameManager->onGamepadConnected(pControllerName != nullptr ? pControllerName : "");
+        }
         break;
     }
     case (SDL_CONTROLLERDEVICEREMOVED): {
-        SDL_GameControllerClose(SDL_GameControllerFromInstanceID(event.cdevice.which));
+        if (pConnectedGamepad != nullptr &&
+            event.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pConnectedGamepad))) {
+            SDL_GameControllerClose(pConnectedGamepad);
+            pConnectedGamepad = nullptr;
+            pGameManager->onGamepadDisconnected();
+        }
         break;
     }
     case (SDL_QUIT): {
@@ -92,15 +117,15 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     return false;
 }
 
-void Window::onMouseMove(int iXOffset, int iYOffset) { pGameManager->onMouseMove(iXOffset, iYOffset); }
+SDL_GameController* Window::findConnectedGamepad() {
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            return SDL_GameControllerOpen(i);
+        }
+    }
 
-void Window::onWindowFocusChanged(bool bIsFocused) const { pGameManager->onWindowFocusChanged(bIsFocused); }
-
-void Window::onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown) const {
-    pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown);
+    return nullptr;
 }
-
-void Window::onMouseScrollMove(int iOffset) const { pGameManager->onMouseScrollMove(iOffset); }
 
 std::pair<unsigned int, unsigned int> Window::getWindowSize() const {
     int iWidth = 0;
@@ -123,10 +148,6 @@ std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
 SDL_Window* Window::getSdlWindow() const { return pSdlWindow; }
 
 GameManager* Window::getGameManager() const { return pGameManager.get(); }
-
-void Window::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const {
-    pGameManager->onMouseInput(button, modifiers, bIsPressedDown);
-}
 
 Window::Window(SDL_Window* pCreatedWindow) {
     pSdlWindow = pCreatedWindow;

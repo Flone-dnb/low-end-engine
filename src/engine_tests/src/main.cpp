@@ -14,5 +14,5 @@ int main() {
     OutputDebugStringA("Using release build configuration, memory checks are disabled.");
 #endif
 
-    Catch::Session().run();
+    return Catch::Session().run();
 }

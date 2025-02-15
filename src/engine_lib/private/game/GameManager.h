@@ -155,6 +155,14 @@ private:
     void onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown);
 
     /**
+     * Called when the game receives gamepad input.
+     *
+     * @param button         Gamepad button.
+     * @param bIsPressedDown Whether the button was pressed or released.
+     */
+    void onGamepadInput(GamepadButton button, bool bIsPressedDown);
+
+    /**
      * Called when the window (that owns this object) receives mouse input.
      *
      * @param button         Mouse button.
@@ -179,6 +187,16 @@ private:
     void onMouseScrollMove(int iOffset);
 
     /**
+     * Called after a gamepad controller was connected.
+     *
+     * @param sGamepadName Name of the connected gamepad.
+     */
+    void onGamepadConnected(std::string_view sGamepadName);
+
+    /** Called after a gamepad controller was disconnected. */
+    void onGamepadDisconnected();
+
+    /**
      * Called when the window focus was changed.
      *
      * @param bIsFocused  Whether the window has gained or lost the focus.
@@ -193,14 +211,16 @@ private:
     void onWindowClose() const;
 
     /**
-     * Triggers action events from keyboard/mouse input.
+     * Triggers action events from input.
      *
-     * @param key            Keyboard/mouse key.
+     * @param button         Button activated the event.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
+     * @param bIsPressedDown Whether the button down event occurred or button up.
      */
     void triggerActionEvents(
-        std::variant<KeyboardKey, MouseButton> key, KeyboardModifiers modifiers, bool bIsPressedDown);
+        std::variant<KeyboardKey, MouseButton, GamepadButton> button,
+        KeyboardModifiers modifiers,
+        bool bIsPressedDown);
 
     /**
      * Triggers axis events from keyboard input.

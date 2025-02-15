@@ -7,15 +7,13 @@
 
 // Custom.
 #include "misc/Error.h"
-#include "input/MouseButton.hpp"
-#include "input/KeyboardKey.hpp"
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "game/GameManager.h"
 #include "io/Logger.h"
 
 // External.
-#include "render/SdlManager.hpp"
+#include "SDL_timer.h"
 
 class GameManager;
 
@@ -86,37 +84,6 @@ public:
      */
     GameManager* getGameManager() const;
 
-    /**
-     * Called when the window receives mouse input.
-     *
-     * @remark Made public so you can simulate input in your tests.
-     *
-     * @param button         Mouse button.
-     * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the button down event occurred or button up.
-     */
-    void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const;
-
-    /**
-     * Called when the window receives keyboard input.
-     *
-     * @remark Made public so you can simulate input in your tests.
-     *
-     * @param key            Keyboard key.
-     * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
-     */
-    void onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown) const;
-
-    /**
-     * Called when the window receives mouse scroll movement.
-     *
-     * @remark Made public so you can simulate input in your tests.
-     *
-     * @param iOffset Movement offset. Positive is away from the user, negative otherwise.
-     */
-    void onMouseScrollMove(int iOffset) const;
-
 private:
     /**
      * Initializes the window.
@@ -138,19 +105,11 @@ private:
     bool processWindowEvent(const SDL_Event& event);
 
     /**
-     * Called when the window receives mouse movement.
+     * Looks for a connected gamepad and return it if found.
      *
-     * @param iXOffset Mouse X movement delta in pixels.
-     * @param iYOffset Mouse Y movement delta in pixels.
+     * @return `nullptr` if there's no gamepad connected.
      */
-    void onMouseMove(int iXOffset, int iYOffset);
-
-    /**
-     * Called when the window focus was changed.
-     *
-     * @param bIsFocused Whether the window has gained or lost the focus.
-     */
-    void onWindowFocusChanged(bool bIsFocused) const;
+    SDL_GameController* findConnectedGamepad();
 
     /** ID of the main thread. */
     std::thread::id mainThreadId;
@@ -161,6 +120,9 @@ private:
     /** SDL window. */
     SDL_Window* pSdlWindow = nullptr;
 
+    /** `nullptr` if there's a connected gamepad. */
+    SDL_GameController* pConnectedGamepad = nullptr;
+
     /** Used in the window message loop. */
     bool bQuitRequested = false;
 };
@@ -168,6 +130,9 @@ private:
 template <typename MyGameInstance>
     requires std::derived_from<MyGameInstance, GameInstance>
 inline void Window::processEvents() {
+    // Look for already connected gamepad.
+    pConnectedGamepad = findConnectedGamepad();
+
     // Create game manager.
     auto result = GameManager::create<MyGameInstance>(this);
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
@@ -179,6 +144,12 @@ inline void Window::processEvents() {
     pGameManager = std::get<std::unique_ptr<GameManager>>(std::move(result));
 
     pGameManager->onGameStarted();
+
+    // Notify game about controller state.
+    if (pConnectedGamepad != nullptr) {
+        const auto pControllerName = SDL_GameControllerName(pConnectedGamepad);
+        pGameManager->onGamepadConnected(pControllerName != nullptr ? pControllerName : "");
+    }
 
     // Save reference to the renderer.
     const auto pRenderer = pGameManager->getRenderer();

@@ -4,12 +4,11 @@
 #include <unordered_map>
 #include <mutex>
 #include <functional>
-#include <optional>
 
 // Custom.
 #include "input/KeyboardKey.hpp"
 #include "input/MouseButton.hpp"
-#include "misc/Error.h"
+#include "input/GamepadButton.hpp"
 
 class Window;
 class InputManager;
@@ -89,6 +88,14 @@ protected:
     virtual void onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown) {};
 
     /**
+     * Called when the game receives gamepad input.
+     *
+     * @param button         Gamepad button.
+     * @param bIsPressedDown Whether the button was pressed or released.
+     */
+    virtual void onGamepadInput(GamepadButton button, bool bIsPressedDown) {};
+
+    /**
      * Called when the window (that owns this object) receives mouse input.
      *
      * @param button         Mouse button.
@@ -111,6 +118,16 @@ protected:
      * @param iOffset Movement offset. Positive is away from the user, negative otherwise.
      */
     virtual void onMouseScrollMove(int iOffset) {}
+
+    /**
+     * Called after a gamepad controller was connected.
+     *
+     * @param sGamepadName Name of the connected gamepad.
+     */
+    virtual void onGamepadConnected(std::string_view sGamepadName) {}
+
+    /** Called after a gamepad controller was disconnected. */
+    virtual void onGamepadDisconnected() {};
 
     /**
      * Called when the window focus was changed.

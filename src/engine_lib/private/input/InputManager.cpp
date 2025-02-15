@@ -11,7 +11,7 @@
 #include "io/ConfigManager.h"
 
 std::optional<Error> InputManager::addActionEvent(
-    unsigned int iActionId, const std::vector<std::variant<KeyboardKey, MouseButton>>& vKeys) {
+    unsigned int iActionId, const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>& vKeys) {
     // Make sure there is an least one key specified to trigger this event.
     if (vKeys.empty()) {
         return Error("vKeys is empty");
@@ -63,8 +63,8 @@ std::optional<Error> InputManager::addAxisEvent(
 
 std::optional<Error> InputManager::modifyActionEventKey(
     unsigned int iActionId,
-    std::variant<KeyboardKey, MouseButton> oldKey,
-    std::variant<KeyboardKey, MouseButton> newKey) {
+    std::variant<KeyboardKey, MouseButton, GamepadButton> oldKey,
+    std::variant<KeyboardKey, MouseButton, GamepadButton> newKey) {
     std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
 
     // See if this action exists.
@@ -276,7 +276,7 @@ std::optional<Error> InputManager::loadFromFile(std::string_view sFileName) { //
 
             // Split string and process each key.
             std::vector<std::string> vActionKeys = splitString(keys, ",");
-            std::vector<std::variant<KeyboardKey, MouseButton>> vOutActionKeys;
+            std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vOutActionKeys;
             for (const auto& key : vActionKeys) {
                 if (key[0] == 'k') {
                     // KeyboardKey.
@@ -427,20 +427,20 @@ std::optional<Error> InputManager::loadFromFile(std::string_view sFileName) { //
 }
 
 std::pair<std::vector<unsigned int>, std::vector<unsigned int>>
-InputManager::isKeyUsed(const std::variant<KeyboardKey, MouseButton>& key) {
+InputManager::isKeyUsed(const std::variant<KeyboardKey, MouseButton, GamepadButton>& key) {
     std::scoped_lock<std::recursive_mutex> guard1(mtxActionEvents);
     std::scoped_lock<std::recursive_mutex> guard2(mtxAxisEvents);
 
     std::vector<unsigned int> vUsedActionEvents;
     std::vector<unsigned int> vUsedAxisEvents;
 
-    // Action events.
+    // Check action events.
     const auto actionIt = actionEvents.find(key);
     if (actionIt != actionEvents.end()) {
         vUsedActionEvents = actionIt->second;
     }
 
-    // Axis events.
+    // Check axis events.
     if (std::holds_alternative<KeyboardKey>(key)) {
         const auto keyboardKey = std::get<KeyboardKey>(key);
 
@@ -455,10 +455,11 @@ InputManager::isKeyUsed(const std::variant<KeyboardKey, MouseButton>& key) {
     return std::make_pair(vUsedActionEvents, vUsedAxisEvents);
 }
 
-std::vector<std::variant<KeyboardKey, MouseButton>> InputManager::getActionEvent(unsigned int iActionId) {
+std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>
+InputManager::getActionEvent(unsigned int iActionId) {
     std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
 
-    std::vector<std::variant<KeyboardKey, MouseButton>> vKeys;
+    std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>> vKeys;
 
     // Look if this action exists, get all keys.
     for (const auto& [key, vEvents] : actionEvents) {
@@ -636,11 +637,12 @@ bool InputManager::removeAxisEvent(unsigned int iAxisEventId) {
     return !bFound;
 }
 
-std::unordered_map<unsigned int, std::vector<std::variant<KeyboardKey, MouseButton>>>
+std::unordered_map<unsigned int, std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>>
 InputManager::getAllActionEvents() {
     std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
 
-    std::unordered_map<unsigned int, std::vector<std::variant<KeyboardKey, MouseButton>>> actions;
+    std::unordered_map<unsigned int, std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>>
+        actions;
 
     // Get all action names first.
     for (const auto& [key, sActionName] : actionEvents) {
@@ -703,7 +705,7 @@ InputManager::splitString(const std::string& sStringToSplit, const std::string& 
 }
 
 std::optional<Error> InputManager::overwriteActionEvent(
-    unsigned int iActionId, const std::vector<std::variant<KeyboardKey, MouseButton>>& vKeys) {
+    unsigned int iActionId, const std::vector<std::variant<KeyboardKey, MouseButton, GamepadButton>>& vKeys) {
     std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
 
     // Remove all keys with this action if exists.
