@@ -6,7 +6,7 @@
 
 GameInstance::GameInstance(Window* pWindow) : pWindow(pWindow) {}
 
-void GameInstance::createWorld(const std::function<void(const std::optional<Error>&)>& onCreated) {
+void GameInstance::createWorld(const std::function<void()>& onCreated) {
     pWindow->getGameManager()->createWorld(onCreated);
 }
 

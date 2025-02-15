@@ -42,7 +42,7 @@ GameManager::~GameManager() {
     pRenderer = nullptr;
 }
 
-void GameManager::createWorld(const std::function<void(const std::optional<Error>&)>& onCreated) {
+void GameManager::createWorld(const std::function<void()>& onCreated) {
     std::scoped_lock guard(mtxWorldData.first);
 
     // Create new world on next tick because we might be currently iterating over "tickable" nodes
@@ -74,7 +74,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
             mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
 
             // Done.
-            mtxWorldData.second.pendingWorldCreationTask->onCreated({});
+            mtxWorldData.second.pendingWorldCreationTask->onCreated();
             mtxWorldData.second.pendingWorldCreationTask = {};
         }
     }
