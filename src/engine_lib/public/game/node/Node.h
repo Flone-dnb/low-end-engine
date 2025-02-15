@@ -10,7 +10,7 @@
 #include <memory>
 
 // Custom.
-#include "input/KeyboardKey.hpp"
+#include "input/KeyboardButton.hpp"
 
 class GameInstance;
 class World;

@@ -6,7 +6,7 @@
 #include <functional>
 
 // Custom.
-#include "input/KeyboardKey.hpp"
+#include "input/KeyboardButton.hpp"
 #include "input/MouseButton.hpp"
 #include "input/GamepadButton.hpp"
 
@@ -85,7 +85,7 @@ protected:
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown) {};
+    virtual void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {};
 
     /**
      * Called when the game receives gamepad input.

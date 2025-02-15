@@ -49,7 +49,7 @@ set(PROJECT_SOURCES
     private/game/node/Node.cpp
     public/game/node/Node.h
     public/input/InputManager.h
-    public/input/KeyboardKey.hpp
+    public/input/KeyboardButton.hpp
     public/input/MouseButton.hpp
     public/input/GamepadButton.hpp
     private/input/InputManager.cpp

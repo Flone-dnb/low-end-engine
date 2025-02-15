@@ -14,6 +14,7 @@
 
 // External.
 #include "SDL_timer.h"
+#include "SDL_events.h"
 
 class GameManager;
 

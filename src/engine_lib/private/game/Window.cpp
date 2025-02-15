@@ -1,10 +1,5 @@
 #include "game/Window.h"
 
-// Custom.
-#include "input/MouseButton.hpp"
-#include "input/GamepadButton.hpp"
-#include "input/KeyboardKey.hpp"
-
 // External.
 #include "render/SdlManager.hpp"
 
@@ -60,7 +55,7 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     case (SDL_KEYDOWN): {
         if (event.key.repeat == 0) {
             pGameManager->onKeyboardInput(
-                static_cast<KeyboardKey>(event.key.keysym.sym),
+                static_cast<KeyboardButton>(event.key.keysym.sym),
                 KeyboardModifiers(event.key.keysym.mod),
                 true);
         }
@@ -68,7 +63,9 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     }
     case (SDL_KEYUP): {
         pGameManager->onKeyboardInput(
-            static_cast<KeyboardKey>(event.key.keysym.sym), KeyboardModifiers(event.key.keysym.mod), false);
+            static_cast<KeyboardButton>(event.key.keysym.sym),
+            KeyboardModifiers(event.key.keysym.mod),
+            false);
         break;
     }
     case (SDL_MOUSEWHEEL): {

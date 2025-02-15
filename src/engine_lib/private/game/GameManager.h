@@ -8,7 +8,7 @@
 #include <filesystem>
 
 // Custom.
-#include "input/KeyboardKey.hpp"
+#include "input/KeyboardButton.hpp"
 #include "input/MouseButton.hpp"
 #include "input/InputManager.h"
 #include "misc/Error.h"
@@ -152,7 +152,7 @@ private:
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    void onKeyboardInput(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown);
+    void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
 
     /**
      * Called when the game receives gamepad input.
@@ -218,7 +218,7 @@ private:
      * @param bIsPressedDown Whether the button down event occurred or button up.
      */
     void triggerActionEvents(
-        std::variant<KeyboardKey, MouseButton, GamepadButton> button,
+        std::variant<KeyboardButton, MouseButton, GamepadButton> button,
         KeyboardModifiers modifiers,
         bool bIsPressedDown);
 
@@ -229,7 +229,7 @@ private:
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    void triggerAxisEvents(KeyboardKey key, KeyboardModifiers modifiers, bool bIsPressedDown);
+    void triggerAxisEvents(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
 
     /** Binds action/axis names with input keys. */
     InputManager inputManager;
