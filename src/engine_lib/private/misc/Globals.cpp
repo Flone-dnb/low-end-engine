@@ -11,6 +11,7 @@
 #include <Shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 #elif __linux__
+#include <mutex>
 #include <unistd.h>
 #include <sys/types.h>
 #include <cstddef>

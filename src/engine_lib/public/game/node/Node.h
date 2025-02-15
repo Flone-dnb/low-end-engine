@@ -7,11 +7,13 @@
 #include <optional>
 #include <unordered_map>
 #include <functional>
+#include <memory>
 
 // Custom.
 #include "input/KeyboardKey.hpp"
 
 class GameInstance;
+class World;
 
 /**
  * Describes the order of ticking. Every object of the first tick group will tick first

@@ -15,7 +15,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
         SDL_WINDOWPOS_CENTERED,
         mode.w,
         mode.h,
-        SDL_WINDOW_OPENGL);
+        SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP);
     if (pSdlWindow == nullptr) [[unlikely]] {
         return Error(SDL_GetError());
     }
