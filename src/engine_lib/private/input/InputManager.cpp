@@ -5,9 +5,9 @@
 #include <string>
 #include <format>
 #include <vector>
+#include <unordered_set>
 
 // Custom.
-#include "io/Logger.h"
 #include "io/ConfigManager.h"
 
 std::optional<Error> InputManager::addActionEvent(
@@ -38,10 +38,12 @@ std::optional<Error> InputManager::addActionEvent(
 }
 
 std::optional<Error> InputManager::addAxisEvent(
-    unsigned int iAxisEventId, const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vTriggerPairs) {
+    unsigned int iAxisEventId,
+    const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vKeyboardTriggers,
+    const std::vector<GamepadAxis>& vGamepadAxis) {
     // Make sure there is an least one button specified to trigger this event.
-    if (vTriggerPairs.empty()) [[unlikely]] {
-        return Error("vAxis is empty");
+    if (vKeyboardTriggers.empty() && vGamepadAxis.empty()) [[unlikely]] {
+        return Error("specified array of triggers is empty");
     }
 
     std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
@@ -54,7 +56,7 @@ std::optional<Error> InputManager::addAxisEvent(
     }
 
     // Add axis event.
-    auto optionalError = overwriteAxisEvent(iAxisEventId, vTriggerPairs);
+    auto optionalError = overwriteAxisEvent(iAxisEventId, vKeyboardTriggers, vGamepadAxis);
     if (optionalError.has_value()) [[unlikely]] {
         optionalError->addCurrentLocationToErrorStack();
         return optionalError.value();
@@ -108,11 +110,11 @@ std::optional<Error> InputManager::modifyAxisEvent(
         return Error(std::format("no axis event with the ID {} exists", iAxisEventId));
     }
 
-    auto vAxisKeys = getAxisEventTriggers(iAxisEventId);
+    auto [vKeyboardTriggers, vGamepadTriggers] = getAxisEventTriggers(iAxisEventId);
 
     // Replace old trigger pair.
     bool bOldTriggerExists = false;
-    for (auto& pair : vAxisKeys) {
+    for (auto& pair : vKeyboardTriggers) {
         if (pair == oldPair) {
             bOldTriggerExists = true;
             pair = newPair;
@@ -124,7 +126,43 @@ std::optional<Error> InputManager::modifyAxisEvent(
     }
 
     // Overwrite event with new triggers.
-    auto optionalError = overwriteAxisEvent(iAxisEventId, vAxisKeys);
+    auto optionalError = overwriteAxisEvent(iAxisEventId, vKeyboardTriggers, vGamepadTriggers);
+    if (optionalError.has_value()) [[unlikely]] {
+        optionalError->addCurrentLocationToErrorStack();
+        return optionalError.value();
+    }
+
+    return {};
+}
+
+std::optional<Error>
+InputManager::modifyAxisEvent(unsigned int iAxisEventId, GamepadAxis oldAxis, GamepadAxis newAxis) {
+    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
+
+    // Get the specified axis event buttons.
+    const auto axes = getAllAxisEvents();
+    const auto it = axes.find(iAxisEventId);
+    if (it == axes.end()) [[unlikely]] {
+        return Error(std::format("no axis event with the ID {} exists", iAxisEventId));
+    }
+
+    auto [vKeyboardTriggers, vGamepadTriggers] = getAxisEventTriggers(iAxisEventId);
+
+    // Replace old trigger.
+    bool bOldTriggerExists = false;
+    for (auto& axis : vGamepadTriggers) {
+        if (axis == oldAxis) {
+            bOldTriggerExists = true;
+            axis = newAxis;
+            break;
+        }
+    }
+    if (!bOldTriggerExists) [[unlikely]] {
+        return Error("the specified old trigger pair was not found");
+    }
+
+    // Overwrite event with new triggers.
+    auto optionalError = overwriteAxisEvent(iAxisEventId, vKeyboardTriggers, vGamepadTriggers);
     if (optionalError.has_value()) [[unlikely]] {
         optionalError->addCurrentLocationToErrorStack();
         return optionalError.value();
@@ -140,18 +178,31 @@ std::optional<Error> InputManager::saveToFile(std::string_view sFileName) {
 
     ConfigManager manager;
 
-    // Action events.
+    // Save action events.
     for (const auto& [iActionId, vActionKeys] : allActionEvents) {
         std::string sActionKeysText;
 
         // Put all keys in a string.
-        for (const auto& key : vActionKeys) {
-            if (std::holds_alternative<KeyboardButton>(key)) {
-                sActionKeysText +=
-                    std::format("k{},", std::to_string(static_cast<int>(std::get<KeyboardButton>(key))));
-            } else {
-                sActionKeysText +=
-                    std::format("m{},", std::to_string(static_cast<int>(std::get<MouseButton>(key))));
+        for (const auto& button : vActionKeys) {
+            if (std::holds_alternative<KeyboardButton>(button)) {
+                sActionKeysText += std::format(
+                    "{}{},",
+                    keyboardButtonPrefixInFile,
+                    std::to_string(static_cast<int>(std::get<KeyboardButton>(button))));
+            } else if (std::holds_alternative<MouseButton>(button)) {
+                sActionKeysText += std::format(
+                    "{}{},",
+                    mouseButtonPrefixInFile,
+                    std::to_string(static_cast<int>(std::get<MouseButton>(button))));
+            } else if (std::holds_alternative<GamepadButton>(button)) {
+                sActionKeysText += std::format(
+                    "{}{},",
+                    gamepadButtonPrefixInFile,
+                    std::to_string(static_cast<int>(std::get<GamepadButton>(button))));
+            } else [[unlikely]] {
+                Error error("unhandled case");
+                error.showError();
+                throw std::runtime_error(error.getFullErrorMessage());
             }
         }
 
@@ -162,28 +213,40 @@ std::optional<Error> InputManager::saveToFile(std::string_view sFileName) {
             sActionEventFileSectionName, std::to_string(iActionId), sActionKeysText);
     }
 
-    // Axis events.
-    for (const auto& [iAxisEventId, vAxisKeys] : allAxisEvents) {
-        std::string sAxisKeysText;
+    // Save axis events.
+    for (const auto& [iAxisEventId, axisEvents] : allAxisEvents) {
+        const auto& [vKeyboardButtons, vGamepadAxis] = axisEvents;
 
-        // Put all keys in a string.
-        for (const auto& pair : vAxisKeys) {
-            sAxisKeysText += std::format(
-                "{}-{},",
-                std::to_string(static_cast<int>(pair.first)),
-                std::to_string(static_cast<int>(pair.second)));
+        {
+            // Gather keyboard button pairs in an array.
+            std::vector<int> vKeyboardButtonCodes;
+            vKeyboardButtonCodes.reserve(vKeyboardButtons.size() * 2);
+            for (const auto& pair : vKeyboardButtons) {
+                vKeyboardButtonCodes.push_back(static_cast<int>(pair.first));
+                vKeyboardButtonCodes.push_back(static_cast<int>(pair.second));
+            }
+            manager.setValue(
+                sKeyboardAxisEventFileSectionName, std::to_string(iAxisEventId), vKeyboardButtonCodes);
         }
 
-        sAxisKeysText.pop_back(); // pop comma
-
-        manager.setValue<std::string>(sAxisEventFileSectionName, std::to_string(iAxisEventId), sAxisKeysText);
+        {
+            // Same thing with gamepad.
+            std::vector<int> vGamepadCodes;
+            vGamepadCodes.reserve(vGamepadAxis.size());
+            for (const auto& gamepadAxis : vGamepadAxis) {
+                vGamepadCodes.push_back(static_cast<int>(gamepadAxis));
+            }
+            manager.setValue(sGamepadAxisEventFileSectionName, std::to_string(iAxisEventId), vGamepadCodes);
+        }
     }
 
-    auto optional = manager.saveFile(ConfigCategory::SETTINGS, sFileName);
-    if (optional.has_value()) {
-        optional->addCurrentLocationToErrorStack();
-        return std::move(optional.value());
+    // Save to disk.
+    auto optionalError = manager.saveFile(ConfigCategory::SETTINGS, sFileName);
+    if (optionalError.has_value()) [[unlikely]] {
+        optionalError->addCurrentLocationToErrorStack();
+        return optionalError.value();
     }
+
     return {};
 }
 
@@ -203,37 +266,9 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
         return Error(std::format("the specified file \"{}\" has no sections", sFileName));
     }
 
-    // Check that we only have 1 or 2 sections.
-    if (vSections.size() > 2) [[unlikely]] {
-        return Error(std::format(
-            "the specified file \"{}\" has {} sections, while expected only 1 or 2 sections",
-            sFileName,
-            vSections.size()));
-    }
-
-    // Check TOML section names.
-    bool bHasActionEventsSection = false;
-    bool bHasAxisEventsSection = false;
-    for (const auto& sSectionName : vSections) {
-        if (sSectionName == sActionEventFileSectionName) {
-            bHasActionEventsSection = true;
-        } else if (sSectionName == sAxisEventFileSectionName) {
-            bHasAxisEventsSection = true;
-        } else {
-            return Error(std::format("section \"{}\" has unexpected name", sSectionName));
-        }
-    }
-
     // Add action events.
-    if (bHasActionEventsSection) {
-        auto variant = manager.getAllKeysOfSection(sActionEventFileSectionName);
-        if (std::holds_alternative<Error>(variant)) [[unlikely]] {
-            auto error = std::get<Error>(std::move(variant));
-            error.addCurrentLocationToErrorStack();
-            return error;
-        }
-        auto vFileActionEventNames = std::get<std::vector<std::string>>(std::move(variant));
-
+    const auto vFileActionEventNames = manager.getAllKeysOfSection(sActionEventFileSectionName);
+    if (!vFileActionEventNames.empty()) {
         // Convert action event names to uints.
         std::vector<unsigned int> vFileActionEvents;
         for (const auto& sNumber : vFileActionEventNames) {
@@ -282,8 +317,7 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
             std::vector<std::string> vActionKeys = splitString(keys, ",");
             std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>> vOutActionKeys;
             for (const auto& key : vActionKeys) {
-                if (key[0] == 'k') {
-                    // KeyboardKey.
+                if (key[0] == keyboardButtonPrefixInFile) {
                     int iKeyboardKey = -1;
                     auto keyString = key.substr(1);
                     auto [ptr, ec] =
@@ -296,8 +330,7 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
                     }
 
                     vOutActionKeys.push_back(static_cast<KeyboardButton>(iKeyboardKey));
-                } else if (key[0] == 'm') {
-                    // MouseButton.
+                } else if (key[0] == mouseButtonPrefixInFile) {
                     int iMouseButton = -1;
                     auto keyString = key.substr(1);
                     auto [ptr, ec] =
@@ -310,6 +343,23 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
                     }
 
                     vOutActionKeys.push_back(static_cast<MouseButton>(iMouseButton));
+                } else if (key[0] == gamepadButtonPrefixInFile) {
+                    int iGamepadButton = -1;
+                    auto keyString = key.substr(1);
+                    auto [ptr, ec] = std::from_chars(
+                        keyString.data(), keyString.data() + keyString.size(), iGamepadButton);
+                    if (ec != std::errc()) {
+                        return Error(std::format(
+                            "failed to convert '{}' to gamepad button code (error code: {})",
+                            keyString,
+                            static_cast<int>(ec)));
+                    }
+
+                    vOutActionKeys.push_back(static_cast<GamepadButton>(iGamepadButton));
+                } else [[unlikely]] {
+                    Error error("unhandled case");
+                    error.showError();
+                    throw std::runtime_error(error.getFullErrorMessage());
                 }
             }
 
@@ -322,105 +372,84 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
         }
     }
 
-    // Add axis events.
-    if (bHasAxisEventsSection) {
-        auto variant = manager.getAllKeysOfSection(sAxisEventFileSectionName);
-        if (std::holds_alternative<Error>(variant)) [[unlikely]] {
-            auto error = std::get<Error>(std::move(variant));
-            error.addCurrentLocationToErrorStack();
-            return error;
-        }
-        auto vFileAxisEventNames = std::get<std::vector<std::string>>(std::move(variant));
+    // Add keyboard axis events.
+    auto vFileKeyboardAxisEventNames = manager.getAllKeysOfSection(sKeyboardAxisEventFileSectionName);
+    const auto vFileGamepadAxisEventNames = manager.getAllKeysOfSection(sGamepadAxisEventFileSectionName);
+    if (!vFileKeyboardAxisEventNames.empty() || !vFileGamepadAxisEventNames.empty()) {
+        // Group event names.
+        auto vFileAxisEventNames = std::move(vFileKeyboardAxisEventNames);
+        vFileAxisEventNames.insert(
+            vFileAxisEventNames.end(), vFileGamepadAxisEventNames.begin(), vFileGamepadAxisEventNames.end());
 
-        // Convert axis event names to uints.
-        std::vector<unsigned int> vFileAxisEvents;
+        // Convert event ID (string) to unsigned int.
+        std::unordered_set<unsigned int> fileAxisEvents;
         for (const auto& sNumber : vFileAxisEventNames) {
             try {
                 // First convert as unsigned long and see if it's out of range.
                 const auto iUnsignedLong = std::stoul(sNumber);
-                if (iUnsignedLong > UINT_MAX) {
+                if (iUnsignedLong > UINT_MAX) [[unlikely]] {
                     throw std::out_of_range(sNumber);
                 }
 
                 // Add new ID.
-                vFileAxisEvents.push_back(static_cast<unsigned int>(iUnsignedLong));
+                fileAxisEvents.insert(static_cast<unsigned int>(iUnsignedLong));
             } catch (const std::exception& exception) {
                 return Error(
                     std::format("failed to convert \"{}\" to ID, error: {}", sNumber, exception.what()));
             }
         }
 
-        // Get a copy of all registered axis events.
-        const auto currentAxisEvents = getAllAxisEvents();
-
         std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
 
-        for (const auto& [iAxisEventId, value] : currentAxisEvents) {
-            // Look for this axis event in file.
-            bool bFoundAxisEventInFileActions = false;
-            for (const auto& iFileAxisEventId : vFileAxisEvents) {
-                if (iFileAxisEventId == iAxisEventId) {
-                    bFoundAxisEventInFileActions = true;
-                    break;
-                }
-            }
-            if (!bFoundAxisEventInFileActions) {
-                // We don't have such axis event registered so don't import keys.
+        // Create a copy of all axis event IDs because we will modify axis event states in the loop below.
+        std::vector<unsigned int> vCurrentAxisEventIds;
+        vCurrentAxisEventIds.reserve(axisEventStates.size());
+        for (const auto& [iAxisEventId, state] : axisEventStates) {
+            vCurrentAxisEventIds.push_back(iAxisEventId);
+        }
+
+        for (const auto& iAxisEventId : vCurrentAxisEventIds) {
+            // Look for this event ID in the file.
+            const auto foundEventIt = fileAxisEvents.find(iAxisEventId);
+            if (foundEventIt == fileAxisEvents.end()) {
+                // We don't have such axis event registered so don't import the triggers.
                 continue;
             }
 
-            // Read keys from this axis.
-            std::string keys =
-                manager.getValue<std::string>(sAxisEventFileSectionName, std::to_string(iAxisEventId), "");
-            if (keys.empty()) {
+            // Read triggers from file.
+            auto vKeyboardTriggersFromFile = manager.getValue<std::vector<int>>(
+                sKeyboardAxisEventFileSectionName, std::to_string(iAxisEventId), {});
+            auto vGamepadTriggersFromFile = manager.getValue<std::vector<int>>(
+                sGamepadAxisEventFileSectionName, std::to_string(iAxisEventId), {});
+            if (vKeyboardTriggersFromFile.empty() && vGamepadTriggersFromFile.empty()) {
                 continue;
             }
 
-            // Split string and process each key.
-            std::vector<std::string> vAxisKeys = splitString(keys, ",");
-            std::vector<std::pair<KeyboardButton, KeyboardButton>> vOutAxisKeys;
-            for (const auto& key : vAxisKeys) {
-                std::vector<std::string> vTriggerPairs = splitString(key, "-");
-
-                if (vTriggerPairs.size() != 2) {
-                    return Error(std::format("axis entry '{}' does not have 2 keys", key));
-                }
-
-                // Convert the first one.
-                int iKeyboardPositiveTrigger = -1;
-                auto [ptr1, ec1] = std::from_chars(
-                    vTriggerPairs[0].data(),
-                    vTriggerPairs[0].data() + vTriggerPairs[0].size(),
-                    iKeyboardPositiveTrigger);
-                if (ec1 != std::errc()) [[unlikely]] {
-                    return Error(std::format(
-                        "failed to convert the first key of axis entry '{}' "
-                        "to keyboard key code (error code: {})",
-                        key,
-                        static_cast<int>(ec1)));
-                }
-
-                // Convert the second one.
-                int iKeyboardNegativeTrigger = -1;
-                auto [ptr2, ec2] = std::from_chars(
-                    vTriggerPairs[1].data(),
-                    vTriggerPairs[1].data() + vTriggerPairs[1].size(),
-                    iKeyboardNegativeTrigger);
-                if (ec2 != std::errc()) [[unlikely]] {
-                    return Error(std::format(
-                        "failed to convert the second key of axis entry '{}' "
-                        "to keyboard key code (error code: {})",
-                        key,
-                        static_cast<int>(ec2)));
-                }
-
-                vOutAxisKeys.push_back(std::make_pair<KeyboardButton, KeyboardButton>(
-                    static_cast<KeyboardButton>(iKeyboardPositiveTrigger),
-                    static_cast<KeyboardButton>(iKeyboardNegativeTrigger)));
+            // Make sure keyboard triggers array has valid size.
+            if (vKeyboardTriggersFromFile.size() % 2 != 0) [[unlikely]] {
+                return Error(std::format(
+                    "keyboard axis event buttons don't seem to store pairs of buttons, unexpected array "
+                    "size: {}",
+                    vKeyboardTriggersFromFile.size()));
             }
 
-            // Add keys (replace old ones).
-            optionalError = overwriteAxisEvent(iAxisEventId, vOutAxisKeys);
+            std::vector<std::pair<KeyboardButton, KeyboardButton>> vNewKeyboardTriggers;
+            vNewKeyboardTriggers.reserve(vKeyboardTriggersFromFile.size());
+            std::vector<GamepadAxis> vNewGamepadTriggers;
+            vNewGamepadTriggers.reserve(vGamepadTriggersFromFile.size());
+
+            // Cast int to enum.
+            for (size_t i = 0; i < vKeyboardTriggersFromFile.size(); i += 2) {
+                vNewKeyboardTriggers.push_back(
+                    {static_cast<KeyboardButton>(vKeyboardTriggersFromFile[i]),
+                     static_cast<KeyboardButton>(vKeyboardTriggersFromFile[i + 1])});
+            }
+            for (const auto& iGamepadAxis : vGamepadTriggersFromFile) {
+                vNewGamepadTriggers.push_back(static_cast<GamepadAxis>(iGamepadAxis));
+            }
+
+            // Replace old triggers.
+            optionalError = overwriteAxisEvent(iAxisEventId, vNewKeyboardTriggers, vNewGamepadTriggers);
             if (optionalError.has_value()) [[unlikely]] {
                 optionalError->addCurrentLocationToErrorStack();
                 return std::move(optionalError.value());
@@ -431,6 +460,8 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
     return {};
 }
 
+void InputManager::setGamepadDeadzone(float deadzone) { gamepadDeadzone = deadzone; }
+
 std::pair<std::vector<unsigned int>, std::vector<unsigned int>>
 InputManager::isButtonUsed(const std::variant<KeyboardButton, MouseButton, GamepadButton>& button) {
     std::scoped_lock guard(mtxActionEvents, mtxAxisEvents);
@@ -439,8 +470,8 @@ InputManager::isButtonUsed(const std::variant<KeyboardButton, MouseButton, Gamep
     std::vector<unsigned int> vUsedAxisEvents;
 
     // Check action events.
-    const auto foundActionEventIt = actionEvents.find(button);
-    if (foundActionEventIt != actionEvents.end()) {
+    const auto foundActionEventIt = buttonToActionEvents.find(button);
+    if (foundActionEventIt != buttonToActionEvents.end()) {
         vUsedActionEvents = foundActionEventIt->second;
     }
 
@@ -448,8 +479,8 @@ InputManager::isButtonUsed(const std::variant<KeyboardButton, MouseButton, Gamep
     if (std::holds_alternative<KeyboardButton>(button)) {
         const auto keyboardKey = std::get<KeyboardButton>(button);
 
-        const auto foundAxisEventIt = axisEvents.find(keyboardKey);
-        if (foundAxisEventIt != axisEvents.end()) {
+        const auto foundAxisEventIt = keyboardButtonToAxisEvents.find(keyboardKey);
+        if (foundAxisEventIt != keyboardButtonToAxisEvents.end()) {
             for (const auto& [iAxisId, value] : foundAxisEventIt->second) {
                 vUsedAxisEvents.push_back(iAxisId);
             }
@@ -463,97 +494,55 @@ std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>
 InputManager::getActionEventButtons(unsigned int iActionId) {
     std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
 
-    std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>> vKeys;
+    std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>> vButtons;
 
     // Look if this action exists, get all keys.
-    for (const auto& [key, vEvents] : actionEvents) {
+    for (const auto& [key, vEvents] : buttonToActionEvents) {
         for (const auto& iEventId : vEvents) {
             if (iEventId == iActionId) {
-                vKeys.push_back(key);
+                vButtons.push_back(key);
             }
         }
     }
 
-    return vKeys;
+    return vButtons;
 }
 
-std::vector<std::pair<KeyboardButton, KeyboardButton>>
+std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>
 InputManager::getAxisEventTriggers(unsigned int iAxisEventId) {
     std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
 
-    // Find only positive triggers.
-    std::vector<KeyboardButton> vPositiveTriggers;
-    for (const auto& [trigger, vEvents] : axisEvents) {
-        for (const auto& [iRegisteredAxisEventId, bTriggersPositiveInput] : vEvents) {
-            if (!bTriggersPositiveInput) {
-                // We are not interested in this now.
-                continue;
-            }
-
-            if (iRegisteredAxisEventId == iAxisEventId) {
-                vPositiveTriggers.push_back(trigger);
-            }
-        }
-    }
-
-    if (vPositiveTriggers.empty()) {
+    // Get event state.
+    const auto eventIt = axisEventStates.find(iAxisEventId);
+    if (eventIt == axisEventStates.end()) [[unlikely]] {
         return {};
     }
 
-    // Add correct negative triggers to each positive trigger using info from states.
-    std::vector<KeyboardButton> vNegativeTriggers;
-    const auto vAxisEventStates = axisState[iAxisEventId].first;
-
-    for (const auto& positiveTrigger : vPositiveTriggers) {
-        // Find a state that has this positive key.
-        std::optional<KeyboardButton> foundNegativeTrigger;
-        for (const auto& state : vAxisEventStates) {
-            if (state.positiveTrigger == positiveTrigger) {
-                foundNegativeTrigger = state.negativeTrigger;
-                break;
-            }
-        }
-        if (!foundNegativeTrigger.has_value()) [[unlikely]] {
-            Logger::get().error(std::format(
-                "can't find negative trigger for positive trigger in axis event with ID {}", iAxisEventId));
-            return {};
-        }
-
-        // Add found negative trigger from the state.
-        vNegativeTriggers.push_back(foundNegativeTrigger.value());
+    // Collect triggers from state.
+    std::vector<std::pair<KeyboardButton, KeyboardButton>> vKeyboardTriggers;
+    for (const auto& state : eventIt->second.vKeyboardTriggers) {
+        vKeyboardTriggers.push_back({state.positiveTrigger, state.negativeTrigger});
     }
 
-    // Check sizes.
-    if (vPositiveTriggers.size() != vNegativeTriggers.size()) [[unlikely]] {
-        Logger::get().error(std::format(
-            "not equal size of positive and negative triggers, found {} positive trigger(s) and {} "
-            "negative trigger(s) for axis event with ID {}",
-            vPositiveTriggers.size(),
-            vNegativeTriggers.size(),
-            iAxisEventId));
-        return {};
+    // Collect triggers from state.
+    std::vector<GamepadAxis> vGamepadTriggers;
+    for (const auto& state : eventIt->second.vGamepadTriggers) {
+        vGamepadTriggers.push_back(state.trigger);
     }
 
-    // Fill axis.
-    std::vector<std::pair<KeyboardButton, KeyboardButton>> vAxisKeys;
-    vAxisKeys.reserve(vPositiveTriggers.size());
-    for (size_t i = 0; i < vPositiveTriggers.size(); i++) {
-        vAxisKeys.push_back(std::make_pair(vPositiveTriggers[i], vNegativeTriggers[i]));
-    }
-
-    return vAxisKeys;
+    return {vKeyboardTriggers, vGamepadTriggers};
 }
 
 float InputManager::getCurrentAxisEventState(unsigned int iAxisEventId) {
     std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
 
     // Find the specified axis event by ID.
-    const auto stateIt = axisState.find(iAxisEventId);
-    if (stateIt == axisState.end()) {
+    const auto stateIt = axisEventStates.find(iAxisEventId);
+    if (stateIt == axisEventStates.end()) {
         return 0.0F;
     }
 
-    return static_cast<float>(stateIt->second.second);
+    return stateIt->second.state;
 }
 
 bool InputManager::removeActionEvent(unsigned int iActionId) {
@@ -562,7 +551,7 @@ bool InputManager::removeActionEvent(unsigned int iActionId) {
     bool bFound = false;
 
     // Look if this action exists and remove all entries.
-    for (auto it = actionEvents.begin(); it != actionEvents.end();) {
+    for (auto it = buttonToActionEvents.begin(); it != buttonToActionEvents.end();) {
         // Remove all events with the specified ID.
         size_t iErasedItemCount = 0;
         for (auto eventIt = it->second.begin(); eventIt != it->second.end();) {
@@ -581,19 +570,18 @@ bool InputManager::removeActionEvent(unsigned int iActionId) {
             bFound = true;
         }
 
-        // Check if we need to remove this key from map.
+        // If there are no events associated with this keyboard button just remove this entry from the map.
         if (it->second.empty()) {
-            // Remove key for this event as there are no events registered to this key.
-            it = actionEvents.erase(it);
+            it = buttonToActionEvents.erase(it);
         } else {
             ++it;
         }
     }
 
     // Remove action state.
-    const auto it = actionEventsTriggerButtonsState.find(iActionId);
-    if (it != actionEventsTriggerButtonsState.end()) {
-        actionEventsTriggerButtonsState.erase(it);
+    const auto it = actionEventStates.find(iActionId);
+    if (it != actionEventStates.end()) {
+        actionEventStates.erase(it);
     }
 
     return !bFound;
@@ -604,12 +592,13 @@ bool InputManager::removeAxisEvent(unsigned int iAxisEventId) {
 
     bool bFound = false;
 
-    // Look for positive and negative triggers.
-    for (auto it = axisEvents.begin(); it != axisEvents.end();) {
-        // Remove all events with the specified ID.
+    // Look for keyboard buttons that use this event.
+    for (auto it = keyboardButtonToAxisEvents.begin(); it != keyboardButtonToAxisEvents.end();) {
+        // See if this button is using the event we want to remove.
         size_t iErasedItemCount = 0;
         for (auto eventIt = it->second.begin(); eventIt != it->second.end();) {
             if (eventIt->first == iAxisEventId) {
+                // Erase this button-event association.
                 eventIt = it->second.erase(eventIt);
                 iErasedItemCount += 1;
             } else {
@@ -627,16 +616,45 @@ bool InputManager::removeAxisEvent(unsigned int iAxisEventId) {
         // Check if we need to remove this key from map.
         if (it->second.empty()) {
             // Remove key for this event as there are no events registered to this key.
-            it = axisEvents.erase(it);
+            it = keyboardButtonToAxisEvents.erase(it);
         } else {
             ++it;
         }
     }
 
-    // Remove axis state.
-    const auto it = axisState.find(iAxisEventId);
-    if (it != axisState.end()) {
-        axisState.erase(it);
+    // Look for gamepad axes that use this event.
+    for (auto it = gamepadAxisToAxisEvents.begin(); it != gamepadAxisToAxisEvents.end();) {
+        // See if this button is using the event we want to remove.
+        size_t iErasedItemCount = 0;
+        for (auto eventIdIt = it->second.begin(); eventIdIt != it->second.end();) {
+            if ((*eventIdIt) == iAxisEventId) {
+                // Erase this axis-event association.
+                eventIdIt = it->second.erase(eventIdIt);
+                iErasedItemCount += 1;
+            } else {
+                ++eventIdIt;
+            }
+        }
+
+        // See if we removed something.
+        if (iErasedItemCount > 0) {
+            // Only change to `true`, don't do: `bFound = iSizeAfter < iSizeBefore` as this might
+            // change `bFound` from `true` to `false`.
+            bFound = true;
+        }
+
+        // If there are no events associated with this gamepad axis just remove this entry from the map.
+        if (it->second.empty()) {
+            it = gamepadAxisToAxisEvents.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // Remove axis event state.
+    const auto it = axisEventStates.find(iAxisEventId);
+    if (it != axisEventStates.end()) {
+        axisEventStates.erase(it);
     }
 
     return !bFound;
@@ -649,50 +667,32 @@ InputManager::getAllActionEvents() {
     std::unordered_map<unsigned int, std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>>
         actions;
 
-    // Get all action names first.
-    for (const auto& [key, sActionName] : actionEvents) {
-        for (const auto& sName : sActionName) {
-            if (!actions.contains(sName)) {
-                actions[sName] = {};
-            }
-        }
-    }
-
-    // Fill keys for those actions.
-    for (const auto& actionPair : actionEvents) {
-        for (const auto& actionName : actionPair.second) {
-            actions[actionName].push_back(actionPair.first);
-        }
+    for (const auto& [iActionEventId, state] : actionEventStates) {
+        actions[iActionEventId] = getActionEventButtons(iActionEventId);
     }
 
     return actions;
 }
 
-std::unordered_map<unsigned int, std::vector<std::pair<KeyboardButton, KeyboardButton>>>
+std::unordered_map<
+    unsigned int,
+    std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>>
 InputManager::getAllAxisEvents() {
     std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
 
-    std::unordered_map<unsigned int, std::vector<std::pair<KeyboardButton, KeyboardButton>>> axes;
+    std::unordered_map<
+        unsigned int,
+        std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>>
+        triggers;
 
-    for (const auto& [key, keyAxisNames] : axisEvents) {
-        for (const auto& [iAxisId, value] : keyAxisNames) {
-            if (axes.contains(iAxisId)) {
-                continue;
-            }
-
-            // Get keys of this axis event.
-            auto vKeys = getAxisEventTriggers(iAxisId);
-            if (!vKeys.empty()) {
-                axes[iAxisId] = std::move(vKeys);
-            } else {
-                axes[iAxisId] = {};
-                Logger::get().error(std::format("no axis event found by ID {}", iAxisId));
-            }
-        }
+    for (const auto& [iAxisEventId, state] : axisEventStates) {
+        triggers[iAxisEventId] = getAxisEventTriggers(iAxisEventId);
     }
 
-    return axes;
+    return triggers;
 }
+
+float InputManager::getGamepadDeadzone() const { return gamepadDeadzone; }
 
 std::vector<std::string>
 InputManager::splitString(const std::string& sStringToSplit, const std::string& sDelimiter) {
@@ -717,60 +717,82 @@ std::optional<Error> InputManager::overwriteActionEvent(
     // Remove all buttons associated with this action event if it exists.
     removeActionEvent(iActionId);
 
-    // Add buttons for actions.
-    std::vector<ActionEventTriggerButtonState> vActionState;
+    std::vector<ActionEventTriggerButtonState> vTriggerButtonStates;
     for (const auto& button : vButtons) {
-        // Find action events that use this key.
-        auto it = actionEvents.find(button);
-        if (it == actionEvents.end()) {
-            actionEvents[button] = {iActionId};
+        // See if this button is used in some other action event.
+        const auto it = buttonToActionEvents.find(button);
+        if (it == buttonToActionEvents.end()) {
+            // Add a new pair of "button" to "events".
+            buttonToActionEvents[button] = {iActionId};
         } else {
+            // Add this event to the array of events that use this button.
             it->second.push_back(iActionId);
         }
 
-        vActionState.push_back(ActionEventTriggerButtonState(button));
+        vTriggerButtonStates.push_back(ActionEventTriggerButtonState(button));
     }
 
     // Add/overwrite state.
-    actionEventsTriggerButtonsState[iActionId] =
-        std::make_pair<std::vector<ActionEventTriggerButtonState>, bool>(std::move(vActionState), false);
+    actionEventStates[iActionId] =
+        ActionEventState{.vTriggerButtonStates = std::move(vTriggerButtonStates), .bEventState = false};
 
     return {};
 }
 
 std::optional<Error> InputManager::overwriteAxisEvent(
-    unsigned int iAxisEventId, const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vTriggerPairs) {
+    unsigned int iAxisEventId,
+    const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vKeyboardTriggers,
+    const std::vector<GamepadAxis>& vGamepadTriggers) {
     std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
 
     // Remove all axis events with this name if exist.
     removeAxisEvent(iAxisEventId);
 
-    // Add new triggers.
-    std::vector<AxisEventTriggerButtonsState> vAxisState;
-    for (const auto& [positiveTrigger, negativeTrigger] : vTriggerPairs) {
-        // Find axis events that use this positive trigger.
-        auto it = axisEvents.find(positiveTrigger);
-        if (it == axisEvents.end()) {
-            axisEvents[positiveTrigger] = std::vector<std::pair<unsigned int, bool>>{{iAxisEventId, true}};
+    // Add new keyboard triggers.
+    std::vector<AxisEventTriggerButtonsState> vKeyboardTriggerStates;
+    for (const auto& [positiveTrigger, negativeTrigger] : vKeyboardTriggers) {
+        // Create a new button-event association for positive trigger.
+        auto it = keyboardButtonToAxisEvents.find(positiveTrigger);
+        if (it == keyboardButtonToAxisEvents.end()) {
+            keyboardButtonToAxisEvents[positiveTrigger] =
+                std::vector<std::pair<unsigned int, bool>>{{iAxisEventId, true}};
         } else {
             it->second.push_back(std::pair<unsigned int, bool>{iAxisEventId, true});
         }
 
-        // Find axis events that use this negative trigger.
-        it = axisEvents.find(negativeTrigger);
-        if (it == axisEvents.end()) {
-            axisEvents[negativeTrigger] = std::vector<std::pair<unsigned int, bool>>{{iAxisEventId, false}};
+        // Create a new button-event association for negative trigger.
+        it = keyboardButtonToAxisEvents.find(negativeTrigger);
+        if (it == keyboardButtonToAxisEvents.end()) {
+            keyboardButtonToAxisEvents[negativeTrigger] =
+                std::vector<std::pair<unsigned int, bool>>{{iAxisEventId, false}};
         } else {
             it->second.push_back(std::pair<unsigned int, bool>(iAxisEventId, false));
         }
 
         // Add new triggers to states.
-        vAxisState.push_back(AxisEventTriggerButtonsState(positiveTrigger, negativeTrigger));
+        vKeyboardTriggerStates.push_back(AxisEventTriggerButtonsState(positiveTrigger, negativeTrigger));
+    }
+
+    // Add new gamepad triggers.
+    std::vector<AxisEventTriggerAxisState> vGamepadTriggerStates;
+    for (const auto& gamepadAxis : vGamepadTriggers) {
+        // Create a new axis-event association.
+        auto it = gamepadAxisToAxisEvents.find(gamepadAxis);
+        if (it == gamepadAxisToAxisEvents.end()) {
+            gamepadAxisToAxisEvents[gamepadAxis] = {iAxisEventId};
+        } else {
+            it->second.push_back(iAxisEventId);
+        }
+
+        // Add new triggers to states.
+        vGamepadTriggerStates.push_back(AxisEventTriggerAxisState(gamepadAxis));
     }
 
     // Add/overwrite event state.
-    axisState[iAxisEventId] =
-        std::make_pair<std::vector<AxisEventTriggerButtonsState>, int>(std::move(vAxisState), 0);
+    axisEventStates[iAxisEventId] = AxisEventState{
+        .vKeyboardTriggers = std::move(vKeyboardTriggerStates),
+        .vGamepadTriggers = std::move(vGamepadTriggerStates),
+        .state = 0.0F};
 
     return {};
 }

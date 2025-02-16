@@ -172,17 +172,16 @@ std::vector<std::string> ConfigManager::getAllSections() {
     return vSections;
 }
 
-std::variant<std::vector<std::string>, Error>
-ConfigManager::getAllKeysOfSection(std::string_view sSection) const {
+std::vector<std::string> ConfigManager::getAllKeysOfSection(std::string_view sSection) const {
     toml::value section;
     try {
         section = toml::find(tomlData, sSection.data());
-    } catch (std::exception& ex) {
-        return Error(std::format("no section \"{}\" was found ({})", sSection, ex.what()));
+    } catch (...) {
+        return {};
     }
 
     if (!section.is_table()) {
-        return Error(std::format("found \"{}\" is not a section", sSection));
+        return {};
     }
 
     const auto table = section.as_table();

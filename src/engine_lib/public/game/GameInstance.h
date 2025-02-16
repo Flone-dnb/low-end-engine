@@ -96,6 +96,14 @@ protected:
     virtual void onGamepadInput(GamepadButton button, bool bIsPressedDown) {};
 
     /**
+     * Called when the game receives gamepad axis movement.
+     *
+     * @param axis     Gamepad axis that was moved.
+     * @param position Axis position in range [-1.0; 1.0].
+     */
+    virtual void onGamepadAxisMoved(GamepadAxis axis, float position) {};
+
+    /**
      * Called when the window (that owns this object) receives mouse input.
      *
      * @param button         Mouse button.

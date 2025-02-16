@@ -213,9 +213,9 @@ public:
      * @param sSection Name of the section to look for keys, use @ref getAllSections to get
      * names of all sections.
      *
-     * @return Error if something went wrong, a vector of keys otherwise.
+     * @return Empty if a section with the specified name was not found or if it's empty.
      */
-    std::variant<std::vector<std::string>, Error> getAllKeysOfSection(std::string_view sSection) const;
+    std::vector<std::string> getAllKeysOfSection(std::string_view sSection) const;
 
     /**
      * Sets a value. This value will not be written to file until @ref saveFile is called.

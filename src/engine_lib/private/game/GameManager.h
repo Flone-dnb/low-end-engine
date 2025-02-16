@@ -163,6 +163,14 @@ private:
     void onGamepadInput(GamepadButton button, bool bIsPressedDown);
 
     /**
+     * Called when the game receives gamepad axis movement.
+     *
+     * @param axis     Gamepad axis that was moved.
+     * @param position Axis position in range [-1.0; 1.0].
+     */
+    void onGamepadAxisMoved(GamepadAxis axis, float position);
+
+    /**
      * Called when the window (that owns this object) receives mouse input.
      *
      * @param button         Mouse button.
@@ -225,11 +233,19 @@ private:
     /**
      * Triggers axis events from keyboard input.
      *
-     * @param key            Keyboard key.
+     * @param button         Keyboard button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    void triggerAxisEvents(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
+    void triggerAxisEvents(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Triggers axis events from gamepad axis input.
+     *
+     * @param gamepadAxis Gamepad axis that was moved.
+     * @param position    Axis position in range [-1.0; 1.0].
+     */
+    void triggerAxisEvents(GamepadAxis gamepadAxis, float position);
 
     /** Binds action/axis names with input keys. */
     InputManager inputManager;

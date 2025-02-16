@@ -93,6 +93,13 @@ private:
      */
     Window(SDL_Window* pCreatedWindow);
 
+    /**
+     * Looks for a connected gamepad and return it if found.
+     *
+     * @return `nullptr` if there's no gamepad connected.
+     */
+    static SDL_GameController* findConnectedGamepad();
+
     /** Checks whether the current thread is the main thread or not and if not shows an error. */
     void showErrorIfNotOnMainThread() const;
 
@@ -104,13 +111,6 @@ private:
      * @return `true` if should quit, `false` otherwise.
      */
     bool processWindowEvent(const SDL_Event& event);
-
-    /**
-     * Looks for a connected gamepad and return it if found.
-     *
-     * @return `nullptr` if there's no gamepad connected.
-     */
-    SDL_GameController* findConnectedGamepad();
 
     /** ID of the main thread. */
     std::thread::id mainThreadId;

@@ -105,9 +105,18 @@ void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
     // Trigger raw (no events) input processing function.
     pGameInstance->onGamepadInput(button, bIsPressedDown);
 
-    // Trigger input events.
+    // Trigger action events.
     triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
-    // triggerAxisEvents(key, KeyboardModifiers(0), bIsPressedDown);
+}
+
+void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {
+    Logger::get().info(std::format("{}: {:0.2F}", getGamepadAxisName(axis), position));
+
+    // Trigger raw (no events) input processing function.
+    pGameInstance->onGamepadAxisMoved(axis, position);
+
+    // Trigger axis events.
+    triggerAxisEvents(axis, position);
 }
 
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
@@ -173,8 +182,8 @@ void GameManager::triggerActionEvents(
     std::scoped_lock guard(inputManager.mtxActionEvents);
 
     // Make sure this button is registered in some action.
-    const auto it = inputManager.actionEvents.find(button);
-    if (it == inputManager.actionEvents.end()) {
+    const auto it = inputManager.buttonToActionEvents.find(button);
+    if (it == inputManager.buttonToActionEvents.end()) {
         // That's okay, this button is not used in input events.
         return;
     }
@@ -184,9 +193,9 @@ void GameManager::triggerActionEvents(
     // This should not be that bad due to the fact that action events is just a small array of ints.
     const auto vActionIds = it->second;
     for (const auto& iActionId : vActionIds) {
-        // Get state of the action.
-        const auto actionStateIt = inputManager.actionEventsTriggerButtonsState.find(iActionId);
-        if (actionStateIt == inputManager.actionEventsTriggerButtonsState.end()) [[unlikely]] {
+        // Get state of the event.
+        const auto actionStateIt = inputManager.actionEventStates.find(iActionId);
+        if (actionStateIt == inputManager.actionEventStates.end()) [[unlikely]] {
             // Unexpected, nothing to process.
             Logger::get().error(
                 std::format("input manager returned 0 states for action event with ID {}", iActionId));
@@ -272,49 +281,46 @@ void GameManager::triggerActionEvents(
     }
 }
 
-void GameManager::triggerAxisEvents(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
+void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     std::scoped_lock<std::recursive_mutex> guard(inputManager.mtxAxisEvents);
 
-    // Make sure this key is registered in some axis event.
-    const auto it = inputManager.axisEvents.find(key);
-    if (it == inputManager.axisEvents.end()) {
+    // Make sure this button is registered in some axis event.
+    const auto axisEventsToTriggerIt = inputManager.keyboardButtonToAxisEvents.find(button);
+    if (axisEventsToTriggerIt == inputManager.keyboardButtonToAxisEvents.end()) {
         return;
     }
 
     // Copying array of axis events because it can be modified in `onInputAxisEvent` by user code
     // while we are iterating over it (the user should be able to modify it).
     // This should not be that bad due to the fact that an axis event is just a very small array of values.
-    const auto axisCopy = it->second;
-    for (const auto& [iAxisEventId, bTriggersPlusInput] : axisCopy) {
-        // Get state of the action.
-        auto axisStateIt = inputManager.axisState.find(iAxisEventId);
-        if (axisStateIt == inputManager.axisState.end()) [[unlikely]] {
+    const auto axisEventsToTrigger = axisEventsToTriggerIt->second;
+    for (const auto& [iAxisEventId, bTriggersPositiveInput] : axisEventsToTrigger) {
+        // Get state of the event.
+        auto axisStateIt = inputManager.axisEventStates.find(iAxisEventId);
+        if (axisStateIt == inputManager.axisEventStates.end()) [[unlikely]] {
             // Unexpected.
             Logger::get().error(
                 std::format("input manager returned 0 states for axis event with ID {}", iAxisEventId));
             continue;
         }
 
-        // Stores various keys that can activate this action (for example we can have
+        // Stores various triggers that can activate this event (for example we can have
         // buttons W and ArrowUp activating the same event named "moveForward").
-        std::pair<std::vector<AxisEventTriggerButtonsState>, int /* last input */>& axisStatePair =
-            axisStateIt->second;
+        auto& axisEventState = axisStateIt->second;
 
-        // Find an action key that matches the received one.
+        // Find an event trigger that matches the received one.
         bool bFound = false;
-        for (auto& state : axisStatePair.first) {
-            if (bTriggersPlusInput && state.positiveTrigger == key) {
-                // Found it, it's registered as plus key.
-                // Mark key's state.
-                state.bIsPositiveTriggerPressed = bIsPressedDown;
+        for (auto& triggerState : axisEventState.vKeyboardTriggers) {
+            if (bTriggersPositiveInput && triggerState.positiveTrigger == button) {
+                // Found it, update state of this trigger.
+                triggerState.bIsPositiveTriggerPressed = bIsPressedDown;
                 bFound = true;
                 break;
             }
 
-            if (!bTriggersPlusInput && state.negativeTrigger == key) {
-                // Found it, it's registered as minus key.
-                // Mark key's state.
-                state.bIsNegativeTriggerPressed = bIsPressedDown;
+            if (!bTriggersPositiveInput && triggerState.negativeTrigger == button) {
+                // Found it, update state of this trigger.
+                triggerState.bIsNegativeTriggerPressed = bIsPressedDown;
                 bFound = true;
                 break;
             }
@@ -324,45 +330,38 @@ void GameManager::triggerAxisEvents(KeyboardButton key, KeyboardModifiers modifi
         if (!bFound) [[unlikely]] {
             Logger::get().error(std::format(
                 "could not find key `{}` in key states for axis event with ID {}",
-                getKeyboardButtonName(key),
+                getKeyboardButtonName(button),
                 iAxisEventId));
             continue;
         }
 
-        // Save action's state as key state.
-        int iAxisInputState = 0;
+        // Prepare a new state for this event.
+        float axisState = 0.0F;
         if (bIsPressedDown) {
-            iAxisInputState = bTriggersPlusInput ? 1 : -1;
+            axisState = bTriggersPositiveInput ? 1.0F : -1.0F;
         }
 
         if (!bIsPressedDown) {
             // The key is not pressed but this does not mean that we need to broadcast
             // a notification about state being equal to 0. See if other button are pressed.
-            for (const AxisEventTriggerButtonsState& state : axisStatePair.first) {
-                if (!bTriggersPlusInput && state.bIsPositiveTriggerPressed) { // Look for plus button.
-                    iAxisInputState = 1;
+            for (const auto& state : axisEventState.vKeyboardTriggers) {
+                if (!bTriggersPositiveInput && state.bIsPositiveTriggerPressed) {
+                    axisState = 1.0F;
                     break;
                 }
 
-                if (bTriggersPlusInput && state.bIsNegativeTriggerPressed) { // Look for minus button.
-                    iAxisInputState = -1;
+                if (bTriggersPositiveInput && state.bIsNegativeTriggerPressed) {
+                    axisState = -1.0F;
                     break;
                 }
             }
         }
 
-        // See if axis state is changed.
-        if (iAxisInputState == axisStatePair.second) {
-            continue;
-        }
-
-        // Axis state was changed, notify the game.
-
         // Save new axis state.
-        axisStatePair.second = iAxisInputState;
+        axisEventState.state = axisState;
 
         // Notify game instance.
-        pGameInstance->onInputAxisEvent(iAxisEventId, modifiers, static_cast<float>(iAxisInputState));
+        pGameInstance->onInputAxisEvent(iAxisEventId, modifiers, axisState);
 
         // Notify nodes that receive input.
         std::scoped_lock guard(mtxWorldData.first);
@@ -370,7 +369,84 @@ void GameManager::triggerAxisEvents(KeyboardButton key, KeyboardModifiers modifi
             const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
             for (const auto& pNode : *pNodes) {
-                pNode->onInputAxisEvent(iAxisEventId, modifiers, static_cast<float>(iAxisInputState));
+                pNode->onInputAxisEvent(iAxisEventId, modifiers, axisState);
+            }
+        }
+    }
+}
+
+void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
+    std::scoped_lock<std::recursive_mutex> guard(inputManager.mtxAxisEvents);
+
+    // Make sure this axis is registered in some axis event.
+    const auto axisEventsToTriggerIt = inputManager.gamepadAxisToAxisEvents.find(gamepadAxis);
+    if (axisEventsToTriggerIt == inputManager.gamepadAxisToAxisEvents.end()) {
+        return;
+    }
+
+    // Copying array of axis events because it can be modified in `onInputAxisEvent` by user code
+    // while we are iterating over it (the user should be able to modify it).
+    // This should not be that bad due to the fact that an axis event is just a very small array of values.
+    const auto axisEventsToTrigger = axisEventsToTriggerIt->second;
+    for (const auto& iAxisEventId : axisEventsToTrigger) {
+        // Get state of the event.
+        auto axisStateIt = inputManager.axisEventStates.find(iAxisEventId);
+        if (axisStateIt == inputManager.axisEventStates.end()) [[unlikely]] {
+            // Unexpected.
+            Logger::get().error(
+                std::format("input manager returned 0 states for axis event with ID {}", iAxisEventId));
+            continue;
+        }
+
+        // Stores various triggers that can activate this event.
+        auto& axisEventState = axisStateIt->second;
+
+        // Find an event trigger that matches the received one.
+        bool bFound = false;
+        for (auto& triggerState : axisEventState.vGamepadTriggers) {
+            if (triggerState.trigger == gamepadAxis) {
+                // Found it, update state of this trigger.
+                triggerState.lastPosition = position;
+                bFound = true;
+                break;
+            }
+        }
+
+        // Log an error if the key is not found.
+        if (!bFound) [[unlikely]] {
+            Logger::get().error(std::format(
+                "could not find gamepad axis `{}` in axis states for axis event with ID {}",
+                getGamepadAxisName(gamepadAxis),
+                iAxisEventId));
+            continue;
+        }
+
+        // Prepare new state for this event.
+        float newEventState = position;
+        const float oldEventState = axisEventState.state;
+
+        if (abs(newEventState) < inputManager.getGamepadDeadzone()) {
+            newEventState = 0.0F;
+        }
+
+        // Save new state.
+        axisEventState.state = newEventState;
+
+        if (abs(oldEventState) < inputManager.getGamepadDeadzone() && newEventState == 0.0F) {
+            // Don't broadcast a notification since we had 0 input before and still have 0 input.
+            continue;
+        }
+
+        // Notify game instance.
+        pGameInstance->onInputAxisEvent(iAxisEventId, KeyboardModifiers(0), axisEventState.state);
+
+        // Notify nodes that receive input.
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.pWorld != nullptr) {
+            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+            const auto pNodes = nodesGuard.getNodes();
+            for (const auto& pNode : *pNodes) {
+                pNode->onInputAxisEvent(iAxisEventId, KeyboardModifiers(0), axisEventState.state);
             }
         }
     }

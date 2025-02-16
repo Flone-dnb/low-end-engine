@@ -80,6 +80,12 @@ bool Window::processWindowEvent(const SDL_Event& event) {
         pGameManager->onGamepadInput(static_cast<GamepadButton>(event.cbutton.button), false);
         break;
     }
+    case (SDL_CONTROLLERAXISMOTION): {
+        static_assert(std::is_same_v<decltype(event.caxis.value), short>, "expecting short");
+        const auto movementPortion = static_cast<float>(event.caxis.value) / SHRT_MAX;
+        pGameManager->onGamepadAxisMoved(static_cast<GamepadAxis>(event.caxis.axis), movementPortion);
+        break;
+    }
     case (SDL_WINDOWEVENT): {
         if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
             pGameManager->onWindowFocusChanged(true);
@@ -116,7 +122,7 @@ bool Window::processWindowEvent(const SDL_Event& event) {
 
 SDL_GameController* Window::findConnectedGamepad() {
     for (int i = 0; i < SDL_NumJoysticks(); i++) {
-        if (SDL_IsGameController(i)) {
+        if (SDL_IsGameController(i) == SDL_TRUE) {
             return SDL_GameControllerOpen(i);
         }
     }

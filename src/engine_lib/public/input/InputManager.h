@@ -14,59 +14,6 @@
 #include "input/GamepadButton.hpp"
 #include "misc/Error.h"
 
-/** Stores the current state of a button that triggers some input action event. */
-class ActionEventTriggerButtonState {
-public:
-    ActionEventTriggerButtonState() = delete;
-
-    /**
-     * Initializes the state.
-     *
-     * @param triggerButton Button that triggers some action event.
-     */
-    ActionEventTriggerButtonState(std::variant<KeyboardButton, MouseButton, GamepadButton> triggerButton) {
-        this->triggerButton = triggerButton;
-    }
-
-    /** Whether the button is pressed or not. */
-    bool bIsPressed = false;
-
-    /** Button that triggers some action event. */
-    std::variant<KeyboardButton, MouseButton, GamepadButton> triggerButton;
-};
-
-/** Stores the current state of buttons that triggers some input axis event. */
-class AxisEventTriggerButtonsState {
-public:
-    AxisEventTriggerButtonsState() = delete;
-
-    /**
-     * Initializes the state.
-     *
-     * @param positiveTrigger  Triggers input value of `+1`.
-     * @param negativeTrigger Triggers input value of `-1`.
-     */
-    AxisEventTriggerButtonsState(KeyboardButton positiveTrigger, KeyboardButton negativeTrigger) {
-        this->positiveTrigger = positiveTrigger;
-        this->negativeTrigger = negativeTrigger;
-
-        bIsPositiveTriggerPressed = false;
-        bIsNegativeTriggerPressed = false;
-    }
-
-    /** Triggers input value of `+1`. */
-    KeyboardButton positiveTrigger;
-
-    /** Triggers input value of `-1`. */
-    KeyboardButton negativeTrigger;
-
-    /** Whether @ref positiveTrigger is currently pressed or not. */
-    bool bIsPositiveTriggerPressed = false;
-
-    /** Whether @ref negativeTrigger is currently pressed or not. */
-    bool bIsNegativeTriggerPressed = false;
-};
-
 /** Allows binding IDs with multiple input buttons. */
 class InputManager {
     // Triggers input events.
@@ -109,16 +56,18 @@ public:
      * keyboard and gamepad users: an axis event "move forward" will typically have
      * 2 pairs of triggers: W and gamepad stick up for `+1.0`, S and gamepad stick down for `-1.0`.
      *
-     * @param iAxisEventId  Unique ID of the new axis event.
-     * @param vTriggerPairs The first button will be associated with `+1.0` input and the second with `-1.0`
-     * input.
+     * @param iAxisEventId      Unique ID of the new axis event.
+     * @param vKeyboardTriggers The first button will be associated with `+1.0` input and the second with
+     * `-1.0` input.
+     * @param vGamepadAxis      Optional array for gamepad to also trigger to this event.
      *
      * @return Returns an error if passed array of trigger buttons is empty or if an
      * axis event with this ID is already registered.
      */
     [[nodiscard]] std::optional<Error> addAxisEvent(
         unsigned int iAxisEventId,
-        const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vTriggerPairs);
+        const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vKeyboardTriggers,
+        const std::vector<GamepadAxis>& vGamepadAxis);
 
     /**
      * Change action event's trigger button.
@@ -147,6 +96,18 @@ public:
         unsigned int iAxisEventId,
         std::pair<KeyboardButton, KeyboardButton> oldPair,
         std::pair<KeyboardButton, KeyboardButton> newPair);
+
+    /**
+     * Change axis event's trigger button.
+     *
+     * @param iAxisEventId Unique ID of the axis event to modify.
+     * @param oldAxis      Old trigger of the event that you want to replace.
+     * @param newAxis      New trigger that should replace the old one.
+     *
+     * @return Error if something went wrong.
+     */
+    [[nodiscard]] std::optional<Error>
+    modifyAxisEvent(unsigned int iAxisEventId, GamepadAxis oldAxis, GamepadAxis newAxis);
 
     /**
      * Saves added action/axis events to a file.
@@ -180,6 +141,13 @@ public:
      * @return Error if something went wrong.
      */
     [[nodiscard]] std::optional<Error> overwriteExistingEventsButtonsFromFile(std::string_view sFileName);
+
+    /**
+     * Sets gamepad deadzone - if gamepad axis position is lower than this value then such input is ignored.
+     *
+     * @param deadzone Value in range [0.0; 1.0].
+     */
+    void setGamepadDeadzone(float deadzone);
 
     /**
      * Returns action and axis event IDs that the specified button is used in.
@@ -216,7 +184,8 @@ public:
      *
      * @return Triggers associated with the axis event.
      */
-    std::vector<std::pair<KeyboardButton, KeyboardButton>> getAxisEventTriggers(unsigned int iAxisEventId);
+    std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>
+    getAxisEventTriggers(unsigned int iAxisEventId);
 
     /**
      * Returns the current value of an axis event.
@@ -259,8 +228,112 @@ public:
      *
      * @return A copy of all axis events.
      */
-    std::unordered_map<unsigned int, std::vector<std::pair<KeyboardButton, KeyboardButton>>>
+    std::unordered_map<
+        unsigned int,
+        std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>>
     getAllAxisEvents();
+
+    /**
+     * Deadzone value for gamepad axis input.
+     *
+     * @return Value in range [0.0; 1.0].
+     */
+    float getGamepadDeadzone() const;
+
+private:
+    /** Stores the current state of a button that triggers some input action event. */
+    class ActionEventTriggerButtonState {
+    public:
+        ActionEventTriggerButtonState() = delete;
+
+        /**
+         * Initializes the state.
+         *
+         * @param triggerButton Button that triggers some action event.
+         */
+        ActionEventTriggerButtonState(
+            std::variant<KeyboardButton, MouseButton, GamepadButton> triggerButton) {
+            this->triggerButton = triggerButton;
+        }
+
+        /** Whether the button is pressed or not. */
+        bool bIsPressed = false;
+
+        /** Button that triggers some action event. */
+        std::variant<KeyboardButton, MouseButton, GamepadButton> triggerButton;
+    };
+
+    /** Stores the current state of keyboard buttons that triggers some input axis event. */
+    class AxisEventTriggerButtonsState {
+    public:
+        AxisEventTriggerButtonsState() = delete;
+
+        /**
+         * Initializes the state.
+         *
+         * @param positiveTrigger  Triggers input value of `+1`.
+         * @param negativeTrigger Triggers input value of `-1`.
+         */
+        AxisEventTriggerButtonsState(KeyboardButton positiveTrigger, KeyboardButton negativeTrigger) {
+            this->positiveTrigger = positiveTrigger;
+            this->negativeTrigger = negativeTrigger;
+
+            bIsPositiveTriggerPressed = false;
+            bIsNegativeTriggerPressed = false;
+        }
+
+        /** Triggers input value of `+1`. */
+        KeyboardButton positiveTrigger;
+
+        /** Triggers input value of `-1`. */
+        KeyboardButton negativeTrigger;
+
+        /** Whether @ref positiveTrigger is currently pressed or not. */
+        bool bIsPositiveTriggerPressed = false;
+
+        /** Whether @ref negativeTrigger is currently pressed or not. */
+        bool bIsNegativeTriggerPressed = false;
+    };
+
+    /** Stores the current state of gamepad axis that triggers some input axis event. */
+    class AxisEventTriggerAxisState {
+    public:
+        AxisEventTriggerAxisState() = delete;
+
+        /**
+         * Initializes the state.
+         *
+         * @param trigger
+         */
+        AxisEventTriggerAxisState(GamepadAxis trigger) : trigger(trigger) {}
+
+        /** Gamepad axis that triggers the event. */
+        GamepadAxis trigger;
+
+        /** Last received input position for @ref trigger in range [-1.0; 1.0]. */
+        float lastPosition = 0.0F;
+    };
+
+    /** State of an input action event. */
+    struct ActionEventState {
+        /** Buttons (and their current state) that trigger this event. */
+        std::vector<ActionEventTriggerButtonState> vTriggerButtonStates;
+
+        /** State of this event (pressed/not pressed) according to the state of all trigger buttons. */
+        bool bEventState = false;
+    };
+
+    /** State of an input axis event. */
+    struct AxisEventState {
+        /** Keyboard buttons (and their current state) that activate this event. */
+        std::vector<AxisEventTriggerButtonsState> vKeyboardTriggers;
+
+        /** Gamepad axes (and their current state) that activate this event. */
+        std::vector<AxisEventTriggerAxisState> vGamepadTriggers;
+
+        /** State of this event in range [-1.0; 1.0] according to the state of all triggers. */
+        float state = 0.0F;
+    };
 
     /**
      * Splits the string using a delimiter.
@@ -273,7 +346,6 @@ public:
     static std::vector<std::string>
     splitString(const std::string& sStringToSplit, const std::string& sDelimiter);
 
-private:
     /**
      * Adds a new action event or if an action event with this ID already exists it will be removed
      * to register this new action event instead.
@@ -300,38 +372,50 @@ private:
      *
      * @warning See the warning from @ref overwriteActionEvent about old buttons still triggering input.
      *
-     * @param iAxisEventId  Unique ID of an axis event to overwrite.
-     * @param vTriggerPairs A pair of triggers associated with this axis event,
+     * @param iAxisEventId      Unique ID of an axis event to overwrite.
+     * @param vKeyboardTriggers A pair of keyboard buttons associated with this axis event,
      * first button will be associated with `+1.0` input and the second with `-1.0` input.
+     * @param vGamepadTriggers  Gamepad axes that activate this event.
      *
      * @return Error if something went wrong.
      */
     [[nodiscard]] std::optional<Error> overwriteAxisEvent(
         unsigned int iAxisEventId,
-        const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vTriggerPairs);
-
-    /** Map that stores pairs of "button that triggers event" - "registered input event IDs". */
-    std::unordered_map<std::variant<KeyboardButton, MouseButton, GamepadButton>, std::vector<unsigned int>>
-        actionEvents;
+        const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vKeyboardTriggers,
+        const std::vector<GamepadAxis>& vGamepadTriggers);
 
     /**
-     * Stores pairs of "action event ID" and a pair of "registered buttons that trigger the event" - "input
-     * event state (pressed/not pressed)".
+     * Map that stores pairs of "button that triggers event" - "registered input event IDs that use this
+     * button".
+     *
+     * @remark Used to determine in which events a button is used.
      */
-    std::unordered_map<unsigned int, std::pair<std::vector<ActionEventTriggerButtonState>, bool>>
-        actionEventsTriggerButtonsState;
+    std::unordered_map<std::variant<KeyboardButton, MouseButton, GamepadButton>, std::vector<unsigned int>>
+        buttonToActionEvents;
 
     /**
      * Stores pairs of "event trigger" - "array of registered input events with an input value that should be
-     * triggered (either +1 (`true`) or -1 (`false`))".
+     * triggered either +1 (`true`) or -1 (`false`)".
+     *
+     * @remark Used to determine in which events a trigger is used.
      */
-    std::unordered_map<KeyboardButton, std::vector<std::pair<unsigned int, bool>>> axisEvents;
+    std::unordered_map<KeyboardButton, std::vector<std::pair<unsigned int, bool>>> keyboardButtonToAxisEvents;
 
     /**
-     * Stores pairs of "axis event ID" and a pair of "registered triggers" - "input event state in range
-     * [-1.0; 1.0]".
+     * Stores pairs of "gamepad axis trigger" - "axis events that use this trigger".
+     *
+     * @remark Used to determine in which events a trigger is used.
      */
-    std::unordered_map<unsigned int, std::pair<std::vector<AxisEventTriggerButtonsState>, int>> axisState;
+    std::unordered_map<GamepadAxis, std::vector<unsigned int>> gamepadAxisToAxisEvents;
+
+    /** Stores pairs of "event ID" - "event state". */
+    std::unordered_map<unsigned int, ActionEventState> actionEventStates;
+
+    /** Stores pairs of "event ID" - "event state". */
+    std::unordered_map<unsigned int, AxisEventState> axisEventStates;
+
+    /** Gamepad axis position that is lower than this value is ignored. Range for deadzone is [0.0; 1.0]. */
+    float gamepadDeadzone = 0.02F;
 
     /** Mutex for actions editing. */
     std::recursive_mutex mtxActionEvents;
@@ -340,8 +424,20 @@ private:
     std::recursive_mutex mtxAxisEvents;
 
     /** Section name to store action events, used in .toml files. */
-    static inline const std::string_view sActionEventFileSectionName = "action event";
+    static constexpr std::string_view sActionEventFileSectionName = "action event";
 
-    /** Section name to store axis events, used in .toml files. */
-    static inline const std::string_view sAxisEventFileSectionName = "axis event";
+    /** Section name to store keyboard buttons for axis events, used in .toml files. */
+    static constexpr std::string_view sKeyboardAxisEventFileSectionName = "keyboard axis event";
+
+    /** Section name to store gamepad axes for axis events, used in .toml files. */
+    static constexpr std::string_view sGamepadAxisEventFileSectionName = "gamepad axis event";
+
+    /** Prefix that we add to keyboard buttons when saving them to a file. */
+    static constexpr char keyboardButtonPrefixInFile = 'k';
+
+    /** Prefix that we add to mouse buttons when saving them to a file. */
+    static constexpr char mouseButtonPrefixInFile = 'm';
+
+    /** Prefix that we add to gamepad buttons when saving them to a file. */
+    static constexpr char gamepadButtonPrefixInFile = 'g';
 };
