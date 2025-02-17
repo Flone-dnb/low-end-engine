@@ -1,6 +1,6 @@
 #include "game/Window.h"
 
-// External.
+// Custom.
 #include "render/SdlManager.hpp"
 
 std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName) {

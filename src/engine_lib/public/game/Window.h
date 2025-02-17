@@ -4,6 +4,7 @@
 #include <memory>
 #include <variant>
 #include <thread>
+#include <filesystem>
 
 // Custom.
 #include "misc/Error.h"
@@ -33,6 +34,14 @@ public:
     static std::variant<std::unique_ptr<Window>, Error> create(std::string_view sWindowName);
 
     /**
+     * Whether the cursor is visible or not (locked in this window).
+     *
+     * @param bIsVisible 'true' shows cursor (normal behavior),
+     * 'false' will hide the cursor and lock it to the window.
+     */
+    static void setCursorVisibility(bool bIsVisible);
+
+    /**
      * Starts the window message queue, rendering and game logic.
      *
      * @remark This function will return control after the window was closed.
@@ -40,14 +49,6 @@ public:
     template <typename MyGameInstance>
         requires std::derived_from<MyGameInstance, GameInstance>
     void processEvents();
-
-    /**
-     * Whether the cursor is visible or not (locked in this window).
-     *
-     * @param bIsVisible 'true' shows cursor (normal behavior),
-     * 'false' will hide the cursor and lock it to the window.
-     */
-    static void setCursorVisibility(bool bIsVisible);
 
     /** Closes this window causing game instance, renderer, audio engine and etc. to be destroyed. */
     void close();
@@ -165,7 +166,10 @@ inline void Window::processEvents() {
         // Process available window events.
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0) {
-            bQuitRequested = processWindowEvent(event);
+            const auto bReceivedQuitEvent = processWindowEvent(event);
+
+            // Use `OR` instead of assignment because the user can call `Window::close`.
+            bQuitRequested |= bReceivedQuitEvent;
         }
 
         // Tick.

@@ -13,7 +13,7 @@ public:
     /**
      * Creates a new game instance.
      *
-     * @param pWindow Valid pointer to the game's window.
+     * @param pWindow Do not delete (free). Valid pointer to the game's window.
      */
     EditorGameInstance(Window* pWindow);
 
@@ -34,4 +34,8 @@ protected:
      * At this point you can create and interact with the game world and etc.
      */
     virtual void onGameStarted() override;
+
+private:
+    /** Registers action and axis input events in the input manager. */
+    void registerEditorInputEvents();
 };

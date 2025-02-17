@@ -110,8 +110,6 @@ void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
 }
 
 void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {
-    Logger::get().info(std::format("{}: {:0.2F}", getGamepadAxisName(axis), position));
-
     // Trigger raw (no events) input processing function.
     pGameInstance->onGamepadAxisMoved(axis, position);
 
