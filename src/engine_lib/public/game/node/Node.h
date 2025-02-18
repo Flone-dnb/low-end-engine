@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <functional>
 #include <memory>
+#include <variant>
 
 // Custom.
 #include "input/KeyboardButton.hpp"
@@ -37,11 +38,18 @@ class Node {
 
 public:
     /**
-     * Returns the total amount of currently alive (allocated) nodes.
-     *
-     * @return Number of alive nodes right now.
+     * Defines how location, rotation or scale of a node being attached as a child node
+     * should change after the attachment process (after `onAfterAttachedToNewParent` was called).
      */
-    static size_t getAliveNodeCount();
+    enum class AttachmentRule {
+        RESET_RELATIVE, //< After the new child node was attached, resets its relative location or rotation to
+                        // 0 and relative scale to 1.
+        KEEP_RELATIVE,  //< After the new child node was attached, its relative location/rotation/scale will
+                        // stay the same, but world location/rotation/scale might change.
+        KEEP_WORLD, //< After the new child node was attached, its relative location/rotation/scale will be
+                    // recalculated so that its world location/rotation/scale will stay the same (as before
+                    // attached).
+    };
 
     /** Creates a new node with a default name. */
     Node();
@@ -61,11 +69,102 @@ public:
     virtual ~Node();
 
     /**
+     * Returns the total amount of currently alive (allocated) nodes.
+     *
+     * @return Number of alive nodes right now.
+     */
+    static size_t getAliveNodeCount();
+
+    /**
+     * Attaches a node as a child of this node.
+     *
+     * @remark If the specified node already has a parent it will change its parent to be
+     * a child of this node. This way you can change to which node you are attached.
+     *
+     * @remark If the specified node needs to be spawned it will queue a deferred task to be added
+     * to the World on next frame so input events and @ref onBeforeNewFrame (if enabled) will be called
+     * only starting from the next frame.
+     *
+     * @param node         Node to attach as a child. If the specified node does not have a parent provide
+     * a unique_ptr instead of the raw pointer. If the node does not have a parent but you provide a raw
+     * pointer and error will be shown. If the specified node is a parent of `this` node the operation will
+     * fail and log an error.
+     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's location should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's rotation should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's scale should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     */
+    void addChildNode(
+        std::variant<std::unique_ptr<Node>, Node*> node,
+        AttachmentRule locationRule = AttachmentRule::KEEP_WORLD,
+        AttachmentRule rotationRule = AttachmentRule::KEEP_WORLD,
+        AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
+
+    /**
+     * Detaches this node from the parent and optionally despawns this node and
+     * all of its child nodes if the node was spawned.
+     *
+     * @warning THIS FUNCTION IS UNSAFE. Because we use a strict ownership where parent nodes store
+     * unique pointers to child nodes and everything else is raw pointers in the result of this
+     * function the node and its child nodes will be deleted (freed) and any entity that stores
+     * a raw pointer to this node (or its child nodes) will then store a raw pointer to a deleted memory.
+     * We expect that you don't despawn nodes during the gameplay due to this raw pointer risk,
+     * moreover we expect you to load the level with (almost) all nodes that you will need
+     * during the whole level (just hide/move away the nodes that you don't need to be visible always).
+     * If you use this function then you must guarantee that no other game entity is referencing
+     * this node or any of its child nodes.
+     *
+     * @warning After this function is finished `this` should not be used as it will be deleted (freed).
+     *
+     * @remark This function is usually used to mark node (tree) as "to be destroyed", if you
+     * just want to change node's parent consider using @ref addChildNode.
+     */
+    void unsafeDetachFromParentAndDespawn();
+
+    /**
      * Sets node's name.
      *
      * @param sName New name of this node.
      */
     void setNodeName(const std::string& sName);
+
+    /**
+     * Returns world's root node.
+     *
+     * @return `nullptr` if this node is not spawned or was despawned or world is being destroyed
+     * (always check returned pointer before doing something), otherwise valid pointer.
+     */
+    Node* getWorldRootNodeWhileSpawned();
+
+    /**
+     * Returns parent node if this node.
+     *
+     * @warning Must be used with mutex.
+     *
+     * @warning Avoid saving returned raw pointer as it points to the node's field and does not
+     * guarantee that the node will always live while you hold this pointer.
+     *
+     * @return `nullptr` as a pointer (second value in the pair) if this node has no parent
+     * (could only happen when the node is not spawned), otherwise valid pointer.
+     */
+    std::pair<std::recursive_mutex*, Node*> getParentNode();
+
+    /**
+     * Returns pointer to child nodes array.
+     *
+     * @warning Must be used with mutex.
+     *
+     * @warning Avoid saving returned raw pointer as it points to the node's field and does not
+     * guarantee that the node will always live while you hold this pointer.
+     *
+     * @return Array of child nodes.
+     */
+    std::pair<std::recursive_mutex*, std::vector<Node*>> getChildNodes();
 
     /**
      * Goes up the parent node chain (up to the world's root node if needed) to find
@@ -206,6 +305,39 @@ protected:
      * @remark @ref getSpawnDespawnMutex is locked while this function is called.
      */
     virtual void onDespawning() {}
+
+    /**
+     * Called before this node or one of the node's parents (in the parent hierarchy)
+     * is about to be detached from the current parent node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your login) to execute parent's logic.
+     *
+     * @remark If this node is being detached from its parent @ref getParentNode will return
+     * `nullptr` after this function is finished.
+     *
+     * @remark This function will also be called on all child nodes after this function
+     * is finished.
+     *
+     * @param bThisNodeBeingDetached `true` if this node is being detached from its parent,
+     * `false` if some node in the parent hierarchy is being detached from its parent.
+     */
+    virtual void onBeforeDetachedFromParent(bool bThisNodeBeingDetached) {}
+
+    /**
+     * Called after this node or one of the node's parents (in the parent hierarchy)
+     * was attached to a new parent node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your login) to execute parent's logic.
+     *
+     * @remark This function will also be called on all child nodes after this function
+     * is finished.
+     *
+     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
+     * `false` if some node in the parent hierarchy was attached to a parent.
+     */
+    virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {}
 
     /**
      * Called before a new frame is rendered.
@@ -363,6 +495,22 @@ private:
 
     /** Calls @ref onDespawning on this node and all of its child nodes. */
     void despawn();
+
+    /**
+     * Calls @ref onAfterAttachedToNewParent on this node and all of its child nodes.
+     *
+     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
+     * `false` if some node in the parent hierarchy was attached to a parent.
+     */
+    void notifyAboutAttachedToNewParent(bool bThisNodeBeingAttached);
+
+    /**
+     * Calls @ref onBeforeDetachedFromParent on this node and all of its child nodes.
+     *
+     * @param bThisNodeBeingDetached `true` if this node is being detached from its parent,
+     * `false` if some node in the parent hierarchy is being detached from its parent.
+     */
+    void notifyAboutDetachingFromParent(bool bThisNodeBeingDetached);
 
     /**
      * Called when a window that owns this game instance receives user

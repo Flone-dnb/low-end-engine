@@ -106,6 +106,11 @@ bool World::isNodeSpawned(size_t iNodeId) {
     return it != mtxSpawnedNodes.second.end();
 }
 
+Node* World::getRootNode() {
+    std::scoped_lock guard(mtxRootNode.first);
+    return mtxRootNode.second.get();
+}
+
 void World::onNodeSpawned(Node* pNode) {
     {
         // Get node ID.

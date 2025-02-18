@@ -98,6 +98,13 @@ public:
      */
     bool isNodeSpawned(size_t iNodeId);
 
+    /**
+     * Returns a pointer to world's root node.
+     *
+     * @return `nullptr` if world is being destroyed, otherwise pointer to world's root node.
+     */
+    Node* getRootNode();
+
 private:
     /** Represents arrays of nodes that are marked as "should be called every frame". */
     struct TickableNodes {

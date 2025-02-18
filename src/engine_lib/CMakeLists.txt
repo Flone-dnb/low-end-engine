@@ -48,6 +48,8 @@ set(PROJECT_SOURCES
     private/game/World.h
     private/game/node/Node.cpp
     public/game/node/Node.h
+    private/game/node/SpatialNode.cpp
+    public/game/node/SpatialNode.h
     public/input/InputManager.h
     public/input/KeyboardButton.hpp
     public/input/MouseButton.hpp

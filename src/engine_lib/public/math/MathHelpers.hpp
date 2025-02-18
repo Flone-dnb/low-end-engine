@@ -11,7 +11,6 @@
 // External.
 #include "math/GLMath.hpp"
 #include "misc/Error.h"
-#include "misc/Profiler.hpp"
 
 /** Static helper functions for math. */
 class MathHelpers {
