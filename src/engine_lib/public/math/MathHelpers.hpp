@@ -123,8 +123,7 @@ glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3&
     if (!glm::epsilonEqual(length, 1.0F, lengthDelta)) [[unlikely]] {
         // show an error so that it will be instantly noticeable because we're in the debug build
         Error error("the specified direction vector should have been normalized");
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
 #endif
 

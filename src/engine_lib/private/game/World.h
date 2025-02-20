@@ -75,7 +75,7 @@ public:
     void destroyWorld();
 
     /**
-     * Returns spawned nodes that receiving input.
+     * Returns spawned nodes that receive input.
      *
      * @return Nodes.
      */
@@ -105,6 +105,20 @@ public:
      */
     Node* getRootNode();
 
+    /**
+     * Returns total amount of currently spawned nodes.
+     *
+     * @return Total nodes spawned right now.
+     */
+    size_t getTotalSpawnedNodeCount();
+
+    /**
+     * Returns the current amount of spawned nodes that are marked as "should be called every frame".
+     *
+     * @return Amount of spawned nodes that should be called every frame.
+     */
+    size_t getCalledEveryFrameNodeCount();
+
 private:
     /** Represents arrays of nodes that are marked as "should be called every frame". */
     struct TickableNodes {
@@ -112,6 +126,13 @@ private:
 
         TickableNodes(const TickableNodes&) = delete;
         TickableNodes& operator=(const TickableNodes&) = delete;
+
+        /**
+         * Returns the number of nodes called every frame (includes all tick groups).
+         *
+         * @return Node count.
+         */
+        size_t getTotalNodeCount() { return firstTickGroup.size() + secondTickGroup.size(); }
 
         /** Nodes of the first tick group. */
         std::unordered_set<Node*> firstTickGroup;

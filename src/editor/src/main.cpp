@@ -24,8 +24,7 @@ int main() {
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
     const auto pWindow = std::get<std::unique_ptr<Window>>(std::move(result));
 

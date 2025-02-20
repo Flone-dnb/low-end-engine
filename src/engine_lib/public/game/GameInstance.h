@@ -12,6 +12,7 @@
 
 class Window;
 class InputManager;
+class Node;
 
 /**
  * Main game class, exists while the game window is not closed
@@ -31,6 +32,34 @@ public:
     GameInstance& operator=(const GameInstance&) = delete;
 
     virtual ~GameInstance() = default;
+
+    /**
+     * Returns a pointer to world's root node.
+     *
+     * @return `nullptr` if world is not created or was destroyed, otherwise valid pointer.
+     */
+    Node* getWorldRootNode() const;
+
+    /**
+     * Returns total amount of currently spawned nodes.
+     *
+     * @return Total nodes spawned right now.
+     */
+    size_t getTotalSpawnedNodeCount() const;
+
+    /**
+     * Returns the current amount of spawned nodes that are marked as "should be called every frame".
+     *
+     * @return Amount of spawned nodes that should be called every frame.
+     */
+    size_t getCalledEveryFrameNodeCount() const;
+
+    /**
+     * Returns the total number of spawned nodes that receive input.
+     *
+     * @return Node count.
+     */
+    size_t getReceivingInputNodeCount() const;
 
     /**
      * Returns a reference to the window this game instance is using.

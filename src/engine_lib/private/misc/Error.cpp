@@ -4,6 +4,12 @@
 #include <string>
 #include <filesystem>
 
+// Custom.
+#include "io/Logger.h"
+
+// External.
+#include "SDL_messagebox.h"
+
 Error::Error(std::string_view sMessage, const std::source_location location) {
     this->sMessage = sMessage;
 
@@ -61,19 +67,16 @@ std::string Error::getFullErrorMessage() const {
 
 std::string Error::getInitialMessage() const { return sMessage; }
 
-void Error::showError() const {
-    throw std::runtime_error(getFullErrorMessage());
-    //     const std::string sErrorMessage = getFullErrorMessage();
-    //     Logger::get().error(sErrorMessage);
+void Error::showErrorAndThrowException() const {
+    // Log error.
+    const std::string sErrorMessage = getFullErrorMessage();
+    Logger::get().error(sErrorMessage);
 
-    // #if defined(WIN32)
-    // #pragma push_macro("MessageBox")
-    // #undef MessageBox
-    // #endif
-    //     MessageBox::error("Error", sErrorMessage);
-    // #if defined(WIN32)
-    // #pragma pop_macro("MessageBox")
-    // #endif
+    // Show message box.
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", sErrorMessage.c_str(), nullptr);
+
+    // Throw.
+    throw std::runtime_error(sErrorMessage);
 }
 
 SourceLocationInfo Error::sourceLocationToInfo(const std::source_location& location) {

@@ -201,8 +201,7 @@ std::optional<Error> InputManager::saveToFile(std::string_view sFileName) {
                     std::to_string(static_cast<int>(std::get<GamepadButton>(button))));
             } else [[unlikely]] {
                 Error error("unhandled case");
-                error.showError();
-                throw std::runtime_error(error.getFullErrorMessage());
+                error.showErrorAndThrowException();
             }
         }
 
@@ -358,8 +357,7 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
                     vOutActionKeys.push_back(static_cast<GamepadButton>(iGamepadButton));
                 } else [[unlikely]] {
                     Error error("unhandled case");
-                    error.showError();
-                    throw std::runtime_error(error.getFullErrorMessage());
+                    error.showErrorAndThrowException();
                 }
             }
 

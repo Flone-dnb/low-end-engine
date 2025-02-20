@@ -1,7 +1,7 @@
 #pragma once
 
-// Standard.
-#include <stdexcept>
+// Custom.
+#include "misc/Error.h"
 
 // External.
 #define SDL_MAIN_HANDLED
@@ -20,7 +20,8 @@ private:
     SdlManager() {
         // Initialize SDL.
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
-            throw std::runtime_error("failed to initialize SDL");
+            Error error("failed to initialize SDL");
+            error.showErrorAndThrowException();
         }
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // IF CHANGING
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1); // ALSO CHANGE GLAD

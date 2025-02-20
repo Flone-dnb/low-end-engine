@@ -104,10 +104,7 @@ if (std::holds_alternative<Error>(result)) {
 
     // Since here we won't propagate the error up (because we are in the `main.cpp` file) we show an error message.
     // If we want to propagate the error up we can return the error object after using the `Error::addCurrentLocationToErrorStack`.
-    error.showError();
-
-    // ... and throw an exception to show an unrecoverable error.
-    throw std::runtime_error(error.getFullErrorMessage());
+    error.showErrorAndThrowException();
 }
 
 // Window was created successfully.

@@ -28,10 +28,12 @@ public:
      * Creates a new window.
      *
      * @param sWindowName Name of the window.
+     * @param bIsHidden   Specify `true` to create an invisible window (generally used in automated testing).
      *
      * @return Error if something went wrong, otherwise created window.
      */
-    static std::variant<std::unique_ptr<Window>, Error> create(std::string_view sWindowName);
+    static std::variant<std::unique_ptr<Window>, Error>
+    create(std::string_view sWindowName, bool bIsHidden = false);
 
     /**
      * Whether the cursor is visible or not (locked in this window).
@@ -85,6 +87,28 @@ public:
      * @return `nullptr` if not created yet or was destroyed, otherwise valid pointer.
      */
     GameManager* getGameManager() const;
+
+    /**
+     * Called when the window (that owns this object) receives keyboard input.
+     *
+     * @remark Made public so that you can simulate input in your automated tests.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) const;
+
+    /**
+     * Called when the window (that owns this object) receives mouse input.
+     *
+     * @remark Made public so that you can simulate input in your automated tests.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the button down event occurred or button up.
+     */
+    void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const;
 
 private:
     /**
@@ -140,8 +164,7 @@ inline void Window::processEvents() {
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
     pGameManager = std::get<std::unique_ptr<GameManager>>(std::move(result));
 

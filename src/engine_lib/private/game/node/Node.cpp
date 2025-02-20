@@ -86,13 +86,13 @@ void Node::addChildNode(
 
     // Make sure the specified node is not our parent.
     if (pNode->isParentOf(this)) {
-        Logger::get().error(std::format(
+        Error error(std::format(
             "an attempt was made to attach the \"{}\" node to the node \"{}\", "
             "but the first node is a parent of the second node, "
             "aborting this operation",
             pNode->getNodeName(),
             getNodeName()));
-        return;
+        error.showErrorAndThrowException();
     }
 
     // Prepare unique_ptr to add to our "child nodes" array.
@@ -103,9 +103,8 @@ void Node::addChildNode(
     if (pNode->mtxParentNode.second != nullptr) {
         // Make sure we were given a raw pointer.
         if (!std::holds_alternative<Node*>(node)) [[unlikely]] {
-            Logger::get().error(
-                std::format("expected a raw pointer for the node \"{}\"", pNode->getNodeName()));
-            return;
+            Error error(std::format("expected a raw pointer for the node \"{}\"", pNode->getNodeName()));
+            error.showErrorAndThrowException();
         }
 
         // Check if we are already this node's parent.
@@ -133,26 +132,26 @@ void Node::addChildNode(
         }
 
         if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Logger::get().error(std::format(
+            Error error(std::format(
                 "the node \"{}\" has parent node \"{}\" but parent node does not have this node in its array "
                 "of child nodes",
                 pNode->getNodeName(),
                 pNode->mtxParentNode.second->getNodeName()));
-            return;
+            error.showErrorAndThrowException();
         }
     } else {
         if (std::holds_alternative<Node*>(node)) [[unlikely]] {
             // We need a unique_ptr.
-            Logger::get().error(std::format(
+            Error error(std::format(
                 "expected a unique pointer for the node \"{}\" because it does not have a parent",
                 pNode->getNodeName()));
-            return;
+            error.showErrorAndThrowException();
         }
 
         pNodeToAttachToThis = std::move(std::get<std::unique_ptr<Node>>(node));
         if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Logger::get().error("unexpected nullptr");
-            return;
+            Error error("unexpected nullptr");
+            error.showErrorAndThrowException();
         }
     }
 
@@ -190,48 +189,50 @@ void Node::unsafeDetachFromParentAndDespawn() {
     Logger::get().info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
     Logger::get().flushToDisk(); // flush in case if we crash later
 
-    if (getWorldRootNodeWhileSpawned() == this) [[unlikely]] {
-        Error error("instead of despawning world's root node, create/replace world using GameInstance "
-                    "functions, this would destroy the previous world with all nodes");
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
-    }
-
-    // Detach from parent.
-    std::scoped_lock guard(mtxIsSpawned.first, mtxParentNode.first);
     std::unique_ptr<Node> pSelf;
 
-    if (mtxParentNode.second != nullptr) {
-        // Notify.
-        notifyAboutDetachingFromParent(true);
+    {
+        if (getWorldRootNodeWhileSpawned() == this) [[unlikely]] {
+            Error error("instead of despawning world's root node, create/replace world using GameInstance "
+                        "functions, this would destroy the previous world with all nodes");
+            error.showErrorAndThrowException();
+        }
 
-        // Remove this node from parent's children array.
-        std::scoped_lock parentChildGuard(mtxParentNode.second->mtxChildNodes.first);
-        auto& parentChildren = mtxParentNode.second->mtxChildNodes.second;
-        for (auto it = parentChildren.begin(); it != parentChildren.end(); ++it) {
-            if ((*it).get() == this) {
-                pSelf = std::move(*it);
-                parentChildren.erase(it);
-                break;
+        // Detach from parent.
+        std::scoped_lock guard(mtxIsSpawned.first, mtxParentNode.first);
+
+        if (mtxParentNode.second != nullptr) {
+            // Notify.
+            notifyAboutDetachingFromParent(true);
+
+            // Remove this node from parent's children array.
+            std::scoped_lock parentChildGuard(mtxParentNode.second->mtxChildNodes.first);
+            auto& parentChildren = mtxParentNode.second->mtxChildNodes.second;
+            for (auto it = parentChildren.begin(); it != parentChildren.end(); ++it) {
+                if ((*it).get() == this) {
+                    pSelf = std::move(*it);
+                    parentChildren.erase(it);
+                    break;
+                }
             }
+
+            if (pSelf == nullptr) [[unlikely]] {
+                Logger::get().error(std::format(
+                    "node \"{}\" has a parent node but parent's children array "
+                    "does not contain this node.",
+                    getNodeName()));
+            }
+
+            // Clear parent.
+            mtxParentNode.second = nullptr;
         }
 
-        if (pSelf == nullptr) [[unlikely]] {
-            Logger::get().error(std::format(
-                "node \"{}\" has a parent node but parent's children array "
-                "does not contain this node.",
-                getNodeName()));
+        // don't unlock mutexes yet
+
+        if (mtxIsSpawned.second) {
+            // Despawn.
+            despawn();
         }
-
-        // Clear parent.
-        mtxParentNode.second = nullptr;
-    }
-
-    // don't unlock mutexes yet
-
-    if (mtxIsSpawned.second) {
-        // Despawn.
-        despawn();
     }
 
     // Delete self.
@@ -393,8 +394,7 @@ void Node::setTickGroup(TickGroup tickGroup) {
     std::scoped_lock guard(mtxIsSpawned.first);
     if (mtxIsSpawned.second) [[unlikely]] {
         Error error("this function should not be called while the node is spawned");
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
 
     this->tickGroup = tickGroup;
@@ -408,15 +408,13 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
         Error error(std::format(
             "this function should not be called while the node is not spawned (called from node \"{}\")",
             sNodeName));
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
 
     if (pWorldWeSpawnedIn == nullptr) [[unlikely]] {
         Error error(std::format(
             "spawned node \"{}\" attempted to request the game instance but world is nullptr", sNodeName));
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
 
     return pWorldWeSpawnedIn->pGameManager->getGameInstance();
@@ -583,8 +581,7 @@ World* Node::askParentsAboutWorldPointer() {
             "node \"{}\" can't find a pointer to a valid world instance because "
             "there is no parent node",
             getNodeName()));
-        err.showError();
-        throw std::runtime_error(err.getFullErrorMessage());
+        err.showErrorAndThrowException();
     }
 
     return mtxParentNode.second->askParentsAboutWorldPointer();

@@ -51,6 +51,20 @@ void GameInstance::onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers
     it->second(modifiers, input);
 }
 
+Node* GameInstance::getWorldRootNode() const { return pWindow->getGameManager()->getWorldRootNode(); }
+
+size_t GameInstance::getTotalSpawnedNodeCount() const {
+    return pWindow->getGameManager()->getTotalSpawnedNodeCount();
+}
+
+size_t GameInstance::getCalledEveryFrameNodeCount() const {
+    return pWindow->getGameManager()->getCalledEveryFrameNodeCount();
+}
+
+size_t GameInstance::getReceivingInputNodeCount() const {
+    return pWindow->getGameManager()->getReceivingInputNodeCount();
+}
+
 Window* GameInstance::getWindow() const { return pWindow; }
 
 InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }

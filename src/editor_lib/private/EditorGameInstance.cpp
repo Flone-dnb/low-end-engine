@@ -23,8 +23,7 @@ void EditorGameInstance::registerEditorInputEvents() {
     const auto showErrorIfNotEmpty = [](std::optional<Error>& optionalError) {
         if (optionalError.has_value()) [[unlikely]] {
             optionalError->addCurrentLocationToErrorStack();
-            optionalError->showError();
-            throw std::runtime_error(optionalError->getFullErrorMessage());
+            optionalError->showErrorAndThrowException();
         }
     };
 

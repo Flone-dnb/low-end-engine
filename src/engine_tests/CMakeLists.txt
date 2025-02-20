@@ -20,6 +20,7 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 set(PROJECT_SOURCES
     src/main.cpp
     src/input/InputManager.cpp
+    src/node/Node.cpp
     # add your .h/.cpp files here
 )
 

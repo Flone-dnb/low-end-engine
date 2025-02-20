@@ -111,6 +111,18 @@ Node* World::getRootNode() {
     return mtxRootNode.second.get();
 }
 
+size_t World::getTotalSpawnedNodeCount() {
+    std::scoped_lock guard(mtxSpawnedNodes.first);
+
+    return mtxSpawnedNodes.second.size();
+}
+
+size_t World::getCalledEveryFrameNodeCount() {
+    std::scoped_lock guard(mtxTickableNodes.first);
+
+    return mtxTickableNodes.second.getTotalNodeCount();
+}
+
 void World::onNodeSpawned(Node* pNode) {
     {
         // Get node ID.
@@ -121,8 +133,7 @@ void World::onNodeSpawned(Node* pNode) {
             Error error(std::format(
                 "node \"{}\" notified the world about being spawned but its ID is invalid",
                 pNode->getNodeName()));
-            error.showError();
-            throw std::runtime_error(error.getFullErrorMessage());
+            error.showErrorAndThrowException();
         }
 
         const auto iNodeId = optionalNodeId.value();
@@ -137,8 +148,7 @@ void World::onNodeSpawned(Node* pNode) {
                 "already a spawned node with this ID",
                 pNode->getNodeName(),
                 iNodeId));
-            error.showError();
-            throw std::runtime_error(error.getFullErrorMessage());
+            error.showErrorAndThrowException();
         }
 
         // Save node.
@@ -179,8 +189,7 @@ void World::onNodeDespawned(Node* pNode) {
             Error error(std::format(
                 "node \"{}\" notified the world about being despawned but its ID is invalid",
                 pNode->getNodeName()));
-            error.showError();
-            throw std::runtime_error(error.getFullErrorMessage());
+            error.showErrorAndThrowException();
         }
 
         const auto iNodeId = optionalNodeId.value();
@@ -195,8 +204,7 @@ void World::onNodeDespawned(Node* pNode) {
                 "ID is not found",
                 pNode->getNodeName(),
                 iNodeId));
-            error.showError();
-            throw std::runtime_error(error.getFullErrorMessage());
+            error.showErrorAndThrowException();
         }
 
         // Remove node.
@@ -235,8 +243,7 @@ void World::onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode) {
     // Make sure the node ID is valid.
     if (!optionalNodeId.has_value()) [[unlikely]] {
         Error error(std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
     const auto iNodeId = optionalNodeId.value();
 
@@ -309,8 +316,7 @@ void World::onSpawnedNodeChangedIsReceivingInput(Node* pNode) {
     // Make sure ID is valid.
     if (!optionalNodeId.has_value()) [[unlikely]] {
         Error error(std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
 
     // Save node ID.

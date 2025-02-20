@@ -51,6 +51,47 @@ void GameManager::createWorld(const std::function<void()>& onCreated) {
         WorldCreationTask{.onCreated = onCreated, .pathToNodeTreeToLoad = {}};
 }
 
+size_t GameManager::getReceivingInputNodeCount() {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    if (mtxWorldData.second.pWorld == nullptr) {
+        return 0;
+    }
+
+    const auto nodeGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+    return nodeGuard.getNodes()->size();
+}
+
+size_t GameManager::getTotalSpawnedNodeCount() {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    if (mtxWorldData.second.pWorld == nullptr) {
+        return 0;
+    }
+
+    return mtxWorldData.second.pWorld->getTotalSpawnedNodeCount();
+}
+
+size_t GameManager::getCalledEveryFrameNodeCount() {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    if (mtxWorldData.second.pWorld == nullptr) {
+        return 0;
+    }
+
+    return mtxWorldData.second.pWorld->getCalledEveryFrameNodeCount();
+}
+
+Node* GameManager::getWorldRootNode() {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    if (mtxWorldData.second.pWorld == nullptr) {
+        return nullptr;
+    }
+
+    return mtxWorldData.second.pWorld->getRootNode();
+}
+
 void GameManager::onGameStarted() {
     // Log game start so that it will be slightly easier to read logs.
     Logger::get().info(
@@ -235,8 +276,7 @@ void GameManager::triggerActionEvents(
                     iActionId));
             } else [[unlikely]] {
                 Error error("unhandled case");
-                error.showError();
-                throw std::runtime_error(error.getFullErrorMessage());
+                error.showErrorAndThrowException();
             }
         }
 

@@ -3,7 +3,7 @@
 // Custom.
 #include "render/SdlManager.hpp"
 
-std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName) {
+std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName, bool bIsHidden) {
     // Initialize SDL.
     SdlManager::init();
 
@@ -11,14 +11,15 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
     SDL_DisplayMode mode;
     SDL_GetCurrentDisplayMode(0, &mode);
 
+    // Prepare flags.
+    auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP;
+    if (bIsHidden) {
+        windowFlags |= SDL_WINDOW_HIDDEN;
+    }
+
     // Create SDL window.
     const auto pSdlWindow = SDL_CreateWindow(
-        sWindowName.data(),
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        mode.w,
-        mode.h,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP);
+        sWindowName.data(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mode.w, mode.h, windowFlags);
     if (pSdlWindow == nullptr) [[unlikely]] {
         return Error(SDL_GetError());
     }
@@ -43,18 +44,18 @@ bool Window::processWindowEvent(const SDL_Event& event) {
         break;
     }
     case (SDL_MOUSEBUTTONDOWN): {
-        pGameManager->onMouseInput(
+        onMouseInput(
             static_cast<MouseButton>(event.button.button), KeyboardModifiers(SDL_GetModState()), true);
         break;
     }
     case (SDL_MOUSEBUTTONUP): {
-        pGameManager->onMouseInput(
+        onMouseInput(
             static_cast<MouseButton>(event.button.button), KeyboardModifiers(SDL_GetModState()), false);
         break;
     }
     case (SDL_KEYDOWN): {
         if (event.key.repeat == 0) {
-            pGameManager->onKeyboardInput(
+            onKeyboardInput(
                 static_cast<KeyboardButton>(event.key.keysym.sym),
                 KeyboardModifiers(event.key.keysym.mod),
                 true);
@@ -62,7 +63,7 @@ bool Window::processWindowEvent(const SDL_Event& event) {
         break;
     }
     case (SDL_KEYUP): {
-        pGameManager->onKeyboardInput(
+        onKeyboardInput(
             static_cast<KeyboardButton>(event.key.keysym.sym),
             KeyboardModifiers(event.key.keysym.mod),
             false);
@@ -152,6 +153,14 @@ SDL_Window* Window::getSdlWindow() const { return pSdlWindow; }
 
 GameManager* Window::getGameManager() const { return pGameManager.get(); }
 
+void Window::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) const {
+    pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown);
+}
+
+void Window::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const {
+    pGameManager->onMouseInput(button, modifiers, bIsPressedDown);
+}
+
 Window::Window(SDL_Window* pCreatedWindow) {
     pSdlWindow = pCreatedWindow;
 
@@ -163,8 +172,7 @@ void Window::showErrorIfNotOnMainThread() const {
     const auto currentThreadId = std::this_thread::get_id();
     if (currentThreadId != mainThreadId) [[unlikely]] {
         Error error("an attempt was made to call a function that should only be called on the main thread");
-        error.showError();
-        throw std::runtime_error(error.getFullErrorMessage());
+        error.showErrorAndThrowException();
     }
 }
 

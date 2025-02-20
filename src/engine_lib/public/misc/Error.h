@@ -102,10 +102,8 @@ public:
      */
     std::string getInitialMessage() const;
 
-    /**
-     * Creates an error string, shows it on screen and also writes it to log.
-     */
-    void showError() const;
+    /** Logs @ref getFullErrorMessage, shows it on screen and throws an exception. */
+    [[noreturn]] void showErrorAndThrowException() const;
 
 protected:
     /**

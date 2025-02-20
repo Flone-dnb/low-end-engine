@@ -18,6 +18,7 @@
 class Renderer;
 class GameInstance;
 class World;
+class Node;
 
 /**
  * Controls main game objects: game instance, input manager, renderer,
@@ -45,6 +46,34 @@ public:
      * and other game objects will be destroyed while the world is changing.
      */
     void createWorld(const std::function<void()>& onCreated);
+
+    /**
+     * Returns the total number of spawned nodes that receive input.
+     *
+     * @return Node count.
+     */
+    size_t getReceivingInputNodeCount();
+
+    /**
+     * Returns total amount of currently spawned nodes.
+     *
+     * @return Total nodes spawned right now.
+     */
+    size_t getTotalSpawnedNodeCount();
+
+    /**
+     * Returns the current amount of spawned nodes that are marked as "should be called every frame".
+     *
+     * @return Amount of spawned nodes that should be called every frame.
+     */
+    size_t getCalledEveryFrameNodeCount();
+
+    /**
+     * Returns a pointer to world's root node.
+     *
+     * @return `nullptr` if world is not created or was destroyed, otherwise valid pointer.
+     */
+    Node* getWorldRootNode();
 
     /**
      * Returns window that owns this object.
