@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(low-end-engine)
+project(low_end_engine)
 
 option(DISABLE_DEV_STUFF "Enable to disable things like tests, clang-tidy and other dev tools." OFF)
 

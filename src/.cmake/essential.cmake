@@ -27,6 +27,7 @@ endif()
 
 # Set directory name for dependencies.
 set(DEPENDENCY_BUILD_DIR_NAME dep)
+set(DLL_DIRECTORY_TO_COPY dlls_to_copy)
 
 # Enable cmake folders.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

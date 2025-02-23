@@ -70,6 +70,11 @@ else()
 endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC ${ENGINE_LIB_TARGET})
 add_dependencies(${PROJECT_NAME} ${ENGINE_LIB_TARGET})
+# Copy DLLs.
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${DLL_DIRECTORY_TO_COPY}"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
 # Add `Catch2`.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"Catch2\"...")
