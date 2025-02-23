@@ -50,6 +50,7 @@ set(PROJECT_SOURCES
     public/game/node/Node.h
     private/game/node/SpatialNode.cpp
     public/game/node/SpatialNode.h
+    public/game/node/NodeTickGroup.hpp
     public/input/InputManager.h
     public/input/KeyboardButton.hpp
     public/input/MouseButton.hpp

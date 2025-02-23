@@ -179,16 +179,16 @@ void World::onNodeSpawned(Node* pNode) {
     }
 }
 
-void World::onNodeDespawned(Node* pNode) {
+void World::onNodeDespawned(Node* pNodeToBeDeleted) {
     {
         // Get node ID.
-        const auto optionalNodeId = pNode->getNodeId();
+        const auto optionalNodeId = pNodeToBeDeleted->getNodeId();
 
         // Make sure ID is valid.
         if (!optionalNodeId.has_value()) [[unlikely]] {
             Error error(std::format(
                 "node \"{}\" notified the world about being despawned but its ID is invalid",
-                pNode->getNodeName()));
+                pNodeToBeDeleted->getNodeName()));
             error.showErrorAndThrowException();
         }
 
@@ -202,7 +202,7 @@ void World::onNodeDespawned(Node* pNode) {
             Error error(std::format(
                 "node \"{}\" with ID \"{}\" notified the world about being despawned but this node's "
                 "ID is not found",
-                pNode->getNodeName(),
+                pNodeToBeDeleted->getNodeName(),
                 iNodeId));
             error.showErrorAndThrowException();
         }
@@ -214,18 +214,19 @@ void World::onNodeDespawned(Node* pNode) {
     {
         std::scoped_lock guard(mtxTasksToExecuteAfterNodeTick.first, mtxIsIteratingOverNodes.first);
 
-        const auto executeOperation = [this, pNode]() {
-            // Force iterate over all ticking nodes and remove this node if it's marked as ticking in our
-            // arrays.
-            // We don't check `Node::isCalledEveryFrame` here simply because the node can disable it
-            // and despawn right after disabling it. If we check `Node::isCalledEveryFrame` we
-            // might not remove the node from our arrays and it will continue ticking (error).
-            // We even have a test for this bug.
-            removeTickableNode(pNode);
+        const auto executeOperation =
+            [this, pDeletedNode = pNodeToBeDeleted, tickGroup = pNodeToBeDeleted->getTickGroup()]() {
+                // Force iterate over all ticking nodes and remove this node if it's marked as ticking in our
+                // arrays.
+                // We don't check `Node::isCalledEveryFrame` here simply because the node can disable it
+                // and despawn right after disabling it. If we check `Node::isCalledEveryFrame` we
+                // might not remove the node from our arrays and it will continue ticking (error).
+                // We even have a test for this bug.
+                removeTickableNode(pDeletedNode, tickGroup);
 
-            // Not checking for `Node::isReceivingInput` for the same reason as above.
-            removeNodeFromReceivingInputArray(pNode);
-        };
+                // Not checking for `Node::isReceivingInput` for the same reason as above.
+                removeNodeFromReceivingInputArray(pDeletedNode);
+            };
 
         if (mtxIsIteratingOverNodes.second) {
             // Modify our array as "deferred" task (see onNodeSpawned for the reason).
@@ -274,7 +275,7 @@ void World::onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode) {
                 addTickableNode(pNode);
             } else if (bPreviousIsCalledEveryFrame && !bIsCalledEveryFrame) {
                 // Was enabled but now disabled.
-                removeTickableNode(pNode);
+                removeTickableNode(pNode, {});
             }
         };
 
@@ -293,11 +294,11 @@ void World::addNodeToReceivingInputArray(Node* pNode) {
     mtxReceivingInputNodes.second.insert(pNode);
 }
 
-void World::removeNodeFromReceivingInputArray(Node* pNode) {
+void World::removeNodeFromReceivingInputArray(Node* pMaybeDeletedNode) {
     std::scoped_lock guard(mtxReceivingInputNodes.first);
 
     // Find in array.
-    const auto it = mtxReceivingInputNodes.second.find(pNode);
+    const auto it = mtxReceivingInputNodes.second.find(pMaybeDeletedNode);
     if (it == mtxReceivingInputNodes.second.end()) {
         // Not found.
         // This might happen if the node had the setting disabled and then quickly
@@ -375,10 +376,18 @@ void World::addTickableNode(Node* pNode) {
     pTickGroup->insert(pNode);
 }
 
-void World::removeTickableNode(Node* pNode) {
-    // Pick the tick group that the node uses.
+void World::removeTickableNode(Node* pMaybeDeletedNode, std::optional<TickGroup> tickGroupOfDeletedNode) {
+    // Pick the tick group that the node used.
     std::unordered_set<Node*>* pTickGroup = nullptr;
-    if (pNode->getTickGroup() == TickGroup::FIRST) {
+
+    TickGroup tickGroup = TickGroup::FIRST;
+    if (tickGroupOfDeletedNode.has_value()) {
+        tickGroup = *tickGroupOfDeletedNode;
+    } else {
+        tickGroup = pMaybeDeletedNode->getTickGroup();
+    }
+
+    if (tickGroup == TickGroup::FIRST) {
         pTickGroup = &mtxTickableNodes.second.firstTickGroup;
     } else {
         pTickGroup = &mtxTickableNodes.second.secondTickGroup;
@@ -386,7 +395,7 @@ void World::removeTickableNode(Node* pNode) {
 
     // Find in array.
     std::scoped_lock guard(mtxTickableNodes.first);
-    const auto it = pTickGroup->find(pNode);
+    const auto it = pTickGroup->find(pMaybeDeletedNode);
     if (it == pTickGroup->end()) {
         // Not found.
         // This might happen if the node had the setting disabled and then quickly

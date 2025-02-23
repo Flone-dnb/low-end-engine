@@ -6,6 +6,10 @@
 #include <functional>
 #include <queue>
 #include <unordered_set>
+#include <optional>
+
+// Custom.
+#include "game/node/NodeTickGroup.hpp"
 
 class Node;
 class GameManager;
@@ -151,9 +155,11 @@ private:
     /**
      * Called from Node to notify the World about a node being despawned.
      *
-     * @param pNode Node that is being despawned.
+     * @warning After this function is finished node pointer can point to deleted memory.
+     *
+     * @param pNodeToBeDeleted Node that is being despawned.
      */
-    void onNodeDespawned(Node* pNode);
+    void onNodeDespawned(Node* pNodeToBeDeleted);
 
     /**
      * Adds the specified node to @ref mtxTickableNodes.
@@ -165,9 +171,10 @@ private:
     /**
      * Looks if the specified node exists in @ref mtxTickableNodes and removes the node.
      *
-     * @param pNode Node to remove.
+     * @param pMaybeDeletedNode      Node to remove.
+     * @param tickGroupOfDeletedNode Specify if the node points to deleted memory.
      */
-    void removeTickableNode(Node* pNode);
+    void removeTickableNode(Node* pMaybeDeletedNode, std::optional<TickGroup> tickGroupOfDeletedNode);
 
     /**
      * Called from Node to notify the World about a spawned node changed its "is called every frame"
@@ -192,9 +199,9 @@ private:
      * Looks if the specified node exists in the array of "receiving input" nodes
      * and removes the node from the array (see @ref mtxReceivingInputNodes).
      *
-     * @param pNode Node to remove.
+     * @param pMaybeDeletedNode Node to remove. Can point to deleted memory.
      */
-    void removeNodeFromReceivingInputArray(Node* pNode);
+    void removeNodeFromReceivingInputArray(Node* pMaybeDeletedNode);
 
     /**
      * Called from Node to notify the World about a spawned node changed its "is receiving input"
