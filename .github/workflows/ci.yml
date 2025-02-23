@@ -32,7 +32,7 @@ jobs:
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug ..
         cmake --build . --target engine_tests --config Debug
         xcopy .\OUTPUT\engine_tests\Debug\Debug\ .\OUTPUT\engine_tests\Debug\ /s /e /y
-        ./OUTPUT/engine_tests/engine_tests.exe
+        ./OUTPUT/engine_tests/Debug/engine_tests.exe
       working-directory: build
     - name: Build (release)
       run: |
@@ -44,5 +44,5 @@ jobs:
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
         cmake --build . --target engine_tests --config Release
         xcopy .\OUTPUT\engine_tests\Release\Release\ .\OUTPUT\engine_tests\Release\ /s /e /y
-        ./OUTPUT/engine_tests/engine_tests.exe
+        ./OUTPUT/engine_tests/Release/engine_tests.exe
       working-directory: build
