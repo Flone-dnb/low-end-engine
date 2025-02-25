@@ -51,12 +51,19 @@ target_include_directories(${PROJECT_NAME} PUBLIC private)
 #                                           TOOLS
 # -------------------------------------------------------------------------------------------------
 
+# asan
 if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
     enable_address_sanitizer()
 endif()
 
+# clang-tidy
 if (IS_RELEASE_BUILD AND NOT DISABLE_DEV_STUFF)
     enable_clang_tidy(${CMAKE_CURRENT_LIST_DIR}/../../.clang-tidy)
+endif()
+
+# node super call checker
+if (NOT DISABLE_DEV_STUFF)
+    add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/node ${CMAKE_CURRENT_LIST_DIR}/private/node)
 endif()
 
 # -------------------------------------------------------------------------------------------------

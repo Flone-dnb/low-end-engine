@@ -25,9 +25,10 @@ if(WIN32)
     add_compile_definitions(_WIN32)
 endif()
 
-# Set directory name for dependencies.
+# Define some names.
 set(DEPENDENCY_BUILD_DIR_NAME dep)
 set(DLL_DIRECTORY_TO_COPY dlls_to_copy)
+set(SUPER_CALL_CHECKER_NAME node_super_call_checker)
 
 # Enable cmake folders.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
