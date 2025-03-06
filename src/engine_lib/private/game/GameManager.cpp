@@ -4,15 +4,17 @@
 #include "io/Logger.h"
 #include "game/World.h"
 #include "game/node/Node.h"
+#include "game/camera/CameraManager.h"
 
 GameManager::GameManager(
     Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance)
     : pWindow(pWindow) {
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
+    pCameraManager = std::make_unique<CameraManager>(pRenderer.get());
 }
 
-GameManager::~GameManager() {
+void GameManager::destroy() {
     // Log destruction so that it will be slightly easier to read logs.
     Logger::get().info("\n\n\n-------------------- starting game manager destruction... "
                        "--------------------\n\n");
@@ -40,6 +42,18 @@ GameManager::~GameManager() {
 
     // After game instance, destroy the renderer.
     pRenderer = nullptr;
+
+    // Done.
+    bIsDestroyed = true;
+}
+
+GameManager::~GameManager() {
+    if (bIsDestroyed) {
+        return;
+    }
+
+    Error error("unexpected state");
+    error.showErrorAndThrowException();
 }
 
 void GameManager::createWorld(const std::function<void()>& onCreated) {
@@ -493,6 +507,8 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 Window* GameManager::getWindow() const { return pWindow; }
 
 InputManager* GameManager::getInputManager() { return &inputManager; }
+
+CameraManager* GameManager::getCameraManager() const { return pCameraManager.get(); }
 
 Renderer* GameManager::getRenderer() const { return pRenderer.get(); }
 

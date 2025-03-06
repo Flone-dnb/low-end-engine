@@ -209,7 +209,10 @@ inline void Window::processEvents() {
     // Notify game manager about window closed.
     pGameManager->onWindowClose();
 
-    // Destroy game manager.
+    // Explicitly destroy game manager - destroy world, nodes and other stuff before setting the `nullptr` to
+    // the game manager's unique_ptr because various nodes might access game manager while the world was not
+    // destroyed yet (and they are allowed to do that).
+    pGameManager->destroy();
     pGameManager = nullptr;
     Logger::get().info("game manager is destroyed");
 }

@@ -283,8 +283,8 @@ glm::mat4x4 SpatialNode::getRelativeRotationMatrix() {
     return mtxLocalSpace.second.relativeRotationMatrix;
 }
 
-std::pair<std::recursive_mutex*, SpatialNode*> SpatialNode::getClosestSpatialParent() {
-    return {&mtxSpatialParent.first, mtxSpatialParent.second};
+std::pair<std::recursive_mutex, SpatialNode*>& SpatialNode::getClosestSpatialParent() {
+    return mtxSpatialParent;
 }
 
 void SpatialNode::applyAttachmentRule(

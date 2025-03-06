@@ -19,6 +19,7 @@ class Renderer;
 class GameInstance;
 class World;
 class Node;
+class CameraManager;
 
 /**
  * Controls main game objects: game instance, input manager, renderer,
@@ -94,6 +95,15 @@ public:
     InputManager* getInputManager();
 
     /**
+     * Returns camera manager.
+     *
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer.
+     */
+    CameraManager* getCameraManager() const;
+
+    /**
      * Returns game's renderer.
      *
      * @warning Do not delete (free) returned pointer.
@@ -158,6 +168,15 @@ private:
      */
     GameManager(
         Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance);
+
+    /**
+     * Must be called before destructor to destroy the world, all nodes and various systems
+     *
+     * @remark We destroy world before setting the `nullptr` to the game manager unique_ptr because
+     * during game destruction (inside of this function) various nodes might access game manager
+     * (and they are allowed while the world was not destroyed).
+     */
+    void destroy();
 
     /**
      * Called by owner Window to notify game instance about game being started (everything is set up).
@@ -285,8 +304,14 @@ private:
     /** Created game instance. */
     std::unique_ptr<GameInstance> pGameInstance;
 
+    /** Determines which camera is used as in-game eyes. */
+    std::unique_ptr<CameraManager> pCameraManager;
+
     /** Game world, stores world's node tree. */
     std::pair<std::recursive_mutex, WorldData> mtxWorldData;
+
+    /** Determines if @ref destroy was called or not. */
+    bool bIsDestroyed = false;
 
     /** Do not delete this pointer. Window that owns this object, always valid pointer. */
     Window* const pWindow = nullptr;

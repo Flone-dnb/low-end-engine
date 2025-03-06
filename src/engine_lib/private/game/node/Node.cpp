@@ -1,8 +1,6 @@
 #include "game/node/Node.h"
 
 // Custom.
-#include "io/Logger.h"
-#include "misc/Error.h"
 #include "game/World.h"
 #include "game/GameManager.h"
 #include "game/node/SpatialNode.h"
@@ -22,168 +20,6 @@ static std::atomic<size_t> iTotalAliveNodeCount{0};
 static std::atomic<size_t> iAvailableNodeId{0};
 
 size_t Node::getAliveNodeCount() { return iTotalAliveNodeCount.load(); }
-
-void Node::addChildNode(
-    std::variant<std::unique_ptr<Node>, Node*> node,
-    AttachmentRule locationRule,
-    AttachmentRule rotationRule,
-    AttachmentRule scaleRule) {
-    // Save raw pointer for now.
-    Node* pNode = nullptr;
-    if (std::holds_alternative<Node*>(node)) {
-        pNode = std::get<Node*>(node);
-    } else {
-        pNode = std::get<std::unique_ptr<Node>>(node).get();
-    }
-
-    // Convert to spatial node for later use.
-    SpatialNode* pSpatialNode = dynamic_cast<SpatialNode*>(pNode);
-
-    // Save world rotation/location/scale for later use.
-    glm::vec3 worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
-    glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
-    glm::vec3 worldScale = glm::vec3(1.0F, 1.0F, 1.0F);
-    if (pSpatialNode != nullptr) {
-        worldLocation = pSpatialNode->getWorldLocation();
-        worldRotation = pSpatialNode->getWorldRotation();
-        worldScale = pSpatialNode->getWorldScale();
-    }
-
-    std::scoped_lock spawnGuard(mtxIsSpawned.first);
-
-    // Make sure the specified node is valid.
-    if (pNode == nullptr) [[unlikely]] {
-        Logger::get().warn(std::format(
-            "an attempt was made to attach a nullptr node to the \"{}\" node, aborting this "
-            "operation",
-            getNodeName()));
-        return;
-    }
-
-    // Make sure the specified node is not `this`.
-    if (pNode == this) [[unlikely]] {
-        Logger::get().warn(std::format(
-            "an attempt was made to attach the \"{}\" node to itself, aborting this "
-            "operation",
-            getNodeName()));
-        return;
-    }
-
-    std::scoped_lock guard(mtxChildNodes.first);
-
-    // Make sure the specified node is not our direct child.
-    for (const auto& pChildNode : mtxChildNodes.second) {
-        if (pChildNode.get() == pNode) [[unlikely]] {
-            Logger::get().warn(std::format(
-                "an attempt was made to attach the \"{}\" node to the \"{}\" node but it's already "
-                "a direct child node of \"{}\", aborting this operation",
-                pNode->getNodeName(),
-                getNodeName(),
-                getNodeName()));
-            return;
-        }
-    }
-
-    // Make sure the specified node is not our parent.
-    if (pNode->isParentOf(this)) {
-        Error error(std::format(
-            "an attempt was made to attach the \"{}\" node to the node \"{}\", "
-            "but the first node is a parent of the second node, "
-            "aborting this operation",
-            pNode->getNodeName(),
-            getNodeName()));
-        error.showErrorAndThrowException();
-    }
-
-    // Prepare unique_ptr to add to our "child nodes" array.
-    std::unique_ptr<Node> pNodeToAttachToThis = nullptr;
-
-    // Check if this node is already attached to some node.
-    std::scoped_lock parentGuard(pNode->mtxParentNode.first);
-    if (pNode->mtxParentNode.second != nullptr) {
-        // Make sure we were given a raw pointer.
-        if (!std::holds_alternative<Node*>(node)) [[unlikely]] {
-            Error error(std::format("expected a raw pointer for the node \"{}\"", pNode->getNodeName()));
-            error.showErrorAndThrowException();
-        }
-
-        // Check if we are already this node's parent.
-        if (pNode->mtxParentNode.second == this) {
-            Logger::get().warn(std::format(
-                "an attempt was made to attach the \"{}\" node to its parent again, "
-                "aborting this operation",
-                pNode->getNodeName()));
-            return;
-        }
-
-        // Notify start of detachment.
-        pNode->notifyAboutDetachingFromParent(true);
-
-        // Remove node from parent's "children" array.
-        std::scoped_lock parentsChildrenGuard(pNode->mtxParentNode.second->mtxChildNodes.first);
-
-        auto& parentsChildren = pNode->mtxParentNode.second->mtxChildNodes.second;
-        for (auto it = parentsChildren.begin(); it != parentsChildren.end(); ++it) {
-            if ((*it).get() == pNode) {
-                pNodeToAttachToThis = std::move(*it);
-                parentsChildren.erase(it);
-                break;
-            }
-        }
-
-        if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Error error(std::format(
-                "the node \"{}\" has parent node \"{}\" but parent node does not have this node in its array "
-                "of child nodes",
-                pNode->getNodeName(),
-                pNode->mtxParentNode.second->getNodeName()));
-            error.showErrorAndThrowException();
-        }
-    } else {
-        if (std::holds_alternative<Node*>(node)) [[unlikely]] {
-            // We need a unique_ptr.
-            Error error(std::format(
-                "expected a unique pointer for the node \"{}\" because it does not have a parent",
-                pNode->getNodeName()));
-            error.showErrorAndThrowException();
-        }
-
-        pNodeToAttachToThis = std::move(std::get<std::unique_ptr<Node>>(node));
-        if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Error error("unexpected nullptr");
-            error.showErrorAndThrowException();
-        }
-    }
-
-    // Add node to our children array.
-    pNode->mtxParentNode.second = this;
-    mtxChildNodes.second.push_back(std::move(pNodeToAttachToThis));
-
-    // The specified node is not attached.
-
-    // Notify the node (here, SpatialNode will save a pointer to the first SpatialNode in the parent
-    // chain and will use it in `setWorld...` operations).
-    pNode->notifyAboutAttachedToNewParent(true);
-
-    // Now after the SpatialNode did its `onAfterAttached` logic `setWorld...` calls when applying
-    // attachment rule will work.
-    // Apply attachment rule (if possible).
-    if (pSpatialNode != nullptr) {
-        pSpatialNode->applyAttachmentRule(
-            locationRule, worldLocation, rotationRule, worldRotation, scaleRule, worldScale);
-    }
-
-    // don't unlock node's parent lock here yet, still doing some logic based on the new parent
-
-    // Spawn/despawn node if needed.
-    if (isSpawned() && !pNode->isSpawned()) {
-        // Spawn node.
-        pNode->spawn();
-    } else if (!isSpawned() && pNode->isSpawned()) {
-        // Despawn node.
-        pNode->despawn();
-    }
-}
 
 void Node::unsafeDetachFromParentAndDespawn() {
     Logger::get().info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
@@ -422,16 +258,16 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
 
 std::pair<
     std::recursive_mutex,
-    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>*
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&
 Node::getActionEventBindings() {
-    return &mtxBindedActionEvents;
+    return mtxBindedActionEvents;
 }
 
 std::pair<
     std::recursive_mutex,
-    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>*
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
 Node::getAxisEventBindings() {
-    return &mtxBindedAxisEvents;
+    return mtxBindedAxisEvents;
 }
 
 std::recursive_mutex* Node::getSpawnDespawnMutex() { return &mtxIsSpawned.first; }
@@ -585,4 +421,41 @@ World* Node::askParentsAboutWorldPointer() {
     }
 
     return mtxParentNode.second->askParentsAboutWorldPointer();
+}
+
+void Node::getNodeWorldLocationRotationScale(
+    Node* pNode, glm::vec3& worldLocation, glm::vec3& worldRotation, glm::vec3& worldScale) {
+    worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
+    worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
+    worldScale = glm::vec3(1.0F, 1.0F, 1.0F);
+
+    const auto pSpatialNode = dynamic_cast<SpatialNode*>(pNode);
+    if (pSpatialNode != nullptr) {
+        worldLocation = pSpatialNode->getWorldLocation();
+        worldRotation = pSpatialNode->getWorldRotation();
+        worldScale = pSpatialNode->getWorldScale();
+    }
+}
+
+void Node::applyAttachmentRuleForNode(
+    Node* pNode,
+    AttachmentRule locationRule,
+    const glm::vec3& worldLocationBeforeAttachment,
+    AttachmentRule rotationRule,
+    const glm::vec3& worldRotationBeforeAttachment,
+    AttachmentRule scaleRule,
+    const glm::vec3& worldScaleBeforeAttachment) {
+    // Cast type.
+    const auto pSpatialNode = dynamic_cast<SpatialNode*>(pNode);
+    if (pSpatialNode == nullptr) {
+        return;
+    }
+
+    pSpatialNode->applyAttachmentRule(
+        locationRule,
+        worldLocationBeforeAttachment,
+        rotationRule,
+        worldRotationBeforeAttachment,
+        scaleRule,
+        worldScaleBeforeAttachment);
 }

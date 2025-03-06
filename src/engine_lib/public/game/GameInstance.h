@@ -13,6 +13,7 @@
 class Window;
 class InputManager;
 class Node;
+class CameraManager;
 
 /**
  * Main game class, exists while the game window is not closed
@@ -69,6 +70,15 @@ public:
      * @return Always valid pointer.
      */
     Window* getWindow() const;
+
+    /**
+     * Returns a reference to the camera manager this game is using.
+     *
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer.
+     */
+    CameraManager* getCameraManager() const;
 
     /**
      * Returns a reference to the input manager this game instance is using.
@@ -218,7 +228,7 @@ protected:
      */
     std::pair<
         std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>*
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&
     getActionEventBindings();
 
     /**
@@ -246,7 +256,7 @@ protected:
      */
     std::pair<
         std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>*
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
     getAxisEventBindings();
 
 private:

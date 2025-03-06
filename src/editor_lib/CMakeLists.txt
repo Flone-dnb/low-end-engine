@@ -21,6 +21,8 @@ set(PROJECT_SOURCES
     public/EditorGameInstance.h
     private/EditorGameInstance.cpp
     private/input/EditorInputEventIds.hpp
+    public/node/EditorCameraNode.h
+    private/node/EditorCameraNode.cpp
     # add your .h/.cpp files here
 )
 

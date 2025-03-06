@@ -12,16 +12,16 @@ void GameInstance::createWorld(const std::function<void()>& onCreated) {
 
 std::pair<
     std::recursive_mutex,
-    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>*
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&
 GameInstance::getActionEventBindings() {
-    return &mtxBindedActionEvents;
+    return mtxBindedActionEvents;
 }
 
 std::pair<
     std::recursive_mutex,
-    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>*
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
 GameInstance::getAxisEventBindings() {
-    return &mtxBindedAxisEvents;
+    return mtxBindedAxisEvents;
 }
 
 void GameInstance::onInputActionEvent(
@@ -66,5 +66,9 @@ size_t GameInstance::getReceivingInputNodeCount() const {
 }
 
 Window* GameInstance::getWindow() const { return pWindow; }
+
+CameraManager* GameInstance::getCameraManager() const {
+    return pWindow->getGameManager()->getCameraManager();
+}
 
 InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }

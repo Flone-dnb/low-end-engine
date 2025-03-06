@@ -13,6 +13,9 @@
 // Custom.
 #include "input/KeyboardButton.hpp"
 #include "game/node/NodeTickGroup.hpp"
+#include "math/GLMath.hpp"
+#include "io/Logger.h"
+#include "misc/Error.h"
 
 class GameInstance;
 class World;
@@ -68,36 +71,6 @@ public:
     static size_t getAliveNodeCount();
 
     /**
-     * Attaches a node as a child of this node.
-     *
-     * @remark If the specified node already has a parent it will change its parent to be
-     * a child of this node. This way you can change to which node you are attached.
-     *
-     * @remark If the specified node needs to be spawned it will queue a deferred task to be added
-     * to the World on next frame so input events and @ref onBeforeNewFrame (if enabled) will be called
-     * only starting from the next frame.
-     *
-     * @param node         Node to attach as a child. If the specified node does not have a parent provide
-     * a unique_ptr instead of the raw pointer. If the node does not have a parent but you provide a raw
-     * pointer and error will be shown. If the specified node is a parent of `this` node the operation will
-     * fail and log an error.
-     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's location should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's rotation should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's scale should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     */
-    void addChildNode(
-        std::variant<std::unique_ptr<Node>, Node*> node,
-        AttachmentRule locationRule = AttachmentRule::KEEP_WORLD,
-        AttachmentRule rotationRule = AttachmentRule::KEEP_WORLD,
-        AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
-
-    /**
      * Detaches this node from the parent and optionally despawns this node and
      * all of its child nodes if the node was spawned.
      *
@@ -124,6 +97,70 @@ public:
      * @param sName New name of this node.
      */
     void setNodeName(const std::string& sName);
+
+    /**
+     * Attaches a node as a child of this node.
+     *
+     * @remark If the specified node already has a parent it will change its parent to be
+     * a child of this node. This way you can change to which node you are attached.
+     *
+     * @remark If the specified node needs to be spawned it will queue a deferred task to be added
+     * to the World on next frame so input events and @ref onBeforeNewFrame (if enabled) will be called
+     * only starting from the next frame.
+     *
+     * @param pNode        Node to attach as a child. That node must node have a parent because
+     * `this` node will take the ownership of the unique_ptr.
+     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's location should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's rotation should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's scale should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     *
+     * @return Raw pointer to the node you passed in this function.
+     */
+    template <typename NodeType>
+        requires std::derived_from<NodeType, Node>
+    NodeType* addChildNode(
+        std::unique_ptr<NodeType> pNode,
+        AttachmentRule locationRule = AttachmentRule::KEEP_WORLD,
+        AttachmentRule rotationRule = AttachmentRule::KEEP_WORLD,
+        AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
+
+    /**
+     * Attaches a node as a child of this node.
+     *
+     * @remark If the specified node already has a parent it will change its parent to be
+     * a child of this node. This way you can change to which node you are attached.
+     *
+     * @remark If the specified node needs to be spawned it will queue a deferred task to be added
+     * to the World on next frame so input events and @ref onBeforeNewFrame (if enabled) will be called
+     * only starting from the next frame.
+     *
+     * @param pNode        Node to attach as a child. That node must have a parent so that `this` node can
+     * transfer the ownership of the node, otherwise an error message will be shown.
+     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's location should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's rotation should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's scale should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     *
+     * @return Raw pointer to the node you passed in this function.
+     */
+    template <typename NodeType>
+        requires std::derived_from<NodeType, Node>
+    NodeType* addChildNode(
+        NodeType* pNode,
+        AttachmentRule locationRule = AttachmentRule::KEEP_WORLD,
+        AttachmentRule rotationRule = AttachmentRule::KEEP_WORLD,
+        AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
 
     /**
      * Returns world's root node.
@@ -442,7 +479,7 @@ protected:
      */
     std::pair<
         std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>*
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&
     getActionEventBindings();
 
     /**
@@ -469,7 +506,7 @@ protected:
      */
     std::pair<
         std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>*
+        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
     getAxisEventBindings();
 
     /**
@@ -538,6 +575,79 @@ private:
      */
     World* askParentsAboutWorldPointer();
 
+    /**
+     * Attaches a node as a child of this node.
+     *
+     * @remark If the specified node already has a parent it will change its parent to be
+     * a child of this node. This way you can change to which node you are attached.
+     *
+     * @remark If the specified node needs to be spawned it will queue a deferred task to be added
+     * to the World on next frame so input events and @ref onBeforeNewFrame (if enabled) will be called
+     * only starting from the next frame.
+     *
+     * @param node         Node to attach as a child. If the specified node does not have a parent provide
+     * a unique_ptr instead of the raw pointer. If the node does not have a parent but you provide a raw
+     * pointer and error will be shown. If the specified node is a parent of `this` node the operation will
+     * fail and log an error.
+     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's location should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's rotation should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
+     * Defines how child node's scale should change after the attachment process
+     * (after `onAfterAttachedToNewParent` was called)
+     *
+     * @return Raw pointer to the node you passed in this function.
+     */
+    template <typename NodeType>
+        requires std::derived_from<NodeType, Node>
+    NodeType* addChildNode(
+        std::variant<std::unique_ptr<NodeType>, NodeType*> node,
+        AttachmentRule locationRule,
+        AttachmentRule rotationRule,
+        AttachmentRule scaleRule);
+
+    /**
+     * Returns node's world location, rotation and scale.
+     *
+     * @remark This function exists because @ref addChildNode is implemented in the header but
+     * we can't include spatial node's header in this header as it would create a recursive include.
+     *
+     * @param pNode         If spacial node (or derived) returns its world location, rotation and scale,
+     * otherwise default parameters.
+     * @param worldLocation Node's world location.
+     * @param worldRotation Node's world rotation.
+     * @param worldScale    Node's world scale.
+     */
+    void getNodeWorldLocationRotationScale(
+        Node* pNode, glm::vec3& worldLocation, glm::vec3& worldRotation, glm::vec3& worldScale);
+
+    /**
+     * Called by `Node` class after we have attached to a new parent node and
+     * now need to apply attachment rules based on this new parent node.
+     *
+     * @remark This function exists because @ref addChildNode is implemented in the header but
+     * we can't include spatial node's header in this header as it would create a recursive include.
+     *
+     * @param pNode                         If spatial node that applies the rule, otherwise does nothing.
+     * @param locationRule                  Defines how location should change.
+     * @param worldLocationBeforeAttachment World location of this node before being attached.
+     * @param rotationRule                  Defines how rotation should change.
+     * @param worldRotationBeforeAttachment World rotation of this node before being attached.
+     * @param scaleRule                     Defines how scale should change.
+     * @param worldScaleBeforeAttachment    World scale of this node before being attached.
+     */
+    void applyAttachmentRuleForNode(
+        Node* pNode,
+        Node::AttachmentRule locationRule,
+        const glm::vec3& worldLocationBeforeAttachment,
+        Node::AttachmentRule rotationRule,
+        const glm::vec3& worldRotationBeforeAttachment,
+        Node::AttachmentRule scaleRule,
+        const glm::vec3& worldScaleBeforeAttachment);
+
     /** Map of action events that this node is bound to. Must be used with mutex. */
     std::pair<
         std::recursive_mutex,
@@ -584,6 +694,179 @@ private:
     /** Node's name. */
     std::string sNodeName;
 };
+
+template <typename NodeType>
+    requires std::derived_from<NodeType, Node>
+inline NodeType* Node::addChildNode(
+    std::unique_ptr<NodeType> pNode,
+    AttachmentRule locationRule,
+    AttachmentRule rotationRule,
+    AttachmentRule scaleRule) {
+    return addChildNode<NodeType>(
+        std::variant<std::unique_ptr<NodeType>, NodeType*>(std::move(pNode)),
+        locationRule,
+        rotationRule,
+        scaleRule);
+}
+
+template <typename NodeType>
+    requires std::derived_from<NodeType, Node>
+inline NodeType* Node::addChildNode(
+    NodeType* pNode, AttachmentRule locationRule, AttachmentRule rotationRule, AttachmentRule scaleRule) {
+    return addChildNode<NodeType>(
+        std::variant<std::unique_ptr<NodeType>, NodeType*>(pNode), locationRule, rotationRule, scaleRule);
+}
+
+template <typename NodeType>
+    requires std::derived_from<NodeType, Node>
+inline NodeType* Node::addChildNode(
+    std::variant<std::unique_ptr<NodeType>, NodeType*> node,
+    AttachmentRule locationRule,
+    AttachmentRule rotationRule,
+    AttachmentRule scaleRule) {
+    // Save raw pointer for now.
+    NodeType* pNode = nullptr;
+    if (std::holds_alternative<NodeType*>(node)) {
+        pNode = std::get<NodeType*>(node);
+    } else {
+        pNode = std::get<std::unique_ptr<NodeType>>(node).get();
+    }
+
+    // Save world rotation/location/scale for later use.
+    glm::vec3 worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 worldScale = glm::vec3(1.0F, 1.0F, 1.0F);
+    getNodeWorldLocationRotationScale(pNode, worldLocation, worldRotation, worldScale);
+
+    std::scoped_lock spawnGuard(mtxIsSpawned.first);
+
+    // Make sure the specified node is valid.
+    if (pNode == nullptr) [[unlikely]] {
+        Error error(
+            std::format("an attempt was made to attach a nullptr node to the \"{}\" node", getNodeName()));
+        error.showErrorAndThrowException();
+    }
+
+    // Make sure the specified node is not `this`.
+    if (pNode == this) [[unlikely]] {
+        Error error(std::format("an attempt was made to attach the \"{}\" node to itself", getNodeName()));
+        error.showErrorAndThrowException();
+    }
+
+    std::scoped_lock guard(mtxChildNodes.first);
+
+    // Make sure the specified node is not our direct child.
+    for (const auto& pChildNode : mtxChildNodes.second) {
+        if (pChildNode.get() == pNode) [[unlikely]] {
+            Error error(std::format(
+                "an attempt was made to attach the \"{}\" node to the \"{}\" node but it's already "
+                "a direct child node of \"{}\"",
+                pNode->getNodeName(),
+                getNodeName(),
+                getNodeName()));
+            error.showErrorAndThrowException();
+        }
+    }
+
+    // Make sure the specified node is not our parent.
+    if (pNode->isParentOf(this)) {
+        Error error(std::format(
+            "an attempt was made to attach the \"{}\" node to the node \"{}\", "
+            "but the first node is a parent of the second node, "
+            "aborting this operation",
+            pNode->getNodeName(),
+            getNodeName()));
+        error.showErrorAndThrowException();
+    }
+
+    // Prepare unique_ptr to add to our "child nodes" array.
+    std::unique_ptr<Node> pNodeToAttachToThis = nullptr;
+
+    // Check if this node is already attached to some node.
+    std::scoped_lock parentGuard(pNode->mtxParentNode.first);
+    if (pNode->mtxParentNode.second != nullptr) {
+        // Make sure we were given a raw pointer.
+        if (!std::holds_alternative<NodeType*>(node)) [[unlikely]] {
+            Error error(std::format("expected a raw pointer for the node \"{}\"", pNode->getNodeName()));
+            error.showErrorAndThrowException();
+        }
+
+        // Check if we are already this node's parent.
+        if (pNode->mtxParentNode.second == this) {
+            Error error(std::format(
+                "an attempt was made to attach the \"{}\" node to its parent again", pNode->getNodeName()));
+            error.showErrorAndThrowException();
+        }
+
+        // Notify start of detachment.
+        pNode->notifyAboutDetachingFromParent(true);
+
+        // Remove node from parent's "children" array.
+        std::scoped_lock parentsChildrenGuard(pNode->mtxParentNode.second->mtxChildNodes.first);
+
+        auto& parentsChildren = pNode->mtxParentNode.second->mtxChildNodes.second;
+        for (auto it = parentsChildren.begin(); it != parentsChildren.end(); ++it) {
+            if ((*it).get() == pNode) {
+                pNodeToAttachToThis = std::move(*it);
+                parentsChildren.erase(it);
+                break;
+            }
+        }
+
+        if (pNodeToAttachToThis == nullptr) [[unlikely]] {
+            Error error(std::format(
+                "the node \"{}\" has parent node \"{}\" but parent node does not have this node in its array "
+                "of child nodes",
+                pNode->getNodeName(),
+                pNode->mtxParentNode.second->getNodeName()));
+            error.showErrorAndThrowException();
+        }
+    } else {
+        if (std::holds_alternative<NodeType*>(node)) [[unlikely]] {
+            // We need a unique_ptr.
+            Error error(std::format(
+                "expected a unique pointer for the node \"{}\" because it does not have a parent",
+                pNode->getNodeName()));
+            error.showErrorAndThrowException();
+        }
+
+        pNodeToAttachToThis = std::move(std::get<std::unique_ptr<NodeType>>(node));
+        if (pNodeToAttachToThis == nullptr) [[unlikely]] {
+            Error error("unexpected nullptr");
+            error.showErrorAndThrowException();
+        }
+    }
+
+    // Add node to our children array.
+    pNode->mtxParentNode.second = this;
+    mtxChildNodes.second.push_back(std::move(pNodeToAttachToThis));
+
+    // The specified node is not attached.
+
+    // Notify the node (here, SpatialNode will save a pointer to the first SpatialNode in the parent
+    // chain and will use it in `setWorld...` operations).
+    pNode->notifyAboutAttachedToNewParent(true);
+
+    // Now after the SpatialNode did its `onAfterAttached` logic `setWorld...` calls when applying
+    // attachment rule will work.
+    // Apply attachment rule (if possible).
+    applyAttachmentRuleForNode(
+        pNode, locationRule, worldLocation, rotationRule, worldRotation, scaleRule, worldScale);
+    ;
+
+    // don't unlock node's parent lock here yet, still doing some logic based on the new parent
+
+    // Spawn/despawn node if needed.
+    if (isSpawned() && !pNode->isSpawned()) {
+        // Spawn node.
+        pNode->spawn();
+    } else if (!isSpawned() && pNode->isSpawned()) {
+        // Despawn node.
+        pNode->despawn();
+    }
+
+    return pNode;
+}
 
 template <typename NodeType>
     requires std::derived_from<NodeType, Node>

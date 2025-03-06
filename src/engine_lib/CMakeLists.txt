@@ -34,6 +34,16 @@ set(PROJECT_SOURCES
     private/misc/Globals.cpp
     private/misc/ProjectPaths.cpp
     public/misc/ProjectPaths.h
+    public/misc/shapes/Frustum.h
+    private/misc/shapes/Frustum.cpp
+    public/misc/shapes/AABB.h
+    private/misc/shapes/AABB.cpp
+    public/misc/shapes/Cone.h
+    private/misc/shapes/Cone.cpp
+    public/misc/shapes/Plane.h
+    private/misc/shapes/Plane.cpp
+    public/misc/shapes/Sphere.h
+    private/misc/shapes/Sphere.cpp
     public/math/GLMath.hpp
     public/math/MathHelpers.hpp
     public/io/Logger.h
@@ -51,6 +61,12 @@ set(PROJECT_SOURCES
     private/game/node/SpatialNode.cpp
     public/game/node/SpatialNode.h
     public/game/node/NodeTickGroup.hpp
+    public/game/node/CameraNode.h
+    private/game/node/CameraNode.cpp
+    private/game/camera/CameraManager.cpp
+    private/game/camera/CameraProperties.cpp
+    public/game/camera/CameraManager.h
+    public/game/camera/CameraProperties.h
     public/input/InputManager.h
     public/input/KeyboardButton.hpp
     public/input/MouseButton.hpp

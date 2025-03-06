@@ -60,7 +60,7 @@ public:
     void setWorldLocation(const glm::vec3& location);
 
     /**
-     * Sets relative rotation (roll, pitch, yaw in degrees) in the way that the resulting node's rotation
+     * Sets relative rotation (pitch, yaw, roll in degrees) in the way that the resulting node's rotation
      * in the world would match the specified rotation.
      *
      * @remark If the node is not spawned just sets node's relative rotation.
@@ -180,13 +180,13 @@ public:
      * (i.e. cached result of `getParentNodeOfType<SpatialNode>` that can be used without any search
      * operations).
      *
-     * @warning Avoid saving returned raw pointer as it points to the node's field and does not guarantee
-     * that the node will always live while you hold this pointer.
+     * @warning Avoid saving returned reference as it points to the node's field and does not guarantee
+     * that the node will always live while you hold this reference.
      *
      * @return `nullptr` as a pointer (second value in the pair) if there is no SpatialNode in the
      * parent node chain, otherwise closest SpatialNode in the parent node chain.
      */
-    std::pair<std::recursive_mutex*, SpatialNode*> getClosestSpatialParent();
+    std::pair<std::recursive_mutex, SpatialNode*>& getClosestSpatialParent();
 
 protected:
     /**
@@ -280,7 +280,7 @@ private:
         glm::vec3 worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
 
         /**
-         * World rotation (roll, pitch, yaw in degrees) of this node.
+         * World rotation (pitch, yaw, roll in degrees) of this node.
          * This value contains the rotation component of @ref worldMatrix.
          */
         glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);

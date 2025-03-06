@@ -440,19 +440,19 @@ TEST_CASE("input event callbacks in Node are triggered") {
             setIsReceivingInput(true);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
 
             {
-                const auto pAxisEvents = getAxisEventBindings();
-                std::scoped_lock guard(pAxisEvents->first);
+                auto& mtxAxisEvents = getAxisEventBindings();
+                std::scoped_lock guard(mtxAxisEvents.first);
 
-                pAxisEvents->second[0] = [&](KeyboardModifiers modifiers, float input) {
+                mtxAxisEvents.second[0] = [&](KeyboardModifiers modifiers, float input) {
                     axis1(modifiers, input);
                 };
             }
@@ -577,19 +577,19 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
             setIsCalledEveryFrame(true);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
 
             {
-                const auto pAxisEvents = getAxisEventBindings();
-                std::scoped_lock guard(pAxisEvents->first);
+                auto& mtxAxisEvents = getAxisEventBindings();
+                std::scoped_lock guard(mtxAxisEvents.first);
 
-                pAxisEvents->second[0] = [&](KeyboardModifiers modifiers, float input) {
+                mtxAxisEvents.second[0] = [&](KeyboardModifiers modifiers, float input) {
                     axis1(modifiers, input);
                 };
             }
@@ -1028,10 +1028,10 @@ TEST_CASE("disable receiving input while processing input") {
             setIsReceivingInput(true);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
@@ -1114,10 +1114,10 @@ TEST_CASE("disable receiving input and despawn") {
             setIsReceivingInput(true);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
@@ -1192,10 +1192,10 @@ TEST_CASE("enable receiving input and despawn") {
             REQUIRE(isReceivingInput() == false); // disabled by default
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
@@ -1268,10 +1268,10 @@ TEST_CASE("enable receiving input while spawned") {
             REQUIRE(isReceivingInput() == false);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
@@ -1346,10 +1346,10 @@ TEST_CASE("quickly enable receiving input and disable while spawned") {
             REQUIRE(isReceivingInput() == false);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
@@ -1426,10 +1426,10 @@ TEST_CASE("quickly disable receiving input and enable while spawned") {
             setIsReceivingInput(true);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
@@ -1505,19 +1505,19 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
             setIsReceivingInput(true);
 
             {
-                const auto pActionEvents = getActionEventBindings();
-                std::scoped_lock guard(pActionEvents->first);
+                auto& mtxActionEvents = getActionEventBindings();
+                std::scoped_lock guard(mtxActionEvents.first);
 
-                pActionEvents->second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                mtxActionEvents.second[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
                     action1(modifiers, bIsPressedDown);
                 };
             }
 
             {
-                const auto pAxisEvents = getAxisEventBindings();
-                std::scoped_lock guard(pAxisEvents->first);
+                auto& mtxAxisEvents = getAxisEventBindings();
+                std::scoped_lock guard(mtxAxisEvents.first);
 
-                pAxisEvents->second[0] = [&](KeyboardModifiers modifiers, float input) {
+                mtxAxisEvents.second[0] = [&](KeyboardModifiers modifiers, float input) {
                     axis1(modifiers, input);
                 };
             }
