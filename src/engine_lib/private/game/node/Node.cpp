@@ -83,8 +83,7 @@ Node::Node(std::string_view sName) : sNodeName(sName) {
 
     // Increment total node counter.
     const size_t iNodeCount = iTotalAliveNodeCount.fetch_add(1) + 1;
-#undef max
-    if (iNodeCount + 1 == std::numeric_limits<size_t>::max()) [[unlikely]] {
+    if (iNodeCount + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
         Logger::get().warn(std::format(
             "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
             "an overflow",
@@ -287,8 +286,7 @@ void Node::spawn() {
 
     // Get unique ID.
     iNodeId = iAvailableNodeId.fetch_add(1);
-#undef max
-    if (iNodeId.value() + 1 == std::numeric_limits<size_t>::max()) [[unlikely]] {
+    if (iNodeId.value() + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
         Logger::get().warn(std::format(
             "\"next available node ID\" is at its maximum value: {}, another spawned node will "
             "cause an overflow",

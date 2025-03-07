@@ -8,40 +8,16 @@
 
 TEST_CASE("build and check node hierarchy") {
     {
-        Node* pParentNode = nullptr;
-        Node* pChildNode = nullptr;
-        Node* pChildChildNode1 = nullptr;
-        Node* pChildChildNode2 = nullptr;
-
+        // Build hierarchy.
         auto pParentNodeUnique = std::make_unique<Node>();
+        auto pChildNodeUnique = std::make_unique<Node>();
 
-        {
-            // Create nodes.
-            auto pChildNodeUnique = std::make_unique<Node>();
-            auto pChildChildNode1Unique = std::make_unique<Node>();
-            auto pChildChildNode2Unique = std::make_unique<Node>();
+        const auto pChildChildNode1 = pChildNodeUnique->addChildNode(std::make_unique<Node>());
+        const auto pChildChildNode2 = pChildNodeUnique->addChildNode(std::make_unique<Node>());
+        const auto pChildNode = pParentNodeUnique->addChildNode(std::move(pChildNodeUnique));
 
-            pParentNode = pParentNodeUnique.get();
-            pChildNode = pChildNodeUnique.get();
-            pChildChildNode1 = pChildChildNode1Unique.get();
-            pChildChildNode2 = pChildChildNode2Unique.get();
-
-            // Build hierarchy.
-            pChildNodeUnique->addChildNode(
-                std::move(pChildChildNode1Unique),
-                Node::AttachmentRule::KEEP_RELATIVE,
-                Node::AttachmentRule::KEEP_RELATIVE);
-            pChildNodeUnique->addChildNode(
-                std::move(pChildChildNode2Unique),
-                Node::AttachmentRule::KEEP_RELATIVE,
-                Node::AttachmentRule::KEEP_RELATIVE);
-            pParentNodeUnique->addChildNode(
-                std::move(pChildNodeUnique),
-                Node::AttachmentRule::KEEP_RELATIVE,
-                Node::AttachmentRule::KEEP_RELATIVE);
-        }
-
-        const auto mtxParentChildNodes = pParentNode->getChildNodes();
+        // Get child nodes.
+        const auto mtxParentChildNodes = pParentNodeUnique->getChildNodes();
         std::scoped_lock parentChildNodesGuard(*mtxParentChildNodes.first);
 
         const auto mtxChildChildNodes = pChildNode->getChildNodes();
@@ -55,18 +31,18 @@ TEST_CASE("build and check node hierarchy") {
         REQUIRE(&*mtxChildChildNodes.second.operator[](0) == &*pChildChildNode1);
         REQUIRE(&*mtxChildChildNodes.second.operator[](1) == &*pChildChildNode2);
 
-        REQUIRE(pChildNode->getParentNode().second == pParentNode);
+        REQUIRE(pChildNode->getParentNode().second == pParentNodeUnique.get());
         REQUIRE(pChildChildNode1->getParentNode().second == pChildNode);
         REQUIRE(pChildChildNode2->getParentNode().second == pChildNode);
 
-        REQUIRE(pParentNode->isParentOf(&*pChildNode));
-        REQUIRE(pParentNode->isParentOf(&*pChildChildNode1));
-        REQUIRE(pParentNode->isParentOf(&*pChildChildNode2));
+        REQUIRE(pParentNodeUnique->isParentOf(&*pChildNode));
+        REQUIRE(pParentNodeUnique->isParentOf(&*pChildChildNode1));
+        REQUIRE(pParentNodeUnique->isParentOf(&*pChildChildNode2));
 
-        REQUIRE(pChildNode->isChildOf(&*pParentNode));
-        REQUIRE(pChildChildNode1->isChildOf(&*pParentNode));
+        REQUIRE(pChildNode->isChildOf(pParentNodeUnique.get()));
+        REQUIRE(pChildChildNode1->isChildOf(pParentNodeUnique.get()));
         REQUIRE(pChildChildNode1->isChildOf(&*pChildNode));
-        REQUIRE(pChildChildNode2->isChildOf(&*pParentNode));
+        REQUIRE(pChildChildNode2->isChildOf(pParentNodeUnique.get()));
         REQUIRE(pChildChildNode2->isChildOf(&*pChildNode));
 
         REQUIRE(!pChildChildNode1->isChildOf(&*pChildChildNode2));
@@ -93,26 +69,14 @@ TEST_CASE("move nodes in the hierarchy") {
         auto pCharacterChildNode2 = pCharacterChildNode2U.get();
 
         // Build hierarchy.
-        pCharacterNode->addChildNode(
-            std::move(pCharacterChildNode1U),
-            Node::AttachmentRule::KEEP_RELATIVE,
-            Node::AttachmentRule::KEEP_RELATIVE);
-        pCharacterNode->addChildNode(
-            std::move(pCharacterChildNode2U),
-            Node::AttachmentRule::KEEP_RELATIVE,
-            Node::AttachmentRule::KEEP_RELATIVE);
-        pParentNode->addChildNode(
-            std::move(pCharacterNodeU),
-            Node::AttachmentRule::KEEP_RELATIVE,
-            Node::AttachmentRule::KEEP_RELATIVE);
-        pParentNode->addChildNode(
-            std::move(pCarNodeU), Node::AttachmentRule::KEEP_RELATIVE, Node::AttachmentRule::KEEP_RELATIVE);
+        pCharacterNode->addChildNode(std::move(pCharacterChildNode1U));
+        pCharacterNode->addChildNode(std::move(pCharacterChildNode2U));
+        pParentNode->addChildNode(std::move(pCharacterNodeU));
+        pParentNode->addChildNode(std::move(pCarNodeU));
 
         // Attach the character to the car.
-        pCarNode->addChildNode(
-            pCharacterNode, Node::AttachmentRule::KEEP_RELATIVE, Node::AttachmentRule::KEEP_RELATIVE);
-        pCarNode->addChildNode(
-            std::move(pSomeNodeU), Node::AttachmentRule::KEEP_RELATIVE, Node::AttachmentRule::KEEP_RELATIVE);
+        pCarNode->addChildNode(pCharacterNode);
+        pCarNode->addChildNode(std::move(pSomeNodeU));
 
         // Check that everything is correct.
         REQUIRE(pCharacterNode->getParentNode().second == pCarNode);
@@ -178,11 +142,10 @@ TEST_CASE("get parent node of type") {
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
             createWorld([&]() {
-                auto pDerivedDerivedNodeU = std::make_unique<MyDerivedDerivedNode>();
-                MyDerivedDerivedNode* pDerivedDerivedNode = pDerivedDerivedNodeU.get();
-
                 auto pDerivedNodeChild = std::make_unique<MyDerivedNode>();
-                pDerivedNodeChild->addChildNode(std::move(pDerivedDerivedNodeU));
+
+                const auto pDerivedDerivedNode =
+                    pDerivedNodeChild->addChildNode(std::make_unique<MyDerivedDerivedNode>());
 
                 auto pDerivedNodeParent = std::make_unique<MyDerivedNode>("MyDerivedNode");
                 pDerivedNodeParent->iAnswer = 42;
