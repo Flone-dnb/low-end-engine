@@ -65,3 +65,12 @@ function(add_node_super_call_checker GLOBAL_PATH_TO_NODES_PRIVATE GLOBAL_PATH_TO
             "${GLOBAL_PATH_TO_NODES_PUBLIC}"
     )
 endfunction()
+
+function(create_symlink_to_res)
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME})
+    file(CREATE_LINK
+        ${CMAKE_CURRENT_LIST_DIR}/../../res
+        ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME}/res
+        SYMBOLIC
+    )
+endfunction()

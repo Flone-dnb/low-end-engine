@@ -19,7 +19,7 @@ void CameraManager::setActiveCamera(CameraNode* pCameraNode) {
     std::scoped_lock guard(mtxActiveCamera.first);
 
     // Make sure this node is spawned.
-    std::scoped_lock nodeSpawnGuard(*pCameraNode->getSpawnDespawnMutex());
+    std::scoped_lock nodeSpawnGuard(pCameraNode->getSpawnDespawnMutex());
     if (!pCameraNode->isSpawned()) [[unlikely]] {
         Error error(std::format(
             "camera node \"{}\" needs to be spawned in order to make it the active camera",

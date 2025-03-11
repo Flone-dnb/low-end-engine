@@ -3,16 +3,21 @@
 // Custom.
 #include "render/SdlManager.hpp"
 
+#if defined(_WIN32)
+#include <Windows.h>
+#endif
+
 std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName, bool bIsHidden) {
     // Initialize SDL.
     SdlManager::init();
 
     // Get display resolution.
     SDL_DisplayMode mode;
-    SDL_GetCurrentDisplayMode(0, &mode);
+    SDL_GetDesktopDisplayMode(0, &mode);
 
     // Prepare flags.
-    auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP;
+    auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP |
+                       SDL_WINDOW_MAXIMIZED | SDL_WINDOW_ALLOW_HIGHDPI;
     if (bIsHidden) {
         windowFlags |= SDL_WINDOW_HIDDEN;
     }
@@ -26,11 +31,16 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
 
     auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow));
 
+    // Log resulting window size.
+    const auto windowSize = pWindow->getWindowSize();
+    Logger::get().info(
+        std::format("created a new window of size {}x{}", windowSize.first, windowSize.second));
+
     return pWindow;
 }
 
 void Window::setCursorVisibility(bool bIsVisible) {
-    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(bIsVisible)) != 0) {
+    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!bIsVisible)) != 0) {
         Logger::get().error(SDL_GetError());
     }
 }
@@ -134,7 +144,7 @@ SDL_GameController* Window::findConnectedGamepad() {
 std::pair<unsigned int, unsigned int> Window::getWindowSize() const {
     int iWidth = 0;
     int iHeight = 0;
-    SDL_GetWindowSize(pSdlWindow, &iWidth, &iHeight);
+    SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
 
     return {static_cast<unsigned int>(iWidth), static_cast<unsigned int>(iHeight)};
 }

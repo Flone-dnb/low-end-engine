@@ -1,4 +1,4 @@
-#include "misc/shapes/Cone.h"
+#include "game/geometry/shapes/Cone.h"
 
 Cone::Cone(const glm::vec3& location, float height, const glm::vec3& direction, float bottomRadius) {
     this->location = location;

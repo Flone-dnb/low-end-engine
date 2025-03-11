@@ -6,7 +6,8 @@
 // Custom.
 #include "math/GLMath.hpp"
 #include "misc/Globals.h"
-#include "misc/shapes/Frustum.h"
+#include "game/geometry/shapes/Frustum.h"
+#include "render/ShaderConstantManager.hpp"
 
 /** Defines how camera can move and rotate. */
 enum class CameraMode {
@@ -26,7 +27,7 @@ class CameraProperties {
     friend class Renderer;
 
 public:
-    CameraProperties() = default;
+    CameraProperties();
 
     /** Stores internal data. */
     struct Data {
@@ -234,6 +235,13 @@ public:
      */
     inline Frustum* getCameraFrustum() { return &mtxData.second.frustum; }
 
+    /**
+     * Returns object used to add setter functions for shader `uniform` variables.
+     *
+     * @return Manager.
+     */
+    inline ShaderConstantManager& getShaderConstantsManager() { return shaderConstantsManager; }
+
 private:
     /**
      * Sets size of the render target for projection matrix calculations.
@@ -270,6 +278,9 @@ private:
 
     /** Internal properties. */
     std::pair<std::recursive_mutex, Data> mtxData{};
+
+    /** To pass values to shaders. */
+    ShaderConstantManager shaderConstantsManager;
 
     /** Delta to compare input to zero. */
     static inline constexpr float floatDelta = 0.00001F;

@@ -1,4 +1,4 @@
-#include "misc/shapes/Plane.h"
+#include "game/geometry/shapes/Plane.h"
 
 Plane::Plane(const glm::vec3& normal, const glm::vec3& location) {
     this->normal = normal;

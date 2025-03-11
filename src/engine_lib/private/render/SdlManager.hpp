@@ -18,6 +18,8 @@ public:
 
 private:
     SdlManager() {
+        SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
+
         // Initialize SDL.
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
             Error error("failed to initialize SDL");

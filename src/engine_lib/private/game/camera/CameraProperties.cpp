@@ -5,6 +5,7 @@
 
 // Custom.
 #include "misc/Error.h"
+#include "render/ShaderProgram.h"
 
 void CameraProperties::setRenderTargetSize(
     unsigned int iRenderTargetWidth, unsigned int iRenderTargetHeight) {
@@ -22,6 +23,18 @@ void CameraProperties::setRenderTargetSize(
 
     // Mark projection matrix as "needs update".
     mtxData.second.projectionData.bProjectionMatrixNeedsUpdate = true;
+}
+
+CameraProperties::CameraProperties() {
+    shaderConstantsManager.addSetterFunction([this](ShaderProgram* pShaderProgram) {
+        std::scoped_lock guard(mtxData.first);
+
+        // Find uniform.
+        const auto iMatrixLocation = pShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
+
+        // Set value (use getter functions to check if an update is needed).
+        pShaderProgram->setMatrix4ToShader(iMatrixLocation, getProjectionMatrix() * getViewMatrix());
+    });
 }
 
 void CameraProperties::setFov(unsigned int iVerticalFov) {

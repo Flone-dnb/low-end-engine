@@ -6,6 +6,7 @@
 #include "input/EditorInputEventIds.hpp"
 #include "game/camera/CameraManager.h"
 #include "node/EditorCameraNode.h"
+#include "game/node/MeshNode.h"
 
 const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"; }
 
@@ -19,6 +20,10 @@ void EditorGameInstance::onGameStarted() {
         // Spawn editor camera.
         const auto pEditorCameraNode = getWorldRootNode()->addChildNode(std::make_unique<EditorCameraNode>());
         pEditorCameraNode->makeActive();
+
+        auto pMesh = std::make_unique<MeshNode>();
+        pMesh->setRelativeLocation(glm::vec3(0.0F, 0.0F, -2.0F));
+        getWorldRootNode()->addChildNode(std::move(pMesh));
     });
 }
 
@@ -90,5 +95,26 @@ void EditorGameInstance::registerEditorInputEvents() {
                 // Notify editor camera.
                 pEditorCameraNode->setIgnoreInput(!bIsPressed);
             };
+    }
+
+    // Register axis events.
+    {
+        // Move forward.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD),
+            {{KeyboardButton::W, KeyboardButton::S}},
+            {GamepadAxis::LEFT_STICK_Y}));
+
+        // Move right.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT),
+            {{KeyboardButton::D, KeyboardButton::A}},
+            {GamepadAxis::LEFT_STICK_X}));
+
+        // Move up.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP),
+            {{KeyboardButton::E, KeyboardButton::Q}},
+            {GamepadAxis::LEFT_TRIGGER}));
     }
 }

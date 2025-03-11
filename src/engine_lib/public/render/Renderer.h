@@ -5,6 +5,7 @@
 #include <variant>
 
 // Custom.
+#include "render/ShaderManager.h"
 #include "misc/Error.h"
 
 // External.
@@ -29,6 +30,16 @@ public:
      */
     static void waitForGpuToFinishWorkUpToThisPoint();
 
+    /**
+     * Returns shader manager used to load and compile shaders.
+     *
+     * @remark As a game developer you don't need to use this. Materials use this function under the
+     * hood.
+     *
+     * @return Manager.
+     */
+    ShaderManager& getShaderManager();
+
 private:
     /**
      * Creates a new renderer.
@@ -49,6 +60,9 @@ private:
 
     /** Called by window that owns this renderer to draw a new frame. */
     void drawNextFrame();
+
+    /** Database of all shaders. */
+    ShaderManager shaderManager;
 
     /** OpenGL context. */
     SDL_GLContext pContext = nullptr;

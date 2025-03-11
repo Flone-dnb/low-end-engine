@@ -23,27 +23,46 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 
 # Sources.
 set(PROJECT_SOURCES
-    public/render/Renderer.h
-    private/render/Renderer.cpp
     private/game/Window.cpp
     public/game/Window.h
     private/render/SdlManager.hpp
+    public/render/Renderer.h
+    private/render/Renderer.cpp
+    private/render/Material.cpp
+    public/render/Material.h
+    private/render/GpuResourceManager.cpp
+    private/render/GpuResourceManager.h
+    private/render/VertexArrayObject.cpp
+    private/render/VertexArrayObject.h
+    private/render/Framebuffer.cpp
+    private/render/Framebuffer.h
+    private/render/ShaderManager.h
+    private/render/ShaderManager.cpp
+    private/render/Shader.h
+    private/render/Shader.cpp
+    private/render/ShaderProgram.cpp
+    private/render/ShaderProgram.h
+    public/render/ShaderConstantManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h
     public/misc/Globals.h
     private/misc/Globals.cpp
     private/misc/ProjectPaths.cpp
     public/misc/ProjectPaths.h
-    public/misc/shapes/Frustum.h
-    private/misc/shapes/Frustum.cpp
-    public/misc/shapes/AABB.h
-    private/misc/shapes/AABB.cpp
-    public/misc/shapes/Cone.h
-    private/misc/shapes/Cone.cpp
-    public/misc/shapes/Plane.h
-    private/misc/shapes/Plane.cpp
-    public/misc/shapes/Sphere.h
-    private/misc/shapes/Sphere.cpp
+    public/game/geometry/shapes/Frustum.h
+    private/game/geometry/shapes/Frustum.cpp
+    public/game/geometry/shapes/AABB.h
+    private/game/geometry/shapes/AABB.cpp
+    public/game/geometry/shapes/Cone.h
+    private/game/geometry/shapes/Cone.cpp
+    public/game/geometry/shapes/Plane.h
+    private/game/geometry/shapes/Plane.cpp
+    public/game/geometry/shapes/Sphere.h
+    private/game/geometry/shapes/Sphere.cpp
+    private/game/geometry/MeshGeometry.cpp
+    public/game/geometry/MeshGeometry.h
+    public/game/geometry/PrimitiveMeshGenerator.h
+    private/game/geometry/PrimitiveMeshGenerator.cpp
     public/math/GLMath.hpp
     public/math/MathHelpers.hpp
     public/io/Logger.h
@@ -63,6 +82,8 @@ set(PROJECT_SOURCES
     public/game/node/NodeTickGroup.hpp
     public/game/node/CameraNode.h
     private/game/node/CameraNode.cpp
+    public/game/node/MeshNode.h
+    private/game/node/MeshNode.cpp
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h
@@ -165,3 +186,6 @@ if (MSVC)
 endif()
 add_subdirectory(${RELATIVE_EXT_PATH}/toml11 ${DEPENDENCY_BUILD_DIR_NAME}/toml11 SYSTEM)
 set_target_properties(toml11 PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+
+# Add nameof.
+target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/nameof/include)

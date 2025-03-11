@@ -6,10 +6,11 @@
 #include <string>
 #include <source_location>
 
-// OS.
-#if defined(WIN32)
-#include <Windows.h>
-#endif
+/// A handy macro for calling an OpenGL function and checking the last error.
+void checkLastGlError(const std::source_location location = std::source_location::current());
+#define GL_CHECK_ERROR(a)                                                                                    \
+    a;                                                                                                       \
+    checkLastGlError();
 
 /** Information of a specific source code location. */
 struct SourceLocationInfo {
@@ -20,9 +21,7 @@ struct SourceLocationInfo {
     std::string sLine;
 };
 
-/**
- * Helper class for storing and showing error messages.
- */
+/** Helper class for storing and showing error messages. */
 class Error {
 public:
     /**
@@ -39,10 +38,10 @@ public:
     /**
      * Constructs a new Error object from `HRESULT`.
      *
-     * @param hResult   `HRESULT` that contains an error.
+     * @param iResult   `HRESULT` that contains an error.
      * @param location  Should not be specified explicitly (use default value).
      */
-    Error(const HRESULT hResult, const std::source_location location = std::source_location::current());
+    Error(const long iResult, const std::source_location location = std::source_location::current());
 #endif
 
     Error() = delete;

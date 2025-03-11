@@ -512,11 +512,9 @@ protected:
     /**
      * Returns mutex that is generally used to protect/prevent spawning/despawning.
      *
-     * @warning Do not delete (free) returned pointer.
-     *
      * @return Mutex.
      */
-    std::recursive_mutex* getSpawnDespawnMutex();
+    std::recursive_mutex& getSpawnDespawnMutex();
 
 private:
     /** Calls @ref onSpawning on this node and all of its child nodes. */

@@ -12,7 +12,7 @@ EditorCameraNode::EditorCameraNode() : EditorCameraNode("Editor Camera Node") {}
 EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sNodeName) {
     // Enable tick and input.
     setIsCalledEveryFrame(true);
-    setIsReceivingInput(true);
+    setIsReceivingInput(false); // will be enabled later
 
     // Initialize current speed.
     currentMovementSpeed = movementSpeed;
@@ -25,15 +25,15 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
         // Bind move right.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.x = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.z = input; };
 
         // Bind move forward.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.y = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.x = input; };
 
         // Bind move up.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.z = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.y = input; };
     }
 
     // Bind action events.
@@ -111,7 +111,7 @@ void EditorCameraNode::onMouseMove(double xOffset, double yOffset) {
 
     // Modify rotation.
     auto currentRotation = getRelativeRotation();
-    currentRotation.y += static_cast<float>(xOffset * rotationSensitivity);
+    currentRotation.y -= static_cast<float>(xOffset * rotationSensitivity);
     currentRotation.x -= static_cast<float>(yOffset * rotationSensitivity);
 
     // Apply rotation.

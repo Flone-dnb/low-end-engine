@@ -269,7 +269,7 @@ Node::getAxisEventBindings() {
     return mtxBindedAxisEvents;
 }
 
-std::recursive_mutex* Node::getSpawnDespawnMutex() { return &mtxIsSpawned.first; }
+std::recursive_mutex& Node::getSpawnDespawnMutex() { return mtxIsSpawned.first; }
 
 void Node::spawn() {
     std::scoped_lock guard(mtxIsSpawned.first);

@@ -11,6 +11,7 @@
 #include "input/GamepadButton.hpp"
 
 class Window;
+class Renderer;
 class InputManager;
 class Node;
 class CameraManager;
@@ -70,6 +71,15 @@ public:
      * @return Always valid pointer.
      */
     Window* getWindow() const;
+
+    /**
+     * Returns a reference to the renderer this game instance is using.
+     *
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer.
+     */
+    Renderer* getRenderer() const;
 
     /**
      * Returns a reference to the camera manager this game is using.

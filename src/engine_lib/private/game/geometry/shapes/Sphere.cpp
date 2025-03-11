@@ -1,4 +1,4 @@
-#include "misc/shapes/Sphere.h"
+#include "game/geometry/shapes/Sphere.h"
 
 Sphere::Sphere(const glm::vec3& center, float radius) {
     this->center = center;

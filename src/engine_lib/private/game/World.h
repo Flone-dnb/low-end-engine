@@ -57,6 +57,8 @@ private:
     std::pair<std::recursive_mutex, std::unordered_set<Node*>>* const pNodes = nullptr;
 };
 
+// ------------------------------------------------------------------------------------------------
+
 /** Represents a game world. Owns world's root node. */
 class World {
     // Nodes notify the world about being spawned/despawned.

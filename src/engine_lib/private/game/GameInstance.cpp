@@ -67,6 +67,8 @@ size_t GameInstance::getReceivingInputNodeCount() const {
 
 Window* GameInstance::getWindow() const { return pWindow; }
 
+Renderer* GameInstance::getRenderer() const { return pWindow->getGameManager()->getRenderer(); }
+
 CameraManager* GameInstance::getCameraManager() const {
     return pWindow->getGameManager()->getCameraManager();
 }

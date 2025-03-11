@@ -1,4 +1,4 @@
-#include "misc/shapes/AABB.h"
+#include "game/geometry/shapes/AABB.h"
 
 bool AABB::isBehindPlane(const Plane& plane) const {
     // Source: https://github.com/gdbooks/3DCollisions/blob/master/Chapter2/static_aabb_plane.md

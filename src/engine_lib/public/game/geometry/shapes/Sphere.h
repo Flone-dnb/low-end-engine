@@ -2,7 +2,7 @@
 
 // Custom.
 #include "math/GLMath.hpp"
-#include "misc/shapes/Plane.h"
+#include "game/geometry/shapes/Plane.h"
 
 /** Sphere shape. */
 struct Sphere {

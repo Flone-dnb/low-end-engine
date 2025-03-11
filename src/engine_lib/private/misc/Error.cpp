@@ -9,6 +9,20 @@
 
 // External.
 #include "SDL_messagebox.h"
+#include "glad/glad.h"
+#if defined(WIN32)
+#include <Windows.h>
+#endif
+
+void checkLastGlError(const std::source_location location) {
+    const auto lastError = glGetError();
+    if (lastError != GL_NO_ERROR) [[unlikely]] {
+        const auto filename = std::filesystem::path(location.file_name()).filename().string();
+        Error error(std::format(
+            "an OpenGL error occurred at {}, line {}, error code: {}", filename, location.line(), lastError));
+        error.showErrorAndThrowException();
+    }
+}
 
 Error::Error(std::string_view sMessage, const std::source_location location) {
     this->sMessage = sMessage;
@@ -17,13 +31,13 @@ Error::Error(std::string_view sMessage, const std::source_location location) {
 }
 
 #if defined(WIN32)
-Error::Error(const HRESULT hResult, const std::source_location location) {
+Error::Error(const HRESULT iResult, const std::source_location location) {
     LPSTR pErrorText = nullptr;
 
     FormatMessageA(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr,
-        hResult,
+        iResult,
         MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
         reinterpret_cast<LPSTR>(&pErrorText),
         0,
@@ -31,7 +45,7 @@ Error::Error(const HRESULT hResult, const std::source_location location) {
 
     // Add error code to the beginning of the message.
     std::stringstream hexStream;
-    hexStream << std::hex << hResult;
+    hexStream << std::hex << iResult;
     sMessage = std::format("0x{}: ", hexStream.str());
 
     if (pErrorText != nullptr) {

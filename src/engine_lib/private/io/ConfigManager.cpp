@@ -224,9 +224,11 @@ std::optional<Error> ConfigManager::saveFile(std::filesystem::path pathToConfigF
     }
 
 #if defined(WIN32)
+    constexpr auto iMaxPath = 260; // value of Windows' MAXPATH macro
+
     // Check if the path length is too long.
     constexpr auto iMaxPathLimitBound = 15;
-    constexpr auto iMaxPathLimit = MAX_PATH - iMaxPathLimitBound;
+    constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
     const auto iFilePathLength = pathToConfigFile.string().length();
     if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
         Logger::get().warn(std::format(

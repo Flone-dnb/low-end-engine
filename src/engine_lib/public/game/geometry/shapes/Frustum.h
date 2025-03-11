@@ -2,10 +2,10 @@
 
 // Custom.
 #include "math/GLMath.hpp"
-#include "misc/shapes/Plane.h"
-#include "misc/shapes/AABB.h"
-#include "misc/shapes/Sphere.h"
-#include "misc/shapes/Cone.h"
+#include "game/geometry/shapes/Plane.h"
+#include "game/geometry/shapes/AABB.h"
+#include "game/geometry/shapes/Sphere.h"
+#include "game/geometry/shapes/Cone.h"
 
 /** Frustum represented by 6 planes. */
 struct Frustum {

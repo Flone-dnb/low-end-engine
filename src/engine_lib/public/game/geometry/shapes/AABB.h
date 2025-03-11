@@ -5,7 +5,7 @@
 
 // Custom.
 #include "math/GLMath.hpp"
-#include "misc/shapes/Plane.h"
+#include "game/geometry/shapes/Plane.h"
 
 /** Axis-aligned bounding box. */
 struct AABB {
