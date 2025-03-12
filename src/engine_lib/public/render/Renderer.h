@@ -5,7 +5,7 @@
 #include <variant>
 
 // Custom.
-#include "render/ShaderManager.h"
+#include "render/shader/ShaderManager.h"
 #include "misc/Error.h"
 
 // External.

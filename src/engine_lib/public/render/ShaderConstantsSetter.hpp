@@ -7,7 +7,7 @@
 class ShaderProgram;
 
 /** Used to group functions that set values to shader `uniform` variables. */
-class ShaderConstantManager {
+class ShaderConstantsSetter {
 public:
     /**
      * Adds a function that will set shader constants once called.

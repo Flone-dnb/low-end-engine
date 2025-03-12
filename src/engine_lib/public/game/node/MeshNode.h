@@ -8,8 +8,8 @@
 #include "game/node/SpatialNode.h"
 #include "game/geometry/MeshGeometry.h"
 #include "render/Material.h"
-#include "render/VertexArrayObject.h"
-#include "render/ShaderConstantManager.hpp"
+#include "render/wrapper/VertexArrayObject.h"
+#include "render/ShaderConstantsSetter.hpp"
 
 class MeshNode;
 
@@ -104,8 +104,7 @@ public:
     VertexArrayObject& getVertexArrayObjectWhileSpawned() {
 #if defined(DEBUG)
         if (pVao == nullptr) [[unlikely]] {
-            Error error(std::format("VAO is invalid on node \"{}\"", getNodeName()));
-            error.showErrorAndThrowException();
+            Error::showErrorAndThrowException(std::format("VAO is invalid on node \"{}\"", getNodeName()));
         }
 #endif
         return *pVao.get();
@@ -118,14 +117,14 @@ public:
      *
      * @return Manager.
      */
-    ShaderConstantManager& getShaderConstantsManagerWhileSpawned() {
+    ShaderConstantsSetter& getShaderConstantsSetterWhileSpawned() {
 #if defined(DEBUG)
-        if (!shaderConstantManager.has_value()) [[unlikely]] {
-            Error error(std::format("constants manager is invalid on node \"{}\"", getNodeName()));
-            error.showErrorAndThrowException();
+        if (!shaderConstantsSetter.has_value()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("constants manager is invalid on node \"{}\"", getNodeName()));
         }
 #endif
-        return *shaderConstantManager;
+        return *shaderConstantsSetter;
     }
 
     /**
@@ -190,7 +189,7 @@ private:
     std::unique_ptr<VertexArrayObject> pVao;
 
     /** Only valid while spawned. */
-    std::optional<ShaderConstantManager> shaderConstantManager;
+    std::optional<ShaderConstantsSetter> shaderConstantsSetter;
 
     /** Groups mutex guarded data. */
     std::pair<std::mutex, ShaderConstants> mtxShaderConstants;

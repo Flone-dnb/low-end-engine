@@ -5,8 +5,8 @@
 
 // Custom.
 #include "game/geometry/MeshGeometry.h"
-#include "render/VertexArrayObject.h"
-#include "render/Framebuffer.h"
+#include "render/wrapper/VertexArrayObject.h"
+#include "render/wrapper/Framebuffer.h"
 
 /** A single place for "talking" with OpenGL context about GPU resources. */
 class GpuResourceManager {

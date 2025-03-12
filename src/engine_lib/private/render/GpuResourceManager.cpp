@@ -37,9 +37,8 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(c
     // Before converting index count to int (for OpenGL) make sure the conversion will be safe.
     constexpr size_t iTypeLimit = std::numeric_limits<int>::max();
     if (geometry.getIndices().size() > iTypeLimit) [[unlikely]] {
-        Error error(
+        Error::showErrorAndThrowException(
             std::format("index count {} exceeds type limit of {}", geometry.getIndices().size(), iTypeLimit));
-        error.showErrorAndThrowException();
     }
     int iIndexCount = static_cast<int>(geometry.getIndices().size());
 
@@ -98,8 +97,7 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
 
         // Make sure framebuffer is complete.
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) [[unlikely]] {
-            Error error("render framebuffer is not complete");
-            error.showErrorAndThrowException();
+            Error::showErrorAndThrowException("render framebuffer is not complete");
         }
     }
     glBindRenderbuffer(GL_RENDERBUFFER, 0);

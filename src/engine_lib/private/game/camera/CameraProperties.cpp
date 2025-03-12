@@ -5,7 +5,7 @@
 
 // Custom.
 #include "misc/Error.h"
-#include "render/ShaderProgram.h"
+#include "render/wrapper/ShaderProgram.h"
 
 void CameraProperties::setRenderTargetSize(
     unsigned int iRenderTargetWidth, unsigned int iRenderTargetHeight) {
@@ -26,7 +26,7 @@ void CameraProperties::setRenderTargetSize(
 }
 
 CameraProperties::CameraProperties() {
-    shaderConstantsManager.addSetterFunction([this](ShaderProgram* pShaderProgram) {
+    shaderConstantsSetter.addSetterFunction([this](ShaderProgram* pShaderProgram) {
         std::scoped_lock guard(mtxData.first);
 
         // Find uniform.
@@ -49,12 +49,11 @@ void CameraProperties::setFov(unsigned int iVerticalFov) {
 
 void CameraProperties::setNearClipPlaneDistance(float nearClipPlaneDistance) {
     if (nearClipPlaneDistance < CameraProperties::Data::minimumClipPlaneDistance) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "the specified near clip plane distance {} is lower than the minimum allowed clip plane "
             "distance: {}",
             nearClipPlaneDistance,
             CameraProperties::Data::minimumClipPlaneDistance));
-        error.showErrorAndThrowException();
     }
 
     std::scoped_lock guard(mtxData.first);
@@ -68,12 +67,11 @@ void CameraProperties::setNearClipPlaneDistance(float nearClipPlaneDistance) {
 
 void CameraProperties::setFarClipPlaneDistance(float farClipPlaneDistance) {
     if (farClipPlaneDistance < CameraProperties::Data::minimumClipPlaneDistance) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "the specified far clip plane distance {} is lower than the minimum allowed clip plane "
             "distance: {}",
             farClipPlaneDistance,
             CameraProperties::Data::minimumClipPlaneDistance));
-        error.showErrorAndThrowException();
     }
 
     std::scoped_lock guard(mtxData.first);
@@ -147,7 +145,7 @@ void CameraProperties::makeSureViewMatrixIsUpToDate() {
 
     // Calculate view matrix.
     viewData.viewMatrix =
-        glm::lookAtRH(viewData.worldLocation, viewData.targetPointWorldLocation, viewData.worldUpDirection);
+        glm::lookAtLH(viewData.worldLocation, viewData.targetPointWorldLocation, viewData.worldUpDirection);
 
     // Since we finished updating view data - recalculate frustum.
     recalculateFrustum();
@@ -169,7 +167,7 @@ void CameraProperties::makeSureProjectionMatrixAndClipPlanesAreUpToDate() {
     const auto verticalFovInRadians = glm::radians(static_cast<float>(projectionData.iVerticalFov));
 
     // Calculate projection matrix.
-    projectionData.projectionMatrix = glm::perspectiveFovRH(
+    projectionData.projectionMatrix = glm::perspectiveFovLH(
         verticalFovInRadians,
         static_cast<float>(projectionData.iRenderTargetWidth),
         static_cast<float>(projectionData.iRenderTargetHeight),

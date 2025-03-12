@@ -12,8 +12,7 @@ CameraManager::CameraManager(Renderer* pRenderer) : pRenderer(pRenderer) {}
 
 void CameraManager::setActiveCamera(CameraNode* pCameraNode) {
     if (pCameraNode == nullptr) [[unlikely]] {
-        Error error("`nullptr` is not a valid camera");
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException("`nullptr` is not a valid camera");
     }
 
     std::scoped_lock guard(mtxActiveCamera.first);
@@ -21,10 +20,9 @@ void CameraManager::setActiveCamera(CameraNode* pCameraNode) {
     // Make sure this node is spawned.
     std::scoped_lock nodeSpawnGuard(pCameraNode->getSpawnDespawnMutex());
     if (!pCameraNode->isSpawned()) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "camera node \"{}\" needs to be spawned in order to make it the active camera",
             pCameraNode->getNodeName()));
-        error.showErrorAndThrowException();
     }
 
     // don't unlock the node mutex yet

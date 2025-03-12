@@ -5,9 +5,9 @@
 
 // Custom.
 #include "render/Renderer.h"
-#include "render/ShaderManager.h"
+#include "render/shader/ShaderManager.h"
 #include "game/node/MeshNode.h"
-#include "render/ShaderProgram.h"
+#include "render/wrapper/ShaderProgram.h"
 
 // External.
 #include "nameof.hpp"
@@ -24,8 +24,8 @@ void Material::onNodeSpawning(
     const std::function<void(ShaderProgram*)>& onShaderProgramReceived) {
     // Self check:
     if (shaderProgram != nullptr) [[unlikely]] {
-        Error error(std::format("material on node \"{}\" already requested shaders", pNode->getNodeName()));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("material on node \"{}\" already requested shaders", pNode->getNodeName()));
     }
 
     // Get program.
@@ -38,7 +38,7 @@ void Material::onNodeSpawning(
     onShaderProgramReceived(shaderProgram.get());
 
     // Set shader constants.
-    pNode->getShaderConstantsManagerWhileSpawned().addSetterFunction(
+    pNode->getShaderConstantsSetterWhileSpawned().addSetterFunction(
         [this, diffuseColorLocation = shaderProgram->getShaderUniformLocation(NAMEOF(diffuseColor))](
             ShaderProgram* pShaderProgram) {
             pShaderProgram->setVector3ToShader(diffuseColorLocation, diffuseColor);
@@ -53,8 +53,8 @@ void Material::onNodeSpawning(
 void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
     // Self check:
     if (shaderProgram == nullptr) [[unlikely]] {
-        Error error(std::format("material on node \"{}\" not requested shaders yet", pNode->getNodeName()));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("material on node \"{}\" not requested shaders yet", pNode->getNodeName()));
     }
 
     if (pNode->isVisible()) {

@@ -80,6 +80,15 @@ public:
     Error& operator=(Error&& other) = default;
 
     /**
+     * Logs the message, shows it on screen and throws an exception.
+     *
+     * @param sMessage  Error message to show.
+     * @param location  Should not be specified explicitly (use default value).
+     */
+    [[noreturn]] static void showErrorAndThrowException(
+        std::string_view sMessage, const std::source_location location = std::source_location::current());
+
+    /**
      * Adds the caller's file and line as a new entry to the error location stack.
      *
      * @param location Should not be specified explicitly (use default value).

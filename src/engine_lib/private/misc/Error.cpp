@@ -18,9 +18,8 @@ void checkLastGlError(const std::source_location location) {
     const auto lastError = glGetError();
     if (lastError != GL_NO_ERROR) [[unlikely]] {
         const auto filename = std::filesystem::path(location.file_name()).filename().string();
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "an OpenGL error occurred at {}, line {}, error code: {}", filename, location.line(), lastError));
-        error.showErrorAndThrowException();
     }
 }
 
@@ -28,6 +27,11 @@ Error::Error(std::string_view sMessage, const std::source_location location) {
     this->sMessage = sMessage;
 
     stack.push_back(sourceLocationToInfo(location));
+}
+
+void Error::showErrorAndThrowException(std::string_view sMessage, const std::source_location location) {
+    Error error(sMessage);
+    error.showErrorAndThrowException();
 }
 
 #if defined(WIN32)

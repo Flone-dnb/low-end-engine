@@ -2,7 +2,7 @@
 
 // Custom.
 #include "game/Window.h"
-#include "render/ShaderProgram.h"
+#include "render/wrapper/ShaderProgram.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/CameraNode.h"
 #include "game/node/MeshNode.h"
@@ -24,25 +24,24 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
 
     // Enable back face culling.
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glDepthFunc(GL_LESS);
-    glClearDepthf(1.0F);
+    glCullFace(GL_FRONT); // front because we use DirectX/Vulkan conversion for everything
 
     // Enable depth testing.
     GL_CHECK_ERROR(glEnable(GL_DEPTH_TEST));
+    glDepthFunc(GL_LESS);
+    glClearDepthf(1.0F);
 
     // Setup clear color.
     glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
 
     // Disable VSync.
     if (SDL_GL_SetSwapInterval(0) < 0) [[unlikely]] {
-        Error error(SDL_GetError());
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(SDL_GetError());
     }
 
     // Set viewport.
     const auto windowSize = pWindow->getWindowSize();
-    GL_CHECK_ERROR(glViewport(0, 0, windowSize.first, windowSize.second));
+    GL_CHECK_ERROR(glViewport(0, 0, static_cast<int>(windowSize.first), static_cast<int>(windowSize.second)));
 
     return std::unique_ptr<Renderer>(new Renderer(pWindow, pContext));
 }
@@ -55,8 +54,8 @@ void Renderer::drawNextFrame() {
     // Make sure there was no GL error during the last frame.
     const auto lastError = glGetError();
     if (lastError != GL_NO_ERROR) [[unlikely]] {
-        Error error(std::format("an OpenGL error occurred during the last frame, error code: {}", lastError));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("an OpenGL error occurred during the last frame, error code: {}", lastError));
     }
 
     // Render to window framebuffer.
@@ -79,7 +78,7 @@ void Renderer::drawNextFrame() {
             glUseProgram(pShaderProgram->getShaderProgramId());
 
             // Set camera uniforms.
-            mtxActiveCamera.second->getCameraProperties()->getShaderConstantsManager().setConstantsToShader(
+            mtxActiveCamera.second->getCameraProperties()->getShaderConstantsSetter().setConstantsToShader(
                 pShaderProgram);
 
             // Get mesh nodes.
@@ -92,7 +91,7 @@ void Renderer::drawNextFrame() {
                 glBindVertexArray(vao.getVertexArrayObjectId());
 
                 // Set mesh uniforms.
-                pMeshNode->getShaderConstantsManagerWhileSpawned().setConstantsToShader(pShaderProgram);
+                pMeshNode->getShaderConstantsSetterWhileSpawned().setConstantsToShader(pShaderProgram);
 
                 // Draw.
                 glDrawElements(GL_TRIANGLES, vao.getIndexCount(), GL_UNSIGNED_SHORT, nullptr);

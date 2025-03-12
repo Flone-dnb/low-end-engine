@@ -27,8 +27,7 @@ std::string Globals::getApplicationName() {
 
     // Get the fully-qualified path of the executable.
     if (GetModuleFileName(nullptr, buffer, bufSize) == bufSize) {
-        const Error err("failed to get path to the application, path is too long");
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException("failed to get path to the application, path is too long");
     }
 
     return std::filesystem::path(buffer).stem().string();
@@ -38,8 +37,7 @@ std::string Globals::getApplicationName() {
     constexpr size_t bufSize = 1024; // NOLINT: should be more that enough
     char buf[bufSize] = {0};
     if (readlink("/proc/self/exe", &buf[0], bufSize) == -1) {
-        const Error err("failed to get path to the application");
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException("failed to get path to the application");
     }
 
     return std::filesystem::path(buf).stem().string();

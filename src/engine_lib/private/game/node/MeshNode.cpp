@@ -4,7 +4,7 @@
 #include "render/GpuResourceManager.h"
 #include "game/GameInstance.h"
 #include "game/geometry/PrimitiveMeshGenerator.h"
-#include "render/ShaderProgram.h"
+#include "render/wrapper/ShaderProgram.h"
 
 // External.
 #include "nameof.hpp"
@@ -23,9 +23,8 @@ void MeshNode::setMaterialBeforeSpawned(const Material& material) {
     // For simplicity we don't allow changing material while spawned.
     // Moreover, renderable node manager does not expect us to change material.
     if (isSpawned()) [[unlikely]] {
-        Error error(
+        Error::showErrorAndThrowException(
             std::format("changing material of a spawned node is not allowed (node \"{}\")", getNodeName()));
-        error.showErrorAndThrowException();
     }
 
     this->material = material;
@@ -68,13 +67,13 @@ void MeshNode::onSpawning() {
     // Create VAO.
     pVao = GpuResourceManager::createVertexArrayObject(geometry);
 
-    // Create shader constants manager.
-    shaderConstantManager = ShaderConstantManager();
+    // Create shader constants setter.
+    shaderConstantsSetter = ShaderConstantsSetter();
 
     // Request shader program.
     material.onNodeSpawning(
         this, getGameInstanceWhileSpawned()->getRenderer(), [this](ShaderProgram* pShaderProgram) {
-            shaderConstantManager->addSetterFunction(
+            shaderConstantsSetter->addSetterFunction(
                 [this,
                  iWorldMatrixLocation =
                      pShaderProgram->getShaderUniformLocation(NAMEOF(mtxShaderConstants.second.worldMatrix)),
@@ -94,7 +93,7 @@ void MeshNode::onDespawning() {
 
     // Destroy VAO and constants manager.
     pVao = nullptr;
-    shaderConstantManager = {};
+    shaderConstantsSetter = {};
 
     // Notify material.
     material.onNodeDespawning(this, getGameInstanceWhileSpawned()->getRenderer());
@@ -116,11 +115,10 @@ void MeshNode::onAfterMeshGeometryChanged() {
 
     // For simplicity we don't allow changing geometry while spawned.
     if (isSpawned()) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "changing geometry of a spawned node is not allowed, if you need procedural/dynamic geometry "
             "consider passing some additional data to the vertex shader and changing vertices there (node "
             "\"{}\")",
             getNodeName()));
-        error.showErrorAndThrowException();
     }
 }

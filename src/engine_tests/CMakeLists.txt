@@ -21,6 +21,7 @@ set(PROJECT_SOURCES
     src/main.cpp
     src/input/InputManager.cpp
     src/node/Node.cpp
+    src/node/MeshNode.cpp
     # add your .h/.cpp files here
 )
 

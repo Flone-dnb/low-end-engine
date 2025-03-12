@@ -1,7 +1,7 @@
-#include "render/Shader.h"
+#include "render/shader/Shader.h"
 
 // Custom.
-#include "render/ShaderManager.h"
+#include "render/shader/ShaderManager.h"
 
 // External.
 #include "misc/Error.h"

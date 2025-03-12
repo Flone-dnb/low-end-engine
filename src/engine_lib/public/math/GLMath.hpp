@@ -5,8 +5,8 @@
 
 #pragma once
 
-// right-handed coordinate system
-// clip-space Z is in range [-1; 1]
+#define GLM_FORCE_LEFT_HANDED
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_INLINE
 #define GLM_FORCE_XYZW_ONLY
 #define GLM_ENABLE_EXPERIMENTAL

@@ -52,8 +52,7 @@ GameManager::~GameManager() {
         return;
     }
 
-    Error error("unexpected state");
-    error.showErrorAndThrowException();
+    Error::showErrorAndThrowException("unexpected state");
 }
 
 void GameManager::createWorld(const std::function<void()>& onCreated) {
@@ -289,8 +288,7 @@ void GameManager::triggerActionEvents(
                     static_cast<int>(std::get<GamepadButton>(button)),
                     iActionId));
             } else [[unlikely]] {
-                Error error("unhandled case");
-                error.showErrorAndThrowException();
+                Error::showErrorAndThrowException("unhandled case");
             }
         }
 

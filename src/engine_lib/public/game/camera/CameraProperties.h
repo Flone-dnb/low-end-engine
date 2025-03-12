@@ -7,7 +7,7 @@
 #include "math/GLMath.hpp"
 #include "misc/Globals.h"
 #include "game/geometry/shapes/Frustum.h"
-#include "render/ShaderConstantManager.hpp"
+#include "render/ShaderConstantsSetter.hpp"
 
 /** Defines how camera can move and rotate. */
 enum class CameraMode {
@@ -240,7 +240,7 @@ public:
      *
      * @return Manager.
      */
-    inline ShaderConstantManager& getShaderConstantsManager() { return shaderConstantsManager; }
+    inline ShaderConstantsSetter& getShaderConstantsSetter() { return shaderConstantsSetter; }
 
 private:
     /**
@@ -280,7 +280,7 @@ private:
     std::pair<std::recursive_mutex, Data> mtxData{};
 
     /** To pass values to shaders. */
-    ShaderConstantManager shaderConstantsManager;
+    ShaderConstantsSetter shaderConstantsSetter;
 
     /** Delta to compare input to zero. */
     static inline constexpr float floatDelta = 0.00001F;

@@ -23,18 +23,18 @@ public:
      *
      * @param direction Normalized direction to convert.
      *
-     * @return Pitch (as X), yaw (as Y) and roll (as Z) in degrees.
+     * @return Roll (as X), pitch (as Y) and yaw (as Z) in degrees.
      */
-    static inline glm::vec3 convertNormalizedDirectionToPitchYawRoll(const glm::vec3& direction);
+    static inline glm::vec3 convertNormalizedDirectionToRollPitchYaw(const glm::vec3& direction);
 
     /**
      * Converts rotation angles to a direction.
      *
-     * @param rotation Rotation pitch (as X), yaw (as Y) and roll (as Z) in degrees.
+     * @param rotation Rotation roll (as X), pitch (as Y) and yaw (as Z) in degrees.
      *
      * @return Unit direction vector.
      */
-    static inline glm::vec3 convertPitchYawRollToDirection(const glm::vec3& rotation);
+    static inline glm::vec3 convertRollPitchYawToDirection(const glm::vec3& rotation);
 
     /**
      * Converts coordinates from the spherical coordinate system to the Cartesian coordinate system.
@@ -70,7 +70,7 @@ public:
     /**
      * Builds a rotation matrix in the engine specific way.
      *
-     * @param rotation Rotation in degrees where X is pitch, Y is yaw and Z is roll.
+     * @param rotation Rotation in degrees where X is roll, Y is pitch and Z is yaw.
      *
      * @return Rotation matrix.
      */
@@ -109,7 +109,7 @@ private:
     static inline const float smallFloatEpsilon = 0.0000001F; // NOLINT: not a very small number
 };
 
-glm::vec3 MathHelpers::convertNormalizedDirectionToPitchYawRoll(const glm::vec3& direction) {
+glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3& direction) {
     // Ignore zero vectors.
     if (glm::all(glm::epsilonEqual(direction, glm::vec3(0.0F, 0.0F, 0.0F), smallFloatEpsilon))) {
         return glm::vec3(0.0F, 0.0F, 0.0F);
@@ -121,36 +121,53 @@ glm::vec3 MathHelpers::convertNormalizedDirectionToPitchYawRoll(const glm::vec3&
     const auto length = glm::length(direction);
     if (!glm::epsilonEqual(length, 1.0F, lengthDelta)) [[unlikely]] {
         // show an error so that it will be instantly noticeable because we're in the debug build
-        Error error("the specified direction vector should have been normalized");
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException("the specified direction vector should have been normalized");
     }
 #endif
 
     glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
 
-    worldRotation.y = glm::degrees(std::atan2(direction.x, -direction.z));
-    worldRotation.x = glm::degrees(-std::asin(direction.y));
+    worldRotation.z = glm::degrees(std::atan2(direction.y, direction.x));
+    worldRotation.y = glm::degrees(-std::asin(direction.z));
 
     // Check for NaNs.
+    if (glm::isnan(worldRotation.z)) {
+        Logger::get().warn(
+            "found NaN in the Z component of the calculated rotation, setting this component's value to "
+            "zero");
+        worldRotation.z = 0.0F;
+    }
     if (glm::isnan(worldRotation.y)) {
         Logger::get().warn(
             "found NaN in the Y component of the calculated rotation, setting this component's value to "
             "zero");
         worldRotation.y = 0.0F;
     }
-    if (glm::isnan(worldRotation.x)) {
-        Logger::get().warn(
-            "found NaN in the X component of the calculated rotation, setting this component's value to "
-            "zero");
-        worldRotation.x = 0.0F;
-    }
 
     // Use zero roll for now.
+
+    // Calculate roll:
+    // See if we can use world up direction to find the right direction.
+    // glm::vec3 vecToFindRight = worldUpDirection;
+    // if (std::abs(direction.z) > 0.999F) { // NOLINT: magic number
+    //    // Use +X then.
+    //    vecToFindRight = glm::vec3(1.0F, 0.0F, 0.0F);
+    //}
+    // const auto rightDirection = glm::normalize(glm::cross(direction, vecToFindRight));
+
+    // worldRotation.x =
+    //     glm::degrees(-std::asinf(worldUpDirection.x * rightDirection.x + worldUpDirection.y *
+    //     rightDirection.y));
+
+    // Check roll for NaN.
+    // if (glm::isnan(worldRotation.x)) {
+    //     worldRotation.x = 0.0F;
+    // }
 
     return worldRotation;
 }
 
-glm::vec3 MathHelpers::convertPitchYawRollToDirection(const glm::vec3& rotation) {
+glm::vec3 MathHelpers::convertRollPitchYawToDirection(const glm::vec3& rotation) {
     return buildRotationMatrix(rotation) * glm::vec4(Globals::WorldDirection::forward, 0.0F);
 }
 
@@ -197,9 +214,9 @@ glm::vec3 MathHelpers::calculateReciprocalVector(const glm::vec3& vector) {
 }
 
 glm::mat4x4 MathHelpers::buildRotationMatrix(const glm::vec3& rotation) {
-    return glm::rotate(glm::radians(rotation.x), glm::vec3(1.0F, 0.0F, 0.0F)) *
+    return glm::rotate(glm::radians(rotation.z), glm::vec3(0.0F, 0.0F, 1.0F)) *
            glm::rotate(glm::radians(rotation.y), glm::vec3(0.0F, 1.0F, 0.0F)) *
-           glm::rotate(glm::radians(rotation.z), glm::vec3(0.0F, 0.0F, 1.0F));
+           glm::rotate(glm::radians(rotation.x), glm::vec3(1.0F, 0.0F, 0.0F));
 }
 
 float MathHelpers::normalizeToRange(float value, float min, float max) {

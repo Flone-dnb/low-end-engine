@@ -29,9 +29,9 @@ void Node::unsafeDetachFromParentAndDespawn() {
 
     {
         if (getWorldRootNodeWhileSpawned() == this) [[unlikely]] {
-            Error error("instead of despawning world's root node, create/replace world using GameInstance "
-                        "functions, this would destroy the previous world with all nodes");
-            error.showErrorAndThrowException();
+            Error::showErrorAndThrowException(
+                "instead of despawning world's root node, create/replace world using GameInstance "
+                "functions, this would destroy the previous world with all nodes");
         }
 
         // Detach from parent.
@@ -228,8 +228,7 @@ void Node::setTickGroup(TickGroup tickGroup) {
     // Make sure the node is not spawned.
     std::scoped_lock guard(mtxIsSpawned.first);
     if (mtxIsSpawned.second) [[unlikely]] {
-        Error error("this function should not be called while the node is spawned");
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException("this function should not be called while the node is spawned");
     }
 
     this->tickGroup = tickGroup;
@@ -240,16 +239,14 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
 
     // Make sure the node is spawned.
     if (!mtxIsSpawned.second) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "this function should not be called while the node is not spawned (called from node \"{}\")",
             sNodeName));
-        error.showErrorAndThrowException();
     }
 
     if (pWorldWeSpawnedIn == nullptr) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "spawned node \"{}\" attempted to request the game instance but world is nullptr", sNodeName));
-        error.showErrorAndThrowException();
     }
 
     return pWorldWeSpawnedIn->pGameManager->getGameInstance();
@@ -411,11 +408,10 @@ World* Node::askParentsAboutWorldPointer() {
     // Ask parent node for the valid world pointer.
     std::scoped_lock parentGuard(mtxParentNode.first);
     if (mtxParentNode.second == nullptr) [[unlikely]] {
-        Error err(std::format(
+        Error::showErrorAndThrowException(std::format(
             "node \"{}\" can't find a pointer to a valid world instance because "
             "there is no parent node",
             getNodeName()));
-        err.showErrorAndThrowException();
     }
 
     return mtxParentNode.second->askParentsAboutWorldPointer();

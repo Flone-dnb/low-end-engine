@@ -25,15 +25,15 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
         // Bind move right.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.z = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.x = input; };
 
         // Bind move forward.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.x = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.y = input; };
 
         // Bind move up.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.y = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.z = input; };
     }
 
     // Bind action events.
@@ -94,9 +94,9 @@ void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     auto newWorldLocation = getWorldLocation();
 
     // Calculate new world location.
-    newWorldLocation += getWorldRightDirection() * movementDirection.x;
-    newWorldLocation += Globals::WorldDirection::up * movementDirection.y;
-    newWorldLocation += getWorldForwardDirection() * movementDirection.z;
+    newWorldLocation += getWorldForwardDirection() * movementDirection.x;
+    newWorldLocation += getWorldRightDirection() * movementDirection.y;
+    newWorldLocation += Globals::WorldDirection::up * movementDirection.z;
 
     // Apply movement.
     setWorldLocation(newWorldLocation);
@@ -111,8 +111,8 @@ void EditorCameraNode::onMouseMove(double xOffset, double yOffset) {
 
     // Modify rotation.
     auto currentRotation = getRelativeRotation();
-    currentRotation.y -= static_cast<float>(xOffset * rotationSensitivity);
-    currentRotation.x -= static_cast<float>(yOffset * rotationSensitivity);
+    currentRotation.z += static_cast<float>(xOffset * rotationSensitivity);
+    currentRotation.y += static_cast<float>(yOffset * rotationSensitivity);
 
     // Apply rotation.
     setRelativeRotation(currentRotation);
@@ -127,12 +127,11 @@ void EditorCameraNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     std::scoped_lock guard(mtxSpatialParent.first);
 
     if (mtxSpatialParent.second != nullptr) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "editor camera node was attached to some node (tree) and there is now a "
             "spatial node \"{}\" in the editor camera's parent chain but having a spatial node "
             "in the editor camera's parent chain might cause the camera to move/rotate according "
             "to the parent (which is undesirable)",
             mtxSpatialParent.second->getNodeName()));
-        error.showErrorAndThrowException();
     }
 }

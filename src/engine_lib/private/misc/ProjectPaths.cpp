@@ -30,8 +30,7 @@ std::filesystem::path ProjectPaths::getPathToGameDirectory() {
 
     // Get the fully-qualified path of the executable.
     if (GetModuleFileName(nullptr, buffer, bufSize) == bufSize) {
-        const Error err("failed to get path to the application, path is too long");
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException("failed to get path to the application, path is too long");
     }
 
     return std::filesystem::path(buffer).parent_path();
@@ -41,8 +40,7 @@ std::filesystem::path ProjectPaths::getPathToGameDirectory() {
     constexpr size_t bufSize = 1024; // NOLINT: should be more that enough
     char buf[bufSize] = {0};
     if (readlink("/proc/self/exe", &buf[0], bufSize) == -1) {
-        const Error err("failed to get path to the application");
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException("failed to get path to the application");
     }
 
     return std::filesystem::path(buf).parent_path();
@@ -91,8 +89,7 @@ std::filesystem::path ProjectPaths::getPathToResDirectory(ResourceDirectory dire
     };
 
     if (!std::filesystem::exists(path)) {
-        const Error err(std::format("expected directory \"{}\" to exist", path.string()));
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException(std::format("expected directory \"{}\" to exist", path.string()));
     }
 
     return path;
@@ -130,8 +127,7 @@ std::filesystem::path ProjectPaths::getPathToBaseConfigDirectory() {
 
         const auto sHomePath = std::string(getenv("HOME")); // NOLINT: not thread safe
         if (sHomePath.empty()) {
-            const Error err("environment variable HOME is not set");
-            err.showErrorAndThrowException();
+            Error::showErrorAndThrowException("environment variable HOME is not set");
         }
 
         basePath = std::format("{}/.config/", sHomePath);
@@ -163,8 +159,7 @@ std::filesystem::path ProjectPaths::getPathToResDirectory() {
 
     // Get the fully-qualified path of the executable.
     if (GetModuleFileName(nullptr, buffer, bufSize) == bufSize) {
-        const Error err("failed to get path to the application, path is too long");
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException("failed to get path to the application, path is too long");
     }
 
     pathToExecutable = std::filesystem::path(buffer);
@@ -174,8 +169,7 @@ std::filesystem::path ProjectPaths::getPathToResDirectory() {
     constexpr size_t bufSize = 1024; // NOLINT: should be more that enough
     char buf[bufSize] = {0};
     if (readlink("/proc/self/exe", &buf[0], bufSize) == -1) {
-        const Error err("failed to get path to the application");
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException("failed to get path to the application");
     }
 
     pathToExecutable = std::filesystem::path(buf);
@@ -187,8 +181,8 @@ std::filesystem::path ProjectPaths::getPathToResDirectory() {
     // Construct path to the resources directory.
     auto pathToRes = pathToExecutable.parent_path() / Globals::getResourcesDirectoryName();
     if (!std::filesystem::exists(pathToRes)) {
-        const Error err(std::format("expected resources directory to exist at \"{}\"", pathToRes.string()));
-        err.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("expected resources directory to exist at \"{}\"", pathToRes.string()));
     }
 
     return pathToRes;

@@ -740,15 +740,14 @@ inline NodeType* Node::addChildNode(
 
     // Make sure the specified node is valid.
     if (pNode == nullptr) [[unlikely]] {
-        Error error(
+        Error::showErrorAndThrowException(
             std::format("an attempt was made to attach a nullptr node to the \"{}\" node", getNodeName()));
-        error.showErrorAndThrowException();
     }
 
     // Make sure the specified node is not `this`.
     if (pNode == this) [[unlikely]] {
-        Error error(std::format("an attempt was made to attach the \"{}\" node to itself", getNodeName()));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("an attempt was made to attach the \"{}\" node to itself", getNodeName()));
     }
 
     std::scoped_lock guard(mtxChildNodes.first);
@@ -756,25 +755,23 @@ inline NodeType* Node::addChildNode(
     // Make sure the specified node is not our direct child.
     for (const auto& pChildNode : mtxChildNodes.second) {
         if (pChildNode.get() == pNode) [[unlikely]] {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "an attempt was made to attach the \"{}\" node to the \"{}\" node but it's already "
                 "a direct child node of \"{}\"",
                 pNode->getNodeName(),
                 getNodeName(),
                 getNodeName()));
-            error.showErrorAndThrowException();
         }
     }
 
     // Make sure the specified node is not our parent.
     if (pNode->isParentOf(this)) {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "an attempt was made to attach the \"{}\" node to the node \"{}\", "
             "but the first node is a parent of the second node, "
             "aborting this operation",
             pNode->getNodeName(),
             getNodeName()));
-        error.showErrorAndThrowException();
     }
 
     // Prepare unique_ptr to add to our "child nodes" array.
@@ -785,15 +782,14 @@ inline NodeType* Node::addChildNode(
     if (pNode->mtxParentNode.second != nullptr) {
         // Make sure we were given a raw pointer.
         if (!std::holds_alternative<NodeType*>(node)) [[unlikely]] {
-            Error error(std::format("expected a raw pointer for the node \"{}\"", pNode->getNodeName()));
-            error.showErrorAndThrowException();
+            Error::showErrorAndThrowException(
+                std::format("expected a raw pointer for the node \"{}\"", pNode->getNodeName()));
         }
 
         // Check if we are already this node's parent.
         if (pNode->mtxParentNode.second == this) {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "an attempt was made to attach the \"{}\" node to its parent again", pNode->getNodeName()));
-            error.showErrorAndThrowException();
         }
 
         // Notify start of detachment.
@@ -812,26 +808,23 @@ inline NodeType* Node::addChildNode(
         }
 
         if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "the node \"{}\" has parent node \"{}\" but parent node does not have this node in its array "
                 "of child nodes",
                 pNode->getNodeName(),
                 pNode->mtxParentNode.second->getNodeName()));
-            error.showErrorAndThrowException();
         }
     } else {
         if (std::holds_alternative<NodeType*>(node)) [[unlikely]] {
             // We need a unique_ptr.
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "expected a unique pointer for the node \"{}\" because it does not have a parent",
                 pNode->getNodeName()));
-            error.showErrorAndThrowException();
         }
 
         pNodeToAttachToThis = std::move(std::get<std::unique_ptr<NodeType>>(node));
         if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Error error("unexpected nullptr");
-            error.showErrorAndThrowException();
+            Error::showErrorAndThrowException("unexpected nullptr");
         }
     }
 

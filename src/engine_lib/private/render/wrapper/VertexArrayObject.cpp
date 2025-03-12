@@ -1,4 +1,4 @@
-#include "render/VertexArrayObject.h"
+#include "render/wrapper/VertexArrayObject.h"
 
 // External.
 #include "glad/glad.h"

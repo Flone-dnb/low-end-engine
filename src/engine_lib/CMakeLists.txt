@@ -32,17 +32,17 @@ set(PROJECT_SOURCES
     public/render/Material.h
     private/render/GpuResourceManager.cpp
     private/render/GpuResourceManager.h
-    private/render/VertexArrayObject.cpp
-    private/render/VertexArrayObject.h
-    private/render/Framebuffer.cpp
-    private/render/Framebuffer.h
-    private/render/ShaderManager.h
-    private/render/ShaderManager.cpp
-    private/render/Shader.h
-    private/render/Shader.cpp
-    private/render/ShaderProgram.cpp
-    private/render/ShaderProgram.h
-    public/render/ShaderConstantManager.hpp
+    private/render/shader/ShaderManager.h
+    private/render/shader/ShaderManager.cpp
+    private/render/shader/Shader.h
+    private/render/shader/Shader.cpp
+    private/render/wrapper/ShaderProgram.cpp
+    private/render/wrapper/ShaderProgram.h
+    private/render/wrapper/VertexArrayObject.cpp
+    private/render/wrapper/VertexArrayObject.h
+    private/render/wrapper/Framebuffer.cpp
+    private/render/wrapper/Framebuffer.h
+    public/render/ShaderConstantsSetter.hpp
     private/misc/Error.cpp
     public/misc/Error.h
     public/misc/Globals.h

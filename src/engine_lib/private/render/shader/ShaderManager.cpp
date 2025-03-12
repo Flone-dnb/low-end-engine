@@ -1,4 +1,4 @@
-#include "render/ShaderManager.h"
+#include "render/shader/ShaderManager.h"
 
 // Standard.
 #include <format>
@@ -6,9 +6,9 @@
 
 // Custom.
 #include "misc/Error.h"
-#include "render/Shader.h"
+#include "render/shader/Shader.h"
 #include "misc/ProjectPaths.h"
-#include "render/ShaderProgram.h"
+#include "render/wrapper/ShaderProgram.h"
 
 // External.
 #include "glad/glad.h"
@@ -21,8 +21,7 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 
     // Make sure the specified path exists.
     if (!std::filesystem::exists(pathToShader)) [[unlikely]] {
-        Error error(std::format("path \"{}\" does not exist", pathToShader.string()));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(std::format("path \"{}\" does not exist", pathToShader.string()));
     }
 
     // Parse includes.
@@ -36,10 +35,9 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     } else if (pathToShader.string().ends_with(".frag.glsl")) {
         shaderType = GL_FRAGMENT_SHADER;
     } else [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "unable to determine shader type (vertex, fragment, etc) from shader file name, shader: {}",
             sPathToShaderRelativeRes));
-        error.showErrorAndThrowException();
     }
 
     const auto iShaderId = glCreateShader(shaderType);
@@ -90,9 +88,8 @@ std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
         vInfoLog.resize(iLogLength);
         glGetProgramInfoLog(iShaderProgramId, static_cast<int>(vInfoLog.size()), nullptr, vInfoLog.data());
 
-        Error error(
+        Error::showErrorAndThrowException(
             std::format("failed to link shader(s) {} together, error: {}", sShaderNames, vInfoLog.data()));
-        error.showErrorAndThrowException();
     }
 
     return std::shared_ptr<ShaderProgram>(
@@ -104,9 +101,8 @@ ShaderManager::~ShaderManager() {
 
     const auto iShaderCount = mtxPathsToShaders.second.size();
     if (iShaderCount != 0) [[unlikely]] {
-        Error error(std::format(
+        Error::showErrorAndThrowException(std::format(
             "shader manager is being destroyed but there are still {} shader(s) not deleted", iShaderCount));
-        error.showErrorAndThrowException();
     }
 }
 
@@ -154,8 +150,8 @@ void ShaderManager::onShaderBeingDestroyed(const std::string& sPathToShaderRelat
     // Erase.
     const auto it = mtxPathsToShaders.second.find(sPathToShaderRelativeRes);
     if (it == mtxPathsToShaders.second.end()) [[unlikely]] {
-        Error error(std::format("unable to find shader \"{}\" previously loaded", sPathToShaderRelativeRes));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("unable to find shader \"{}\" previously loaded", sPathToShaderRelativeRes));
     }
     mtxPathsToShaders.second.erase(it);
 }
@@ -166,8 +162,8 @@ void ShaderManager::onShaderProgramBeingDestroyed(const std::string& sShaderProg
     // Erase.
     const auto it = mtxShaderPrograms.second.find(sShaderProgramId);
     if (it == mtxShaderPrograms.second.end()) [[unlikely]] {
-        Error error(std::format("unable to find shader program \"{}\" previously loaded", sShaderProgramId));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("unable to find shader program \"{}\" previously loaded", sShaderProgramId));
     }
     mtxShaderPrograms.second.erase(it);
 }

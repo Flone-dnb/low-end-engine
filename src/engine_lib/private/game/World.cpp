@@ -130,10 +130,9 @@ void World::onNodeSpawned(Node* pNode) {
 
         // Make sure ID is valid.
         if (!optionalNodeId.has_value()) [[unlikely]] {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "node \"{}\" notified the world about being spawned but its ID is invalid",
                 pNode->getNodeName()));
-            error.showErrorAndThrowException();
         }
 
         const auto iNodeId = optionalNodeId.value();
@@ -143,12 +142,11 @@ void World::onNodeSpawned(Node* pNode) {
         // See if we already have a node with this ID.
         const auto it = mtxSpawnedNodes.second.find(iNodeId);
         if (it != mtxSpawnedNodes.second.end()) [[unlikely]] {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "node \"{}\" with ID \"{}\" notified the world about being spawned but there is "
                 "already a spawned node with this ID",
                 pNode->getNodeName(),
                 iNodeId));
-            error.showErrorAndThrowException();
         }
 
         // Save node.
@@ -186,10 +184,9 @@ void World::onNodeDespawned(Node* pNodeToBeDeleted) {
 
         // Make sure ID is valid.
         if (!optionalNodeId.has_value()) [[unlikely]] {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "node \"{}\" notified the world about being despawned but its ID is invalid",
                 pNodeToBeDeleted->getNodeName()));
-            error.showErrorAndThrowException();
         }
 
         const auto iNodeId = optionalNodeId.value();
@@ -199,12 +196,11 @@ void World::onNodeDespawned(Node* pNodeToBeDeleted) {
         // See if we indeed have a node with this ID.
         const auto it = mtxSpawnedNodes.second.find(iNodeId);
         if (it == mtxSpawnedNodes.second.end()) [[unlikely]] {
-            Error error(std::format(
+            Error::showErrorAndThrowException(std::format(
                 "node \"{}\" with ID \"{}\" notified the world about being despawned but this node's "
                 "ID is not found",
                 pNodeToBeDeleted->getNodeName(),
                 iNodeId));
-            error.showErrorAndThrowException();
         }
 
         // Remove node.
@@ -243,8 +239,8 @@ void World::onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode) {
 
     // Make sure the node ID is valid.
     if (!optionalNodeId.has_value()) [[unlikely]] {
-        Error error(std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
     }
     const auto iNodeId = optionalNodeId.value();
 
@@ -316,8 +312,8 @@ void World::onSpawnedNodeChangedIsReceivingInput(Node* pNode) {
 
     // Make sure ID is valid.
     if (!optionalNodeId.has_value()) [[unlikely]] {
-        Error error(std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("spawned node \"{}\" ID is invalid", pNode->getNodeName()));
     }
 
     // Save node ID.

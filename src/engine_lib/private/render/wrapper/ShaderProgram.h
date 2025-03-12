@@ -150,8 +150,8 @@ private:
 inline int ShaderProgram::getShaderUniformLocation(std::string_view sUniformName) {
     const auto iLocation = glGetUniformLocation(iShaderProgramId, sUniformName.data());
     if (iLocation < 0) [[unlikely]] {
-        Error error(std::format("unable to get location for shader uniform named \"{}\"", sUniformName));
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            std::format("unable to get location for shader uniform named \"{}\"", sUniformName));
     }
     return iLocation;
 }

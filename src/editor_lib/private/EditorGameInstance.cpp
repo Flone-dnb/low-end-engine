@@ -22,7 +22,7 @@ void EditorGameInstance::onGameStarted() {
         pEditorCameraNode->makeActive();
 
         auto pMesh = std::make_unique<MeshNode>();
-        pMesh->setRelativeLocation(glm::vec3(0.0F, 0.0F, -2.0F));
+        pMesh->setRelativeLocation(glm::vec3(2.0F, 0.0F, 0.0F));
         getWorldRootNode()->addChildNode(std::move(pMesh));
     });
 }
@@ -83,10 +83,9 @@ void EditorGameInstance::registerEditorInputEvents() {
                 // Cast to editor camera.
                 const auto pEditorCameraNode = dynamic_cast<EditorCameraNode*>(mtxActiveCamera.second);
                 if (pEditorCameraNode == nullptr) [[unlikely]] {
-                    Error error(std::format(
+                    Error::showErrorAndThrowException(std::format(
                         "expected the active camera to be an editor camera (node \"{}\")",
                         mtxActiveCamera.second->getNodeName()));
-                    error.showErrorAndThrowException();
                 }
 
                 // Set cursor visibility.

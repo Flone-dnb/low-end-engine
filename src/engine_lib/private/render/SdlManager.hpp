@@ -22,8 +22,7 @@ private:
 
         // Initialize SDL.
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
-            Error error("failed to initialize SDL");
-            error.showErrorAndThrowException();
+            Error::showErrorAndThrowException("failed to initialize SDL");
         }
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // IF CHANGING
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1); // ALSO CHANGE GLAD

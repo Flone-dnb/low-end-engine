@@ -181,8 +181,8 @@ Window::Window(SDL_Window* pCreatedWindow) {
 void Window::showErrorIfNotOnMainThread() const {
     const auto currentThreadId = std::this_thread::get_id();
     if (currentThreadId != mainThreadId) [[unlikely]] {
-        Error error("an attempt was made to call a function that should only be called on the main thread");
-        error.showErrorAndThrowException();
+        Error::showErrorAndThrowException(
+            "an attempt was made to call a function that should only be called on the main thread");
     }
 }
 
