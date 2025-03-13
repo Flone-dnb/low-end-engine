@@ -7,6 +7,8 @@
 #include "game/camera/CameraManager.h"
 #include "node/EditorCameraNode.h"
 #include "game/node/MeshNode.h"
+#include "math/MathHelpers.hpp"
+#include "game/node/light/DirectionalLightNode.h"
 
 const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"; }
 
@@ -19,12 +21,46 @@ void EditorGameInstance::onGameStarted() {
     createWorld([this]() {
         // Spawn editor camera.
         const auto pEditorCameraNode = getWorldRootNode()->addChildNode(std::make_unique<EditorCameraNode>());
+        pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
         pEditorCameraNode->makeActive();
 
-        auto pMesh = std::make_unique<MeshNode>();
-        pMesh->setRelativeLocation(glm::vec3(2.0F, 0.0F, 0.0F));
-        getWorldRootNode()->addChildNode(std::move(pMesh));
+        if (isGamepadConnected()) {
+            pEditorCameraNode->setIgnoreInput(false);
+        }
+
+        auto pFloor = std::make_unique<MeshNode>();
+        pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));
+        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F));
+        getWorldRootNode()->addChildNode(std::move(pFloor));
+
+        auto pCube = std::make_unique<MeshNode>();
+        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
+        pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.5F, 0.0F));
+        getWorldRootNode()->addChildNode(std::move(pCube));
+
+        auto pSun = std::make_unique<DirectionalLightNode>();
+        pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+            glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
+        getWorldRootNode()->addChildNode(std::move(pSun));
     });
+}
+
+void EditorGameInstance::onGamepadConnected(std::string_view sGamepadName) {
+    if (getWorldRootNode() == nullptr) {
+        return;
+    }
+
+    const auto pEditorCameraNode = getEditorCameraNode();
+    pEditorCameraNode->setIgnoreInput(false);
+}
+
+void EditorGameInstance::onGamepadDisconnected() {
+    if (getWorldRootNode() == nullptr) {
+        return;
+    }
+
+    const auto pEditorCameraNode = getEditorCameraNode();
+    pEditorCameraNode->setIgnoreInput(true);
 }
 
 void EditorGameInstance::registerEditorInputEvents() {
@@ -72,26 +108,13 @@ void EditorGameInstance::registerEditorInputEvents() {
         // Capture mouse.
         mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR)] =
             [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                // Get active camera.
-                auto& mtxActiveCamera = getCameraManager()->getActiveCamera();
-                std::scoped_lock guard(mtxActiveCamera.first);
-
-                if (mtxActiveCamera.second == nullptr) {
+                if (isGamepadConnected()) {
                     return;
                 }
 
-                // Cast to editor camera.
-                const auto pEditorCameraNode = dynamic_cast<EditorCameraNode*>(mtxActiveCamera.second);
-                if (pEditorCameraNode == nullptr) [[unlikely]] {
-                    Error::showErrorAndThrowException(std::format(
-                        "expected the active camera to be an editor camera (node \"{}\")",
-                        mtxActiveCamera.second->getNodeName()));
-                }
+                const auto pEditorCameraNode = getEditorCameraNode();
 
-                // Set cursor visibility.
                 getWindow()->setCursorVisibility(!bIsPressed);
-
-                // Notify editor camera.
                 pEditorCameraNode->setIgnoreInput(!bIsPressed);
             };
     }
@@ -102,18 +125,62 @@ void EditorGameInstance::registerEditorInputEvents() {
         showErrorIfNotEmpty(getInputManager()->addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD),
             {{KeyboardButton::W, KeyboardButton::S}},
-            {GamepadAxis::LEFT_STICK_Y}));
+            {}));
 
         // Move right.
         showErrorIfNotEmpty(getInputManager()->addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT),
             {{KeyboardButton::D, KeyboardButton::A}},
+            {}));
+
+        // Gamepad move forward.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD),
+            {},
+            {GamepadAxis::LEFT_STICK_Y}));
+
+        // Gamepad move right.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT),
+            {},
             {GamepadAxis::LEFT_STICK_X}));
 
         // Move up.
         showErrorIfNotEmpty(getInputManager()->addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP),
             {{KeyboardButton::E, KeyboardButton::Q}},
-            {GamepadAxis::LEFT_TRIGGER}));
+            {}));
+
+        // Gamepad look right.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT),
+            {},
+            {GamepadAxis::RIGHT_STICK_X}));
+
+        // Gamepad look up.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP),
+            {},
+            {GamepadAxis::RIGHT_STICK_Y}));
     }
+}
+
+EditorCameraNode* EditorGameInstance::getEditorCameraNode() {
+    // Get active camera.
+    auto& mtxActiveCamera = getCameraManager()->getActiveCamera();
+    std::scoped_lock guard(mtxActiveCamera.first);
+
+    if (mtxActiveCamera.second == nullptr) {
+        Error::showErrorAndThrowException("expected a camera to be active");
+    }
+
+    // Cast to editor camera.
+    const auto pEditorCameraNode = dynamic_cast<EditorCameraNode*>(mtxActiveCamera.second);
+    if (pEditorCameraNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "expected the active camera to be an editor camera (node \"{}\")",
+            mtxActiveCamera.second->getNodeName()));
+    }
+
+    return pEditorCameraNode;
 }

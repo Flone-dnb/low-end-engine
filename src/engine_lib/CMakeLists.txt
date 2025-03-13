@@ -36,13 +36,22 @@ set(PROJECT_SOURCES
     private/render/shader/ShaderManager.cpp
     private/render/shader/Shader.h
     private/render/shader/Shader.cpp
+    private/render/shader/LightSourceShaderArray.cpp
+    private/render/shader/LightSourceShaderArray.h
+    private/render/shader/ShaderArrayIndexManager.cpp
+    private/render/shader/ShaderArrayIndexManager.h
     private/render/wrapper/ShaderProgram.cpp
     private/render/wrapper/ShaderProgram.h
     private/render/wrapper/VertexArrayObject.cpp
     private/render/wrapper/VertexArrayObject.h
     private/render/wrapper/Framebuffer.cpp
     private/render/wrapper/Framebuffer.h
+    private/render/wrapper/Buffer.cpp
+    private/render/wrapper/Buffer.h
     public/render/ShaderConstantsSetter.hpp
+    private/render/LightSourceManager.cpp
+    private/render/LightSourceManager.h
+    public/render/ShaderAlignmentConstants.hpp
     private/misc/Error.cpp
     public/misc/Error.h
     public/misc/Globals.h
@@ -84,6 +93,8 @@ set(PROJECT_SOURCES
     private/game/node/CameraNode.cpp
     public/game/node/MeshNode.h
     private/game/node/MeshNode.cpp
+    public/game/node/light/DirectionalLightNode.h
+    private/game/node/light/DirectionalLightNode.cpp
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

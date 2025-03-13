@@ -106,6 +106,15 @@ ShaderManager::~ShaderManager() {
     }
 }
 
+size_t ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro macro) {
+    static std::unordered_map<EnginePredefinedMacro, size_t> enginePredefinedMacros{
+        {EnginePredefinedMacro::MAX_POINT_LIGHT_COUNT, 50},       // <- SAME AS IN SHADERS
+        {EnginePredefinedMacro::MAX_SPOT_LIGHT_COUNT, 30},        // <- IF CHANGING ALSO
+        {EnginePredefinedMacro::MAX_DIRECTIONAL_LIGHT_COUNT, 3}}; // <- CHANGE IN SHADERS
+
+    return enginePredefinedMacros[macro];
+}
+
 std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
     const std::string& sPathToVertexShaderRelativeRes, const std::string& sPathToFragmentShaderRelativeRes) {
     // Get shaders.

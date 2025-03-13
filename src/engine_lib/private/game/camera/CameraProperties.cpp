@@ -29,11 +29,8 @@ CameraProperties::CameraProperties() {
     shaderConstantsSetter.addSetterFunction([this](ShaderProgram* pShaderProgram) {
         std::scoped_lock guard(mtxData.first);
 
-        // Find uniform.
-        const auto iMatrixLocation = pShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
-
         // Set value (use getter functions to check if an update is needed).
-        pShaderProgram->setMatrix4ToShader(iMatrixLocation, getProjectionMatrix() * getViewMatrix());
+        pShaderProgram->setMatrix4ToShader("viewProjectionMatrix", getProjectionMatrix() * getViewMatrix());
     });
 }
 

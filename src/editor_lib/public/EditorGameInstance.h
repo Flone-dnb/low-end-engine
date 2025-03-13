@@ -35,7 +35,24 @@ protected:
      */
     virtual void onGameStarted() override;
 
+    /**
+     * Called after a gamepad controller was connected.
+     *
+     * @param sGamepadName Name of the connected gamepad.
+     */
+    virtual void onGamepadConnected(std::string_view sGamepadName) override;
+
+    /** Called after a gamepad controller was disconnected. */
+    virtual void onGamepadDisconnected() override;
+
 private:
     /** Registers action and axis input events in the input manager. */
     void registerEditorInputEvents();
+
+    /**
+     * Returns editor camera node.
+     *
+     * @return Editor camera node.
+     */
+    EditorCameraNode* getEditorCameraNode();
 };

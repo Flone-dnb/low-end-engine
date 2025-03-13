@@ -5,7 +5,9 @@
 #include <variant>
 
 // Custom.
+#include "render/GpuResourceManager.h"
 #include "render/shader/ShaderManager.h"
+#include "render/LightSourceManager.h"
 #include "misc/Error.h"
 
 // External.
@@ -31,14 +33,29 @@ public:
     static void waitForGpuToFinishWorkUpToThisPoint();
 
     /**
-     * Returns shader manager used to load and compile shaders.
+     * Returns manager for creating GPU resources.
      *
-     * @remark As a game developer you don't need to use this. Materials use this function under the
-     * hood.
+     * @return Manager.
+     */
+    GpuResourceManager& getGpuResourceManager();
+
+    /**
+     * Returns manager used to load and compile shaders.
+     *
+     * @remark As a game developer you don't need to use this. Materials use this function automatically.
      *
      * @return Manager.
      */
     ShaderManager& getShaderManager();
+
+    /**
+     * Returns manager used to add/remove light sources to/from rendering.
+     *
+     * @remark As a game developer you don't need to use this. Light nodes use this function automatically.
+     *
+     * @return Manager.
+     */
+    LightSourceManager& getLightSourceManager();
 
 private:
     /**
@@ -61,8 +78,14 @@ private:
     /** Called by window that owns this renderer to draw a new frame. */
     void drawNextFrame();
 
+    /** Creates GPU resources. */
+    GpuResourceManager gpuResourceManager;
+
     /** Database of all shaders. */
     ShaderManager shaderManager;
+
+    /** Light sources to render. */
+    std::unique_ptr<LightSourceManager> pLightSourceManager;
 
     /** OpenGL context. */
     SDL_GLContext pContext = nullptr;

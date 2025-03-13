@@ -42,7 +42,10 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
 void Window::setCursorVisibility(bool bIsVisible) {
     if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!bIsVisible)) != 0) {
         Logger::get().error(SDL_GetError());
+        return;
     }
+
+    bIsCursorVisible = bIsVisible;
 }
 
 void Window::close() { bQuitRequested = true; }
@@ -162,6 +165,10 @@ std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
 SDL_Window* Window::getSdlWindow() const { return pSdlWindow; }
 
 GameManager* Window::getGameManager() const { return pGameManager.get(); }
+
+bool Window::isCursorVisible() const { return bIsCursorVisible; }
+
+bool Window::isGamepadConnected() const { return pConnectedGamepad != nullptr; }
 
 void Window::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) const {
     pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown);

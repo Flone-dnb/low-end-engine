@@ -6,6 +6,7 @@
 #include "game/camera/CameraManager.h"
 #include "game/node/CameraNode.h"
 #include "game/node/MeshNode.h"
+#include "render/shader/LightSourceShaderArray.h"
 
 // External.
 #include "glad/glad.h"
@@ -48,6 +49,8 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
 
 Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWindow) {
     this->pContext = pCreatedContext;
+
+    pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager(this));
 }
 
 void Renderer::drawNextFrame() {
@@ -81,6 +84,9 @@ void Renderer::drawNextFrame() {
             mtxActiveCamera.second->getCameraProperties()->getShaderConstantsSetter().setConstantsToShader(
                 pShaderProgram);
 
+            // Set light arrays.
+            pLightSourceManager->pDirectionalLightsArray->setArrayPropertiesToShader(pShaderProgram);
+
             // Get mesh nodes.
             auto& mtxMeshNodes = pShaderProgram->getMeshNodesUsingThisProgram();
             std::scoped_lock guard(mtxMeshNodes.first);
@@ -107,4 +113,8 @@ Renderer::~Renderer() { SDL_GL_DeleteContext(pContext); }
 
 void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }
 
+GpuResourceManager& Renderer::getGpuResourceManager() { return gpuResourceManager; }
+
 ShaderManager& Renderer::getShaderManager() { return shaderManager; }
+
+LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceManager.get(); }

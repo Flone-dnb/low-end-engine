@@ -74,3 +74,5 @@ CameraManager* GameInstance::getCameraManager() const {
 }
 
 InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }
+
+bool GameInstance::isGamepadConnected() const { return pWindow->isGamepadConnected(); }

@@ -38,11 +38,9 @@ void Material::onNodeSpawning(
     onShaderProgramReceived(shaderProgram.get());
 
     // Set shader constants.
-    pNode->getShaderConstantsSetterWhileSpawned().addSetterFunction(
-        [this, diffuseColorLocation = shaderProgram->getShaderUniformLocation(NAMEOF(diffuseColor))](
-            ShaderProgram* pShaderProgram) {
-            pShaderProgram->setVector3ToShader(diffuseColorLocation, diffuseColor);
-        });
+    pNode->getShaderConstantsSetterWhileSpawned().addSetterFunction([this](ShaderProgram* pShaderProgram) {
+        pShaderProgram->setVector3ToShader(NAMEOF(diffuseColor).c_str(), diffuseColor);
+    });
 
     if (pNode->isVisible()) {
         // Add node to be rendered.

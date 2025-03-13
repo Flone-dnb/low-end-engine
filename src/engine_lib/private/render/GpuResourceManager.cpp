@@ -11,9 +11,9 @@
 // External.
 #include "glad/glad.h"
 
+std::mutex GpuResourceManager::mtx{};
+
 std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(const MeshGeometry& geometry) {
-    // Make sure only 1 thread can change OpenGL context.
-    static std::mutex mtx;
     std::scoped_lock guard(mtx);
 
     // Create VAO.
@@ -63,8 +63,6 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(c
 
 std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
     unsigned int iWidth, unsigned int iHeight, int iColorGlFormat, int iDepthGlFormat) {
-    // Make sure only 1 thread can change OpenGL context.
-    static std::mutex mtx;
     std::scoped_lock guard(mtx);
 
     unsigned int iFramebufferId = 0;
@@ -106,4 +104,21 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
 
     return std::unique_ptr<Framebuffer>(
         new Framebuffer(iFramebufferId, iColorTextureId, iDepthStencilBufferId));
+}
+
+std::unique_ptr<Buffer> GpuResourceManager::createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic) {
+    std::scoped_lock guard(mtx);
+
+    unsigned int iBufferId = 0;
+    glGenBuffers(1, &iBufferId);
+
+    // Allocate buffer.
+    glBindBuffer(GL_UNIFORM_BUFFER, iBufferId);
+    {
+        GL_CHECK_ERROR(glBufferData(
+            GL_UNIFORM_BUFFER, iSizeInBytes, nullptr, bIsDynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW));
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    return std::unique_ptr<Buffer>(new Buffer(iSizeInBytes, iBufferId, GL_UNIFORM_BUFFER, bIsDynamic));
 }

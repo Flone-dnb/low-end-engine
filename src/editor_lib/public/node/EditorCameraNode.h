@@ -66,8 +66,22 @@ protected:
     virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) override;
 
 private:
+    /**
+     * Applies rotation to the camera.
+     *
+     * @param xDelta Horizontal rotation.
+     * @param yDelta Vertical rotation.
+     */
+    void applyLookInput(float xDelta, float yDelta);
+
     /** Last received user input direction for moving the camera. */
     glm::vec3 lastInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+
+    /** Same as @ref lastInputDirection but for gamepad input. */
+    glm::vec3 lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+
+    /** Gamepad input for looking right (x) and up (y). */
+    glm::vec2 lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
 
     /** Editor camera's current movement speed. */
     float currentMovementSpeed = 0.0F;
@@ -79,7 +93,7 @@ private:
     float currentMovementSpeedMultiplier = 1.0F;
 
     /** Rotation multiplier for editor's camera. */
-    static constexpr double rotationSensitivity = 0.1; // NOLINT: default value
+    static constexpr float rotationSensitivity = 0.1F; // NOLINT: default value
 
     /** Speed of editor camera's movement. */
     static constexpr float movementSpeed = 5.0F;
@@ -89,4 +103,7 @@ private:
 
     /** Camera speed multiplier when slow movement mode is enabled (for ex. Ctrl is pressed). */
     static constexpr float speedDecreaseMultiplier = 0.5F;
+
+    /** Used to compare input to zero. */
+    static constexpr float inputEpsilon = 0.0001F; // NOLINT
 };

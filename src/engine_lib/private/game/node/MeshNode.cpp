@@ -5,6 +5,7 @@
 #include "game/GameInstance.h"
 #include "game/geometry/PrimitiveMeshGenerator.h"
 #include "render/wrapper/ShaderProgram.h"
+#include "render/Renderer.h"
 
 // External.
 #include "nameof.hpp"
@@ -65,7 +66,8 @@ void MeshNode::onSpawning() {
     SpatialNode::onSpawning();
 
     // Create VAO.
-    pVao = GpuResourceManager::createVertexArrayObject(geometry);
+    pVao = getGameInstanceWhileSpawned()->getRenderer()->getGpuResourceManager().createVertexArrayObject(
+        geometry);
 
     // Create shader constants setter.
     shaderConstantsSetter = ShaderConstantsSetter();
@@ -73,18 +75,15 @@ void MeshNode::onSpawning() {
     // Request shader program.
     material.onNodeSpawning(
         this, getGameInstanceWhileSpawned()->getRenderer(), [this](ShaderProgram* pShaderProgram) {
-            shaderConstantsSetter->addSetterFunction(
-                [this,
-                 iWorldMatrixLocation =
-                     pShaderProgram->getShaderUniformLocation(NAMEOF(mtxShaderConstants.second.worldMatrix)),
-                 iNormalMatrixLocation = pShaderProgram->getShaderUniformLocation(
-                     NAMEOF(mtxShaderConstants.second.normalMatrix))](ShaderProgram* pShaderProgram) {
-                    std::scoped_lock guard(mtxShaderConstants.first);
-                    auto& uniforms = mtxShaderConstants.second;
+            shaderConstantsSetter->addSetterFunction([this](ShaderProgram* pShaderProgram) {
+                std::scoped_lock guard(mtxShaderConstants.first);
+                auto& uniforms = mtxShaderConstants.second;
 
-                    pShaderProgram->setMatrix4ToShader(iWorldMatrixLocation, uniforms.worldMatrix);
-                    pShaderProgram->setMatrix3ToShader(iNormalMatrixLocation, uniforms.normalMatrix);
-                });
+                pShaderProgram->setMatrix4ToShader(
+                    NAMEOF(mtxShaderConstants.second.worldMatrix).c_str(), uniforms.worldMatrix);
+                pShaderProgram->setMatrix3ToShader(
+                    NAMEOF(mtxShaderConstants.second.normalMatrix).c_str(), uniforms.normalMatrix);
+            });
         });
 }
 

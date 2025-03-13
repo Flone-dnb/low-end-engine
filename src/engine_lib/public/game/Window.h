@@ -41,7 +41,7 @@ public:
      * @param bIsVisible 'true' shows cursor (normal behavior),
      * 'false' will hide the cursor and lock it to the window.
      */
-    static void setCursorVisibility(bool bIsVisible);
+    void setCursorVisibility(bool bIsVisible);
 
     /**
      * Starts the window message queue, rendering and game logic.
@@ -87,6 +87,20 @@ public:
      * @return `nullptr` if not created yet or was destroyed, otherwise valid pointer.
      */
     GameManager* getGameManager() const;
+
+    /**
+     * Tells if the cursor is currently captured or not (see @ref setCursorVisibility).
+     *
+     * @return Cursor visibility.
+     */
+    bool isCursorVisible() const;
+
+    /**
+     * Tells if a gamepad is currently connected or not.
+     *
+     * @return Gamepad state.
+     */
+    bool isGamepadConnected() const;
 
     /**
      * Called when the window (that owns this object) receives keyboard input.
@@ -148,6 +162,9 @@ private:
 
     /** `nullptr` if there's a connected gamepad. */
     SDL_GameController* pConnectedGamepad = nullptr;
+
+    /** Current state of @ref setCursorVisibility. */
+    bool bIsCursorVisible = false;
 
     /** Used in the window message loop. */
     bool bQuitRequested = false;

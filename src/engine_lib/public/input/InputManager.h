@@ -415,7 +415,7 @@ private:
     std::unordered_map<unsigned int, AxisEventState> axisEventStates;
 
     /** Gamepad axis position that is lower than this value is ignored. Range for deadzone is [0.0; 1.0]. */
-    float gamepadDeadzone = 0.02F;
+    float gamepadDeadzone = 0.1F;
 
     /** Mutex for actions editing. */
     std::recursive_mutex mtxActionEvents;

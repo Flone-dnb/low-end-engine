@@ -101,6 +101,13 @@ public:
      */
     InputManager* getInputManager() const;
 
+    /**
+     * Tells if a gamepad is currently connected or not.
+     *
+     * @return Gamepad state.
+     */
+    bool isGamepadConnected() const;
+
 protected:
     /**
      * Creates a new game instance.

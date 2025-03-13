@@ -6,12 +6,12 @@
 #include <string>
 #include <mutex>
 #include <unordered_set>
-#include <string_view>
 #include <format>
 
 // Custom.
 #include "misc/Error.h"
 #include "math/GLMath.hpp"
+#include "render/wrapper/Buffer.h"
 
 // External.
 #include "glad/glad.h"
@@ -44,47 +44,52 @@ public:
     ~ShaderProgram();
 
     /**
-     * Returns location of a shader uniform with the specified name.
+     * Sets the specified value to a `uniform` with the specified name in shaders.
      *
-     * @warning Shows an error if not found.
-     *
-     * @param sUniformName Name of a uniform.
-     *
-     * @return Location.
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param matrix       Matrix to set.
      */
-    inline int getShaderUniformLocation(std::string_view sUniformName);
+    inline void setMatrix4ToShader(const std::string& sUniformName, const glm::mat4x4& matrix);
 
     /**
-     * Sets the specified matrix to a `uniform` with the specified name in shaders.
+     * Sets the specified value to a `uniform` with the specified name in shaders.
      *
-     * @param iUniformLocation Location from @ref getShaderUniformLocation.
-     * @param matrix           Matrix to set.
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param matrix       Matrix to set.
      */
-    inline void setMatrix4ToShader(int iUniformLocation, const glm::mat4x4& matrix);
+    inline void setMatrix3ToShader(const std::string& sUniformName, const glm::mat3x3& matrix);
 
     /**
-     * Sets the specified matrix to a `uniform` with the specified name in shaders.
+     * Sets the specified value to a `uniform` with the specified name in shaders.
      *
-     * @param iUniformLocation Location from @ref getShaderUniformLocation.
-     * @param matrix           Matrix to set.
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param vector       Vector to set.
      */
-    inline void setMatrix3ToShader(int iUniformLocation, const glm::mat3x3& matrix);
+    inline void setVector3ToShader(const std::string& sUniformName, const glm::vec3& vector);
 
     /**
-     * Sets the specified vector to a `uniform` with the specified name in shaders.
+     * Sets the specified value to a `uniform` with the specified name in shaders.
      *
-     * @param iUniformLocation Location from @ref getShaderUniformLocation.
-     * @param vector           Vector to set.
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param value        Value to set.
      */
-    inline void setVector3ToShader(int iUniformLocation, const glm::vec3& vector);
+    inline void setFloatToShader(const std::string& sUniformName, float value);
 
     /**
-     * Sets the specified float value to a `uniform` with the specified name in shaders.
+     * Sets the specified value to a `uniform` with the specified name in shaders.
      *
-     * @param iUniformLocation Location from @ref getShaderUniformLocation.
-     * @param value            Value to set.
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param iValue       Value to set.
      */
-    inline void setFloatToShader(int iUniformLocation, float value);
+    inline void setUintToShader(const std::string& sUniformName, unsigned int iValue);
+
+    /**
+     * Sets the specified buffer to shader.
+     *
+     * @param sUniformBlockName Name of the uniform block from shader code.
+     * @param pBuffer Buffer to set.
+     */
+    inline void setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer);
 
     /**
      * Returns ID of this shader program.
@@ -131,7 +136,39 @@ private:
      */
     void onMeshNodeStoppedUsingProgram(MeshNode* pMeshNode);
 
-    /** Mesh nodes that use this shader program. */
+    /**
+     * Returns location of a shader uniform with the specified name.
+     *
+     * @warning Shows an error if not found.
+     *
+     * @param sUniformName Name of a uniform.
+     *
+     * @return Location.
+     */
+    inline int getShaderUniformLocation(const std::string& sUniformName);
+
+    /**
+     * Returns binding index of a shader uniform block with the specified name.
+     *
+     * @warning Shows an error if not found.
+     *
+     * @param sUniformBlockName Name of a uniform block.
+     *
+     * @return Binding index.
+     */
+    inline unsigned int getShaderUniformBlockBindingIndex(const std::string& sUniformBlockName);
+
+    /** Locations of all uniform variables. */
+    std::unordered_map<std::string, int> cachedUniformLocations;
+
+    /** Binding indices of all uniform blocks. */
+    std::unordered_map<std::string, unsigned int> cachedUniformBlockBindingIndices;
+
+    /**
+     * Mesh nodes that use this shader program.
+     *
+     * @remark Used for fast access during frame rendering.
+     */
     std::pair<std::mutex, std::unordered_set<MeshNode*>> mtxMeshNodesUsingThisProgram;
 
     /** Manager that created this program. */
@@ -147,27 +184,47 @@ private:
     const std::string sShaderProgramName;
 };
 
-inline int ShaderProgram::getShaderUniformLocation(std::string_view sUniformName) {
-    const auto iLocation = glGetUniformLocation(iShaderProgramId, sUniformName.data());
-    if (iLocation < 0) [[unlikely]] {
+inline int ShaderProgram::getShaderUniformLocation(const std::string& sUniformName) {
+    const auto cachedIt = cachedUniformLocations.find(sUniformName);
+    if (cachedIt == cachedUniformLocations.end()) [[unlikely]] {
         Error::showErrorAndThrowException(
-            std::format("unable to get location for shader uniform named \"{}\"", sUniformName));
+            std::format("unable to find uniform \"{}\" location", sUniformName));
     }
-    return iLocation;
+
+    return cachedIt->second;
 }
 
-inline void ShaderProgram::setMatrix4ToShader(int iUniformLocation, const glm::mat4x4& matrix) {
-    glUniformMatrix4fv(iUniformLocation, 1, GL_FALSE, glm::value_ptr(matrix));
+inline unsigned int ShaderProgram::getShaderUniformBlockBindingIndex(const std::string& sUniformBlockName) {
+    const auto cachedIt = cachedUniformBlockBindingIndices.find(sUniformBlockName);
+    if (cachedIt == cachedUniformBlockBindingIndices.end()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("unable to find uniform block \"{}\" binding index", sUniformBlockName));
+    }
+
+    return cachedIt->second;
 }
 
-inline void ShaderProgram::setMatrix3ToShader(int iUniformLocation, const glm::mat3x3& matrix) {
-    glUniformMatrix3fv(iUniformLocation, 1, GL_FALSE, glm::value_ptr(matrix));
+inline void ShaderProgram::setMatrix4ToShader(const std::string& sUniformName, const glm::mat4x4& matrix) {
+    glUniformMatrix4fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-inline void ShaderProgram::setVector3ToShader(int iUniformLocation, const glm::vec3& vector) {
-    glUniform3fv(iUniformLocation, 1, glm::value_ptr(vector));
+inline void ShaderProgram::setMatrix3ToShader(const std::string& sUniformName, const glm::mat3x3& matrix) {
+    glUniformMatrix3fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-inline void ShaderProgram::setFloatToShader(int iUniformLocation, float value) {
-    glUniform1f(iUniformLocation, value);
+inline void ShaderProgram::setVector3ToShader(const std::string& sUniformName, const glm::vec3& vector) {
+    glUniform3fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
+}
+
+inline void ShaderProgram::setFloatToShader(const std::string& sUniformName, float value) {
+    glUniform1f(getShaderUniformLocation(sUniformName), value);
+}
+
+inline void ShaderProgram::setUintToShader(const std::string& sUniformName, unsigned int iValue) {
+    glUniform1ui(getShaderUniformLocation(sUniformName), iValue);
+}
+
+inline void ShaderProgram::setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer) {
+    glBindBufferBase(
+        GL_UNIFORM_BUFFER, getShaderUniformBlockBindingIndex(sUniformBlockName), pBuffer->getBufferId());
 }

@@ -1,4 +1,5 @@
 #include "Base.glsl"
+#include "Light.glsl"
 
 in vec3 fragmentPosition;
 in vec3 fragmentNormal;
@@ -8,10 +9,14 @@ uniform vec3 diffuseColor;
 
 out vec4 color;
 
+layout(early_fragment_tests) in;
+
 /// Entry point.
 void main() {
     // Normals may be unnormalized after the rasterization (when they are interpolated).
     vec3 fragmentNormalUnit = normalize(fragmentNormal);
 
-    color = vec4(diffuseColor, 1.0F);
+    vec3 lightColor = calculateColorFromLights(fragmentNormalUnit, diffuseColor);
+
+    color = vec4(lightColor, 1.0F);
 } 
