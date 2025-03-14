@@ -16,7 +16,7 @@ void main() {
     // Normals may be unnormalized after the rasterization (when they are interpolated).
     vec3 fragmentNormalUnit = normalize(fragmentNormal);
 
-    vec3 lightColor = calculateColorFromLights(fragmentNormalUnit, diffuseColor);
+    vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, diffuseColor);
 
     color = vec4(lightColor, 1.0F);
 } 

@@ -9,28 +9,6 @@ DirectionalLightNode::DirectionalLightNode() : DirectionalLightNode("Directional
 
 DirectionalLightNode::DirectionalLightNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}
 
-void DirectionalLightNode::setIsVisible(bool bIsVisible) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    if (mtxProperties.second.bIsVisible == bIsVisible) {
-        return;
-    }
-    mtxProperties.second.bIsVisible = bIsVisible;
-
-    if (isSpawned()) {
-        if (mtxProperties.second.bIsVisible) {
-            // Add to rendering.
-            auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
-            mtxProperties.second.pActiveLightHandle =
-                lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(
-                    this, &mtxProperties.second.shaderProperties);
-        } else {
-            // Remove from rendering.
-            mtxProperties.second.pActiveLightHandle = nullptr;
-        }
-    }
-}
-
 void DirectionalLightNode::onSpawning() {
     SpatialNode::onSpawning();
 
@@ -56,6 +34,28 @@ void DirectionalLightNode::onDespawning() {
     if (mtxProperties.second.bIsVisible) {
         // Remove from rendering.
         mtxProperties.second.pActiveLightHandle = nullptr;
+    }
+}
+
+void DirectionalLightNode::setIsVisible(bool bIsVisible) {
+    std::scoped_lock guard(mtxProperties.first);
+
+    if (mtxProperties.second.bIsVisible == bIsVisible) {
+        return;
+    }
+    mtxProperties.second.bIsVisible = bIsVisible;
+
+    if (isSpawned()) {
+        if (mtxProperties.second.bIsVisible) {
+            // Add to rendering.
+            auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+            mtxProperties.second.pActiveLightHandle =
+                lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(
+                    this, &mtxProperties.second.shaderProperties);
+        } else {
+            // Remove from rendering.
+            mtxProperties.second.pActiveLightHandle = nullptr;
+        }
     }
 }
 

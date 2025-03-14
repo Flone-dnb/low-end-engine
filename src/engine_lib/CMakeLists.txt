@@ -95,6 +95,8 @@ set(PROJECT_SOURCES
     private/game/node/MeshNode.cpp
     public/game/node/light/DirectionalLightNode.h
     private/game/node/light/DirectionalLightNode.cpp
+    public/game/node/light/SpotlightNode.h
+    private/game/node/light/SpotlightNode.cpp
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

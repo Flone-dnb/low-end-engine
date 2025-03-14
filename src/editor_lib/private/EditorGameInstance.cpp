@@ -9,6 +9,7 @@
 #include "game/node/MeshNode.h"
 #include "math/MathHelpers.hpp"
 #include "game/node/light/DirectionalLightNode.h"
+#include "game/node/light/SpotlightNode.h"
 
 const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"; }
 
@@ -42,6 +43,12 @@ void EditorGameInstance::onGameStarted() {
         pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
             glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
         getWorldRootNode()->addChildNode(std::move(pSun));
+
+        auto pSpotlight = std::make_unique<SpotlightNode>();
+        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
+        pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+            glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
+        getWorldRootNode()->addChildNode(std::move(pSpotlight));
     });
 }
 

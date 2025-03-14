@@ -86,6 +86,7 @@ void Renderer::drawNextFrame() {
 
             // Set light arrays.
             pLightSourceManager->pDirectionalLightsArray->setArrayPropertiesToShader(pShaderProgram);
+            pLightSourceManager->pSpotlightsArray->setArrayPropertiesToShader(pShaderProgram);
 
             // Get mesh nodes.
             auto& mtxMeshNodes = pShaderProgram->getMeshNodesUsingThisProgram();

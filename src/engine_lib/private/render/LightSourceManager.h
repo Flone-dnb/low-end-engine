@@ -29,6 +29,13 @@ public:
     LightSourceShaderArray& getDirectionalLightsArray();
 
     /**
+     * Returns array used by spotlights.
+     *
+     * @return Shader array.
+     */
+    LightSourceShaderArray& getSpotlightsArray();
+
+    /**
      * Returns renderer.
      *
      * @return Renderer.
@@ -45,6 +52,9 @@ private:
 
     /** Properties of all active directional lights. */
     std::unique_ptr<LightSourceShaderArray> pDirectionalLightsArray;
+
+    /** Properties of all active spotlights. */
+    std::unique_ptr<LightSourceShaderArray> pSpotlightsArray;
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
