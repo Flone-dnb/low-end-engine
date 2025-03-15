@@ -5,6 +5,7 @@
 
 class Renderer;
 class LightSourceShaderArray;
+class ShaderProgram;
 
 /** Manages active (spawned and visible) light sources that will be rendered. */
 class LightSourceManager {
@@ -36,6 +37,20 @@ public:
     LightSourceShaderArray& getSpotlightsArray();
 
     /**
+     * Returns array used by point lights.
+     *
+     * @return Shader array.
+     */
+    LightSourceShaderArray& getPointLightsArray();
+
+    /**
+     * Sets (binds) properties of all light arrays to the specified shader program.
+     *
+     * @param pShaderProgram Shader program.
+     */
+    void setArrayPropertiesToShader(ShaderProgram* pShaderProgram);
+
+    /**
      * Returns renderer.
      *
      * @return Renderer.
@@ -55,6 +70,9 @@ private:
 
     /** Properties of all active spotlights. */
     std::unique_ptr<LightSourceShaderArray> pSpotlightsArray;
+
+    /** Properties of all active point lights. */
+    std::unique_ptr<LightSourceShaderArray> pPointLightsArray;
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;

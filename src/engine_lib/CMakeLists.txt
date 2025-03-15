@@ -97,6 +97,8 @@ set(PROJECT_SOURCES
     private/game/node/light/DirectionalLightNode.cpp
     public/game/node/light/SpotlightNode.h
     private/game/node/light/SpotlightNode.cpp
+    public/game/node/light/PointLightNode.h
+    private/game/node/light/PointLightNode.cpp
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

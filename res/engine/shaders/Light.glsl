@@ -67,6 +67,29 @@ layout (std140) uniform Spotlights {
 
 // ------------------------------------------------------------------------------------------------
 
+/** Point light description. */
+struct PointLight {
+    /** Light position in world space. 4th component is not used. */
+    vec4 position;
+
+    /** Light color and 4th component stores intensity in range [0.0; 1.0]. */
+    vec4 colorAndIntensity;
+
+    /** Lit distance. */
+    float distance;
+};
+
+/** Actual number of visible point lights. */
+uniform uint iPointLightCount;
+
+/** Uniform buffer object. */
+layout (std140) uniform PointLights {
+    /** Visible point lights. */
+    PointLight pointLights[MAX_POINT_LIGHT_COUNT];
+};
+
+// ------------------------------------------------------------------------------------------------
+
 /**
  * Calculates attenuation factor for a point/spot light sources.
  *
@@ -114,7 +137,8 @@ vec3 calculateColorFromLights(vec3 fragmentPosition, vec3 fragmentNormalUnit, ve
         // Calculate light attenuation.
         float fragmentDistanceToLight = length(spotlights[i].position.xyz - fragmentPosition);
         vec3 attenuatedLightColor
-            = spotlights[i].colorAndIntensity.rgb * calculateLightAttenuation(fragmentDistanceToLight, spotlights[i].colorAndIntensity.w, spotlights[i].distance);
+            = spotlights[i].colorAndIntensity.rgb * calculateLightAttenuation(
+            fragmentDistanceToLight, spotlights[i].colorAndIntensity.w, spotlights[i].distance);
 
         // Determine how much of this fragment is inside of the light cone.
         vec3 fragmentToLightDirectionUnit = normalize(spotlights[i].position.xyz - fragmentPosition);
@@ -127,6 +151,23 @@ vec3 calculateColorFromLights(vec3 fragmentPosition, vec3 fragmentNormalUnit, ve
         attenuatedLightColor *= lightIntensity;
 
         // Scale down light depending on the angle.
+        float cosFragmentToLight = max(dot(fragmentNormalUnit, fragmentToLightDirectionUnit), 0.0F);
+        attenuatedLightColor *= cosFragmentToLight;
+
+        // Done.
+        lightColor += fragmentDiffuseColor * attenuatedLightColor;
+    }
+
+    // Apply point lights.
+    for (uint i = 0u; i < iPointLightCount; i++) {
+        // Calculate light attenuation.
+        float fragmentDistanceToLight = length(pointLights[i].position.xyz - fragmentPosition);
+        vec3 attenuatedLightColor
+            = pointLights[i].colorAndIntensity.rgb * calculateLightAttenuation(
+            fragmentDistanceToLight, pointLights[i].colorAndIntensity.w, pointLights[i].distance);
+
+        // Scale down light depending on the angle.
+        vec3 fragmentToLightDirectionUnit = normalize(pointLights[i].position.xyz - fragmentPosition);
         float cosFragmentToLight = max(dot(fragmentNormalUnit, fragmentToLightDirectionUnit), 0.0F);
         attenuatedLightColor *= cosFragmentToLight;
 

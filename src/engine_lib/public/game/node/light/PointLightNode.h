@@ -6,58 +6,32 @@
 #include "render/ShaderAlignmentConstants.hpp"
 #include "render/shader/LightSourceShaderArray.h"
 
-/** Cone-shaped light source */
-class SpotlightNode : public SpatialNode {
+/** Sphere-shaped light source. */
+class PointLightNode : public SpatialNode {
 public:
     /** Data that will be directly copied to shaders. */
     struct ShaderProperties {
         /** Light position in world space. 4th component is not used. */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
 
-        /** Forward unit vector in the direction of the light source. 4th component is not used. */
-        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 direction = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
-
-        /** Light color and 4th component stores intensity in range [0.0; 1.0]. */
+        /** Light color and 4th component stores intensity in range [0.0; 1.0] */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 colorAndIntensity =
             glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
         /** Lit distance. */
-        alignas(ShaderAlignmentConstants::iScalar) float distance = 10.0F; // NOLINT: good default value
-
-        /**
-         * Cosine of the spotlight's inner cone angle (cutoff).
-         *
-         * @remark Represents cosine of the cutoff angle on one side from the light direction
-         * (not both sides), i.e. this is a cosine of value [0-90] degrees.
-         */
-        alignas(ShaderAlignmentConstants::iScalar) float cosInnerConeAngle = 0.0F;
-
-        /**
-         * Cosine of the spotlight's outer cone angle (cutoff).
-         *
-         * @remark Represents cosine of the cutoff angle on one side from the light direction
-         * (not both sides), i.e. this is a cosine of value [0-90] degrees.
-         */
-        alignas(ShaderAlignmentConstants::iScalar) float cosOuterConeAngle = 0.0F;
+        alignas(ShaderAlignmentConstants::iScalar) float distance = 15.0F; // NOLINT: good default value
     };
 
-    SpotlightNode();
+    PointLightNode();
 
     /**
      * Creates a new node with the specified name.
      *
      * @param sNodeName Name of this node.
      */
-    SpotlightNode(const std::string& sNodeName);
+    PointLightNode(const std::string& sNodeName);
 
-    virtual ~SpotlightNode() override = default;
-
-    /**
-     * Returns the maximum angle for @ref getLightInnerConeAngle and @ref getLightOuterConeAngle.
-     *
-     * @return Maximum cone angle (in degrees).
-     */
-    static constexpr float getMaxLightConeAngle() { return Properties::maxConeAngle; }
+    virtual ~PointLightNode() override = default;
 
     /**
      * Sets whether this light source will be included in the rendering or not.
@@ -81,29 +55,11 @@ public:
     void setLightIntensity(float intensity);
 
     /**
-     * Sets lit distance (i.e. attenuation distance).
+     * Sets lit distance (i.e. attenuation radius).
      *
      * @param distance Lit distance.
      */
     void setLightDistance(float distance);
-
-    /**
-     * Sets angle of spotlight's inner cone (cone that will have hard light edges),
-     * see @ref setLightOuterConeAngle for configuring soft light edges.
-     *
-     * @param innerConeAngle Angle in degrees in range [0.0; @ref getMaxLightConeAngle] (will be clamped
-     * if outside of the range).
-     */
-    void setLightInnerConeAngle(float innerConeAngle);
-
-    /**
-     * Sets angle of spotlight's inner cone (cone that will have hard light edges),
-     * see @ref setLightOuterConeAngle for configuring soft light edges.
-     *
-     * @param outerConeAngle Angle in degrees in range [@ref getLightInnerConeAngle; @ref
-     * getMaxLightConeAngle] (will be clamped if outside of the range).
-     */
-    void setLightOuterConeAngle(float outerConeAngle);
 
     /**
      * Returns color of this light source.
@@ -125,20 +81,6 @@ public:
      * @return Distance.
      */
     float getLightDistance();
-
-    /**
-     * Returns light cutoff angle of the inner cone (hard light edge).
-     *
-     * @return Angle in degrees in range [0.0; @ref getMaxLightConeAngle].
-     */
-    float getLightInnerConeAngle();
-
-    /**
-     * Returns light cutoff angle of the outer cone (soft light edge).
-     *
-     * @return Angle in degrees in range [@ref getLightInnerConeAngle; @ref getMaxLightConeAngle].
-     */
-    float getLightOuterConeAngle();
 
     /**
      * `true` if this light source is included in the rendering, `false` otherwise.
@@ -193,23 +135,8 @@ private:
         /** Not `nullptr` if being rendered. */
         std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
 
-        /**
-         * Light cutoff angle (in degrees) of the inner cone (hard light edge).
-         * Valid values range is [0.0F, @ref maxConeAngle].
-         */
-        float innerConeAngle = 25.0F;
-
-        /**
-         * Light cutoff angle (in degrees) of the outer cone (soft light edge).
-         * Valid values range is [@ref innerConeAngle, @ref maxConeAngle].
-         */
-        float outerConeAngle = 45.0F;
-
         /** Enabled for rendering or not. */
         bool bIsVisible = true;
-
-        /** Maximum value for @ref innerConeAngle and @ref outerConeAngle. */
-        static constexpr float maxConeAngle = 80.0F; // NOLINT: max angle that won't cause any visual issues
     };
 
     /** Light properties. */
