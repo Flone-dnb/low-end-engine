@@ -34,7 +34,8 @@ void Material::onNodeSpawning(
         sPathToCustomVertexShader.empty() ? MeshNode::getDefaultVertexShaderForMeshNode().data()
                                           : sPathToCustomVertexShader,
         sPathToCustomFragmentShader.empty() ? MeshNode::getDefaultFragmentShaderForMeshNode().data()
-                                            : sPathToCustomFragmentShader);
+                                            : sPathToCustomFragmentShader,
+        ShaderProgramUsage::MESH_NODE);
     onShaderProgramReceived(shaderProgram.get());
 
     // Set shader constants.

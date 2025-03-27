@@ -37,7 +37,7 @@ public:
      * @return Path to .glsl file relative `res` directory.
      */
     static inline std::string_view getDefaultVertexShaderForMeshNode() {
-        return "engine/shaders/MeshNode.vert.glsl";
+        return "engine/shaders/node/MeshNode.vert.glsl";
     }
 
     /**
@@ -47,7 +47,7 @@ public:
      * @return Path to .glsl file relative `res` directory.
      */
     static inline std::string_view getDefaultFragmentShaderForMeshNode() {
-        return "engine/shaders/MeshNode.frag.glsl";
+        return "engine/shaders/node/MeshNode.frag.glsl";
     }
 
     /**

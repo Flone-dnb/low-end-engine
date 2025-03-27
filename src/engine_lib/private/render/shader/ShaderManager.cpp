@@ -61,7 +61,9 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 }
 
 std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
-    const std::string& sProgramName, const std::vector<std::shared_ptr<Shader>>& vLinkedShaders) {
+    const std::string& sProgramName,
+    const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
+    ShaderProgramUsage usage) {
     const auto iShaderProgramId = GL_CHECK_ERROR(glCreateProgram());
 
     // Link shaders.
@@ -93,7 +95,7 @@ std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
     }
 
     return std::shared_ptr<ShaderProgram>(
-        new ShaderProgram(this, vLinkedShaders, iShaderProgramId, sProgramName));
+        new ShaderProgram(this, vLinkedShaders, iShaderProgramId, sProgramName, usage));
 }
 
 ShaderManager::~ShaderManager() {
@@ -116,21 +118,32 @@ size_t ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro macro)
 }
 
 std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
-    const std::string& sPathToVertexShaderRelativeRes, const std::string& sPathToFragmentShaderRelativeRes) {
+    const std::string& sPathToVertexShaderRelativeRes,
+    const std::string& sPathToFragmentShaderRelativeRes,
+    ShaderProgramUsage usage) {
     // Get shaders.
     auto pVertexShader = getShader(sPathToVertexShaderRelativeRes);
     auto pFragmentShader = getShader(sPathToFragmentShaderRelativeRes);
 
-    std::scoped_lock guard(mtxShaderPrograms.first);
+    std::scoped_lock guard(mtxDatabase.first);
 
     // Find program.
     const auto sCombinedName =
         pVertexShader->getPathToShaderRelativeRes() + pFragmentShader->getPathToShaderRelativeRes();
-    const auto it = mtxShaderPrograms.second.find(sCombinedName);
-    if (it == mtxShaderPrograms.second.end()) {
+
+    // Get shader programs by usage.
+    if (static_cast<size_t>(usage) >= static_cast<size_t>(ShaderProgramUsage::COUNT)) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("invalid shader program usage {}", static_cast<size_t>(usage)));
+    }
+    auto& db = mtxDatabase.second[static_cast<size_t>(usage)];
+
+    const auto it = db.find(sCombinedName);
+    if (it == db.end()) {
         // Load and compile.
-        const auto pShaderProgram = compileShaderProgram(sCombinedName, {pVertexShader, pFragmentShader});
-        auto& [pWeak, pRaw] = mtxShaderPrograms.second[sCombinedName];
+        const auto pShaderProgram =
+            compileShaderProgram(sCombinedName, {pVertexShader, pFragmentShader}, usage);
+        auto& [pWeak, pRaw] = db[sCombinedName];
         pWeak = pShaderProgram;
         pRaw = pShaderProgram.get();
         return pShaderProgram;
@@ -165,14 +178,22 @@ void ShaderManager::onShaderBeingDestroyed(const std::string& sPathToShaderRelat
     mtxPathsToShaders.second.erase(it);
 }
 
-void ShaderManager::onShaderProgramBeingDestroyed(const std::string& sShaderProgramId) {
-    std::scoped_lock guard(mtxShaderPrograms.first);
+void ShaderManager::onShaderProgramBeingDestroyed(
+    const std::string& sShaderProgramId, ShaderProgramUsage usage) {
+    std::scoped_lock guard(mtxDatabase.first);
+
+    // Get shader programs by usage.
+    if (static_cast<size_t>(usage) >= static_cast<size_t>(ShaderProgramUsage::COUNT)) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("invalid shader program usage {}", static_cast<size_t>(usage)));
+    }
+    auto& db = mtxDatabase.second[static_cast<size_t>(usage)];
 
     // Erase.
-    const auto it = mtxShaderPrograms.second.find(sShaderProgramId);
-    if (it == mtxShaderPrograms.second.end()) [[unlikely]] {
+    const auto it = db.find(sShaderProgramId);
+    if (it == db.end()) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("unable to find shader program \"{}\" previously loaded", sShaderProgramId));
     }
-    mtxShaderPrograms.second.erase(it);
+    db.erase(it);
 }

@@ -11,6 +11,7 @@
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
+#include "game/node/ui/TextNode.h"
 
 const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"; }
 
@@ -30,6 +31,10 @@ void EditorGameInstance::onGameStarted() {
             pEditorCameraNode->setIgnoreInput(false);
         }
 
+        pStatsTextNode = getWorldRootNode()->addChildNode(std::make_unique<TextNode>());
+        pStatsTextNode->setTextSize(0.03F);
+        pStatsTextNode->setPosition(glm::vec2(0.0F, 1.0F - pStatsTextNode->getTextSize()));
+
         auto pFloor = std::make_unique<MeshNode>();
         pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));
         pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F));
@@ -37,10 +42,11 @@ void EditorGameInstance::onGameStarted() {
 
         auto pCube = std::make_unique<MeshNode>();
         pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
-        pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.5F, 0.0F));
+        pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.3F, 0.0F));
         getWorldRootNode()->addChildNode(std::move(pCube));
 
         auto pSun = std::make_unique<DirectionalLightNode>();
+        pSun->setLightIntensity(0.2F);
         pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
             glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
         getWorldRootNode()->addChildNode(std::move(pSun));
@@ -73,6 +79,14 @@ void EditorGameInstance::onGamepadDisconnected() {
 
     const auto pEditorCameraNode = getEditorCameraNode();
     pEditorCameraNode->setIgnoreInput(true);
+}
+
+void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
+    if (pStatsTextNode == nullptr) {
+        return;
+    }
+
+    pStatsTextNode->setText(std::format("deltaTime (ms): {:.1F}", timeSincePrevCallInSec * 1000.0F));
 }
 
 void EditorGameInstance::registerEditorInputEvents() {

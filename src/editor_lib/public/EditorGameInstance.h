@@ -6,6 +6,7 @@
 class Window;
 class GameManager;
 class EditorCameraNode;
+class TextNode;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -45,6 +46,16 @@ protected:
     /** Called after a gamepad controller was disconnected. */
     virtual void onGamepadDisconnected() override;
 
+    /**
+     * Called before a new frame is rendered.
+     *
+     * @remark Called before nodes that should be called every frame.
+     *
+     * @param timeSincePrevCallInSec Time in seconds that has passed since the last call
+     * to this function.
+     */
+    virtual void onBeforeNewFrame(float timeSincePrevCallInSec) override;
+
 private:
     /** Registers action and axis input events in the input manager. */
     void registerEditorInputEvents();
@@ -55,4 +66,7 @@ private:
      * @return Editor camera node.
      */
     EditorCameraNode* getEditorCameraNode();
+
+    /** Text node used to print statistics in the editor. */
+    TextNode* pStatsTextNode = nullptr;
 };

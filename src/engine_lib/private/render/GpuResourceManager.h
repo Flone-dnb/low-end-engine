@@ -12,9 +12,6 @@
 
 /** A single place for "talking" with OpenGL context about GPU resources. */
 class GpuResourceManager {
-    // Buffers use mutex when copying new data.
-    friend class Buffer;
-
 public:
     GpuResourceManager() = default;
 
@@ -56,7 +53,10 @@ public:
      */
     std::unique_ptr<Buffer> createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic);
 
-private:
-    /** Mutex to guard OpenGL context modification. */
+    /**
+     * Mutex to guard OpenGL context modification.
+     *
+     * @remark Made public so that you can use it outside of the manager in some cases.
+     */
     static std::mutex mtx;
 };

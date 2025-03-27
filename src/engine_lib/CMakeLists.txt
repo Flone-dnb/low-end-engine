@@ -48,10 +48,16 @@ set(PROJECT_SOURCES
     private/render/wrapper/Framebuffer.h
     private/render/wrapper/Buffer.cpp
     private/render/wrapper/Buffer.h
+    private/render/wrapper/Texture.cpp
+    private/render/wrapper/Texture.h
     public/render/ShaderConstantsSetter.hpp
     private/render/LightSourceManager.cpp
     private/render/LightSourceManager.h
+    private/render/UiManager.cpp
+    private/render/UiManager.h
     public/render/ShaderAlignmentConstants.hpp
+    private/render/font/FontManager.cpp
+    private/render/font/FontManager.h
     private/misc/Error.cpp
     public/misc/Error.h
     public/misc/Globals.h
@@ -99,6 +105,10 @@ set(PROJECT_SOURCES
     private/game/node/light/SpotlightNode.cpp
     public/game/node/light/PointLightNode.h
     private/game/node/light/PointLightNode.cpp
+    private/game/node/ui/UiNode.cpp
+    public/game/node/ui/UiNode.h
+    private/game/node/ui/TextNode.cpp
+    public/game/node/ui/TextNode.h
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h
@@ -204,3 +214,9 @@ set_target_properties(toml11 PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add nameof.
 target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/nameof/include)
+
+# Add FreeType.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"FreeType\"...")
+add_subdirectory(${RELATIVE_EXT_PATH}/freetype ${DEPENDENCY_BUILD_DIR_NAME}/freetype SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC freetype)
+set_target_properties(freetype PROPERTIES FOLDER ${EXTERNAL_FOLDER})

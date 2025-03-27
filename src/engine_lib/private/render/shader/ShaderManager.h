@@ -5,9 +5,23 @@
 #include <unordered_map>
 #include <memory>
 #include <mutex>
+#include <array>
 
 class Shader;
 class ShaderProgram;
+
+/**
+ * Determines the usage of a shader program.
+ *
+ * @remark Used to separate special types shaders.
+ */
+enum class ShaderProgramUsage : unsigned char {
+    MESH_NODE = 0,
+    OTHER,
+    // ... new types go here ...
+
+    COUNT, // marks the size of this enum
+};
 
 enum class EnginePredefinedMacro : unsigned char {
     MAX_POINT_LIGHT_COUNT = 0,
@@ -45,12 +59,14 @@ public:
      *
      * @param sPathToVertexShaderRelativeRes   Path to .glsl vertex shader file relative `res` directory.
      * @param sPathToFragmentShaderRelativeRes Path to .glsl fragment shader file relative `res` directory.
+     * @param usage                            Usage.
      *
      * @return Compiled shader program.
      */
     std::shared_ptr<ShaderProgram> getShaderProgram(
         const std::string& sPathToVertexShaderRelativeRes,
-        const std::string& sPathToFragmentShaderRelativeRes);
+        const std::string& sPathToFragmentShaderRelativeRes,
+        ShaderProgramUsage usage);
 
     /**
      * Returns all loaded shader programs.
@@ -59,9 +75,11 @@ public:
      */
     std::pair<
         std::mutex,
-        std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>>&
+        std::array<
+            std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>,
+            static_cast<size_t>(ShaderProgramUsage::COUNT)>>&
     getShaderPrograms() {
-        return mtxShaderPrograms;
+        return mtxDatabase;
     }
 
 private:
@@ -81,11 +99,14 @@ private:
      *
      * @param sProgramName   Unique name of the shader program.
      * @param vLinkedShaders Shaders to link to this program.
+     * @param usage          Where this program is used.
      *
      * @return Compiled shader program.
      */
     std::shared_ptr<ShaderProgram> compileShaderProgram(
-        const std::string& sProgramName, const std::vector<std::shared_ptr<Shader>>& vLinkedShaders);
+        const std::string& sProgramName,
+        const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
+        ShaderProgramUsage usage);
 
     /**
      * Looks if a shader from the specified path was already requested previously (cached) to return it,
@@ -108,8 +129,9 @@ private:
      * Called from shader program's destructor.
      *
      * @param sShaderProgramId Unique identifier of a shader program.
+     * @param usage            Where this program is used.
      */
-    void onShaderProgramBeingDestroyed(const std::string& sShaderProgramId);
+    void onShaderProgramBeingDestroyed(const std::string& sShaderProgramId, ShaderProgramUsage usage);
 
     /**
      * Stores pairs of "path to .glsl file relative `res` directory" - "loaded shader".
@@ -119,7 +141,7 @@ private:
     std::pair<std::mutex, std::unordered_map<std::string, std::weak_ptr<Shader>>> mtxPathsToShaders;
 
     /**
-     * Stores pairs of "linked shader names" - "shader program".
+     * All loaded shader programs.
      *
      * @remark Storing weak_ptr here is safe because the ShaderProgram object will notify the manager in
      * destructor.
@@ -127,8 +149,11 @@ private:
      * @remark Additionally storing a raw pointer for fast access without creating a shared_ptr out of
      * weak_ptr in cases where we guarantee that weak_ptr will be valid.
      */
+    /** Stores pairs of "linked shader names" - "shader program". */
     std::pair<
         std::mutex,
-        std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>>
-        mtxShaderPrograms;
+        std::array<
+            std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>,
+            static_cast<size_t>(ShaderProgramUsage::COUNT)>>
+        mtxDatabase;
 };

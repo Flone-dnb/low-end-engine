@@ -1,8 +1,5 @@
 #pragma once
 
-// Standard.
-#include <mutex>
-
 /**
  * Manages OpenGL buffer object.
  *
@@ -51,7 +48,7 @@ private:
     /** Size of the buffer in bytes. */
     const unsigned int iSizeInBytes = 0;
 
-    /** ID of the Buffer. */
+    /** ID of the buffer. */
     const unsigned int iBufferId = 0;
 
     /** OpenGL type of this buffer. */

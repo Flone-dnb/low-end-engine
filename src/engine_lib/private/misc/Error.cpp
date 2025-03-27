@@ -18,8 +18,29 @@ void checkLastGlError(const std::source_location location) {
     const auto lastError = glGetError();
     if (lastError != GL_NO_ERROR) [[unlikely]] {
         const auto filename = std::filesystem::path(location.file_name()).filename().string();
+        std::string sErrorMessage;
+        switch (lastError) {
+        case GL_INVALID_ENUM:
+            sErrorMessage = "INVALID_ENUM";
+            break;
+        case GL_INVALID_VALUE:
+            sErrorMessage = "INVALID_VALUE";
+            break;
+        case GL_INVALID_OPERATION:
+            sErrorMessage = "INVALID_OPERATION";
+            break;
+        case GL_OUT_OF_MEMORY:
+            sErrorMessage = "OUT_OF_MEMORY";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            sErrorMessage = "INVALID_FRAMEBUFFER_OPERATION";
+            break;
+        default:
+            sErrorMessage = std::to_string(lastError);
+            break;
+        }
         Error::showErrorAndThrowException(std::format(
-            "an OpenGL error occurred at {}, line {}, error code: {}", filename, location.line(), lastError));
+            "an OpenGL error occurred at {}, line {}, error: {}", filename, location.line(), sErrorMessage));
     }
 }
 

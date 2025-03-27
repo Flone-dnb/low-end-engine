@@ -7,13 +7,15 @@
 // Custom.
 #include "render/GpuResourceManager.h"
 #include "render/shader/ShaderManager.h"
-#include "render/LightSourceManager.h"
 #include "misc/Error.h"
 
 // External.
 #include "SDL_video.h"
 
 class Window;
+class FontManager;
+class UiManager;
+class LightSourceManager;
 
 /** OpenGL ES renderer. */
 class Renderer {
@@ -31,6 +33,15 @@ public:
      * point.
      */
     static void waitForGpuToFinishWorkUpToThisPoint();
+
+    /**
+     * Returns game's window.
+     *
+     * @warning Do not delete (free) returned pointer.
+     *
+     * @return Always valid pointer to the game's window.
+     */
+    Window* getWindow() const;
 
     /**
      * Returns manager for creating GPU resources.
@@ -56,6 +67,22 @@ public:
      * @return Manager.
      */
     LightSourceManager& getLightSourceManager();
+
+    /**
+     * Returns manager used to add/remove UI nodes to/from rendering.
+     *
+     * @remark As a game developer you don't need to use this. Light nodes use this function automatically.
+     *
+     * @return Manager.
+     */
+    UiManager& getUiManager();
+
+    /**
+     * Returns manager used to load fonts.
+     *
+     * @return Manager.
+     */
+    FontManager& getFontManager();
 
 private:
     /**
@@ -83,6 +110,12 @@ private:
 
     /** Database of all shaders. */
     ShaderManager shaderManager;
+
+    /** UI rendering. */
+    std::unique_ptr<UiManager> pUiManager;
+
+    /** .ttf loading and rendering. */
+    std::unique_ptr<FontManager> pFontManager;
 
     /** Light sources to render. */
     std::unique_ptr<LightSourceManager> pLightSourceManager;

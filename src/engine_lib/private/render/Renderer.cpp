@@ -7,6 +7,10 @@
 #include "game/node/CameraNode.h"
 #include "game/node/MeshNode.h"
 #include "render/shader/LightSourceShaderArray.h"
+#include "render/font/FontManager.h"
+#include "misc/ProjectPaths.h"
+#include "render/LightSourceManager.h"
+#include "render/UiManager.h"
 
 // External.
 #include "glad/glad.h"
@@ -51,6 +55,10 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     this->pContext = pCreatedContext;
 
     pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager(this));
+    pUiManager = std::unique_ptr<UiManager>(new UiManager(this));
+    pFontManager = FontManager::create(
+        this,
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
 }
 
 void Renderer::drawNextFrame() {
@@ -73,8 +81,9 @@ void Renderer::drawNextFrame() {
         auto& mtxActiveCamera = pCameraManager->getActiveCamera();
         std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
-        // Draw meshes for each shader program.
-        for (auto& [sProgramName, shaderProgram] : mtxShaderPrograms.second) {
+        // Draw mesh nodes for each shader program.
+        for (auto& [sProgramName, shaderProgram] :
+             mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::MESH_NODE)]) {
             const auto& [pWeakPtr, pShaderProgram] = shaderProgram;
 
             // Set shader program.
@@ -103,6 +112,9 @@ void Renderer::drawNextFrame() {
                 glDrawElements(GL_TRIANGLES, vao.getIndexCount(), GL_UNSIGNED_SHORT, nullptr);
             }
         }
+
+        // Draw UI.
+        pUiManager->renderUi();
     }
 
     // Swap.
@@ -113,8 +125,14 @@ Renderer::~Renderer() { SDL_GL_DeleteContext(pContext); }
 
 void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }
 
+Window* Renderer::getWindow() const { return pWindow; }
+
 GpuResourceManager& Renderer::getGpuResourceManager() { return gpuResourceManager; }
 
 ShaderManager& Renderer::getShaderManager() { return shaderManager; }
 
 LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceManager.get(); }
+
+UiManager& Renderer::getUiManager() { return *pUiManager.get(); }
+
+FontManager& Renderer::getFontManager() { return *pFontManager.get(); }

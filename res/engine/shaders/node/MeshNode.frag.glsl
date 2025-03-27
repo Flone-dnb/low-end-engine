@@ -1,5 +1,5 @@
-#include "Base.glsl"
-#include "Light.glsl"
+#include "../Base.glsl"
+#include "../Light.glsl"
 
 in vec3 fragmentPosition;
 in vec3 fragmentNormal;

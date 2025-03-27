@@ -12,12 +12,12 @@
 #include "misc/Error.h"
 #include "math/GLMath.hpp"
 #include "render/wrapper/Buffer.h"
+#include "render/shader/ShaderManager.h"
 
 // External.
 #include "glad/glad.h"
 
 class Shader;
-class ShaderManager;
 class MeshNode;
 
 /**
@@ -115,12 +115,14 @@ private:
      * @param vLinkedShaders     Linked shaders.
      * @param iShaderProgramId   ID of the compiled shader program.
      * @param sShaderProgramName Unique identifier of this shader program.
+     * @param usage              Where this program is used.
      */
     ShaderProgram(
         ShaderManager* pShaderManager,
         const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
         unsigned int iShaderProgramId,
-        std::string sShaderProgramName);
+        std::string sShaderProgramName,
+        ShaderProgramUsage usage);
 
     /**
      * Called after some material on a spawned mesh node started using this shader program.
@@ -182,6 +184,9 @@ private:
 
     /** Unique identifier of this shader program. */
     const std::string sShaderProgramName;
+
+    /** Where this program is used. */
+    const ShaderProgramUsage usage;
 };
 
 inline int ShaderProgram::getShaderUniformLocation(const std::string& sUniformName) {
