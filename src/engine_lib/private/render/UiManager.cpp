@@ -53,20 +53,23 @@ void UiManager::renderUi() {
 
             // Render all text nodes.
             for (const auto& pTextNode : mtxData.second.spawnedVisibleTextNodes) {
-                // Prepare text position.
+                // Prepare text position and scale.
                 const auto textRelativePos = pTextNode->getPosition();
                 float screenX = textRelativePos.x * iWindowWidth;
                 float screenY = textRelativePos.y * iWindowHeight;
-
                 const auto scale = pTextNode->getTextSize() / FontManager::getFontSizeToLoad();
+
+                // Set color.
+                pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
 
                 // Render each character.
                 for (const auto& character : pTextNode->getText()) {
                     // Get glyph.
                     const auto charIt = mtxLoadedGlyphs.second.find(character);
                     if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-                        Error::showErrorAndThrowException(std::format(
-                            "unable to find loaded glyph to render the character \"{}\"", character));
+                        Error::showErrorAndThrowException(
+                            std::format(
+                                "unable to find loaded glyph to render the character \"{}\"", character));
                     }
                     const auto& glyph = charIt->second;
 

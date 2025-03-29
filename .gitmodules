@@ -22,3 +22,6 @@
 [submodule "ext/freetype"]
 	path = ext/freetype
 	url = https://gitlab.freedesktop.org/freetype/freetype.git
+[submodule "ext/hwinfo"]
+	path = ext/hwinfo
+	url = https://github.com/lfreist/hwinfo.git

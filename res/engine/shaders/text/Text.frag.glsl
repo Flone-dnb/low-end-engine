@@ -5,11 +5,11 @@ out vec4 color;
 
 /** Single-channel bitmap. */
 uniform sampler2D glyphBitmap;
+uniform vec4 textColor;
 
 layout(early_fragment_tests) in;
 
 /// Entry.
 void main() {
-    vec4 sampled = vec4(1.0F, 1.0F, 1.0F, texture(glyphBitmap, uv).r);
-    color = sampled;
+    color = vec4(textColor.r, textColor.g, textColor.b, texture(glyphBitmap, uv).r * textColor);
 }  

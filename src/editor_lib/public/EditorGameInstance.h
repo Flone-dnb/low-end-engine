@@ -60,6 +60,9 @@ private:
     /** Registers action and axis input events in the input manager. */
     void registerEditorInputEvents();
 
+    /** Should be called after created/loaded a new world to add editor-specific nodes. */
+    void addEditorNodesToCurrentWorld();
+
     /**
      * Returns editor camera node.
      *

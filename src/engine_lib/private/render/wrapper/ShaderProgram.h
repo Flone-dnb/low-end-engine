@@ -71,6 +71,14 @@ public:
      * Sets the specified value to a `uniform` with the specified name in shaders.
      *
      * @param sUniformName Name of the uniform variable from shader code.
+     * @param vector       Vector to set.
+     */
+    inline void setVector4ToShader(const std::string& sUniformName, const glm::vec4& vector);
+
+    /**
+     * Sets the specified value to a `uniform` with the specified name in shaders.
+     *
+     * @param sUniformName Name of the uniform variable from shader code.
      * @param value        Value to set.
      */
     inline void setFloatToShader(const std::string& sUniformName, float value);
@@ -219,6 +227,10 @@ inline void ShaderProgram::setMatrix3ToShader(const std::string& sUniformName, c
 
 inline void ShaderProgram::setVector3ToShader(const std::string& sUniformName, const glm::vec3& vector) {
     glUniform3fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
+}
+
+inline void ShaderProgram::setVector4ToShader(const std::string& sUniformName, const glm::vec4& vector) {
+    glUniform4fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
 inline void ShaderProgram::setFloatToShader(const std::string& sUniformName, float value) {

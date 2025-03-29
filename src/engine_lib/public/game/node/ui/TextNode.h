@@ -5,6 +5,7 @@
 
 // Custom.
 #include "game/node/ui/UiNode.h"
+#include "math/GLMath.hpp"
 
 /** 2D text rendering. */
 class TextNode : public UiNode {
@@ -35,6 +36,13 @@ public:
     void setTextSize(float size);
 
     /**
+     * Sets color of the text.
+     *
+     * @param color Color in the RGBA format.
+     */
+    void setTextColor(const glm::vec4& color);
+
+    /**
      * Returns displayed text.
      *
      * @return Text.
@@ -47,6 +55,13 @@ public:
      * @return Size.
      */
     float getTextSize() const { return size; }
+
+    /**
+     * Returns color of the text in the RGBA format.
+     *
+     * @return Color.
+     */
+    glm::vec4 getTextColor() const { return color; }
 
 protected:
     /**
@@ -76,6 +91,9 @@ protected:
     virtual void onVisibilityChanged() override;
 
 private:
+    /** Color of the text in the RGBA format. */
+    glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+
     /** Size in range [0.0F; 1.0F]. */
     float size = 0.05F;
 

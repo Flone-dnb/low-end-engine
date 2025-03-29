@@ -8,6 +8,7 @@
 #include "io/Logger.h"
 
 // External.
+#include "hwinfo/hwinfo.h"
 #include "SDL_messagebox.h"
 #include "glad/glad.h"
 #if defined(WIN32)
@@ -39,13 +40,22 @@ void checkLastGlError(const std::source_location location) {
             sErrorMessage = std::to_string(lastError);
             break;
         }
-        Error::showErrorAndThrowException(std::format(
-            "an OpenGL error occurred at {}, line {}, error: {}", filename, location.line(), sErrorMessage));
+        Error::showErrorAndThrowException(
+            std::format(
+                "an OpenGL error occurred at {}, line {}, error: {}",
+                filename,
+                location.line(),
+                sErrorMessage));
     }
 }
 
 Error::Error(std::string_view sMessage, const std::source_location location) {
-    this->sMessage = sMessage;
+    // Also add RAM usage to the error message.
+    hwinfo::Memory memory;
+    const auto iRamUsedMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
+    const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;    // NOLINT
+
+    this->sMessage = std::string(sMessage) + std::format("\n\nRAM (MB): {}/{}\n", iRamUsedMb, iRamTotalMb);
 
     stack.push_back(sourceLocationToInfo(location));
 }

@@ -13,6 +13,8 @@ void TextNode::setText(const std::string& sText) { this->sText = sText; }
 
 void TextNode::setTextSize(float size) { this->size = std::clamp(size, 0.01F, 1.0F); }
 
+void TextNode::setTextColor(const glm::vec4& color) { this->color = color; }
+
 void TextNode::onSpawning() {
     UiNode::onSpawning();
 
