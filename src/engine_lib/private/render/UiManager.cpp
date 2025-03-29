@@ -53,17 +53,28 @@ void UiManager::renderUi() {
 
             // Render all text nodes.
             for (const auto& pTextNode : mtxData.second.spawnedVisibleTextNodes) {
-                // Prepare text position and scale.
+                // Prepare some variables.
                 const auto textRelativePos = pTextNode->getPosition();
+
                 float screenX = textRelativePos.x * iWindowWidth;
                 float screenY = textRelativePos.y * iWindowHeight;
-                const auto scale = pTextNode->getTextSize() / FontManager::getFontSizeToLoad();
+                const auto scale = pTextNode->getTextSize() / FontManager::getFontHeightToLoad();
+
+                const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
+                const float lineSpacingInPixels = pTextNode->getLineSpacing() * textHeightInPixels;
 
                 // Set color.
                 pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
 
                 // Render each character.
                 for (const auto& character : pTextNode->getText()) {
+                    // Handle new line.
+                    if (character == '\n') {
+                        screenY -= textHeightInPixels + lineSpacingInPixels;
+                        screenX = textRelativePos.x * iWindowWidth;
+                        continue;
+                    }
+
                     // Get glyph.
                     const auto charIt = mtxLoadedGlyphs.second.find(character);
                     if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {

@@ -8,6 +8,7 @@
 #include "render/GpuResourceManager.h"
 #include "render/shader/ShaderManager.h"
 #include "misc/Error.h"
+#include "render/RenderStatistics.h"
 
 // External.
 #include "SDL_video.h"
@@ -33,6 +34,20 @@ public:
      * point.
      */
     static void waitForGpuToFinishWorkUpToThisPoint();
+
+    /**
+     * Sets the maximum number of FPS that is allowed to be produced in a second.
+     *
+     * @param iNewFpsLimit Maximum allowed FPS, specify 0 to disable.
+     */
+    void setFpsLimit(unsigned int iNewFpsLimit);
+
+    /**
+     * Returns the maximum number of FPS that is allowed to be produced in a second.
+     *
+     * @return 0 if disabled.
+     */
+    unsigned int getFpsLimit();
 
     /**
      * Returns game's window.
@@ -84,6 +99,13 @@ public:
      */
     FontManager& getFontManager();
 
+    /**
+     * Returns various statistics about the rendering.
+     *
+     * @return Stats.
+     */
+    RenderStatistics& getRenderStatistics();
+
 private:
     /**
      * Creates a new renderer.
@@ -105,6 +127,22 @@ private:
     /** Called by window that owns this renderer to draw a new frame. */
     void drawNextFrame();
 
+#if defined(WIN32)
+    /**
+     * Uses Windows' WaitableTimer to wait for the specified number of nanoseconds.
+     *
+     * @param iNanoseconds Nanoseconds to wait for.
+     */
+    static void nanosleep(long long iNanoseconds);
+#endif
+
+    /**
+     * Calculates some frame-related statistics.
+     *
+     * @remark Must be called after a frame was submitted.
+     */
+    void calculateFrameStatistics();
+
     /** Creates GPU resources. */
     GpuResourceManager gpuResourceManager;
 
@@ -119,6 +157,9 @@ private:
 
     /** Light sources to render. */
     std::unique_ptr<LightSourceManager> pLightSourceManager;
+
+    /** Various statistics about rendering. */
+    RenderStatistics renderStats;
 
     /** OpenGL context. */
     SDL_GLContext pContext = nullptr;

@@ -43,6 +43,13 @@ public:
     void setTextColor(const glm::vec4& color);
 
     /**
+     * Sets vertical space between horizontal lines of text.
+     *
+     * @param lineSpacing Spacing in range [0.0F; +inf] proportional to the height of the text.
+     */
+    void setLineSpacing(float lineSpacing);
+
+    /**
      * Returns displayed text.
      *
      * @return Text.
@@ -62,6 +69,14 @@ public:
      * @return Color.
      */
     glm::vec4 getTextColor() const { return color; }
+
+    /**
+     * Returns vertical space between horizontal lines of text, in range [0.0F; +inf]
+     * proportional to the height of the text.
+     *
+     * @return Line spacing.
+     */
+    float getLineSpacing() const { return lineSpacing; }
 
 protected:
     /**
@@ -94,8 +109,14 @@ private:
     /** Color of the text in the RGBA format. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
-    /** Size in range [0.0F; 1.0F]. */
+    /** Size in range [0.0F; 1.0F] proportional to screen height. */
     float size = 0.05F;
+
+    /**
+     * Vertical space between horizontal lines of text, in range [0.0F; +inf]
+     * proportional to the height of the text.
+     */
+    float lineSpacing = 0.25F;
 
     /** Text to display. */
     std::string sText;

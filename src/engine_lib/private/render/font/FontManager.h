@@ -35,11 +35,12 @@ public:
     ~FontManager();
 
     /**
-     * Returns size in range [0.0F; 1.0F] in which the font will be loaded.
+     * Font height (relative to screen height, width is determines automatically) in range [0.0F; 1.0F] to
+     * load.
      *
-     * @return Size.
+     * @return Font height.
      */
-    static constexpr float getFontSizeToLoad() { return fontSizeToLoad; }
+    static constexpr float getFontHeightToLoad() { return fontHeightToLoad; }
 
     FontManager(const FontManager&) = delete;
     FontManager& operator=(const FontManager&) = delete;
@@ -87,11 +88,11 @@ private:
     Renderer* const pRenderer = nullptr;
 
     /**
-     * Font size (relative to screen height) in range [0.0F; 1.0F] to load. We will scale this value when
-     * drawing text nodes.
+     * Font height (relative to screen height, width is determines automatically) in range [0.0F; 1.0F] to
+     * load. We will scale this value when drawing text nodes.
      *
      * @remark This value must be equal to an average size of the text, if it's too small
      * big text will be blurry, if it will be too big small text will look bad.
      */
-    static constexpr float fontSizeToLoad = 0.12F;
+    static constexpr float fontHeightToLoad = 0.12F;
 };

@@ -30,6 +30,8 @@ set(PROJECT_SOURCES
     private/render/Renderer.cpp
     private/render/Material.cpp
     public/render/Material.h
+    private/render/RenderStatistics.cpp
+    public/render/RenderStatistics.h
     private/render/GpuResourceManager.cpp
     private/render/GpuResourceManager.h
     private/render/shader/ShaderManager.h

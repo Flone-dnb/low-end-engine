@@ -54,13 +54,16 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
     timeBeforeStatsUpdate -= timeSincePrevCallInSec;
 
     if (timeBeforeStatsUpdate <= 0.0F) {
-        // Update statistics.
+        // Prepare stats to display.
+        std::string sStatsText;
+
+        // RAM.
         hwinfo::Memory memory;
         const auto iRamUsedMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
         const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;    // NOLINT
         const auto ratio = static_cast<float>(iRamUsedMb) / static_cast<float>(iRamTotalMb);
 
-        pStatsTextNode->setText(std::format("RAM (MB): {}/{}", iRamUsedMb, iRamTotalMb));
+        sStatsText += std::format("RAM (MB): {}/{}", iRamUsedMb, iRamTotalMb);
         if (ratio >= 0.9F) {
             pStatsTextNode->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
         } else if (ratio >= 0.75F) {
@@ -69,6 +72,14 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
             pStatsTextNode->setTextColor(glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
         }
 
+        // Render.
+        sStatsText += std::format(
+            "\nFPS: {} (limit: {})",
+            getRenderer()->getRenderStatistics().getFramesPerSecond(),
+            getRenderer()->getFpsLimit());
+
+        // Done.
+        pStatsTextNode->setText(sStatsText);
         timeBeforeStatsUpdate = 1.0F;
     }
 }
@@ -197,7 +208,7 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
 
     // Stats.
     pStatsTextNode = getWorldRootNode()->addChildNode(std::make_unique<TextNode>());
-    pStatsTextNode->setTextSize(0.03F);
+    pStatsTextNode->setTextSize(0.025F);
     pStatsTextNode->setPosition(glm::vec2(0.01F, 1.0F - 0.01F - pStatsTextNode->getTextSize()));
 
     // Stuff for testing.

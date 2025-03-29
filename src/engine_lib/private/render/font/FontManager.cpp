@@ -55,7 +55,7 @@ void FontManager::loadFont(const std::filesystem::path& pathToFont) {
 
     // Select font size.
     const auto iFontHeightInPixels = static_cast<unsigned int>(
-        static_cast<float>(pRenderer->getWindow()->getWindowSize().second) * fontSizeToLoad);
+        static_cast<float>(pRenderer->getWindow()->getWindowSize().second) * fontHeightToLoad);
     FT_Set_Pixel_Sizes(pFace, 0, iFontHeightInPixels); // 0 for width to automatically determine it
 
     {

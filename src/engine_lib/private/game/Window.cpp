@@ -13,7 +13,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
 
     // Get display resolution.
     SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(0, &mode);
+    SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
 
     // Prepare flags.
     auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP |
@@ -169,6 +169,14 @@ GameManager* Window::getGameManager() const { return pGameManager.get(); }
 bool Window::isCursorVisible() const { return bIsCursorVisible; }
 
 bool Window::isGamepadConnected() const { return pConnectedGamepad != nullptr; }
+
+unsigned int Window::getScreenRefreshRate() const {
+    // Get display resolution.
+    SDL_DisplayMode mode;
+    SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
+
+    return mode.refresh_rate;
+}
 
 void Window::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) const {
     pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown);

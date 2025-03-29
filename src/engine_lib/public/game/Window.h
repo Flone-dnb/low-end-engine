@@ -103,6 +103,13 @@ public:
     bool isGamepadConnected() const;
 
     /**
+     * Returns refresh rate of the screen.
+     *
+     * @return Refresh rate.
+     */
+    unsigned int getScreenRefreshRate() const;
+
+    /**
      * Called when the window (that owns this object) receives keyboard input.
      *
      * @remark Made public so that you can simulate input in your automated tests.
@@ -168,6 +175,9 @@ private:
 
     /** Used in the window message loop. */
     bool bQuitRequested = false;
+
+    /** Index of a display (monitor) we use for rendering. */
+    static constexpr int iUsedDisplayIndex = 0;
 };
 
 template <typename MyGameInstance>

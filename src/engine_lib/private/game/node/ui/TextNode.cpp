@@ -15,6 +15,8 @@ void TextNode::setTextSize(float size) { this->size = std::clamp(size, 0.01F, 1.
 
 void TextNode::setTextColor(const glm::vec4& color) { this->color = color; }
 
+void TextNode::setLineSpacing(float lineSpacing) { this->lineSpacing = std::max(lineSpacing, 0.0F); }
+
 void TextNode::onSpawning() {
     UiNode::onSpawning();
 

@@ -14,6 +14,14 @@
 
 // External.
 #include "glad/glad.h"
+#if defined(WIN32)
+#define NOMINMAX
+#include <Windows.h>
+#pragma comment(lib, "Winmm.lib")
+#elif __linux__
+#include <unistd.h>
+#include <time.h>
+#endif
 
 std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow) {
     // Create context.
@@ -48,7 +56,14 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     const auto windowSize = pWindow->getWindowSize();
     GL_CHECK_ERROR(glViewport(0, 0, static_cast<int>(windowSize.first), static_cast<int>(windowSize.second)));
 
-    return std::unique_ptr<Renderer>(new Renderer(pWindow, pContext));
+    auto pRenderer = std::unique_ptr<Renderer>(new Renderer(pWindow, pContext));
+
+    // Set FPS limit.
+    const auto iScreenRefreshRate = pWindow->getScreenRefreshRate();
+    Logger::get().info(std::format("setting FPS limit to {} (screen refresh rate)", iScreenRefreshRate));
+    pRenderer->setFpsLimit(iScreenRefreshRate);
+
+    return pRenderer;
 }
 
 Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWindow) {
@@ -117,13 +132,131 @@ void Renderer::drawNextFrame() {
         pUiManager->renderUi();
     }
 
-    // Swap.
+    // Done.
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
+    calculateFrameStatistics();
+}
+
+#if defined(WIN32)
+void Renderer::nanosleep(long long iNanoseconds) {
+    iNanoseconds /= 100; // NOLINT: The time after which the state of the timer is to be set to signaled,
+                         // in 100 nanosecond intervals.
+
+    // Prepare some variables to use.
+    HANDLE pTimer;
+    LARGE_INTEGER interval;
+
+    // Create timer.
+    pTimer = CreateWaitableTimer(NULL, TRUE, NULL);
+    if (pTimer == NULL) [[unlikely]] {
+        Logger::get().error(
+            std::format(
+                "failed to wait create a waitable timer for {} nanoseconds (error code: {})",
+                iNanoseconds,
+                GetLastError()));
+    }
+
+    // Set timer.
+    interval.QuadPart = -iNanoseconds;
+    if (SetWaitableTimer(pTimer, &interval, 0, NULL, NULL, FALSE) == 0) [[unlikely]] {
+        CloseHandle(pTimer);
+        Logger::get().error(
+            std::format(
+                "failed to set a waitable timer for {} nanoseconds (error code: {})",
+                iNanoseconds,
+                GetLastError()));
+    }
+
+    // Wait for it to be signaled.
+    WaitForSingleObject(pTimer, INFINITE);
+
+    // Delete timer.
+    CloseHandle(pTimer);
+}
+#endif
+
+void Renderer::calculateFrameStatistics() {
+    using namespace std::chrono;
+
+    // Update FPS stats.
+    {
+        // Get elapsed time.
+        const auto iTimeSinceFpsUpdateInSec =
+            duration_cast<seconds>(steady_clock::now() - renderStats.fpsInfo.timeAtLastFpsUpdate).count();
+
+        // Count the new present call.
+        renderStats.fpsInfo.iPresentCountSinceFpsUpdate += 1;
+
+        // See if 1 second has passed.
+        if (iTimeSinceFpsUpdateInSec >= 1) {
+            // Save FPS.
+            renderStats.fpsInfo.iFramesPerSecond = renderStats.fpsInfo.iPresentCountSinceFpsUpdate;
+
+            // Reset present count.
+            renderStats.fpsInfo.iPresentCountSinceFpsUpdate = 0;
+
+            // Restart time.
+            renderStats.fpsInfo.timeAtLastFpsUpdate = steady_clock::now();
+        }
+    }
+
+    // Update FPS limit stats.
+    {
+        // Check if FPS limit is set.
+        if (renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs.has_value()) {
+            // Get time that we should keep.
+            const auto targetTimeToRenderFrameInNs =
+                *renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs;
+
+            // Get time spent on last frame.
+            const auto frameTimeInNs = duration<double, nanoseconds::period>(
+                                           steady_clock::now() - renderStats.fpsLimitInfo.frameStartTime)
+                                           .count();
+
+            // Check if the last frame was rendered too fast.
+            if (targetTimeToRenderFrameInNs > frameTimeInNs) {
+                // Calculate time to wait.
+                const auto timeToWaitInNs = targetTimeToRenderFrameInNs - frameTimeInNs;
+
+#if defined(WIN32)
+                const auto adjustTime =
+                    static_cast<double>(renderStats.fpsLimitInfo.iFpsLimit) * 0.0002;   // NOLINT: don't ask
+                const auto timeToWaitFraction = std::clamp(1.0 - adjustTime, 0.9, 1.0); // NOLINT: trust me XD
+                timeBeginPeriod(1);
+                nanosleep(static_cast<long long>(std::floor(timeToWaitInNs * timeToWaitFraction)));
+                timeEndPeriod(1);
+#else
+                struct timespec tim;
+                struct timespec tim2;
+                tim.tv_sec = 0;
+                tim.tv_nsec = static_cast<long>(timeToWaitInNs);
+                nanosleep(&tim, &tim2);
+#endif
+            }
+        }
+
+        // Update frame start/end time.
+        renderStats.fpsLimitInfo.frameStartTime = steady_clock::now();
+    }
 }
 
 Renderer::~Renderer() { SDL_GL_DeleteContext(pContext); }
 
 void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }
+
+void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
+    // Update time to render a frame.
+    if (iNewFpsLimit == 0) {
+        renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs = {};
+        renderStats.fpsLimitInfo.iFpsLimit = 0;
+    } else {
+        renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs =
+            1000000000.0 / static_cast<double>(iNewFpsLimit); // NOLINT
+        renderStats.fpsLimitInfo.iFpsLimit = iNewFpsLimit;
+    }
+}
+
+unsigned int Renderer::getFpsLimit() { return renderStats.fpsLimitInfo.iFpsLimit; }
 
 Window* Renderer::getWindow() const { return pWindow; }
 
@@ -136,3 +269,5 @@ LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceMana
 UiManager& Renderer::getUiManager() { return *pUiManager.get(); }
 
 FontManager& Renderer::getFontManager() { return *pFontManager.get(); }
+
+RenderStatistics& Renderer::getRenderStatistics() { return renderStats; }
