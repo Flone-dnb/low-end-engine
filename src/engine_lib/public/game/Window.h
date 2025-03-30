@@ -107,7 +107,7 @@ public:
      *
      * @return Refresh rate.
      */
-    unsigned int getScreenRefreshRate() const;
+    static unsigned int getScreenRefreshRate();
 
     /**
      * Called when the window (that owns this object) receives keyboard input.

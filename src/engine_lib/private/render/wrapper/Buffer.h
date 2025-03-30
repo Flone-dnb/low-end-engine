@@ -32,7 +32,7 @@ public:
      * @param iDataSize    Size in bytes to copy from the specified data pointer.
      * @param pData        Pointer to copy the data from.
      */
-    void copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize, const void* pData);
+    void copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize, const void* pData) const;
 
 private:
     /**

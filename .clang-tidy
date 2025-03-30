@@ -1,5 +1,5 @@
 ---
-Checks:          '-*,clang-analyzer-*,clang-diagnostic-*,concurrency-*,performance-*,readability-*,-readability-qualified-auto'
+Checks:          '-*,clang-analyzer-*,clang-diagnostic-*,concurrency-*,performance-*,readability-*,-readability-qualified-auto,-readability-math-missing-parentheses'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^(src)'
 FormatStyle: none

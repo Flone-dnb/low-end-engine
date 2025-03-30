@@ -49,7 +49,7 @@ public:
      *
      * @return 0 if disabled.
      */
-    unsigned int getFpsLimit();
+    unsigned int getFpsLimit() const;
 
     /**
      * Returns game's window.
@@ -59,13 +59,6 @@ public:
      * @return Always valid pointer to the game's window.
      */
     Window* getWindow() const;
-
-    /**
-     * Returns manager for creating GPU resources.
-     *
-     * @return Manager.
-     */
-    GpuResourceManager& getGpuResourceManager();
 
     /**
      * Returns manager used to load and compile shaders.
@@ -153,9 +146,6 @@ private:
      * @remark Must be called after a frame was submitted.
      */
     void calculateFrameStatistics();
-
-    /** Creates GPU resources. */
-    GpuResourceManager gpuResourceManager;
 
     /** Database of all shaders. */
     ShaderManager shaderManager;

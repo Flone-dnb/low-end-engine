@@ -619,7 +619,7 @@ private:
      * @param worldRotation Node's world rotation.
      * @param worldScale    Node's world scale.
      */
-    void getNodeWorldLocationRotationScale(
+    static void getNodeWorldLocationRotationScale(
         Node* pNode, glm::vec3& worldLocation, glm::vec3& worldRotation, glm::vec3& worldScale);
 
     /**
@@ -637,7 +637,7 @@ private:
      * @param scaleRule                     Defines how scale should change.
      * @param worldScaleBeforeAttachment    World scale of this node before being attached.
      */
-    void applyAttachmentRuleForNode(
+    static void applyAttachmentRuleForNode(
         Node* pNode,
         Node::AttachmentRule locationRule,
         const glm::vec3& worldLocationBeforeAttachment,
@@ -755,23 +755,25 @@ inline NodeType* Node::addChildNode(
     // Make sure the specified node is not our direct child.
     for (const auto& pChildNode : mtxChildNodes.second) {
         if (pChildNode.get() == pNode) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "an attempt was made to attach the \"{}\" node to the \"{}\" node but it's already "
-                "a direct child node of \"{}\"",
-                pNode->getNodeName(),
-                getNodeName(),
-                getNodeName()));
+            Error::showErrorAndThrowException(
+                std::format(
+                    "an attempt was made to attach the \"{}\" node to the \"{}\" node but it's already "
+                    "a direct child node of \"{}\"",
+                    pNode->getNodeName(),
+                    getNodeName(),
+                    getNodeName()));
         }
     }
 
     // Make sure the specified node is not our parent.
     if (pNode->isParentOf(this)) {
-        Error::showErrorAndThrowException(std::format(
-            "an attempt was made to attach the \"{}\" node to the node \"{}\", "
-            "but the first node is a parent of the second node, "
-            "aborting this operation",
-            pNode->getNodeName(),
-            getNodeName()));
+        Error::showErrorAndThrowException(
+            std::format(
+                "an attempt was made to attach the \"{}\" node to the node \"{}\", "
+                "but the first node is a parent of the second node, "
+                "aborting this operation",
+                pNode->getNodeName(),
+                getNodeName()));
     }
 
     // Prepare unique_ptr to add to our "child nodes" array.
@@ -788,8 +790,10 @@ inline NodeType* Node::addChildNode(
 
         // Check if we are already this node's parent.
         if (pNode->mtxParentNode.second == this) {
-            Error::showErrorAndThrowException(std::format(
-                "an attempt was made to attach the \"{}\" node to its parent again", pNode->getNodeName()));
+            Error::showErrorAndThrowException(
+                std::format(
+                    "an attempt was made to attach the \"{}\" node to its parent again",
+                    pNode->getNodeName()));
         }
 
         // Notify start of detachment.
@@ -808,18 +812,21 @@ inline NodeType* Node::addChildNode(
         }
 
         if (pNodeToAttachToThis == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "the node \"{}\" has parent node \"{}\" but parent node does not have this node in its array "
-                "of child nodes",
-                pNode->getNodeName(),
-                pNode->mtxParentNode.second->getNodeName()));
+            Error::showErrorAndThrowException(
+                std::format(
+                    "the node \"{}\" has parent node \"{}\" but parent node does not have this node in its "
+                    "array "
+                    "of child nodes",
+                    pNode->getNodeName(),
+                    pNode->mtxParentNode.second->getNodeName()));
         }
     } else {
         if (std::holds_alternative<NodeType*>(node)) [[unlikely]] {
             // We need a unique_ptr.
-            Error::showErrorAndThrowException(std::format(
-                "expected a unique pointer for the node \"{}\" because it does not have a parent",
-                pNode->getNodeName()));
+            Error::showErrorAndThrowException(
+                std::format(
+                    "expected a unique pointer for the node \"{}\" because it does not have a parent",
+                    pNode->getNodeName()));
         }
 
         pNodeToAttachToThis = std::move(std::get<std::unique_ptr<NodeType>>(node));

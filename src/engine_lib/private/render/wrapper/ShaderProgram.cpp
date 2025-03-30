@@ -12,10 +12,11 @@ ShaderProgram::~ShaderProgram() {
         std::scoped_lock guard(mtxMeshNodesUsingThisProgram.first);
         const auto iUsageCount = mtxMeshNodesUsingThisProgram.second.size();
         if (iUsageCount != 0) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "shader program \"{}\" is being destroyed but there are still {} nodes that use it",
-                sShaderProgramName,
-                iUsageCount));
+            Error::showErrorAndThrowException(
+                std::format(
+                    "shader program \"{}\" is being destroyed but there are still {} nodes that use it",
+                    sShaderProgramName,
+                    iUsageCount));
         }
     }
 
@@ -28,7 +29,7 @@ ShaderProgram::ShaderProgram(
     ShaderManager* pShaderManager,
     const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
     unsigned int iShaderProgramId,
-    std::string sShaderProgramName,
+    const std::string& sShaderProgramName,
     ShaderProgramUsage usage)
     : pShaderManager(pShaderManager), iShaderProgramId(iShaderProgramId), vLinkedShaders(vLinkedShaders),
       sShaderProgramName(sShaderProgramName), usage(usage) {
@@ -36,7 +37,7 @@ ShaderProgram::ShaderProgram(
     int iUniformCount = 0;
     GL_CHECK_ERROR(glGetProgramiv(iShaderProgramId, GL_ACTIVE_UNIFORMS, &iUniformCount));
 
-    std::array<char, 1024> vNameBuffer{};
+    std::array<char, 1024> vNameBuffer{}; // NOLINT: max name length
     for (int i = 0; i < iUniformCount; i++) {
         vNameBuffer = {};
 
@@ -73,8 +74,9 @@ ShaderProgram::ShaderProgram(
         // Get location.
         const auto iLocation = glGetUniformBlockIndex(iShaderProgramId, vNameBuffer.data());
         if (iLocation == GL_INVALID_INDEX) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "unable to get location for shader uniform block named \"{}\"", vNameBuffer.data()));
+            Error::showErrorAndThrowException(
+                std::format(
+                    "unable to get location for shader uniform block named \"{}\"", vNameBuffer.data()));
         }
 
         // Set binding.

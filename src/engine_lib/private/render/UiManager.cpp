@@ -87,18 +87,18 @@ void UiManager::renderUi() {
                     float xpos = screenX + glyph.bearing.x * scale;
                     float ypos = screenY - (glyph.size.y - glyph.bearing.y) * scale;
 
-                    float w = static_cast<float>(glyph.size.x) * scale;
-                    float h = static_cast<float>(glyph.size.y) * scale;
+                    float width = static_cast<float>(glyph.size.x) * scale;
+                    float height = static_cast<float>(glyph.size.y) * scale;
 
                     // Update VBO.
-                    const std::array<glm::vec4, 6> vVertices = {
-                        glm::vec4(xpos, ypos + h, 0.0F, 0.0F),
-                        glm::vec4(xpos + w, ypos, 1.0F, 1.0F),
+                    const std::array<glm::vec4, iTextQuadVertexCount> vVertices = {
+                        glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
+                        glm::vec4(xpos + width, ypos, 1.0F, 1.0F),
                         glm::vec4(xpos, ypos, 0.0F, 1.0F),
 
-                        glm::vec4(xpos, ypos + h, 0.0F, 0.0F),
-                        glm::vec4(xpos + w, ypos + h, 1.0F, 0.0F),
-                        glm::vec4(xpos + w, ypos, 1.0F, 1.0F)};
+                        glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
+                        glm::vec4(xpos + width, ypos + height, 1.0F, 0.0F),
+                        glm::vec4(xpos + width, ypos, 1.0F, 1.0F)};
 
                     glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
 
@@ -108,11 +108,12 @@ void UiManager::renderUi() {
                     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                     // Render quad.
-                    glDrawArrays(GL_TRIANGLES, 0, 6);
+                    glDrawArrays(GL_TRIANGLES, 0, iTextQuadVertexCount);
 
                     // Advance current pos to the next glyph (note that advance is number of 1/64 pixels).
                     screenX +=
-                        (glyph.advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+                        (glyph.advance >> 6) * // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
+                        scale;
                 }
             }
 
@@ -201,8 +202,8 @@ UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     glBindVertexArray(iVao);
     glBindBuffer(GL_ARRAY_BUFFER, iVbo);
     {
-        // Allocate 6 vertices, each vec4 will store screen space position (in XY) and UVs (in ZW).
-        glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(glm::vec4), nullptr, GL_DYNAMIC_DRAW);
+        // Allocate vertices, each vec4 will store screen space position (in XY) and UVs (in ZW).
+        glBufferData(GL_ARRAY_BUFFER, iTextQuadVertexCount * sizeof(glm::vec4), nullptr, GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);

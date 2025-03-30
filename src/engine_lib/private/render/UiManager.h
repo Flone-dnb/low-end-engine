@@ -89,4 +89,7 @@ private:
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
+
+    /** Number of vertices used for rendering a single glyph of text. */
+    static constexpr int iTextQuadVertexCount = 6; // NOLINT
 };

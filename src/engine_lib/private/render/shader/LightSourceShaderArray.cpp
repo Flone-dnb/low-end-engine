@@ -41,8 +41,7 @@ LightSourceShaderArray::LightSourceShaderArray(
 
     // Create UBO for shaders.
     mtxData.second.pUniformBufferObject =
-        pLightSourceManager->getRenderer()->getGpuResourceManager().createUniformBuffer(
-            iLightStructSizeInBytes * iArrayMaxSize, true);
+        GpuResourceManager::createUniformBuffer(iLightStructSizeInBytes * iArrayMaxSize, true);
 }
 
 LightSourceShaderArray::~LightSourceShaderArray() {
@@ -50,9 +49,10 @@ LightSourceShaderArray::~LightSourceShaderArray() {
 
     const auto iLightSourceCount = mtxData.second.visibleLightNodes.size();
     if (iLightSourceCount != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "light source array is being destroyed but there are still {} light source(s) active",
-            iLightSourceCount));
+        Error::showErrorAndThrowException(
+            std::format(
+                "light source array is being destroyed but there are still {} light source(s) active",
+                iLightSourceCount));
     }
 }
 
@@ -69,12 +69,14 @@ LightSourceShaderArray::addLightSourceToRendering(Node* pLightSource, const void
                                                  std::chrono::steady_clock::now() - lastWarningTime)
                                                  .count();
         if (bIsFirstWarning || timeSecSinceLastWarning > 10.0F) { // NOLINT: don't spam warnings
-            Logger::get().warn(std::format(
-                "light array \"{}\" is unable to add the light node \"{}\" to be rendered because the array "
-                "has reached the maximum number of visible light sources of {}",
-                sUniformBlockName,
-                pLightSource->getNodeName(),
-                iArrayMaxSize));
+            Logger::get().warn(
+                std::format(
+                    "light array \"{}\" is unable to add the light node \"{}\" to be rendered because the "
+                    "array "
+                    "has reached the maximum number of visible light sources of {}",
+                    sUniformBlockName,
+                    pLightSource->getNodeName(),
+                    iArrayMaxSize));
 
             lastWarningTime = std::chrono::steady_clock::now();
             bIsFirstWarning = false;

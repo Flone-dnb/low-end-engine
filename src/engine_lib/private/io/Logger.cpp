@@ -15,13 +15,14 @@
 
 Logger::~Logger() {
     if (iTotalWarningsProduced.load() > 0 || iTotalErrorsProduced.load() > 0) {
-        pSpdLogger->info(std::format(
-            "\n---------------------------------------------------\n"
-            "Total WARNINGS produced: {}.\n"
-            "Total ERRORS produced: {}."
-            "\n---------------------------------------------------\n",
-            iTotalWarningsProduced.load(),
-            iTotalErrorsProduced.load()));
+        pSpdLogger->info(
+            std::format(
+                "\n---------------------------------------------------\n"
+                "Total WARNINGS produced: {}.\n"
+                "Total ERRORS produced: {}."
+                "\n---------------------------------------------------\n",
+                iTotalWarningsProduced.load(),
+                iTotalErrorsProduced.load()));
     }
 
     // Make sure the log is flushed.
@@ -29,7 +30,10 @@ Logger::~Logger() {
 }
 
 Logger& Logger::get() {
+    // (some weird error in `last_write_time` code or clang-tidy's false-positive)
+    // NOLINTBEGIN(clang-analyzer-optin.core.EnumCastOutOfRange)
     static Logger logger;
+    // NOLINTEND(clang-analyzer-optin.core.EnumCastOutOfRange)
     return logger;
 }
 
@@ -38,28 +42,31 @@ size_t Logger::getTotalWarningsProduced() { return iTotalWarningsProduced.load()
 size_t Logger::getTotalErrorsProduced() { return iTotalErrorsProduced.load(); }
 
 void Logger::info(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->info(std::format(
-        "[{}, {}] {}",
-        std::filesystem::path(location.file_name()).filename().string(),
-        location.line(),
-        sText));
+    pSpdLogger->info(
+        std::format(
+            "[{}, {}] {}",
+            std::filesystem::path(location.file_name()).filename().string(),
+            location.line(),
+            sText));
 }
 
 void Logger::warn(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->warn(std::format(
-        "[{}:{}] {}",
-        std::filesystem::path(location.file_name()).filename().string(),
-        location.line(),
-        sText));
+    pSpdLogger->warn(
+        std::format(
+            "[{}:{}] {}",
+            std::filesystem::path(location.file_name()).filename().string(),
+            location.line(),
+            sText));
     iTotalWarningsProduced.fetch_add(1);
 }
 
 void Logger::error(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->error(std::format(
-        "[{}:{}] {}",
-        std::filesystem::path(location.file_name()).filename().string(),
-        location.line(),
-        sText));
+    pSpdLogger->error(
+        std::format(
+            "[{}:{}] {}",
+            std::filesystem::path(location.file_name()).filename().string(),
+            location.line(),
+            sText));
     iTotalErrorsProduced.fetch_add(1);
 }
 
@@ -122,8 +129,6 @@ void Logger::removeOldestLogFiles(const std::filesystem::path& sLogDirectory) {
     auto oldestTime = std::chrono::file_clock::now();
     std::filesystem::path oldestFilePath = "";
 
-    // (some weird error in `last_write_time` code or clang-tidy's false-positive)
-    // NOLINTBEGIN(clang-analyzer-optin.core.EnumCastOutOfRange)
     for (const auto& entry : std::filesystem::directory_iterator(sLogDirectory)) {
         if (!entry.is_regular_file()) {
             continue;
@@ -137,7 +142,6 @@ void Logger::removeOldestLogFiles(const std::filesystem::path& sLogDirectory) {
             oldestFilePath = entry.path();
         }
     }
-    // NOLINTEND(clang-analyzer-optin.core.EnumCastOutOfRange)
 
     if (iFileCount < iMaxLogFiles) {
         return;

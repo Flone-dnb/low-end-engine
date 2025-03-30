@@ -170,7 +170,7 @@ bool Window::isCursorVisible() const { return bIsCursorVisible; }
 
 bool Window::isGamepadConnected() const { return pConnectedGamepad != nullptr; }
 
-unsigned int Window::getScreenRefreshRate() const {
+unsigned int Window::getScreenRefreshRate() {
     // Get display resolution.
     SDL_DisplayMode mode;
     SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);

@@ -35,9 +35,10 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     } else if (pathToShader.string().ends_with(".frag.glsl")) {
         shaderType = GL_FRAGMENT_SHADER;
     } else [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "unable to determine shader type (vertex, fragment, etc) from shader file name, shader: {}",
-            sPathToShaderRelativeRes));
+        Error::showErrorAndThrowException(
+            std::format(
+                "unable to determine shader type (vertex, fragment, etc) from shader file name, shader: {}",
+                sPathToShaderRelativeRes));
     }
 
     const auto iShaderId = glCreateShader(shaderType);
@@ -53,8 +54,9 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     glGetShaderiv(iShaderId, GL_COMPILE_STATUS, &iSuccess);
     if (iSuccess == 0) [[unlikely]] {
         glGetShaderInfoLog(iShaderId, static_cast<int>(infoLog.size()), nullptr, infoLog.data());
-        Error error(std::format(
-            "failed to compile shader from \"{}\", error: {}", sPathToShaderRelativeRes, infoLog.data()));
+        Error error(
+            std::format(
+                "failed to compile shader from \"{}\", error: {}", sPathToShaderRelativeRes, infoLog.data()));
     }
 
     return std::shared_ptr<Shader>(new Shader(this, sPathToShaderRelativeRes, iShaderId));
@@ -103,16 +105,18 @@ ShaderManager::~ShaderManager() {
 
     const auto iShaderCount = mtxPathsToShaders.second.size();
     if (iShaderCount != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "shader manager is being destroyed but there are still {} shader(s) not deleted", iShaderCount));
+        Error::showErrorAndThrowException(
+            std::format(
+                "shader manager is being destroyed but there are still {} shader(s) not deleted",
+                iShaderCount));
     }
 }
 
 size_t ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro macro) {
     static std::unordered_map<EnginePredefinedMacro, size_t> enginePredefinedMacros{
-        {EnginePredefinedMacro::MAX_POINT_LIGHT_COUNT, 50},       // <- SAME AS IN SHADERS
-        {EnginePredefinedMacro::MAX_SPOT_LIGHT_COUNT, 30},        // <- IF CHANGING ALSO
-        {EnginePredefinedMacro::MAX_DIRECTIONAL_LIGHT_COUNT, 3}}; // <- CHANGE IN SHADERS
+        {EnginePredefinedMacro::MAX_POINT_LIGHT_COUNT, 50},       // NOLINT: <- SAME AS IN SHADERS
+        {EnginePredefinedMacro::MAX_SPOT_LIGHT_COUNT, 30},        // NOLINT: <- IF CHANGING ALSO
+        {EnginePredefinedMacro::MAX_DIRECTIONAL_LIGHT_COUNT, 3}}; // NOLINT: <- CHANGE IN SHADERS
 
     return enginePredefinedMacros[macro];
 }
@@ -136,20 +140,21 @@ std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
         Error::showErrorAndThrowException(
             std::format("invalid shader program usage {}", static_cast<size_t>(usage)));
     }
-    auto& db = mtxDatabase.second[static_cast<size_t>(usage)];
+    auto& database = mtxDatabase.second[static_cast<size_t>(usage)];
 
-    const auto it = db.find(sCombinedName);
-    if (it == db.end()) {
+    const auto it = database.find(sCombinedName);
+    if (it == database.end()) {
         // Load and compile.
         const auto pShaderProgram =
             compileShaderProgram(sCombinedName, {pVertexShader, pFragmentShader}, usage);
-        auto& [pWeak, pRaw] = db[sCombinedName];
+        auto& [pWeak, pRaw] = database[sCombinedName];
         pWeak = pShaderProgram;
         pRaw = pShaderProgram.get();
+
         return pShaderProgram;
-    } else {
-        return it->second.first.lock();
     }
+
+    return it->second.first.lock();
 }
 
 std::shared_ptr<Shader> ShaderManager::getShader(const std::string& sPathToShaderRelativeRes) {
@@ -160,10 +165,11 @@ std::shared_ptr<Shader> ShaderManager::getShader(const std::string& sPathToShade
         // Load and compile.
         const auto pShader = compileShader(sPathToShaderRelativeRes);
         mtxPathsToShaders.second[sPathToShaderRelativeRes] = pShader;
+
         return pShader;
-    } else {
-        return it->second.lock();
     }
+
+    return it->second.lock();
 }
 
 void ShaderManager::onShaderBeingDestroyed(const std::string& sPathToShaderRelativeRes) {
@@ -187,13 +193,13 @@ void ShaderManager::onShaderProgramBeingDestroyed(
         Error::showErrorAndThrowException(
             std::format("invalid shader program usage {}", static_cast<size_t>(usage)));
     }
-    auto& db = mtxDatabase.second[static_cast<size_t>(usage)];
+    auto& database = mtxDatabase.second[static_cast<size_t>(usage)];
 
     // Erase.
-    const auto it = db.find(sShaderProgramId);
-    if (it == db.end()) [[unlikely]] {
+    const auto it = database.find(sShaderProgramId);
+    if (it == database.end()) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("unable to find shader program \"{}\" previously loaded", sShaderProgramId));
     }
-    db.erase(it);
+    database.erase(it);
 }

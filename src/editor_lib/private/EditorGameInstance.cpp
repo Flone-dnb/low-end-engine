@@ -64,9 +64,9 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
         const auto ratio = static_cast<float>(iRamUsedMb) / static_cast<float>(iRamTotalMb);
 
         sStatsText += std::format("RAM (MB): {}/{}", iRamUsedMb, iRamTotalMb);
-        if (ratio >= 0.9F) {
+        if (ratio >= 0.9F) { // NOLINT
             pStatsTextNode->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
-        } else if (ratio >= 0.75F) {
+        } else if (ratio >= 0.75F) { // NOLINT
             pStatsTextNode->setTextColor(glm::vec4(1.0F, 1.0F, 0.0F, 1.0F));
         } else {
             pStatsTextNode->setTextColor(glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
@@ -88,7 +88,7 @@ void EditorGameInstance::registerEditorInputEvents() {
     // Prepare a handy lambda.
     const auto showErrorIfNotEmpty = [](const std::optional<Error>& optionalError) {
         if (optionalError.has_value()) [[unlikely]] {
-            auto error = std::move(*optionalError);
+            auto error = *optionalError;
             error.addCurrentLocationToErrorStack();
             error.showErrorAndThrowException();
         }
@@ -200,7 +200,7 @@ void EditorGameInstance::registerEditorInputEvents() {
 void EditorGameInstance::addEditorNodesToCurrentWorld() {
     // Editor camera.
     const auto pEditorCameraNode = getWorldRootNode()->addChildNode(std::make_unique<EditorCameraNode>());
-    pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
+    pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F)); // NOLINT
     pEditorCameraNode->makeActive();
     if (isGamepadConnected()) {
         pEditorCameraNode->setIgnoreInput(false);
@@ -208,37 +208,37 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
 
     // Stats.
     pStatsTextNode = getWorldRootNode()->addChildNode(std::make_unique<TextNode>());
-    pStatsTextNode->setTextSize(0.025F);
-    pStatsTextNode->setPosition(glm::vec2(0.01F, 1.0F - 0.01F - pStatsTextNode->getTextSize()));
+    pStatsTextNode->setTextSize(0.025F);                                                         // NOLINT
+    pStatsTextNode->setPosition(glm::vec2(0.01F, 1.0F - 0.01F - pStatsTextNode->getTextSize())); // NOLINT
 
     // Stuff for testing.
     {
         auto pFloor = std::make_unique<MeshNode>();
-        pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));
-        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F));
+        pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));            // NOLINT
+        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pFloor));
 
         auto pCube = std::make_unique<MeshNode>();
-        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
-        pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.3F, 0.0F));
+        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));           // NOLINT
+        pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.3F, 0.0F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pCube));
 
         auto pSun = std::make_unique<DirectionalLightNode>();
-        pSun->setLightIntensity(0.2F);
+        pSun->setLightIntensity(0.2F); // NOLINT
         pSun->setRelativeRotation(
             MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
+                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSun));
 
         auto pSpotlight = std::make_unique<SpotlightNode>();
-        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
+        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F)); // NOLINT
         pSpotlight->setRelativeRotation(
             MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
+                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSpotlight));
 
         auto pPointLight = std::make_unique<PointLightNode>();
-        pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
+        pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pPointLight));
     }
 }

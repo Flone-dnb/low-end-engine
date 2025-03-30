@@ -36,13 +36,11 @@ LightSourceManager::LightSourceManager(Renderer* pRenderer) : pRenderer(pRendere
         "iPointLightCount"));
 }
 
-LightSourceShaderArray& LightSourceManager::getDirectionalLightsArray() {
-    return *pDirectionalLightsArray.get();
-}
+LightSourceShaderArray& LightSourceManager::getDirectionalLightsArray() { return *pDirectionalLightsArray; }
 
-LightSourceShaderArray& LightSourceManager::getSpotlightsArray() { return *pSpotlightsArray.get(); }
+LightSourceShaderArray& LightSourceManager::getSpotlightsArray() { return *pSpotlightsArray; }
 
-LightSourceShaderArray& LightSourceManager::getPointLightsArray() { return *pPointLightsArray.get(); }
+LightSourceShaderArray& LightSourceManager::getPointLightsArray() { return *pPointLightsArray; }
 
 void LightSourceManager::setArrayPropertiesToShader(ShaderProgram* pShaderProgram) {
     pDirectionalLightsArray->setArrayPropertiesToShader(pShaderProgram);

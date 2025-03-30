@@ -12,7 +12,7 @@
 
 Buffer::~Buffer() { GL_CHECK_ERROR(glDeleteBuffers(1, &iBufferId)); }
 
-void Buffer::copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize, const void* pData) {
+void Buffer::copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize, const void* pData) const {
     if (!bIsDynamic) [[unlikely]] {
         Error::showErrorAndThrowException("can't copy data because this buffer is not dynamic");
     }

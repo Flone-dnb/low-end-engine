@@ -129,7 +129,7 @@ private:
         ShaderManager* pShaderManager,
         const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
         unsigned int iShaderProgramId,
-        std::string sShaderProgramName,
+        const std::string& sShaderProgramName,
         ShaderProgramUsage usage);
 
     /**

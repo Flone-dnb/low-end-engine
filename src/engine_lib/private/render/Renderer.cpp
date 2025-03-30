@@ -59,7 +59,7 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     auto pRenderer = std::unique_ptr<Renderer>(new Renderer(pWindow, pContext));
 
     // Set FPS limit.
-    const auto iScreenRefreshRate = pWindow->getScreenRefreshRate();
+    const auto iScreenRefreshRate = Window::getScreenRefreshRate();
     Logger::get().info(std::format("setting FPS limit to {} (screen refresh rate)", iScreenRefreshRate));
     pRenderer->setFpsLimit(iScreenRefreshRate);
 
@@ -275,18 +275,16 @@ void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
     }
 }
 
-unsigned int Renderer::getFpsLimit() { return renderStats.fpsLimitInfo.iFpsLimit; }
+unsigned int Renderer::getFpsLimit() const { return renderStats.fpsLimitInfo.iFpsLimit; }
 
 Window* Renderer::getWindow() const { return pWindow; }
 
-GpuResourceManager& Renderer::getGpuResourceManager() { return gpuResourceManager; }
-
 ShaderManager& Renderer::getShaderManager() { return shaderManager; }
 
-LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceManager.get(); }
+LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceManager; }
 
-UiManager& Renderer::getUiManager() { return *pUiManager.get(); }
+UiManager& Renderer::getUiManager() { return *pUiManager; }
 
-FontManager& Renderer::getFontManager() { return *pFontManager.get(); }
+FontManager& Renderer::getFontManager() { return *pFontManager; }
 
 RenderStatistics& Renderer::getRenderStatistics() { return renderStats; }

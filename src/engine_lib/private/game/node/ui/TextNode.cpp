@@ -11,7 +11,9 @@ TextNode::TextNode(const std::string& sNodeName) : UiNode(sNodeName) {}
 
 void TextNode::setText(const std::string& sText) { this->sText = sText; }
 
-void TextNode::setTextSize(float size) { this->size = std::clamp(size, 0.01F, 1.0F); }
+void TextNode::setTextSize(float size) {
+    this->size = std::clamp(size, 0.001F, 1.0F); // NOLINT: avoid zero size
+}
 
 void TextNode::setTextColor(const glm::vec4& color) { this->color = color; }
 

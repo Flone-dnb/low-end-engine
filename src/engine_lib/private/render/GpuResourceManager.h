@@ -27,7 +27,7 @@ public:
      *
      * @return Created VAO.
      */
-    std::unique_ptr<VertexArrayObject> createVertexArrayObject(const MeshGeometry& geometry);
+    static std::unique_ptr<VertexArrayObject> createVertexArrayObject(const MeshGeometry& geometry);
 
     /**
      * Creates a new framebuffer with textures.
@@ -39,7 +39,7 @@ public:
      *
      * @return Created framebuffer.
      */
-    std::unique_ptr<Framebuffer>
+    static std::unique_ptr<Framebuffer>
     createFramebuffer(unsigned int iWidth, unsigned int iHeight, int iColorGlFormat, int iDepthGlFormat);
 
     /**
@@ -51,7 +51,7 @@ public:
      *
      * @return Created uniform buffer.
      */
-    std::unique_ptr<Buffer> createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic);
+    static std::unique_ptr<Buffer> createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic);
 
     /**
      * Mutex to guard OpenGL context modification.
