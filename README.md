@@ -10,17 +10,17 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Handling user input events
 - [X] Config management (progress, settings, etc.)
 - [X] Forward renderer using OpenGL ES 3.1
-- [ ] Profiler
+- [X] Dynamic light sources
 - [ ] Texture import
 - [ ] GLTF/GLB import
-- [ ] Dynamic light sources and shadows
+- [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
+- [ ] Dynamic shadows
+- [ ] Profiler
 - [ ] Post-processing effects
-- [ ] Normal mapping
 - [ ] Instancing
 - [ ] GUI
 - [ ] Skeletal animations
 - [ ] Simple editor
-- [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
 - [ ] Audio engine (using [SoLoud](https://github.com/jarikomppa/soloud))
     - [ ] 2D audio
     - [ ] 3D audio
