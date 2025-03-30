@@ -74,6 +74,11 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pFontManager = FontManager::create(
         this,
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
+
+    // Initialize fences.
+    for (auto& fence : frameSync.vFences) {
+        fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
+    }
 }
 
 void Renderer::drawNextFrame() {
@@ -83,6 +88,10 @@ void Renderer::drawNextFrame() {
         Error::showErrorAndThrowException(
             std::format("an OpenGL error occurred during the last frame, error code: {}", lastError));
     }
+
+    // Wait for GPU.
+    glWaitSync(frameSync.vFences[frameSync.iCurrentFrameIndex], 0, GL_TIMEOUT_IGNORED);
+    glDeleteSync(frameSync.vFences[frameSync.iCurrentFrameIndex]);
 
     // Render to window framebuffer.
     GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -132,8 +141,12 @@ void Renderer::drawNextFrame() {
         pUiManager->renderUi();
     }
 
-    // Done.
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
+
+    // Insert a fence.
+    frameSync.vFences[frameSync.iCurrentFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    frameSync.iCurrentFrameIndex = (frameSync.iCurrentFrameIndex + 1) % frameSync.vFences.size();
+
     calculateFrameStatistics();
 }
 
@@ -240,7 +253,13 @@ void Renderer::calculateFrameStatistics() {
     }
 }
 
-Renderer::~Renderer() { SDL_GL_DeleteContext(pContext); }
+Renderer::~Renderer() {
+    for (auto& fence : frameSync.vFences) {
+        glDeleteSync(fence);
+    }
+
+    SDL_GL_DeleteContext(pContext);
+}
 
 void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }
 

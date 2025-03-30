@@ -13,6 +13,8 @@
 // External.
 #include "SDL_video.h"
 
+typedef struct __GLsync* GLsync;
+
 class Window;
 class FontManager;
 class UiManager;
@@ -107,6 +109,15 @@ public:
     RenderStatistics& getRenderStatistics();
 
 private:
+    /** Groups stuff used to synchronize GPU and CPU. */
+    struct FrameSync {
+        /** Fence per frame in-flight. */
+        std::array<GLsync, 2> vFences; // 2 frames in-flight sees optimal, more can affect input latency
+
+        /** Current index into @ref vFences. */
+        unsigned int iCurrentFrameIndex = 0;
+    };
+
     /**
      * Creates a new renderer.
      *
@@ -160,6 +171,9 @@ private:
 
     /** Various statistics about rendering. */
     RenderStatistics renderStats;
+
+    /** GPU-CPU synchronization. */
+    FrameSync frameSync;
 
     /** OpenGL context. */
     SDL_GLContext pContext = nullptr;
