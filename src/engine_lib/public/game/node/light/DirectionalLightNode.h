@@ -11,6 +11,8 @@ class DirectionalLightNode : public SpatialNode {
 public:
     /** Data that will be directly copied to shaders. */
     struct ShaderProperties {
+        ShaderProperties();
+
         /** Forward unit vector in the direction of the light source. 4th component is not used. */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 direction = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
 
@@ -113,6 +115,8 @@ protected:
 private:
     /** Mutex-guarded data. */
     struct Properties {
+        Properties();
+
         /** Data to copy to shaders. */
         ShaderProperties shaderProperties;
 

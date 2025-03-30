@@ -13,6 +13,7 @@ class Renderer;
 class Node;
 class LightSourceShaderArray;
 class ShaderProgram;
+class LightSourceManager;
 
 /** RAII-style type that removes the light source from rendering during destruction. */
 class ActiveLightSourceHandle {

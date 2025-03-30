@@ -31,11 +31,11 @@ public:
 
     /** Stores internal data. */
     struct Data {
-        Data() = default;
+        Data();
 
         /** Stores orbital mode specific data. */
         struct OrbitalModeData {
-            OrbitalModeData() = default;
+            OrbitalModeData();
 
             /** Radial distance or distance from camera to target point (look target). */
             float distanceToTarget = 10.0F; // NOLINT: magic number
@@ -49,7 +49,7 @@ public:
 
         /** Stores data used for view matrix. */
         struct ViewData {
-            ViewData() = default;
+            ViewData();
 
             /** Matrix that transforms positions to view (camera) space. */
             glm::mat4x4 viewMatrix = glm::identity<glm::mat4x4>();
@@ -69,7 +69,7 @@ public:
 
         /** Stores data used for projection matrix. */
         struct ProjectionData {
-            ProjectionData() = default;
+            ProjectionData();
 
             /**
              * Transforms positions from view (camera) space to 2D projection window

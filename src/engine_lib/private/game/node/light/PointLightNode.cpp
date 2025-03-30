@@ -127,3 +127,8 @@ void PointLightNode::onWorldLocationRotationScaleChanged() {
         mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
     }
 }
+
+// `default` constructor in .cpp file - this is a fix for a gcc bug:
+// error: default member initializer for required before the end of its enclosing class
+PointLightNode::ShaderProperties::ShaderProperties() = default;
+PointLightNode::Properties::Properties() = default;

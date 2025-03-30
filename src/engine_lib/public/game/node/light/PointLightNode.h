@@ -11,6 +11,8 @@ class PointLightNode : public SpatialNode {
 public:
     /** Data that will be directly copied to shaders. */
     struct ShaderProperties {
+        ShaderProperties();
+
         /** Light position in world space. 4th component is not used. */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
 
@@ -129,6 +131,8 @@ protected:
 private:
     /** Mutex-guarded data. */
     struct Properties {
+        Properties();
+
         /** Data to copy to shaders. */
         ShaderProperties shaderProperties;
 

@@ -110,3 +110,8 @@ void DirectionalLightNode::onWorldLocationRotationScaleChanged() {
         mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
     }
 }
+
+// `default` constructor in .cpp file - this is a fix for a gcc bug:
+// error: default member initializer for required before the end of its enclosing class
+DirectionalLightNode::ShaderProperties::ShaderProperties() = default;
+DirectionalLightNode::Properties::Properties() = default;

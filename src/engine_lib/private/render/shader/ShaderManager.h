@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <array>
+#include <vector>
 
 class Shader;
 class ShaderProgram;

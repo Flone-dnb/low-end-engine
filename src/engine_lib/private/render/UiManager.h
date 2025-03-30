@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <array>
+#include <memory>
 
 // Custom.
 #include "render/wrapper/VertexArrayObject.h"
