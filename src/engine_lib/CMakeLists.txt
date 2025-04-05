@@ -219,6 +219,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/nameof/in
 
 # Add FreeType.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"FreeType\"...")
+set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/freetype ${DEPENDENCY_BUILD_DIR_NAME}/freetype SYSTEM)
 target_link_libraries(${PROJECT_NAME} PUBLIC freetype)
 set_target_properties(freetype PROPERTIES FOLDER ${EXTERNAL_FOLDER})
