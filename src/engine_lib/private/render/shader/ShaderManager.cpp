@@ -26,7 +26,15 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 
     // Parse includes.
     auto loader = glsl_include::ShaderLoader("#include");
-    const auto sSourceCode = loader.load_shader(pathToShader.string());
+    auto result = loader.load_shader(pathToShader.string());
+    if (std::holds_alternative<glsl_include::Error>(result)) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format(
+                "failed to parse `#include`s from shader \"{}\", error: {}",
+                pathToShader.string(),
+                std::get<glsl_include::Error>(std::move(result)).message));
+    }
+    const auto sSourceCode = std::get<std::string>(std::move(result));
 
     // Prepare GL shader type.
     int shaderType = 0;

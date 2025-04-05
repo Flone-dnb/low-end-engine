@@ -15,7 +15,7 @@
 	url = https://github.com/ToruNiina/toml11.git
 [submodule "ext/GLSL-Include"]
 	path = ext/GLSL-Include
-	url = https://github.com/soyszala/GLSL-Include.git
+	url = https://github.com/Flone-dnb/GLSL-Include.git
 [submodule "ext/nameof"]
 	path = ext/nameof
 	url = https://github.com/Neargye/nameof.git
