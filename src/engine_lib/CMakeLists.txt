@@ -66,6 +66,8 @@ set(PROJECT_SOURCES
     private/misc/Globals.cpp
     private/misc/ProjectPaths.cpp
     public/misc/ProjectPaths.h
+    private/misc/ReflectedTypeDatabase.cpp
+    public/misc/ReflectedTypeDatabase.h
     public/game/geometry/shapes/Frustum.h
     private/game/geometry/shapes/Frustum.cpp
     public/game/geometry/shapes/AABB.h
@@ -86,6 +88,8 @@ set(PROJECT_SOURCES
     private/io/Logger.cpp
     public/io/ConfigManager.h
     private/io/ConfigManager.cpp
+    private/io/Serializable.cpp
+    public/io/Serializable.h
     private/game/GameManager.cpp
     private/game/GameManager.h
     public/game/GameInstance.h

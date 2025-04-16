@@ -11,11 +11,12 @@
 #include <variant>
 
 // Custom.
+#include "io/Serializable.h"
 #include "input/KeyboardButton.hpp"
 #include "game/node/NodeTickGroup.hpp"
 #include "math/GLMath.hpp"
-#include "io/Logger.h"
 #include "misc/Error.h"
+#include "misc/ReflectedTypeDatabase.h"
 
 class GameInstance;
 class World;
@@ -24,7 +25,7 @@ class World;
  * Base class for game entities, allows being spawned in the world, attaching child nodes
  * or being attached to some parent node.
  */
-class Node {
+class Node : public Serializable {
     // World is able to spawn root node.
     friend class World;
 
@@ -61,7 +62,7 @@ public:
     Node(Node&&) = delete;
     Node& operator=(Node&&) = delete;
 
-    virtual ~Node();
+    virtual ~Node() override;
 
     /**
      * Returns the total amount of currently alive (allocated) nodes.
@@ -69,6 +70,29 @@ public:
      * @return Number of alive nodes right now.
      */
     static size_t getAliveNodeCount();
+
+    /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
 
     /**
      * Detaches this node from the parent and optionally despawns this node and
@@ -850,7 +874,6 @@ inline NodeType* Node::addChildNode(
     // Apply attachment rule (if possible).
     applyAttachmentRuleForNode(
         pNode, locationRule, worldLocation, rotationRule, worldRotation, scaleRule, worldScale);
-    ;
 
     // don't unlock node's parent lock here yet, still doing some logic based on the new parent
 

@@ -18,6 +18,29 @@ public:
     virtual ~UiNode() override = default;
 
     /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
      * Sets position on the screen in range [0.0; 1.0].
      *
      * @param position New position.

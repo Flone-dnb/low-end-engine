@@ -5,6 +5,13 @@
 #include "game/camera/CameraManager.h"
 #include "math/MathHelpers.hpp"
 
+namespace {
+    constexpr std::string_view sTypeGuid = "e472b11f-7914-49f8-a86e-a500e6bb749f";
+}
+
+std::string CameraNode::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string CameraNode::getTypeGuid() const { return sTypeGuid.data(); }
+
 CameraNode::CameraNode() : CameraNode("Camera Node") {}
 
 CameraNode::CameraNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}

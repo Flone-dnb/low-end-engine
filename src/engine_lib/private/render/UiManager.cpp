@@ -61,7 +61,7 @@ void UiManager::renderUi() {
                 const auto scale = pTextNode->getTextSize() / FontManager::getFontHeightToLoad();
 
                 const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
-                const float lineSpacingInPixels = pTextNode->getLineSpacing() * textHeightInPixels;
+                const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
 
                 // Set color.
                 pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());

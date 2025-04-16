@@ -1,0 +1,897 @@
+#pragma once
+
+// Standard.
+#include <functional>
+#include <string>
+#include <memory>
+#include <unordered_map>
+#include <optional>
+#include <filesystem>
+#include <variant>
+
+// Custom.
+#include "misc/Error.h"
+#include "io/ConfigManager.h"
+#include "misc/ProjectPaths.h"
+#include "io/Logger.h"
+#include "misc/ReflectedTypeDatabase.h"
+
+class Serializable;
+
+/** Information about an object that was deserialized. */
+template <typename SmartPointer, typename InnerType = typename SmartPointer::element_type>
+    requires std::derived_from<InnerType, Serializable>
+struct DeserializedObjectInformation {
+public:
+    DeserializedObjectInformation() = delete;
+
+    /**
+     * Initialized object information after deserialization.
+     *
+     * @param pObject          Deserialized object.
+     * @param sObjectUniqueId  Object's unique ID.
+     * @param customAttributes Object's custom attributes.
+     */
+    DeserializedObjectInformation(
+        SmartPointer pObject,
+        std::string sObjectUniqueId,
+        std::unordered_map<std::string, std::string> customAttributes) {
+        this->pObject = std::move(pObject);
+        this->sObjectUniqueId = sObjectUniqueId;
+        this->customAttributes = customAttributes;
+    }
+
+    /** Deserialized object. */
+    SmartPointer pObject;
+
+    /** Unique object ID. */
+    std::string sObjectUniqueId;
+
+    /** Map of object attributes (custom information) that were deserialized. */
+    std::unordered_map<std::string, std::string> customAttributes;
+};
+
+/** Allows derived classes to be serialized and deserialized to/from file. */
+class Serializable {
+public:
+    Serializable() = default;
+    virtual ~Serializable() = default;
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const = 0;
+
+    /**
+     * Deserializes object(s) from a file.
+     *
+     * @param pathToFile File to read reflected data from. The ".toml" extension will be added
+     * automatically if not specified in the path.
+     *
+     * @return Error if something went wrong, otherwise first deserialized object.
+     */
+    template <typename T>
+        requires std::derived_from<T, Serializable>
+    static std::variant<std::unique_ptr<T>, Error> deserialize(const std::filesystem::path& pathToFile);
+
+    /**
+     * Deserializes object(s) from a file.
+     *
+     * @param pathToFile File to read reflected data from. The ".toml" extension will be added
+     * automatically if not specified in the path.
+     *
+     * @return Error if something went wrong, otherwise an array of deserialized objects.
+     */
+    template <typename T>
+        requires std::derived_from<T, Serializable>
+    static std::variant<std::vector<DeserializedObjectInformation<std::unique_ptr<T>>>, Error>
+    deserializeMultiple(std::filesystem::path pathToFile);
+
+    /**
+     * Serializes the object and all reflected fields (including inherited) into a file.
+     * Serialized object can later be deserialized using @ref deserialize.
+     *
+     * @param pathToFile       File to write reflected data to. The ".toml" extension will be added
+     * automatically if not specified in the path. If the specified file already exists it will be
+     * overwritten. If the directories of the specified file do not exist they will be recursively
+     * created.
+     * @param bEnableBackup    If `true` will also create a backup (copy) file. @ref deserialize can use
+     * backup file if the original file does not exist. Generally you want to use
+     * a backup file if you are saving important information, such as player progress,
+     * other cases such as player game settings and etc. usually do not need a backup but
+     * you can use them if you want.
+     * @param customAttributes Optional. Custom pairs of values that will be saved as this object's
+     * additional information and could be later retrieved in @ref deserialize.
+     *
+     * @return Error if something went wrong.
+     */
+    [[nodiscard]] std::optional<Error> serialize(
+        std::filesystem::path pathToFile,
+        bool bEnableBackup,
+        const std::unordered_map<std::string, std::string>& customAttributes = {});
+
+    /**
+     * If this object was deserialized from a file that is located in the `res` directory
+     * of this project returns file path.
+     *
+     * This path will never point to a backup file and will always point to the original file
+     * (even if the backup file was used in deserialization).
+     *
+     * Example: say this object is deserialized from the file located at `.../res/game/test.toml`,
+     * this value will be equal to the following pair: {`game/test.toml`, `some.id`}.
+     *
+     * @return Empty if this object was not deserialized previously, otherwise a pair of values:
+     * - path to this file relative to the `res` directory,
+     * - unique ID of this object in this file.
+     */
+    std::optional<std::pair<std::string, std::string>> getPathDeserializedFromRelativeToRes() const;
+
+protected:
+    /** Called after this object was finished deserializing from file. */
+    virtual void onAfterDeserialized() {}
+
+private:
+    /**
+     * Deserializes an object and all reflected fields (including inherited) from a TOML data.
+     * Specify the type of an object (that is located in the file) as the T template parameter, which
+     * can be entity's actual type or entity's parent (up to Serializable).
+     *
+     * @remark This is an overloaded function, see a more detailed documentation for the other
+     * overload.
+     *
+     * @param tomlData         Toml value to retrieve an object from.
+     * @param customAttributes Pairs of values that were associated with this object.
+     * @param sSectionName     Name of the TOML section to deserialize.
+     * @param sTypeGuid        GUID of the type to deserialize (taken from section name).
+     * @param sEntityId        Entity ID chain string.
+     * @param pathToFile       Path to file that the TOML data was deserialized from
+     * (used for variables that are stores as separate binary files).
+     *
+     * @return Error if something went wrong, otherwise a pointer to deserialized object.
+     */
+    template <typename T>
+        requires std::derived_from<T, Serializable>
+    static std::variant<std::unique_ptr<T>, Error> deserializeFromSection(
+        const toml::value& tomlData,
+        std::unordered_map<std::string, std::string>& customAttributes,
+        const std::string& sSectionName,
+        const std::string& sTypeGuid,
+        const std::string& sEntityId,
+        const std::filesystem::path& pathToFile);
+
+    /**
+     * Adds ".toml" extension to the path (if needed) and copies a backup file to the specified path
+     * if the specified path does not exist but there is a backup file.
+     *
+     * @param pathToFile Path to toml file (may point to non-existing path or don't have ".toml"
+     * extension).
+     *
+     * @return Error if something went wrong.
+     */
+    [[nodiscard]] static std::optional<Error> resolvePathToToml(std::filesystem::path& pathToFile);
+
+    /**
+     * Serializes the object and all reflected fields (including inherited) into a file.
+     * Serialized object can later be deserialized using @ref deserialize.
+     *
+     * @param pathToFile         Path to the file that this TOML data will be serialized.
+     * Used for fields marked as `Serialize(AsExternal)`.
+     * @param tomlData           Toml value to append this object to.
+     * @param pOriginalObject    Optional. Original object of the same type as the object being
+     * serialized, this object is a deserialized version of the object being serialized,
+     * used to compare serializable fields' values and only serialize changed values.
+     * @param sEntityId          Unique ID of this object. When serializing multiple objects into
+     * one toml value provide different IDs for each object so they could be differentiated. Don't use
+     * dots in the entity ID, dots are used in recursion when this function is called from this
+     * function to process reflected field (sub entity).
+     * @param customAttributes   Optional. Custom pairs of values that will be saved as this object's
+     * additional information and could be later retrieved in @ref deserialize.
+     *
+     * @return Error if something went wrong, otherwise name of the TOML section that was used to store this
+     * entity.
+     */
+    [[nodiscard]] std::variant<std::string, Error> serialize(
+        std::filesystem::path pathToFile,
+        toml::value& tomlData,
+        Serializable* pOriginalObject = nullptr,
+        std::string sEntityId = "",
+        const std::unordered_map<std::string, std::string>& customAttributes = {});
+
+    /**
+     * If this object was deserialized from a file that is located in the `res` directory
+     * of this project stores 2 valid values:
+     * - path to this file relative to the `res` directory,
+     * - unique ID of this object in this file.
+     *
+     * This path will never point to a backup file and will always point to the original file
+     * (even if the backup file was used in deserialization).
+     *
+     * Example: say this object is deserialized from the file located at `.../res/game/test.toml`,
+     * this value will be equal to the following pair: {`game/test.toml`, `some.id`}.
+     */
+    std::optional<std::pair<std::string, std::string>> pathDeserializedFromRelativeToRes;
+
+    /**
+     * Name of the key which we use when we serialize an object that was previously
+     * deserialized from the `res` directory.
+     */
+    static constexpr std::string_view sTomlKeyPathRelativeToRes = ".path_relative_to_res";
+
+    /** Text that we add to custom (user-specified) attributes in TOML files. */
+    static constexpr std::string_view sTomlKeyCustomAttributePrefix = "..";
+};
+
+template <typename T>
+    requires std::derived_from<T, Serializable>
+inline std::variant<std::unique_ptr<T>, Error>
+Serializable::deserialize(const std::filesystem::path& pathToFile) {
+    auto result = deserializeMultiple<T>(pathToFile);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        return std::get<Error>(std::move(result));
+    }
+    auto vDeserializedObjects =
+        std::get<std::vector<DeserializedObjectInformation<std::unique_ptr<T>>>>(std::move(result));
+    if (vDeserializedObjects.empty()) [[unlikely]] {
+        return Error(std::format("nothing was deserialized from file \"{}\"", pathToFile.string()));
+    }
+
+    return std::move(vDeserializedObjects[0].pObject);
+}
+
+template <typename T>
+    requires std::derived_from<T, Serializable>
+inline std::variant<std::vector<DeserializedObjectInformation<std::unique_ptr<T>>>, Error>
+Serializable::deserializeMultiple(std::filesystem::path pathToFile) {
+    // Resolve path.
+    auto optionalError = resolvePathToToml(pathToFile);
+    if (optionalError.has_value()) [[unlikely]] {
+        auto error = std::move(optionalError.value());
+        error.addCurrentLocationToErrorStack();
+        return error;
+    }
+
+    // Parse file.
+    toml::value tomlData;
+    try {
+        tomlData = toml::parse(pathToFile);
+    } catch (std::exception& exception) {
+        return Error(
+            std::format(
+                "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
+    }
+
+    // Get TOML as table.
+    const auto fileTable = tomlData.as_table();
+    if (fileTable.empty()) [[unlikely]] {
+        return Error("provided toml value has 0 sections while expected at least 1 section");
+    }
+
+    // Deserialize.
+    std::vector<DeserializedObjectInformation<std::unique_ptr<T>>> vDeserializedObjects;
+    for (const auto& [sSectionName, tomlValue] : fileTable) {
+        // Get type GUID.
+        const auto iIdEndDotPos = sSectionName.rfind('.');
+        if (iIdEndDotPos == std::string::npos) [[unlikely]] {
+            return Error("provided toml value does not contain entity ID");
+        }
+        const auto sTypeGuid = sSectionName.substr(iIdEndDotPos + 1);
+
+        // Get entity ID chain.
+        const auto sEntityId = sSectionName.substr(0, iIdEndDotPos);
+
+        // Check if this is a sub-entity.
+        if (sEntityId.find('.') != std::string::npos) {
+            // Only deserialize top-level entities because sub-entities (fields)
+            // will be deserialized while we deserialize top-level entities.
+            continue;
+        }
+
+        // Deserialize object from this section.
+        std::unordered_map<std::string, std::string> customAttributes;
+        auto result = deserializeFromSection<T>(
+            tomlData, customAttributes, sSectionName, sTypeGuid, sEntityId, pathToFile);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto error = std::get<Error>(std::move(result));
+            error.addCurrentLocationToErrorStack();
+            return error;
+        }
+
+        // Save object info.
+        DeserializedObjectInformation objectInfo(
+            std::get<std::unique_ptr<T>>(std::move(result)), sEntityId, customAttributes);
+        vDeserializedObjects.push_back(std::move(objectInfo));
+    }
+
+    return vDeserializedObjects;
+}
+
+template <typename T>
+    requires std::derived_from<T, Serializable>
+inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSection(
+    const toml::value& tomlData,
+    std::unordered_map<std::string, std::string>& customAttributes,
+    const std::string& sSectionName,
+    const std::string& sTypeGuid,
+    const std::string& sEntityId,
+    const std::filesystem::path& pathToFile) {
+    // Get all keys (field names) from this section.
+    const auto& targetSection = tomlData.at(sSectionName);
+    if (!targetSection.is_table()) [[unlikely]] {
+        return Error(std::format("found \"{}\" section is not a section", sSectionName));
+    }
+
+    // Collect keys from target section.
+    const auto& sectionTable = targetSection.as_table();
+    std::unordered_map<std::string_view, const toml::value*> fieldsToDeserialize;
+    std::unique_ptr<T> pOriginalObject = nullptr;
+    for (const auto& [sKey, value] : sectionTable) {
+        if (sKey == sTomlKeyPathRelativeToRes) {
+            // Make sure the value is a string.
+            if (!value.is_string()) [[unlikely]] {
+                return Error(
+                    std::format("found \"{}\" key's value is not string", sTomlKeyPathRelativeToRes));
+            }
+
+            // Deserialize original entity.
+            auto deserializeResult = Serializable::deserialize<T>(
+                ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / value.as_string());
+            if (std::holds_alternative<Error>(deserializeResult)) [[unlikely]] {
+                auto error = std::get<Error>(std::move(deserializeResult));
+                error.addCurrentLocationToErrorStack();
+                return error;
+            }
+            pOriginalObject = std::get<std::unique_ptr<T>>(std::move(deserializeResult));
+        } else if (sKey.starts_with(sTomlKeyCustomAttributePrefix)) {
+            // Custom attribute.
+            // Make sure it's a string.
+            if (!value.is_string()) [[unlikely]] {
+                return Error(std::format("found custom attribute \"{}\" is not a string", sKey));
+            }
+
+            // Add attribute.
+            customAttributes[sKey.substr(sTomlKeyCustomAttributePrefix.size())] = value.as_string();
+        } else {
+            fieldsToDeserialize[sKey] = &value;
+        }
+    }
+
+    // Prepare to create a new object to fill with deserialized info.
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
+    std::unique_ptr<T> pDeserializedObject = nullptr;
+
+    if (pOriginalObject != nullptr) {
+        // Use the original entity instead of creating a new one.
+        pDeserializedObject = std::move(pOriginalObject);
+    } else {
+        auto pTemp = typeInfo.createNewObject();
+        if (dynamic_cast<T*>(pTemp.get()) == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("createNewObject returned unexpected type for \"{}\"", typeInfo.sTypeName));
+        }
+        pDeserializedObject = std::unique_ptr<T>(reinterpret_cast<T*>(pTemp.release()));
+    }
+
+    // Deserialize fields.
+    for (auto& [sFieldName, pFieldTomlValue] : fieldsToDeserialize) {
+        // Find type.
+        const auto varIt = typeInfo.variableNameToType.find(sFieldName.data());
+        if (varIt == typeInfo.variableNameToType.end()) [[unlikely]] {
+            Logger::get().warn(
+                std::format(
+                    "field name \"{}\" exists in the specified toml value but does not exist in the actual "
+                    "object (if you removed/renamed this reflected field from your type - ignore this "
+                    "warning)",
+                    sFieldName));
+            continue;
+        }
+        const auto variableType = varIt->second;
+
+        // Deserialize value.
+        switch (variableType) {
+        case (ReflectedVariableType::BOOL): {
+            if (!pFieldTomlValue->is_boolean()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            // Set value.
+            const auto variableInfoIt = typeInfo.reflectedVariables.bools.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.bools.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            variableInfoIt->second.setter(pDeserializedObject.get(), pFieldTomlValue->as_boolean());
+
+            break;
+        }
+        case (ReflectedVariableType::INT): {
+            if (!pFieldTomlValue->is_integer()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            // Set value.
+            const auto variableInfoIt = typeInfo.reflectedVariables.ints.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.ints.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            variableInfoIt->second.setter(
+                pDeserializedObject.get(), static_cast<int>(pFieldTomlValue->as_integer()));
+
+            break;
+        }
+        case (ReflectedVariableType::UNSIGNED_INT): {
+            if (!pFieldTomlValue->is_integer()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const long long& iTomlValue = pFieldTomlValue->as_integer();
+            unsigned int iValue = 0;
+            if (iTomlValue > 0 && iTomlValue <= std::numeric_limits<unsigned int>::max()) {
+                iValue = static_cast<unsigned int>(iTomlValue);
+            }
+
+            // Set value.
+            const auto variableInfoIt = typeInfo.reflectedVariables.unsignedInts.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.unsignedInts.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            variableInfoIt->second.setter(pDeserializedObject.get(), iValue);
+
+            break;
+        }
+        case (ReflectedVariableType::LONG_LONG): {
+            if (!pFieldTomlValue->is_integer()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            // Set value.
+            const auto variableInfoIt = typeInfo.reflectedVariables.longLongs.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.longLongs.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            variableInfoIt->second.setter(pDeserializedObject.get(), pFieldTomlValue->as_integer());
+
+            break;
+        }
+        case (ReflectedVariableType::UNSIGNED_LONG_LONG): {
+            // Stored as a string because toml11 uses `long long` for integers.
+            if (!pFieldTomlValue->is_string()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.unsignedLongLongs.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.unsignedLongLongs.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            try {
+                unsigned long long iValue = std::stoull(pFieldTomlValue->as_string());
+                variableInfoIt->second.setter(pDeserializedObject.get(), iValue);
+            } catch (std::exception& exception) {
+                return Error(
+                    std::format(
+                        "failed to convert string to unsigned long long for field \"{}\" on type \"{}\", "
+                        "error: {}",
+                        sFieldName,
+                        typeInfo.sTypeName,
+                        exception.what()));
+            }
+
+            break;
+        }
+        case (ReflectedVariableType::FLOAT): {
+            if (!pFieldTomlValue->is_floating()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.floats.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.floats.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            variableInfoIt->second.setter(
+                pDeserializedObject.get(), static_cast<float>(pFieldTomlValue->as_floating()));
+
+            break;
+        }
+        case (ReflectedVariableType::STRING): {
+            if (!pFieldTomlValue->is_string()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.strings.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.strings.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            variableInfoIt->second.setter(pDeserializedObject.get(), pFieldTomlValue->as_string());
+
+            break;
+        }
+        case (ReflectedVariableType::VEC2): {
+            if (!pFieldTomlValue->is_array()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.vec2s.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.vec2s.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            auto tomlArray = pFieldTomlValue->as_array();
+            if (tomlArray.size() != 2) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected size of the array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            glm::vec2 result = glm::vec2(0.0F, 0.0F);
+
+            if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected element type of the array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            result.x = static_cast<float>(tomlArray[0].as_floating());
+            result.y = static_cast<float>(tomlArray[1].as_floating());
+
+            variableInfoIt->second.setter(pDeserializedObject.get(), result);
+
+            break;
+        }
+        case (ReflectedVariableType::VEC3): {
+            if (!pFieldTomlValue->is_array()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.vec3s.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.vec3s.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            auto tomlArray = pFieldTomlValue->as_array();
+            if (tomlArray.size() != 3) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected size of the array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            glm::vec3 result = glm::vec3(0.0F, 0.0F, 0.0F);
+
+            if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating() || !tomlArray[2].is_floating())
+                [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected element type of the array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            result.x = static_cast<float>(tomlArray[0].as_floating());
+            result.y = static_cast<float>(tomlArray[1].as_floating());
+            result.z = static_cast<float>(tomlArray[2].as_floating());
+
+            variableInfoIt->second.setter(pDeserializedObject.get(), result);
+
+            break;
+        }
+        case (ReflectedVariableType::VEC4): {
+            if (!pFieldTomlValue->is_array()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.vec4s.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.vec4s.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            auto tomlArray = pFieldTomlValue->as_array();
+            if (tomlArray.size() != 4) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected size of the array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+            glm::vec4 result = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
+
+            if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating() || !tomlArray[2].is_floating() ||
+                !tomlArray[3].is_floating()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected element type of the array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            result.x = static_cast<float>(tomlArray[0].as_floating());
+            result.y = static_cast<float>(tomlArray[1].as_floating());
+            result.z = static_cast<float>(tomlArray[2].as_floating());
+            result.w = static_cast<float>(tomlArray[3].as_floating());
+
+            variableInfoIt->second.setter(pDeserializedObject.get(), result);
+
+            break;
+        }
+        case (ReflectedVariableType::VECTOR_INT): {
+            if (!pFieldTomlValue->is_array()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.vectorInts.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.vectorInts.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            auto& tomlArray = pFieldTomlValue->as_array();
+            std::vector<int> vArray(tomlArray.size(), 0);
+            for (size_t i = 0; i < tomlArray.size(); i++) {
+                if (!tomlArray[i].is_integer()) [[unlikely]] {
+                    Error::showErrorAndThrowException(
+                        std::format(
+                            "found unexpected element type in TOML data on variable \"{}\" from \"{}\"",
+                            sFieldName,
+                            typeInfo.sTypeName));
+                }
+                vArray[i] = static_cast<int>(tomlArray[i].as_integer());
+            }
+
+            variableInfoIt->second.setter(pDeserializedObject.get(), vArray);
+
+            break;
+        }
+        case (ReflectedVariableType::VECTOR_STRING): {
+            if (!pFieldTomlValue->is_array()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.vectorStrings.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.vectorStrings.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            auto& tomlArray = pFieldTomlValue->as_array();
+            std::vector<std::string> vArray(tomlArray.size());
+            for (size_t i = 0; i < tomlArray.size(); i++) {
+                if (!tomlArray[i].is_string()) [[unlikely]] {
+                    Error::showErrorAndThrowException(
+                        std::format(
+                            "found unexpected element type in TOML data on variable \"{}\" from \"{}\"",
+                            sFieldName,
+                            typeInfo.sTypeName));
+                }
+                vArray[i] = tomlArray[i].as_string();
+            }
+
+            variableInfoIt->second.setter(pDeserializedObject.get(), vArray);
+
+            break;
+        }
+        case (ReflectedVariableType::VECTOR_VEC3): {
+            if (!pFieldTomlValue->is_array()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.vectorVec3s.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.vectorVec3s.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            auto tomlArray = pFieldTomlValue->as_array();
+            if (tomlArray.size() % 3 != 0) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unexpected array size on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
+            }
+
+            const auto iFinalArraySize = tomlArray.size() / 3;
+            std::vector<glm::vec3> vResultingArray;
+            vResultingArray.resize(iFinalArraySize);
+            for (size_t i = 0, iTomlArrayIndex = 0; i < iFinalArraySize; i += 1, iTomlArrayIndex += 3) {
+                if (!tomlArray[iTomlArrayIndex].is_floating() ||
+                    !tomlArray[iTomlArrayIndex + 1].is_floating() ||
+                    !tomlArray[iTomlArrayIndex + 2].is_floating()) [[unlikely]] {
+                    Error::showErrorAndThrowException(
+                        std::format(
+                            "unexpected element type in array on variable \"{}\" from \"{}\"",
+                            sFieldName,
+                            typeInfo.sTypeName));
+                }
+                vResultingArray[i].x = static_cast<float>(tomlArray[iTomlArrayIndex].as_floating());
+                vResultingArray[i].y = static_cast<float>(tomlArray[iTomlArrayIndex + 1].as_floating());
+                vResultingArray[i].z = static_cast<float>(tomlArray[iTomlArrayIndex + 2].as_floating());
+            }
+
+            variableInfoIt->second.setter(pDeserializedObject.get(), vResultingArray);
+
+            break;
+        }
+        case (ReflectedVariableType::MESH_GEOMETRY): {
+            Error::showErrorAndThrowException("mesh geometry is not expected to be stored in the TOML file");
+        }
+        default: {
+            Error::showErrorAndThrowException("unhandled case");
+        }
+        }
+#if defined(WIN32) && defined(DEBUG)
+        static_assert(sizeof(TypeReflectionInfo) == 1344, "add new variables here"); // NOLINT: current size
+#endif
+    }
+
+    // Deserialize mesh geometry.
+    if (!typeInfo.reflectedVariables.meshGeometries.empty()) {
+        if (!pathToFile.has_parent_path()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected the path to have a parent path \"{}\"", pathToFile.string()));
+        }
+
+        if (!std::filesystem::exists(pathToFile.parent_path())) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected the parent path to exist for path \"{}\"", pathToFile.string()));
+        }
+
+        for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
+            const auto pathToMeshGeometry =
+                pathToFile.parent_path() / (pathToFile.stem().string() + "." + sVariableName);
+            if (!std::filesystem::exists(pathToMeshGeometry)) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unable to find mesh geometry to deserialize for variable \"{}\" at \"{}\"",
+                        sVariableName,
+                        pathToMeshGeometry.string()));
+            }
+
+            auto meshGeometry = MeshGeometry::deserialize(pathToMeshGeometry);
+
+            variableInfo.setter(pDeserializedObject.get(), meshGeometry);
+        }
+    }
+
+    if (pathToFile.string().starts_with(
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT).string())) {
+        // File is located in the `res` directory, save a relative path to the `res` directory.
+        auto sRelativePath =
+            std::filesystem::relative(
+                pathToFile.string(), ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT))
+                .string();
+
+        // Replace all '\' characters with '/' just to be consistent.
+        std::replace(sRelativePath.begin(), sRelativePath.end(), '\\', '/');
+
+        // Remove the forward slash at the beginning (if exists).
+        if (sRelativePath.starts_with('/')) {
+            sRelativePath = sRelativePath.substr(1);
+        }
+
+        // Double check that everything is correct.
+        const auto pathToOriginalFile =
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sRelativePath;
+        if (!std::filesystem::exists(pathToOriginalFile)) [[unlikely]] {
+            return Error(
+                std::format(
+                    "failed to save the relative path to the `res` directory for the file at \"{}\", "
+                    "reason: constructed path \"{}\" does not exist",
+                    pathToFile.string(),
+                    pathToOriginalFile.string()));
+        }
+
+        // Save deserialization path.
+        pDeserializedObject->pathDeserializedFromRelativeToRes = {sRelativePath, sEntityId};
+    }
+
+    // Notify about deserialization finished.
+    pDeserializedObject->onAfterDeserialized();
+
+    return pDeserializedObject;
+}

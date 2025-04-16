@@ -22,6 +22,29 @@ public:
     virtual ~TextNode() override = default;
 
     /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
      * Sets text to display.
      *
      * @param sText Text.
@@ -47,7 +70,7 @@ public:
      *
      * @param lineSpacing Spacing in range [0.0F; +inf] proportional to the height of the text.
      */
-    void setLineSpacing(float lineSpacing);
+    void setTextLineSpacing(float lineSpacing);
 
     /**
      * Returns displayed text.
@@ -76,7 +99,7 @@ public:
      *
      * @return Line spacing.
      */
-    float getLineSpacing() const { return lineSpacing; }
+    float getTextLineSpacing() const { return lineSpacing; }
 
 protected:
     /**

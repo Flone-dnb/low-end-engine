@@ -22,6 +22,22 @@ public:
     virtual ~CameraNode() override = default;
 
     /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
      * Makes the camera of this node to be the primary camera and you will see what this camera sees
      * on the game window.
      *

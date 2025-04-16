@@ -1,5 +1,8 @@
 #pragma once
 
+// Standard.
+#include <filesystem>
+
 // Custom.
 #include "math/GLMath.hpp"
 
@@ -71,6 +74,31 @@ public:
     MeshGeometry(MeshGeometry&&) noexcept = default;
     /** Move assignment. @return this. */
     MeshGeometry& operator=(MeshGeometry&&) noexcept = default;
+
+    /**
+     * Deserializes the geometry from the file (also see @ref serialize).
+     *
+     * @param pathToFile File to deserialize from.
+     *
+     * @return Geometry.
+     */
+    static MeshGeometry deserialize(const std::filesystem::path& pathToFile);
+
+    /**
+     * Equality operator.
+     *
+     * @param other Other object.
+     *
+     * @return Whether the geometry is the same or not.
+     */
+    bool operator==(const MeshGeometry& other) const;
+
+    /**
+     * Serializes the geometry data into a file.
+     *
+     * @param pathToFile File to serialize to.
+     */
+    void serialize(const std::filesystem::path& pathToFile) const;
 
     /**
      * Returns mesh vertices.

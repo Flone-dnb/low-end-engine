@@ -25,10 +25,10 @@ public:
     /**
      * Creates material with custom shaders.
      *
-     * @param pathToCustomVertexShader   Path to .glsl file relative `res` directory.
-     * @param pathToCustomFragmentShader Path to .glsl file relative `res` directory.
+     * @param sPathToCustomVertexShader   Path to .glsl file relative `res` directory.
+     * @param sPathToCustomFragmentShader Path to .glsl file relative `res` directory.
      */
-    Material(const std::string& pathToCustomVertexShader, const std::string& pathToCustomFragmentShader);
+    Material(const std::string& sPathToCustomVertexShader, const std::string& sPathToCustomFragmentShader);
 
     /**
      * Sets color of the diffuse light.
@@ -38,11 +38,39 @@ public:
     void setDiffuseColor(const glm::vec3 color);
 
     /**
+     * Sets GLSL vertex shader to use instead of the default one.
+     *
+     * @param sPathToCustomVertexShader Path to .glsl file relative `res` directory.
+     */
+    void setPathToCustomVertexShader(const std::string& sPathToCustomVertexShader);
+
+    /**
+     * Sets GLSL fragment shader to use instead of the default one.
+     *
+     * @param sPathToCustomFragmentShader Path to .glsl file relative `res` directory.
+     */
+    void setPathToCustomFragmentShader(const std::string& sPathToCustomFragmentShader);
+
+    /**
      * Returns color of the diffuse light.
      *
      * @return Diffuse light color.
      */
     glm::vec3 getDiffuseColor() { return diffuseColor; }
+
+    /**
+     * Returns GLSL shader that the material uses instead of the default one.
+     *
+     * @return Empty string if default shader is used, otherwise path to .glsl file relative `res` directory.
+     */
+    std::string getPathToCustomVertexShader() const { return sPathToCustomVertexShader; }
+
+    /**
+     * Returns GLSL shader that the material uses instead of the default one.
+     *
+     * @return Empty string if default shader is used, otherwise path to .glsl file relative `res` directory.
+     */
+    std::string getPathToCustomFragmentShader() const { return sPathToCustomFragmentShader; }
 
 private:
     /**
@@ -78,7 +106,7 @@ private:
     /** Diffuse light color. */
     glm::vec3 diffuseColor = glm::vec3(1.0F, 1.0F, 1.0F);
 
-    /** Not `nullptr` if this material is used on a visible renderable node. */
+    /** Not `nullptr` if this material is used on a spawned renderable node. */
     std::shared_ptr<ShaderProgram> shaderProgram;
 
     /** Empty if using default shader, otherwise path to custom .glsl file (relative `res` directory). */

@@ -5,10 +5,69 @@
 #include "game/GameInstance.h"
 #include "game/geometry/PrimitiveMeshGenerator.h"
 #include "render/wrapper/ShaderProgram.h"
-#include "render/Renderer.h"
 
 // External.
 #include "nameof.hpp"
+
+namespace {
+    constexpr std::string_view sTypeGuid = "bea29d45-274d-4a50-91ec-8ca09897ce4d";
+}
+
+std::string MeshNode::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string MeshNode::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo MeshNode::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.bools["isVisible"] = ReflectedVariableInfo<bool>{
+        .setter = [](Serializable* pThis,
+                     const bool& bNewValue) { reinterpret_cast<MeshNode*>(pThis)->setIsVisible(bNewValue); },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<MeshNode*>(pThis)->isVisible();
+        }};
+
+    variables.vec3s["materialDiffuseColor"] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setDiffuseColor(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getDiffuseColor();
+        }};
+
+    variables.strings["materialCustomVertexShader"] = ReflectedVariableInfo<std::string>{
+        .setter =
+            [](Serializable* pThis, const std::string& sNewValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setPathToCustomVertexShader(sNewValue);
+            },
+        .getter = [](Serializable* pThis) -> std::string {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToCustomVertexShader();
+        }};
+
+    variables.strings["materialCustomFragmentShader"] = ReflectedVariableInfo<std::string>{
+        .setter =
+            [](Serializable* pThis, const std::string& sNewValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setPathToCustomFragmentShader(sNewValue);
+            },
+        .getter = [](Serializable* pThis) -> std::string {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToCustomFragmentShader();
+        }};
+
+    variables.meshGeometries[NAMEOF_MEMBER(&MeshNode::geometry).data()] = ReflectedVariableInfo<MeshGeometry>{
+        .setter =
+            [](Serializable* pThis, const MeshGeometry& newValue) {
+                reinterpret_cast<MeshNode*>(pThis)->setMeshGeometryBeforeSpawned(newValue);
+            },
+        .getter = [](Serializable* pThis) -> MeshGeometry {
+            return reinterpret_cast<MeshNode*>(pThis)->copyMeshData();
+        }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(MeshNode).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<MeshNode>(); },
+        std::move(variables));
+}
 
 MeshNode::MeshNode() : MeshNode("Mesh Node") {}
 
@@ -31,12 +90,12 @@ void MeshNode::setMaterialBeforeSpawned(const Material& material) {
     this->material = material;
 }
 
-void MeshNode::setMeshDataBeforeSpawned(const MeshGeometry& meshGeometry) {
+void MeshNode::setMeshGeometryBeforeSpawned(const MeshGeometry& meshGeometry) {
     geometry = meshGeometry;
     onAfterMeshGeometryChanged();
 }
 
-void MeshNode::setMeshDataBeforeSpawned(MeshGeometry&& meshGeometry) {
+void MeshNode::setMeshGeometryBeforeSpawned(MeshGeometry&& meshGeometry) {
     geometry = std::move(meshGeometry);
     onAfterMeshGeometryChanged();
 }

@@ -5,6 +5,44 @@
 #include "render/Renderer.h"
 #include "render/LightSourceManager.h"
 
+// External.
+#include "nameof.hpp"
+
+namespace {
+    constexpr std::string_view sTypeGuid = "bd598071-6b07-41b4-87ae-67fa13f4670c";
+}
+
+std::string DirectionalLightNode::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string DirectionalLightNode::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo DirectionalLightNode::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.vec3s["color"] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<DirectionalLightNode*>(pThis)->setLightColor(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<DirectionalLightNode*>(pThis)->getLightColor();
+        }};
+
+    variables.floats["intensity"] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<DirectionalLightNode*>(pThis)->setLightIntensity(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<DirectionalLightNode*>(pThis)->getLightIntensity();
+        }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(DirectionalLightNode).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<DirectionalLightNode>(); },
+        std::move(variables));
+}
+
 DirectionalLightNode::DirectionalLightNode() : DirectionalLightNode("Directional Light Node") {}
 
 DirectionalLightNode::DirectionalLightNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}

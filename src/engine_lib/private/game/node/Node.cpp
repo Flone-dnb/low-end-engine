@@ -4,6 +4,10 @@
 #include "game/World.h"
 #include "game/GameManager.h"
 #include "game/node/SpatialNode.h"
+#include "io/Logger.h"
+
+// External.
+#include "nameof.hpp"
 
 /** Total amount of alive nodes. */
 static std::atomic<size_t> iTotalAliveNodeCount{0};
@@ -19,7 +23,33 @@ static std::atomic<size_t> iTotalAliveNodeCount{0};
  */
 static std::atomic<size_t> iAvailableNodeId{0};
 
+namespace {
+    constexpr std::string_view sTypeGuid = "a70f1233-ad98-4686-a987-aeb916804369";
+}
+
+std::string Node::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string Node::getTypeGuid() const { return sTypeGuid.data(); }
+
 size_t Node::getAliveNodeCount() { return iTotalAliveNodeCount.load(); }
+
+TypeReflectionInfo Node::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.strings[NAMEOF_MEMBER(&Node::sNodeName).data()] = ReflectedVariableInfo<std::string>{
+        .setter =
+            [](Serializable* pThis, const std::string& sNewValue) {
+                reinterpret_cast<Node*>(pThis)->setNodeName(sNewValue);
+            },
+        .getter = [](Serializable* pThis) -> std::string {
+            return std::string(reinterpret_cast<Node*>(pThis)->getNodeName());
+        }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(Node).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<Node>(); },
+        std::move(variables));
+}
 
 void Node::unsafeDetachFromParentAndDespawn() {
     Logger::get().info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
@@ -53,10 +83,11 @@ void Node::unsafeDetachFromParentAndDespawn() {
             }
 
             if (pSelf == nullptr) [[unlikely]] {
-                Logger::get().error(std::format(
-                    "node \"{}\" has a parent node but parent's children array "
-                    "does not contain this node.",
-                    getNodeName()));
+                Logger::get().error(
+                    std::format(
+                        "node \"{}\" has a parent node but parent's children array "
+                        "does not contain this node.",
+                        getNodeName()));
             }
 
             // Clear parent.
@@ -84,10 +115,11 @@ Node::Node(std::string_view sName) : sNodeName(sName) {
     // Increment total node counter.
     const size_t iNodeCount = iTotalAliveNodeCount.fetch_add(1) + 1;
     if (iNodeCount + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
-        Logger::get().warn(std::format(
-            "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
-            "an overflow",
-            iNodeCount + 1));
+        Logger::get().warn(
+            std::format(
+                "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
+                "an overflow",
+                iNodeCount + 1));
     }
 }
 
@@ -239,14 +271,17 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
 
     // Make sure the node is spawned.
     if (!mtxIsSpawned.second) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "this function should not be called while the node is not spawned (called from node \"{}\")",
-            sNodeName));
+        Error::showErrorAndThrowException(
+            std::format(
+                "this function should not be called while the node is not spawned (called from node \"{}\")",
+                sNodeName));
     }
 
     if (pWorldWeSpawnedIn == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "spawned node \"{}\" attempted to request the game instance but world is nullptr", sNodeName));
+        Error::showErrorAndThrowException(
+            std::format(
+                "spawned node \"{}\" attempted to request the game instance but world is nullptr",
+                sNodeName));
     }
 
     return pWorldWeSpawnedIn->pGameManager->getGameInstance();
@@ -272,9 +307,10 @@ void Node::spawn() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (mtxIsSpawned.second) [[unlikely]] {
-        Logger::get().warn(std::format(
-            "an attempt was made to spawn already spawned node \"{}\", ignoring this operation",
-            getNodeName()));
+        Logger::get().warn(
+            std::format(
+                "an attempt was made to spawn already spawned node \"{}\", ignoring this operation",
+                getNodeName()));
         return;
     }
 
@@ -284,10 +320,11 @@ void Node::spawn() {
     // Get unique ID.
     iNodeId = iAvailableNodeId.fetch_add(1);
     if (iNodeId.value() + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
-        Logger::get().warn(std::format(
-            "\"next available node ID\" is at its maximum value: {}, another spawned node will "
-            "cause an overflow",
-            iNodeId.value() + 1));
+        Logger::get().warn(
+            std::format(
+                "\"next available node ID\" is at its maximum value: {}, another spawned node will "
+                "cause an overflow",
+                iNodeId.value() + 1));
     }
 
     // Mark state.
@@ -321,9 +358,10 @@ void Node::despawn() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (!mtxIsSpawned.second) [[unlikely]] {
-        Logger::get().warn(std::format(
-            "an attempt was made to despawn already despawned node \"{}\", ignoring this operation",
-            getNodeName()));
+        Logger::get().warn(
+            std::format(
+                "an attempt was made to despawn already despawned node \"{}\", ignoring this operation",
+                getNodeName()));
         return;
     }
 
@@ -408,10 +446,11 @@ World* Node::askParentsAboutWorldPointer() {
     // Ask parent node for the valid world pointer.
     std::scoped_lock parentGuard(mtxParentNode.first);
     if (mtxParentNode.second == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "node \"{}\" can't find a pointer to a valid world instance because "
-            "there is no parent node",
-            getNodeName()));
+        Error::showErrorAndThrowException(
+            std::format(
+                "node \"{}\" can't find a pointer to a valid world instance because "
+                "there is no parent node",
+                getNodeName()));
     }
 
     return mtxParentNode.second->askParentsAboutWorldPointer();

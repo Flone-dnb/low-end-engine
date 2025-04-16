@@ -84,6 +84,10 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
     }
 }
 
+std::string EditorCameraNode::getTypeGuid() const {
+    Error::showErrorAndThrowException("editor nodes should not be serialized");
+}
+
 void EditorCameraNode::setIgnoreInput(bool bIgnore) {
     setIsReceivingInput(!bIgnore);
 
@@ -152,12 +156,13 @@ void EditorCameraNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     std::scoped_lock guard(mtxSpatialParent.first);
 
     if (mtxSpatialParent.second != nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "editor camera node was attached to some node (tree) and there is now a "
-            "spatial node \"{}\" in the editor camera's parent chain but having a spatial node "
-            "in the editor camera's parent chain might cause the camera to move/rotate according "
-            "to the parent (which is undesirable)",
-            mtxSpatialParent.second->getNodeName()));
+        Error::showErrorAndThrowException(
+            std::format(
+                "editor camera node was attached to some node (tree) and there is now a "
+                "spatial node \"{}\" in the editor camera's parent chain but having a spatial node "
+                "in the editor camera's parent chain might cause the camera to move/rotate according "
+                "to the parent (which is undesirable)",
+                mtxSpatialParent.second->getNodeName()));
     }
 }
 

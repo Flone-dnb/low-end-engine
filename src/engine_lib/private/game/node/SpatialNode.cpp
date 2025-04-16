@@ -3,6 +3,53 @@
 // Custom.
 #include "math/MathHelpers.hpp"
 
+// External.
+#include "nameof.hpp"
+
+namespace {
+    constexpr std::string_view sTypeGuid = "ac1356e14-2d2f-4c64-9e05-d6b632d9f6b7";
+}
+
+std::string SpatialNode::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string SpatialNode::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo SpatialNode::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.vec3s[NAMEOF_MEMBER(&SpatialNode::relativeLocation).data()] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<SpatialNode*>(pThis)->setRelativeLocation(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<SpatialNode*>(pThis)->getRelativeLocation();
+        }};
+
+    variables.vec3s[NAMEOF_MEMBER(&SpatialNode::relativeRotation).data()] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<SpatialNode*>(pThis)->setRelativeRotation(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<SpatialNode*>(pThis)->getRelativeRotation();
+        }};
+
+    variables.vec3s[NAMEOF_MEMBER(&SpatialNode::relativeScale).data()] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<SpatialNode*>(pThis)->setRelativeScale(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<SpatialNode*>(pThis)->getRelativeScale();
+        }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(SpatialNode).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<SpatialNode>(); },
+        std::move(variables));
+}
+
 SpatialNode::SpatialNode() : SpatialNode("Spatial Node") {}
 
 SpatialNode::SpatialNode(const std::string& sNodeName) : Node(sNodeName) {
@@ -285,6 +332,18 @@ glm::mat4x4 SpatialNode::getRelativeRotationMatrix() {
 
 std::pair<std::recursive_mutex, SpatialNode*>& SpatialNode::getClosestSpatialParent() {
     return mtxSpatialParent;
+}
+
+void SpatialNode::onAfterDeserialized() {
+    Node::onAfterDeserialized();
+
+    recalculateLocalMatrix();
+
+    // No need to notify children here because:
+    // 1. If this is a node tree that is being deserialized, child nodes will be added
+    // after this function is finished, once a child node is added it will recalculate its matrix.
+    // 2. If this is a single node that is being deserialized, there are no children.
+    recalculateWorldMatrix(false);
 }
 
 void SpatialNode::applyAttachmentRule(

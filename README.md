@@ -9,6 +9,7 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Node system (Godot-like ECS alternative)
 - [X] Handling user input events
 - [X] Config management (progress, settings, etc.)
+- [X] Type reflection
 - [X] Forward renderer using OpenGL ES 3.1
 - [X] Dynamic light sources
 - [ ] Texture import

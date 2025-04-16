@@ -18,6 +18,14 @@ public:
     virtual ~EditorCameraNode() override = default;
 
     /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
      * Sets whether to ignore user input or not.
      *
      * @param bIgnore `true` to ignore, `false` otherwise.

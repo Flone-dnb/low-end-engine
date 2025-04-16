@@ -5,6 +5,54 @@
 #include "render/Renderer.h"
 #include "render/LightSourceManager.h"
 
+// External.
+#include "nameof.hpp"
+
+namespace {
+    constexpr std::string_view sTypeGuid = "02d0f522-1e32-4a2d-bacd-9efef2d9ae07";
+}
+
+std::string PointLightNode::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string PointLightNode::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo PointLightNode::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.vec3s["color"] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<PointLightNode*>(pThis)->setLightColor(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<PointLightNode*>(pThis)->getLightColor();
+        }};
+
+    variables.floats["intensity"] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<PointLightNode*>(pThis)->setLightIntensity(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<PointLightNode*>(pThis)->getLightIntensity();
+        }};
+
+    variables.floats[NAMEOF_MEMBER(&PointLightNode::ShaderProperties::distance).data()] =
+        ReflectedVariableInfo<float>{
+            .setter =
+                [](Serializable* pThis, const float& newValue) {
+                    reinterpret_cast<PointLightNode*>(pThis)->setLightDistance(newValue);
+                },
+            .getter = [](Serializable* pThis) -> float {
+                return reinterpret_cast<PointLightNode*>(pThis)->getLightDistance();
+            }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(PointLightNode).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<PointLightNode>(); },
+        std::move(variables));
+}
+
 PointLightNode::PointLightNode() : PointLightNode("Point Light Node") {}
 
 PointLightNode::PointLightNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}

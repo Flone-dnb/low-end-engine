@@ -3,8 +3,9 @@
 // Custom.
 #include "io/Logger.h"
 #include "game/World.h"
-#include "game/node/Node.h"
+#include "misc/ReflectedTypeDatabase.h"
 #include "game/camera/CameraManager.h"
+#include "game/node/Node.h"
 
 GameManager::GameManager(
     Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance)
@@ -12,12 +13,15 @@ GameManager::GameManager(
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pCameraManager = std::make_unique<CameraManager>(pRenderer.get());
+
+    ReflectedTypeDatabase::registerEngineTypes();
 }
 
 void GameManager::destroy() {
     // Log destruction so that it will be slightly easier to read logs.
-    Logger::get().info("\n\n\n-------------------- starting game manager destruction... "
-                       "--------------------\n\n");
+    Logger::get().info(
+        "\n\n\n-------------------- starting game manager destruction... "
+        "--------------------\n\n");
     Logger::get().flushToDisk();
 
     // Wait for GPU to finish all work. Make sure no GPU resource is used.
@@ -273,20 +277,25 @@ void GameManager::triggerActionEvents(
         // We should have found a trigger button.
         if (!bFoundKey) [[unlikely]] {
             if (std::holds_alternative<KeyboardButton>(button)) {
-                Logger::get().error(std::format(
-                    "could not find the keyboard button `{}` in trigger buttons for action event with ID {}",
-                    getKeyboardButtonName(std::get<KeyboardButton>(button)),
-                    iActionId));
+                Logger::get().error(
+                    std::format(
+                        "could not find the keyboard button `{}` in trigger buttons for action event with ID "
+                        "{}",
+                        getKeyboardButtonName(std::get<KeyboardButton>(button)),
+                        iActionId));
             } else if (std::holds_alternative<KeyboardButton>(button)) {
-                Logger::get().error(std::format(
-                    "could not find the mouse button `{}` in trigger buttons for action event with ID {}",
-                    static_cast<int>(std::get<MouseButton>(button)),
-                    iActionId));
+                Logger::get().error(
+                    std::format(
+                        "could not find the mouse button `{}` in trigger buttons for action event with ID {}",
+                        static_cast<int>(std::get<MouseButton>(button)),
+                        iActionId));
             } else if (std::holds_alternative<GamepadButton>(button)) {
-                Logger::get().error(std::format(
-                    "could not find the gamepad button `{}` in trigger buttons for action event with ID {}",
-                    static_cast<int>(std::get<GamepadButton>(button)),
-                    iActionId));
+                Logger::get().error(
+                    std::format(
+                        "could not find the gamepad button `{}` in trigger buttons for action event with ID "
+                        "{}",
+                        static_cast<int>(std::get<GamepadButton>(button)),
+                        iActionId));
             } else [[unlikely]] {
                 Error::showErrorAndThrowException("unhandled case");
             }
@@ -378,10 +387,11 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
 
         // Log an error if the key is not found.
         if (!bFound) [[unlikely]] {
-            Logger::get().error(std::format(
-                "could not find key `{}` in key states for axis event with ID {}",
-                getKeyboardButtonName(button),
-                iAxisEventId));
+            Logger::get().error(
+                std::format(
+                    "could not find key `{}` in key states for axis event with ID {}",
+                    getKeyboardButtonName(button),
+                    iAxisEventId));
             continue;
         }
 
@@ -464,10 +474,11 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 
         // Log an error if the key is not found.
         if (!bFound) [[unlikely]] {
-            Logger::get().error(std::format(
-                "could not find gamepad axis `{}` in axis states for axis event with ID {}",
-                getGamepadAxisName(gamepadAxis),
-                iAxisEventId));
+            Logger::get().error(
+                std::format(
+                    "could not find gamepad axis `{}` in axis states for axis event with ID {}",
+                    getGamepadAxisName(gamepadAxis),
+                    iAxisEventId));
             continue;
         }
 

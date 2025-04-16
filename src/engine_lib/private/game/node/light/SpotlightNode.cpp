@@ -5,6 +5,73 @@
 #include "render/Renderer.h"
 #include "render/LightSourceManager.h"
 
+// External.
+#include "nameof.hpp"
+
+namespace {
+    constexpr std::string_view sTypeGuid = "003ba11d-bc89-4e1b-becf-b35f9e9c5d12";
+}
+
+std::string SpotlightNode::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string SpotlightNode::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo SpotlightNode::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.vec3s["color"] = ReflectedVariableInfo<glm::vec3>{
+        .setter =
+            [](Serializable* pThis, const glm::vec3& newValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setLightColor(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec3 {
+            return reinterpret_cast<SpotlightNode*>(pThis)->getLightColor();
+        }};
+
+    variables.floats["intensity"] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setLightIntensity(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<SpotlightNode*>(pThis)->getLightIntensity();
+        }};
+
+    variables.floats["distance"] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setLightDistance(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<SpotlightNode*>(pThis)->getLightDistance();
+        }};
+
+    variables.floats[NAMEOF_MEMBER(&SpotlightNode::Properties::innerConeAngle).data()] =
+        ReflectedVariableInfo<float>{
+            .setter =
+                [](Serializable* pThis, const float& newValue) {
+                    reinterpret_cast<SpotlightNode*>(pThis)->setLightInnerConeAngle(newValue);
+                },
+            .getter = [](Serializable* pThis) -> float {
+                return reinterpret_cast<SpotlightNode*>(pThis)->getLightInnerConeAngle();
+            }};
+
+    variables.floats[NAMEOF_MEMBER(&SpotlightNode::Properties::outerConeAngle).data()] =
+        ReflectedVariableInfo<float>{
+            .setter =
+                [](Serializable* pThis, const float& newValue) {
+                    reinterpret_cast<SpotlightNode*>(pThis)->setLightOuterConeAngle(newValue);
+                },
+            .getter = [](Serializable* pThis) -> float {
+                return reinterpret_cast<SpotlightNode*>(pThis)->getLightOuterConeAngle();
+            }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(SpotlightNode).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<SpotlightNode>(); },
+        std::move(variables));
+}
+
 SpotlightNode::SpotlightNode() : SpotlightNode("Spotlight Node") {}
 
 SpotlightNode::SpotlightNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}

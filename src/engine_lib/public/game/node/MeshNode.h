@@ -31,6 +31,29 @@ public:
     virtual ~MeshNode() override = default;
 
     /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
      * Returns path to .glsl file relative `res` directory that's used as a default vertex shader for mesh
      * nodes.
      *
@@ -67,7 +90,7 @@ public:
      *
      * @param meshGeometry Mesh geometry.
      */
-    void setMeshDataBeforeSpawned(const MeshGeometry& meshGeometry);
+    void setMeshGeometryBeforeSpawned(const MeshGeometry& meshGeometry);
 
     /**
      * Sets mesh geometry to use.
@@ -76,7 +99,7 @@ public:
      *
      * @param meshGeometry Mesh geometry.
      */
-    void setMeshDataBeforeSpawned(MeshGeometry&& meshGeometry);
+    void setMeshGeometryBeforeSpawned(MeshGeometry&& meshGeometry);
 
     /**
      * Sets whether this mesh is visible or not.
@@ -126,6 +149,13 @@ public:
 #endif
         return *shaderConstantsSetter;
     }
+
+    /**
+     * Returns a copy of the mesh's geometry.
+     *
+     * @return Geometry.
+     */
+    MeshGeometry copyMeshData() const { return geometry; }
 
     /**
      * Tells whether this mesh is currently visible or not.

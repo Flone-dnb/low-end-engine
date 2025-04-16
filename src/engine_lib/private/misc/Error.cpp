@@ -61,7 +61,7 @@ Error::Error(std::string_view sMessage, const std::source_location location) {
 }
 
 void Error::showErrorAndThrowException(std::string_view sMessage, const std::source_location location) {
-    Error error(sMessage);
+    Error error(sMessage, location);
     error.showErrorAndThrowException();
 }
 

@@ -23,6 +23,29 @@ public:
     virtual ~SpatialNode() override = default;
 
     /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
      * Sets node's relative location, if there is another SpatialNode in the parent chain then this
      * location is relative to the first SpatialNode in the parent chain, otherwise if there is no
      * SpatialNode in the parent chain, this location is relative to the world.
@@ -189,6 +212,15 @@ public:
     std::pair<std::recursive_mutex, SpatialNode*>& getClosestSpatialParent();
 
 protected:
+    /**
+     * Called after the object was successfully deserialized.
+     * Used to execute post-deserialization logic.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your login) to execute parent's logic.
+     */
+    virtual void onAfterDeserialized() override;
+
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
      * that is spawned or set as world's root node to execute custom spawn logic.

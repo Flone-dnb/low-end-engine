@@ -12,11 +12,30 @@
 // External.
 #include "nameof.hpp"
 
-Material::Material(const std::string& pathToCustomVertexShader, const std::string& pathToCustomFragmentShader)
-    : sPathToCustomVertexShader(pathToCustomVertexShader),
-      sPathToCustomFragmentShader(pathToCustomFragmentShader) {}
+Material::Material(
+    const std::string& sPathToCustomVertexShader, const std::string& sPathToCustomFragmentShader)
+    : sPathToCustomVertexShader(sPathToCustomVertexShader),
+      sPathToCustomFragmentShader(sPathToCustomFragmentShader) {}
 
 void Material::setDiffuseColor(const glm::vec3 color) { diffuseColor = color; }
+
+void Material::setPathToCustomVertexShader(const std::string& sPathToCustomVertexShader) {
+    if (shaderProgram != nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "changing material's shaders is not allowed while the material is used on a spawned node");
+    }
+
+    this->sPathToCustomVertexShader = sPathToCustomVertexShader;
+}
+
+void Material::setPathToCustomFragmentShader(const std::string& sPathToCustomFragmentShader) {
+    if (shaderProgram != nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "changing material's shaders is not allowed while the material is used on a spawned node");
+    }
+
+    this->sPathToCustomFragmentShader = sPathToCustomFragmentShader;
+}
 
 void Material::onNodeSpawning(
     MeshNode* pNode,
