@@ -184,6 +184,37 @@ public:
 };
 bool TestSerializable::bDestructorCalled = false;
 
+class TestSerializableDerived : public TestSerializable {
+public:
+    TestSerializableDerived() = default;
+    virtual ~TestSerializableDerived() override = default;
+
+    static std::string getTypeGuidStatic() { return "test-derived-guid"; }
+    virtual std::string getTypeGuid() const override { return "test-derived-guid"; }
+
+    static TypeReflectionInfo getReflectionInfo() {
+        ReflectedVariables variables;
+
+        variables.ints[NAMEOF_MEMBER(&TestSerializableDerived::iDerivedInt).data()] =
+            ReflectedVariableInfo<int>{
+                .setter =
+                    [](Serializable* pThis, const int& iNewValue) {
+                        reinterpret_cast<TestSerializableDerived*>(pThis)->iDerivedInt = iNewValue;
+                    },
+                .getter = [](Serializable* pThis) -> int {
+                    return reinterpret_cast<TestSerializableDerived*>(pThis)->iDerivedInt;
+                }};
+
+        return TypeReflectionInfo(
+            TestSerializable::getTypeGuidStatic(),
+            NAMEOF_SHORT_TYPE(TestSerializableDerived).data(),
+            []() -> std::unique_ptr<Serializable> { return std::make_unique<TestSerializableDerived>(); },
+            std::move(variables));
+    }
+
+    int iDerivedInt = 0;
+};
+
 TEST_CASE("serialize and deserialize a sample type") {
     // Register type.
     ReflectedTypeDatabase::registerType(
@@ -264,4 +295,41 @@ TEST_CASE("serialize and deserialize a sample type") {
 
     pDeserialized = nullptr;
     REQUIRE(TestSerializable::bDestructorCalled);
+}
+
+TEST_CASE("serialize and deserialize a derived type") {
+    // Register types.
+    ReflectedTypeDatabase::registerType(
+        TestSerializable::getTypeGuidStatic(), TestSerializable::getReflectionInfo());
+    ReflectedTypeDatabase::registerType(
+        TestSerializableDerived::getTypeGuidStatic(), TestSerializableDerived::getReflectionInfo());
+
+    // Prepare object.
+    auto pToSerialize = std::make_unique<TestSerializableDerived>();
+    pToSerialize->iInt = -42;
+    pToSerialize->iDerivedInt = 123;
+
+    // Serialize.
+    const auto pathToFile =
+        std::filesystem::temp_directory_path() / "low-end-engine-tests" / "serializableDerived";
+    auto optionalError = pToSerialize->serialize(pathToFile, false);
+    if (optionalError.has_value()) [[unlikely]] {
+        optionalError->addCurrentLocationToErrorStack();
+        INFO(optionalError->getFullErrorMessage());
+        REQUIRE(false);
+    }
+
+    // Deserialize.
+    auto result = Serializable::deserialize<TestSerializableDerived>(pathToFile);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        INFO(error.getFullErrorMessage());
+        REQUIRE(false);
+    }
+    auto pDeserialized = std::get<std::unique_ptr<TestSerializableDerived>>(std::move(result));
+    REQUIRE(!TestSerializable::bDestructorCalled);
+
+    REQUIRE(pDeserialized->iInt == pToSerialize->iInt); // parent variables were also saved
+    REQUIRE(pDeserialized->iDerivedInt == pToSerialize->iDerivedInt);
 }

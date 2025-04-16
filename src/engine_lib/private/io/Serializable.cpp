@@ -89,6 +89,122 @@ std::optional<Error> Serializable::serialize(
     return {};
 }
 
+std::optional<Error> Serializable::serializeMultiple(
+    std::filesystem::path pathToFile,
+    const std::vector<SerializableObjectInformation>& vObjects,
+    bool bEnableBackup) {
+    // Check that all objects are unique.
+    for (size_t i = 0; i < vObjects.size(); i++) {
+        for (size_t j = 0; j < vObjects.size(); j++) {
+            if (i != j && vObjects[i].pObject == vObjects[j].pObject) [[unlikely]] {
+                return Error("the specified array of objects has multiple instances of the same object");
+            }
+        }
+    }
+
+    // Check that IDs are unique and don't have dots in them.
+    for (const auto& objectData : vObjects) {
+        if (objectData.sObjectUniqueId.empty()) [[unlikely]] {
+            return Error("specified an empty object ID");
+        }
+
+        if (objectData.sObjectUniqueId.find('.') != std::string::npos) [[unlikely]] {
+            return Error(
+                std::format(
+                    "the specified object ID \"{}\" is not allowed to have dots in it",
+                    objectData.sObjectUniqueId));
+        }
+        for (const auto& compareObject : vObjects) {
+            if (objectData.pObject != compareObject.pObject &&
+                objectData.sObjectUniqueId == compareObject.sObjectUniqueId) [[unlikely]] {
+                return Error("object IDs are not unique");
+            }
+        }
+    }
+
+    if (!pathToFile.string().ends_with(".toml")) {
+        pathToFile += ".toml";
+    }
+
+    if (!std::filesystem::exists(pathToFile.parent_path())) {
+        std::filesystem::create_directories(pathToFile.parent_path());
+    }
+
+    // Handle backup.
+    std::filesystem::path backupFile = pathToFile;
+    backupFile += ConfigManager::getBackupFileExtension();
+
+    if (bEnableBackup) {
+        // Check if we already have a file from previous serialization.
+        if (std::filesystem::exists(pathToFile)) {
+            // Make this old file a backup file.
+            if (std::filesystem::exists(backupFile)) {
+                std::filesystem::remove(backupFile);
+            }
+            std::filesystem::rename(pathToFile, backupFile);
+        }
+    }
+
+#if defined(WIN32)
+    // Check if the path length is too long.
+    constexpr auto iMaxPathLimitBound = 15;
+    constexpr auto iMaxPath = 260; // value of Windows' MAXPATH macro
+    constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
+    const auto iFilePathLength = pathToFile.string().length();
+    if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
+        Logger::get().warn(
+            std::format(
+                "file path length {} is close to the platform limit of {} characters (path: {})",
+                iFilePathLength,
+                iMaxPathLimit,
+                pathToFile.string()));
+    } else if (iFilePathLength >= iMaxPathLimit) {
+        return Error(
+            std::format(
+                "file path length {} exceeds the platform limit of {} characters (path: {})",
+                iFilePathLength,
+                iMaxPathLimit,
+                pathToFile.string()));
+    }
+#endif
+
+    // Serialize.
+    toml::value tomlData;
+    for (const auto& objectData : vObjects) {
+        auto result = objectData.pObject->serialize(
+            pathToFile,
+            tomlData,
+            objectData.pOriginalObject,
+            objectData.sObjectUniqueId,
+            objectData.customAttributes);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto err = std::get<Error>(std::move(result));
+            err.addCurrentLocationToErrorStack();
+            return err;
+        }
+    }
+
+    // Save TOML data to file.
+    std::ofstream file(pathToFile, std::ios::binary);
+    if (!file.is_open()) [[unlikely]] {
+        return Error(
+            std::format(
+                "failed to open the file \"{}\" (maybe because it's marked as read-only)",
+                pathToFile.string()));
+    }
+    file << toml::format(tomlData);
+    file.close();
+
+    if (bEnableBackup) {
+        // Create backup file if it does not exist.
+        if (!std::filesystem::exists(backupFile)) {
+            std::filesystem::copy_file(pathToFile, backupFile);
+        }
+    }
+
+    return {};
+}
+
 std::variant<std::string, Error> Serializable::serialize(
     std::filesystem::path pathToFile,
     toml::value& tomlData,

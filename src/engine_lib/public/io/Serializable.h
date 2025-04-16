@@ -18,6 +18,48 @@
 
 class Serializable;
 
+/** Information about an object to be serialized. */
+struct SerializableObjectInformation {
+    SerializableObjectInformation() = delete;
+
+    /**
+     * Initialized object information for serialization.
+     *
+     * @param pObject          Object to serialize.
+     * @param sObjectUniqueId  Object's unique ID. Don't use dots in IDs.
+     * @param customAttributes Optional. Pairs of values to serialize with this object.
+     * @param pOriginalObject  Optional. Use if the object was previously deserialized and
+     * you now want to only serialize changed fields of this object and additionally store
+     * the path to the original file (to deserialize unchanged fields).
+     */
+    SerializableObjectInformation(
+        Serializable* pObject,
+        const std::string& sObjectUniqueId,
+        const std::unordered_map<std::string, std::string>& customAttributes = {},
+        Serializable* pOriginalObject = nullptr) {
+        this->pObject = pObject;
+        this->sObjectUniqueId = sObjectUniqueId;
+        this->customAttributes = customAttributes;
+        this->pOriginalObject = pOriginalObject;
+    }
+
+    /** Object to serialize. */
+    Serializable* pObject = nullptr;
+
+    /**
+     * Use if @ref pObject was previously deserialized and you now want to only serialize
+     * changed fields of this object and additionally store the path to the original file
+     * (to deserialize unchanged fields).
+     */
+    Serializable* pOriginalObject = nullptr;
+
+    /** Unique object ID. Don't use dots in it. */
+    std::string sObjectUniqueId;
+
+    /** Map of object attributes (custom information) that will be also serialized/deserialized. */
+    std::unordered_map<std::string, std::string> customAttributes;
+};
+
 /** Information about an object that was deserialized. */
 template <typename SmartPointer, typename InnerType = typename SmartPointer::element_type>
     requires std::derived_from<InnerType, Serializable>
@@ -80,6 +122,24 @@ public:
     /**
      * Deserializes object(s) from a file.
      *
+     * @param pathToFile       File to read reflected data from. The ".toml" extension will be added
+     * automatically if not specified in the path.
+     * @param sObjectUniqueId  Unique ID (that was previously specified in @ref serializeMultiple) of an
+     * object to deserialize (and ignore others).
+     * @param customAttributes Pairs of values that were associated with this object.
+     *
+     * @return Error if something went wrong, otherwise first deserialized object.
+     */
+    template <typename T>
+        requires std::derived_from<T, Serializable>
+    static std::variant<std::unique_ptr<T>, Error> deserialize(
+        std::filesystem::path pathToFile,
+        const std::string& sObjectUniqueId,
+        std::unordered_map<std::string, std::string>& customAttributes);
+
+    /**
+     * Deserializes object(s) from a file.
+     *
      * @param pathToFile File to read reflected data from. The ".toml" extension will be added
      * automatically if not specified in the path.
      *
@@ -112,6 +172,29 @@ public:
         std::filesystem::path pathToFile,
         bool bEnableBackup,
         const std::unordered_map<std::string, std::string>& customAttributes = {});
+
+    /**
+     * Serializes multiple objects, their reflected fields (including inherited) and provided
+     * custom attributes (if any) into a file.
+     *
+     * @param pathToFile    File to write reflected data to. The ".toml" extension will be added
+     * automatically if not specified in the path. If the specified file already exists it will be
+     * overwritten.
+     * @param vObjects      Array of objects to serialize, their unique IDs
+     * (so they could be differentiated in the file) and custom attributes (if any). Don't use
+     * dots in the entity IDs, dots are used internally.
+     * @param bEnableBackup If `true` will also use a backup (copy) file. @ref deserializeMultiple can use
+     * backup file if the original file does not exist. Generally you want to use
+     * a backup file if you are saving important information, such as player progress,
+     * other cases such as player game settings and etc. usually do not need a backup but
+     * you can use it if you want.
+     *
+     * @return Error if something went wrong.
+     */
+    [[nodiscard]] static std::optional<Error> serializeMultiple(
+        std::filesystem::path pathToFile,
+        const std::vector<SerializableObjectInformation>& vObjects,
+        bool bEnableBackup);
 
     /**
      * If this object was deserialized from a file that is located in the `res` directory
@@ -223,6 +306,82 @@ private:
     /** Text that we add to custom (user-specified) attributes in TOML files. */
     static constexpr std::string_view sTomlKeyCustomAttributePrefix = "..";
 };
+
+template <typename T>
+    requires std::derived_from<T, Serializable>
+inline std::variant<std::unique_ptr<T>, Error> Serializable::deserialize(
+    std::filesystem::path pathToFile,
+    const std::string& sObjectUniqueId,
+    std::unordered_map<std::string, std::string>& customAttributes) {
+    // Resolve path.
+    auto optionalError = resolvePathToToml(pathToFile);
+    if (optionalError.has_value()) [[unlikely]] {
+        auto error = std::move(optionalError.value());
+        error.addCurrentLocationToErrorStack();
+        return error;
+    }
+
+    // Parse file.
+    toml::value tomlData;
+    try {
+        tomlData = toml::parse(pathToFile);
+    } catch (std::exception& exception) {
+        return Error(
+            std::format(
+                "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
+    }
+
+    // Get TOML as table.
+    const auto fileTable = tomlData.as_table();
+    if (fileTable.empty()) [[unlikely]] {
+        return Error("provided toml value has 0 sections while expected at least 1 section");
+    }
+
+    // Find a section that starts with the specified entity ID.
+    // Each entity section has the following format: [entityId.GUID]
+    // For sub entities (field with reflected type) format: [parentEntityId.childEntityId.childGUID]
+    std::string sTargetSection;
+    std::string sTypeGuid;
+    for (const auto& [sSectionName, tomlValue] : fileTable) {
+        // We can't just use `sSectionName.starts_with(sEntityId)` because we might make a mistake in the
+        // following situation: [100...] with entity ID equal to "10" and even if we add a dot
+        // to `sEntityId` we still might make a mistake in the following situation:
+        // [10.30.GUID] while we look for just [10.GUID].
+
+        // Get ID end position (GUID start position).
+        const auto iIdEndDotPos = sSectionName.rfind('.');
+        if (iIdEndDotPos == std::string::npos) [[unlikely]] {
+            return Error(std::format("section name \"{}\" does not contain entity ID", sSectionName));
+        }
+        if (iIdEndDotPos + 1 == sSectionName.size()) [[unlikely]] {
+            return Error(std::format("section name \"{}\" does not have a GUID", sSectionName));
+        }
+        if (iIdEndDotPos == 0) [[unlikely]] {
+            return Error(std::format("section \"{}\" is not full", sSectionName));
+        }
+
+        // Get ID chain (either entity ID or something like "parentEntityId.childEntityId").
+        if (std::string_view(sSectionName.data(), iIdEndDotPos) != sObjectUniqueId) { // compare without copy
+            continue;
+        }
+
+        // Save target section name.
+        sTargetSection = sSectionName;
+
+        // Save this entity's GUID.
+        sTypeGuid = sSectionName.substr(iIdEndDotPos + 1);
+
+        break;
+    }
+
+    // Make sure something was found.
+    if (sTargetSection.empty()) [[unlikely]] {
+        return Error(std::format("could not find entity with ID \"{}\"", sObjectUniqueId));
+    }
+
+    return deserializeFromSection<T>(
+        tomlData, customAttributes, sTargetSection, sTypeGuid, sObjectUniqueId, pathToFile);
+}
 
 template <typename T>
     requires std::derived_from<T, Serializable>
@@ -844,12 +1003,9 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
             const auto pathToMeshGeometry =
                 pathToFile.parent_path() / (pathToFile.stem().string() + "." + sVariableName);
-            if (!std::filesystem::exists(pathToMeshGeometry)) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unable to find mesh geometry to deserialize for variable \"{}\" at \"{}\"",
-                        sVariableName,
-                        pathToMeshGeometry.string()));
+            if (!std::filesystem::exists(pathToMeshGeometry)) {
+                // This means that the geometry was empty during serialization so the file was not created.
+                continue;
             }
 
             auto meshGeometry = MeshGeometry::deserialize(pathToMeshGeometry);

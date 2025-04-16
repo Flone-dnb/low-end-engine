@@ -26,7 +26,7 @@ TypeReflectionInfo UiNode::getReflectionInfo() {
         .getter = [](Serializable* pThis) -> bool { return reinterpret_cast<UiNode*>(pThis)->isVisible(); }};
 
     return TypeReflectionInfo(
-        "",
+        Node::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(UiNode).data(),
         []() -> std::unique_ptr<Serializable> { return std::make_unique<UiNode>(); },
         std::move(variables));

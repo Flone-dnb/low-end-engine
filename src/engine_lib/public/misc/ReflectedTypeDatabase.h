@@ -144,6 +144,8 @@ public:
     /**
      * Registers reflection info of a type.
      *
+     * @remark Nothing will happen if you try to register the same type with the same GUID again.
+     *
      * @param sTypeGuid GUID of the type.
      * @param typeInfo  Type info.
      */

@@ -30,6 +30,202 @@ namespace {
 std::string Node::getTypeGuidStatic() { return sTypeGuid.data(); }
 std::string Node::getTypeGuid() const { return sTypeGuid.data(); }
 
+std::variant<std::unique_ptr<Node>, Error>
+Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
+    // Deserialize all nodes.
+    auto deserializeResult = Serializable::deserializeMultiple<Node>(pathToFile);
+    if (std::holds_alternative<Error>(deserializeResult)) [[unlikely]] {
+        auto error = std::get<Error>(deserializeResult);
+        error.addCurrentLocationToErrorStack();
+        return error;
+    }
+    auto vDeserializedInfo = std::get<std::vector<DeserializedObjectInformation<std::unique_ptr<Node>>>>(
+        std::move(deserializeResult));
+
+    // See if some node is external node tree.
+    for (auto& nodeInfo : vDeserializedInfo) {
+        // Find attribute that stores path to the external node tree file.
+        const auto it = nodeInfo.customAttributes.find(sTomlKeyExternalNodeTreePath.data());
+        if (it == nodeInfo.customAttributes.end()) {
+            continue;
+        }
+
+        // Construct path to this external node tree.
+        const auto pathToExternalNodeTree =
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / it->second;
+        if (!std::filesystem::exists(pathToExternalNodeTree)) [[unlikely]] {
+            return Error(
+                std::format(
+                    "file storing external node tree \"{}\" does not exist",
+                    pathToExternalNodeTree.string()));
+        }
+
+        // Deserialize external node tree.
+        auto result = deserializeNodeTree(pathToExternalNodeTree);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto error = std::get<Error>(result);
+            error.addCurrentLocationToErrorStack();
+            return error;
+        }
+        auto pExternalRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+        // Get child nodes of external node tree.
+        const auto pMtxChildNodes = pExternalRootNode->getChildNodes();
+        std::scoped_lock externalChildNodesGuard(*pMtxChildNodes.first);
+
+        // Attach child nodes of this external root node to our node
+        // (their data cannot be changed since when you reference an external node tree
+        // you can only modify root node of the external node tree).
+        while (!pMtxChildNodes.second.empty()) {
+            // Use a "while" loop instead of a "for" loop because this "child nodes array" will be
+            // modified each iteration (this array will be smaller and smaller with each iteration since
+            // we are "removing" child nodes of some parent node), thus we avoid modifying the
+            // array while iterating over it.
+            nodeInfo.pObject->addChildNode(
+                *pMtxChildNodes.second.begin(),
+                AttachmentRule::KEEP_RELATIVE,
+                AttachmentRule::KEEP_RELATIVE,
+                AttachmentRule::KEEP_RELATIVE);
+        }
+    }
+
+    // Sort all nodes by their ID. Prepare array of pairs: Node - Parent index.
+    std::optional<size_t> optionalRootNodeIndex;
+    std::vector<std::pair<std::unique_ptr<Node>, std::optional<size_t>>> vNodes(vDeserializedInfo.size());
+    for (size_t i = 0; i < vDeserializedInfo.size(); i++) {
+        auto& nodeInfo = vDeserializedInfo[i];
+        bool bIsRootNode = false;
+
+        // Check that this object has required attribute about parent ID.
+        std::optional<size_t> iParentNodeId = {};
+        const auto parentNodeAttributeIt = nodeInfo.customAttributes.find(sTomlKeyParentNodeId.data());
+        if (parentNodeAttributeIt == nodeInfo.customAttributes.end()) {
+            if (!optionalRootNodeIndex.has_value()) {
+                bIsRootNode = true;
+            } else [[unlikely]] {
+                return Error(
+                    std::format(
+                        "found non root node \"{}\" that does not have a parent",
+                        nodeInfo.pObject->getNodeName()));
+            }
+        } else {
+            try {
+                iParentNodeId = std::stoull(parentNodeAttributeIt->second);
+            } catch (std::exception& exception) {
+                return Error(
+                    std::format(
+                        "failed to convert attribute \"{}\" with value \"{}\" to integer, error: {}",
+                        sTomlKeyParentNodeId,
+                        parentNodeAttributeIt->second,
+                        exception.what()));
+            }
+
+            // Check if this parent ID is outside of out array bounds.
+            if (iParentNodeId.value() >= vNodes.size()) [[unlikely]] {
+                return Error(
+                    std::format(
+                        "parsed parent node ID is outside of bounds: {} >= {}",
+                        iParentNodeId.value(),
+                        vNodes.size()));
+            }
+        }
+
+        // Try to convert this node's ID to size_t.
+        size_t iNodeId = 0;
+        try {
+            iNodeId = std::stoull(nodeInfo.sObjectUniqueId);
+        } catch (std::exception& exception) {
+            return Error(
+                std::format(
+                    "failed to convert ID \"{}\" to integer, error: {}",
+                    nodeInfo.sObjectUniqueId,
+                    exception.what()));
+        }
+
+        // Check if this ID is outside of our array bounds.
+        if (iNodeId >= vNodes.size()) [[unlikely]] {
+            return Error(std::format("parsed ID is outside of bounds: {} >= {}", iNodeId, vNodes.size()));
+        }
+
+        // Check if we already set a node in this index position.
+        if (vNodes[iNodeId].first != nullptr) [[unlikely]] {
+            return Error(std::format("parsed ID {} was already used by some other node", iNodeId));
+        }
+
+        // Save node.
+        vNodes[iNodeId] = {std::move(nodeInfo.pObject), iParentNodeId};
+
+        if (bIsRootNode) {
+            optionalRootNodeIndex = iNodeId;
+        }
+    }
+
+    // See if we found root node.
+    if (!optionalRootNodeIndex.has_value()) [[unlikely]] {
+        return Error("root node was not found");
+    }
+
+    // Build hierarchy using value from attribute.
+    for (auto& [pNode, optionalParentIndex] : vNodes) {
+        if (pNode == nullptr) [[unlikely]] {
+            return Error("unexpected nullptr");
+        }
+        if (!optionalParentIndex.has_value()) {
+            continue;
+        }
+        vNodes[*optionalParentIndex].first->addChildNode(
+            std::move(pNode),
+            AttachmentRule::KEEP_RELATIVE,
+            AttachmentRule::KEEP_RELATIVE,
+            AttachmentRule::KEEP_RELATIVE);
+    }
+
+    return std::move(vNodes[*optionalRootNodeIndex].first);
+}
+
+std::optional<Error> Node::serializeNodeTree(const std::filesystem::path& pathToFile, bool bEnableBackup) {
+    // Self check: make sure this node is marked to be serialized.
+    if (!bSerialize) [[unlikely]] {
+        return Error(
+            std::format(
+                "node \"{}\" is marked to be ignored when serializing as part of a node tree but "
+                "this node was explicitly requested to be serialized as a node tree",
+                sNodeName));
+    }
+
+    lockChildren(); // make sure nothing is changed/deleted while we are serializing
+    {
+        // Collect information for serialization.
+        size_t iId = 0;
+        auto result = getInformationForSerialization(iId, {});
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto error = std::get<Error>(result);
+            error.addCurrentLocationToErrorStack();
+            return error;
+        }
+        const auto vOriginalNodesInfo =
+            std::get<std::vector<SerializableObjectInformationWithUniquePtr>>(std::move(result));
+
+        // Convert information array.
+        std::vector<SerializableObjectInformation> vNodesInfo;
+        for (const auto& info : vOriginalNodesInfo) {
+            vNodesInfo.push_back(std::move(info.info));
+        }
+
+        // Serialize.
+        const auto optionalError =
+            Serializable::serializeMultiple(pathToFile, std::move(vNodesInfo), bEnableBackup);
+        if (optionalError.has_value()) [[unlikely]] {
+            auto err = optionalError.value();
+            err.addCurrentLocationToErrorStack();
+            return err;
+        }
+    }
+    unlockChildren();
+
+    return {};
+}
+
 size_t Node::getAliveNodeCount() { return iTotalAliveNodeCount.load(); }
 
 TypeReflectionInfo Node::getReflectionInfo() {
@@ -105,6 +301,8 @@ void Node::unsafeDetachFromParentAndDespawn() {
     // Delete self.
     pSelf = nullptr;
 }
+
+void Node::setSerialize(bool bSerialize) { this->bSerialize = bSerialize; }
 
 Node::Node() : Node("Node") {}
 
@@ -454,6 +652,144 @@ World* Node::askParentsAboutWorldPointer() {
     }
 
     return mtxParentNode.second->askParentsAboutWorldPointer();
+}
+
+void Node::lockChildren() {
+    mtxChildNodes.first.lock();
+    for (const auto& pChildNode : mtxChildNodes.second) {
+        pChildNode->lockChildren();
+    }
+}
+
+void Node::unlockChildren() {
+    mtxChildNodes.first.unlock();
+    for (const auto& pChildNode : mtxChildNodes.second) {
+        pChildNode->unlockChildren();
+    }
+}
+
+std::variant<std::vector<Node::SerializableObjectInformationWithUniquePtr>, Error>
+Node::getInformationForSerialization(size_t& iId, std::optional<size_t> iParentId) {
+    // Prepare information about nodes.
+    // Use custom attributes for storing hierarchy information.
+    std::vector<SerializableObjectInformationWithUniquePtr> vNodesInfo;
+
+    // Add self first.
+    const size_t iMyId = iId;
+
+    SerializableObjectInformation selfInfo(this, std::to_string(iId));
+
+    // Add parent ID.
+    if (iParentId.has_value()) {
+        selfInfo.customAttributes[sTomlKeyParentNodeId.data()] = std::to_string(iParentId.value());
+    }
+
+    // Add original object (if was specified).
+    bool bIncludeInformationAboutChildNodes = true;
+    std::unique_ptr<Node> pOptionalOriginalObject;
+    if (getPathDeserializedFromRelativeToRes().has_value()) {
+        // Get path and ID.
+        const auto sPathDeserializedFromRelativeRes = getPathDeserializedFromRelativeToRes()->first;
+        const auto sObjectIdInDeserializedFile = getPathDeserializedFromRelativeToRes()->second;
+
+        // This entity was deserialized from the `res` directory.
+        // We should only serialize fields with changed values and additionally serialize
+        // the path to the original file so that the rest
+        // of the fields can be deserialized from that file.
+
+        // Check that the original file exists.
+        const auto pathToOriginalFile =
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathDeserializedFromRelativeRes;
+        if (!std::filesystem::exists(pathToOriginalFile)) [[unlikely]] {
+            return Error(
+                std::format(
+                    "node \"{}\" has the path it was deserialized from ({}, ID {}) but this "
+                    "file \"{}\" does not exist",
+                    getNodeName(),
+                    sPathDeserializedFromRelativeRes,
+                    sObjectIdInDeserializedFile,
+                    pathToOriginalFile.string()));
+        }
+
+        // Deserialize the original.
+        std::unordered_map<std::string, std::string> customAttributes;
+        auto result = deserialize<Node>(pathToOriginalFile, sObjectIdInDeserializedFile, customAttributes);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto error = std::get<Error>(result);
+            error.addCurrentLocationToErrorStack();
+            return error;
+        }
+        // Save original object to only save changed fields later.
+        pOptionalOriginalObject = std::get<std::unique_ptr<Node>>(std::move(result));
+        selfInfo.pOriginalObject = pOptionalOriginalObject.get();
+
+        // Check if child nodes are located in the same file
+        // (i.e. check if this node is a root of some external node tree).
+        if (!mtxChildNodes.second.empty() &&
+            isTreeDeserializedFromOneFile(sPathDeserializedFromRelativeRes)) {
+            // Don't serialize information about child nodes,
+            // when referencing an external node tree, we should only
+            // allow modifying the root node, thus, because only root node
+            // can have changed fields, we don't include child nodes here.
+            bIncludeInformationAboutChildNodes = false;
+            selfInfo.customAttributes[sTomlKeyExternalNodeTreePath.data()] = sPathDeserializedFromRelativeRes;
+        }
+    }
+    vNodesInfo.push_back(
+        SerializableObjectInformationWithUniquePtr(std::move(selfInfo), std::move(pOptionalOriginalObject)));
+
+    iId += 1;
+
+    if (bIncludeInformationAboutChildNodes) {
+        // Get information about child nodes.
+        std::scoped_lock guard(mtxChildNodes.first);
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            // Skip node (and its child nodes) if it should not be serialized.
+            if (!pChildNode->isSerialized()) {
+                continue;
+            }
+
+            // Get serialization info.
+            auto result = pChildNode->getInformationForSerialization(iId, iMyId);
+            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                auto error = std::get<Error>(std::move(result));
+                return error;
+            }
+            auto vChildArray =
+                std::get<std::vector<SerializableObjectInformationWithUniquePtr>>(std::move(result));
+
+            // Add information about children.
+            for (auto& childInfo : vChildArray) {
+                vNodesInfo.push_back(std::move(childInfo));
+            }
+        }
+    }
+
+    return vNodesInfo;
+}
+
+bool Node::isTreeDeserializedFromOneFile(const std::string& sPathRelativeToRes) {
+    if (!getPathDeserializedFromRelativeToRes().has_value()) {
+        return false;
+    }
+
+    if (getPathDeserializedFromRelativeToRes().value().first != sPathRelativeToRes) {
+        return false;
+    }
+
+    bool bPathEqual = true;
+    lockChildren();
+    {
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            if (!pChildNode->isTreeDeserializedFromOneFile(sPathRelativeToRes)) {
+                bPathEqual = false;
+                break;
+            }
+        }
+    }
+    unlockChildren();
+
+    return bPathEqual;
 }
 
 void Node::getNodeWorldLocationRotationScale(

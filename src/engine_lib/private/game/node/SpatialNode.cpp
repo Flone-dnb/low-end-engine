@@ -44,7 +44,7 @@ TypeReflectionInfo SpatialNode::getReflectionInfo() {
         }};
 
     return TypeReflectionInfo(
-        "",
+        Node::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(SpatialNode).data(),
         []() -> std::unique_ptr<Serializable> { return std::make_unique<SpatialNode>(); },
         std::move(variables));

@@ -47,7 +47,7 @@ TypeReflectionInfo PointLightNode::getReflectionInfo() {
             }};
 
     return TypeReflectionInfo(
-        "",
+        SpatialNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(PointLightNode).data(),
         []() -> std::unique_ptr<Serializable> { return std::make_unique<PointLightNode>(); },
         std::move(variables));

@@ -87,12 +87,46 @@ public:
     static std::string getTypeGuidStatic();
 
     /**
+     * Deserializes a node and all its child nodes (hierarchy information) from a file.
+     *
+     * @param pathToFile File to read a node tree from. The ".toml" extension will be added
+     * automatically if not specified in the path.
+     *
+     * @return Error if something went wrong, otherwise pointer to the root node of the deserialized node
+     * tree.
+     */
+    static std::variant<std::unique_ptr<Node>, Error>
+    deserializeNodeTree(const std::filesystem::path& pathToFile);
+
+    /**
      * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
      * database.
      *
      * @return GUID.
      */
     virtual std::string getTypeGuid() const override;
+
+    /**
+     * Serializes the node and all child nodes (hierarchy information will also be saved) into a file.
+     * Node tree can later be deserialized using @ref deserializeNodeTree.
+     *
+     * @param pathToFile    File to write the node tree to. The ".toml" extension will be added
+     * automatically if not specified in the path. If the specified file already exists it will be
+     * overwritten.
+     * @param bEnableBackup If 'true' will also use a backup (copy) file. @ref deserializeNodeTree can use
+     * backup file if the original file does not exist. Generally you want to use
+     * a backup file if you are saving important information, such as player progress,
+     * other cases such as player game settings and etc. usually do not need a backup but
+     * you can use it if you want.
+     *
+     * @remark Custom attributes, like in Serializable::serialize, are not available here
+     * because they are used internally to store hierarchy and other information.
+     *
+     * @return Error if something went wrong, for example when found an unsupported for
+     * serialization reflected field.
+     */
+    [[nodiscard]] std::optional<Error>
+    serializeNodeTree(const std::filesystem::path& pathToFile, bool bEnableBackup);
 
     /**
      * Detaches this node from the parent and optionally despawns this node and
@@ -114,6 +148,13 @@ public:
      * just want to change node's parent consider using @ref addChildNode.
      */
     void unsafeDetachFromParentAndDespawn();
+
+    /**
+     * Sets if this node (and node's child nodes) should be serialized as part of a node tree or not.
+     *
+     * @param bSerialize `true` to serialize, `false` ignore when serializing as part of a node tree.
+     */
+    void setSerialize(bool bSerialize);
 
     /**
      * Sets node's name.
@@ -311,6 +352,14 @@ public:
      * @return Empty if this node was never spawned, otherwise unique ID of this node.
      */
     std::optional<size_t> getNodeId() const;
+
+    /**
+     * Tells whether or not this node (and node's child nodes) will be serialized as part of a node tree.
+     *
+     * @return `false` if this node and its child nodes will be ignored when being serialized as part
+     * of a node tree, `true` otherwise.
+     */
+    bool isSerialized() const { return bSerialize; }
 
     /**
      * Returns the tick group this node resides in.
@@ -541,6 +590,68 @@ protected:
     std::recursive_mutex& getSpawnDespawnMutex();
 
 private:
+    /** Information about an object to be serialized. */
+    struct SerializableObjectInformationWithUniquePtr {
+        /**
+         * Initialized object information for serialization.
+         *
+         * @param info                    Info used for serialization.
+         * @param pOptionalOriginalObject If @ref info has a valid (deserialized) original object then this
+         * unique_ptr owns the memory for that original object.
+         */
+        SerializableObjectInformationWithUniquePtr(
+            SerializableObjectInformation&& info, std::unique_ptr<Node>&& pOptionalOriginalObject)
+            : info(info), pOptionalOriginalObject(std::move(pOptionalOriginalObject)) {}
+
+        /** Info used for serialization. */
+        SerializableObjectInformation info;
+
+        /**
+         * If @ref info has a valid (deserialized) original object then this unique_ptr owns the memory
+         * for that original object.
+         */
+        std::unique_ptr<Node> pOptionalOriginalObject;
+    };
+
+    /**
+     * Returns node's world location, rotation and scale.
+     *
+     * @remark This function exists because @ref addChildNode is implemented in the header but
+     * we can't include spatial node's header in this header as it would create a recursive include.
+     *
+     * @param pNode         If spacial node (or derived) returns its world location, rotation and scale,
+     * otherwise default parameters.
+     * @param worldLocation Node's world location.
+     * @param worldRotation Node's world rotation.
+     * @param worldScale    Node's world scale.
+     */
+    static void getNodeWorldLocationRotationScale(
+        Node* pNode, glm::vec3& worldLocation, glm::vec3& worldRotation, glm::vec3& worldScale);
+
+    /**
+     * Called by `Node` class after we have attached to a new parent node and
+     * now need to apply attachment rules based on this new parent node.
+     *
+     * @remark This function exists because @ref addChildNode is implemented in the header but
+     * we can't include spatial node's header in this header as it would create a recursive include.
+     *
+     * @param pNode                         If spatial node that applies the rule, otherwise does nothing.
+     * @param locationRule                  Defines how location should change.
+     * @param worldLocationBeforeAttachment World location of this node before being attached.
+     * @param rotationRule                  Defines how rotation should change.
+     * @param worldRotationBeforeAttachment World rotation of this node before being attached.
+     * @param scaleRule                     Defines how scale should change.
+     * @param worldScaleBeforeAttachment    World scale of this node before being attached.
+     */
+    static void applyAttachmentRuleForNode(
+        Node* pNode,
+        Node::AttachmentRule locationRule,
+        const glm::vec3& worldLocationBeforeAttachment,
+        Node::AttachmentRule rotationRule,
+        const glm::vec3& worldRotationBeforeAttachment,
+        Node::AttachmentRule scaleRule,
+        const glm::vec3& worldScaleBeforeAttachment);
+
     /** Calls @ref onSpawning on this node and all of its child nodes. */
     void spawn();
 
@@ -632,43 +743,44 @@ private:
         AttachmentRule scaleRule);
 
     /**
-     * Returns node's world location, rotation and scale.
-     *
-     * @remark This function exists because @ref addChildNode is implemented in the header but
-     * we can't include spatial node's header in this header as it would create a recursive include.
-     *
-     * @param pNode         If spacial node (or derived) returns its world location, rotation and scale,
-     * otherwise default parameters.
-     * @param worldLocation Node's world location.
-     * @param worldRotation Node's world rotation.
-     * @param worldScale    Node's world scale.
+     * Locks @ref mtxChildNodes mutex for self and recursively for all children.
+     * After a node with children was locked this makes the whole node tree to be
+     * frozen (hierarchy can't be changed).
+     * Use @ref unlockChildren for unlocking the tree.
      */
-    static void getNodeWorldLocationRotationScale(
-        Node* pNode, glm::vec3& worldLocation, glm::vec3& worldRotation, glm::vec3& worldScale);
+    void lockChildren();
 
     /**
-     * Called by `Node` class after we have attached to a new parent node and
-     * now need to apply attachment rules based on this new parent node.
-     *
-     * @remark This function exists because @ref addChildNode is implemented in the header but
-     * we can't include spatial node's header in this header as it would create a recursive include.
-     *
-     * @param pNode                         If spatial node that applies the rule, otherwise does nothing.
-     * @param locationRule                  Defines how location should change.
-     * @param worldLocationBeforeAttachment World location of this node before being attached.
-     * @param rotationRule                  Defines how rotation should change.
-     * @param worldRotationBeforeAttachment World rotation of this node before being attached.
-     * @param scaleRule                     Defines how scale should change.
-     * @param worldScaleBeforeAttachment    World scale of this node before being attached.
+     * Unlocks @ref mtxChildNodes mutex for self and recursively for all children.
+     * After a node with children was unlocked this makes the whole node tree to be
+     * unfrozen (hierarchy can be changed as usual).
      */
-    static void applyAttachmentRuleForNode(
-        Node* pNode,
-        Node::AttachmentRule locationRule,
-        const glm::vec3& worldLocationBeforeAttachment,
-        Node::AttachmentRule rotationRule,
-        const glm::vec3& worldRotationBeforeAttachment,
-        Node::AttachmentRule scaleRule,
-        const glm::vec3& worldScaleBeforeAttachment);
+    void unlockChildren();
+
+    /**
+     * Collects and returns information for serialization for self and all child nodes.
+     *
+     * @param iId       ID for serialization to use (will be incremented).
+     * @param iParentId Parent's serialization ID (if this node has a parent and it will also
+     * be serialized).
+     *
+     * @return Error if something went wrong, otherwise an array of collected information
+     * that can be serialized.
+     */
+    std::variant<std::vector<SerializableObjectInformationWithUniquePtr>, Error>
+    getInformationForSerialization(size_t& iId, std::optional<size_t> iParentId);
+
+    /**
+     * Checks if this node and all child nodes were deserialized from the same file
+     * (i.e. checks if this node tree is located in one file).
+     *
+     * @param sPathRelativeToRes Path relative to the `res` directory to the file to check,
+     * example: `game/test.toml`.
+     *
+     * @return `false` if this node or some child node(s) were deserialized from other file
+     * or if some nodes we not deserialized previously, otherwise `true`.
+     */
+    bool isTreeDeserializedFromOneFile(const std::string& sPathRelativeToRes);
 
     /** Map of action events that this node is bound to. Must be used with mutex. */
     std::pair<
@@ -715,6 +827,19 @@ private:
 
     /** Node's name. */
     std::string sNodeName;
+
+    /**
+     * Defines whether or not this node (and node's child nodes) should be serialized
+     * as part of a node tree.
+     */
+    bool bSerialize = true;
+
+    /** Name of the TOML key we use to serialize information about parent node. */
+    static constexpr std::string_view sTomlKeyParentNodeId = "parent_node_id";
+
+    /** Name of the TOML key we use to store a path to an external node tree. */
+    static constexpr std::string_view sTomlKeyExternalNodeTreePath =
+        "external_node_tree_path_relative_to_res";
 };
 
 template <typename NodeType>

@@ -57,7 +57,7 @@ TypeReflectionInfo TextNode::getReflectionInfo() {
         }};
 
     return TypeReflectionInfo(
-        "",
+        UiNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(TextNode).data(),
         []() -> std::unique_ptr<Serializable> { return std::make_unique<TextNode>(); },
         std::move(variables));

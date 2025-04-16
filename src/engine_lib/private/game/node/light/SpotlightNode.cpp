@@ -66,7 +66,7 @@ TypeReflectionInfo SpotlightNode::getReflectionInfo() {
             }};
 
     return TypeReflectionInfo(
-        "",
+        SpatialNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(SpotlightNode).data(),
         []() -> std::unique_ptr<Serializable> { return std::make_unique<SpotlightNode>(); },
         std::move(variables));

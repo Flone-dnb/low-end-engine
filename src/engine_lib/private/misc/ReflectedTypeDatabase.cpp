@@ -34,6 +34,13 @@ void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeRefle
                 typeIt->second.sTypeName));
     }
 
+    // Make sure the GUID does not have dots in it (just in case because our serialization does not expect
+    // this).
+    if (sTypeGuid.find('.') != std::string::npos) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("GUID of the type \"{}\" is invalid, dots are not allowed", typeInfo.sTypeName));
+    }
+
     // Register type.
     reflectedTypes.emplace(sTypeGuid, std::move(typeInfo));
 }

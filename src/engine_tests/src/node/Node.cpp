@@ -1,5 +1,6 @@
 // Custom.
 #include "game/node/Node.h"
+#include "game/node/SpatialNode.h"
 #include "game/GameInstance.h"
 #include "game/Window.h"
 
@@ -1552,6 +1553,73 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
 
     private:
         MyNode* pMyNode = nullptr;
+    };
+
+    auto result = Window::create("", true);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        Error error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        INFO(error.getFullErrorMessage());
+        REQUIRE(false);
+    }
+
+    const std::unique_ptr<Window> pMainWindow = std::get<std::unique_ptr<Window>>(std::move(result));
+    pMainWindow->processEvents<TestGameInstance>();
+}
+
+TEST_CASE("serialize and deserialize node tree") {
+    class TestGameInstance : public GameInstance {
+    public:
+        TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
+        virtual ~TestGameInstance() override = default;
+
+        virtual void onGameStarted() override {
+            createWorld([&]() {
+                // Create tree.
+                auto pRootNode = std::make_unique<Node>("My root node");
+                const auto pChildNode =
+                    pRootNode->addChildNode(std::make_unique<SpatialNode>("My spatial node"));
+
+                pChildNode->setRelativeLocation(glm::vec3(1.0F, 2.0F, 3.0F));
+
+                // Serialize.
+                const auto pathToFile =
+                    std::filesystem::temp_directory_path() / "low-end-engine-tests" / "nodetree";
+                auto optionalError = pRootNode->serializeNodeTree(pathToFile, false);
+                if (optionalError.has_value()) [[unlikely]] {
+                    optionalError->addCurrentLocationToErrorStack();
+                    INFO(optionalError->getFullErrorMessage());
+                    REQUIRE(false);
+                }
+
+                // Deserialize.
+                auto result = Node::deserializeNodeTree(pathToFile);
+                if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                    auto error = std::get<Error>(std::move(result));
+                    error.addCurrentLocationToErrorStack();
+                    INFO(error.getFullErrorMessage());
+                    REQUIRE(false);
+                }
+                auto pDeserializedRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                // Compare.
+                REQUIRE(pDeserializedRootNode->getNodeName() == "My root node");
+                const auto mtxChildNodes = pDeserializedRootNode->getChildNodes();
+                REQUIRE(mtxChildNodes.second.size() == 1);
+
+                const auto pDeserializedSpatialNode = dynamic_cast<SpatialNode*>(mtxChildNodes.second[0]);
+                REQUIRE(pDeserializedSpatialNode != nullptr);
+                REQUIRE(pDeserializedSpatialNode->getNodeName() == "My spatial node");
+                REQUIRE(
+                    glm::all(
+                        glm::epsilonEqual(
+                            pDeserializedSpatialNode->getRelativeLocation(),
+                            glm::vec3(1.0F, 2.0F, 3.0F),
+                            0.00001F)));
+
+                getWindow()->close();
+            });
+        }
     };
 
     auto result = Window::create("", true);
