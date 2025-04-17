@@ -1,5 +1,8 @@
 #include "game/node/Node.h"
 
+// Standard.
+#include <ranges>
+
 // Custom.
 #include "game/World.h"
 #include "game/GameManager.h"
@@ -50,6 +53,10 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
             continue;
         }
 
+        // This node is a root node of some external node tree it was deserialized using the info from the
+        // external node tree file but its child nodes were not deserialized so we should deserialize them
+        // here.
+
         // Construct path to this external node tree.
         const auto pathToExternalNodeTree =
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / it->second;
@@ -69,24 +76,23 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
         }
         auto pExternalRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
 
-        // Get child nodes of external node tree.
-        const auto pMtxChildNodes = pExternalRootNode->getChildNodes();
-        std::scoped_lock externalChildNodesGuard(*pMtxChildNodes.first);
+        auto mtxChildNodes = pExternalRootNode->getChildNodes();
+        std::scoped_lock externalChildNodesGuard(*mtxChildNodes.first);
 
-        // Attach child nodes of this external root node to our node
-        // (their data cannot be changed since when you reference an external node tree
-        // you can only modify root node of the external node tree).
-        while (!pMtxChildNodes.second.empty()) {
+        while (!mtxChildNodes.second.empty()) {
             // Use a "while" loop instead of a "for" loop because this "child nodes array" will be
             // modified each iteration (this array will be smaller and smaller with each iteration since
             // we are "removing" child nodes of some parent node), thus we avoid modifying the
             // array while iterating over it.
             nodeInfo.pObject->addChildNode(
-                *pMtxChildNodes.second.begin(),
+                *mtxChildNodes.second.begin(),
                 AttachmentRule::KEEP_RELATIVE,
                 AttachmentRule::KEEP_RELATIVE,
                 AttachmentRule::KEEP_RELATIVE);
-        }
+
+            // Update list of child nodes.
+            mtxChildNodes = pExternalRootNode->getChildNodes();
+        };
     }
 
     // Sort all nodes by their ID. Prepare array of pairs: Node - Parent index.
@@ -153,7 +159,8 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
         }
 
         // Save node.
-        vNodes[iNodeId] = {std::move(nodeInfo.pObject), iParentNodeId};
+        vNodes[iNodeId].first = std::move(nodeInfo.pObject);
+        vNodes[iNodeId].second = iParentNodeId;
 
         if (bIsRootNode) {
             optionalRootNodeIndex = iNodeId;
@@ -165,15 +172,23 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
         return Error("root node was not found");
     }
 
-    // Build hierarchy using value from attribute.
-    for (auto& [pNode, optionalParentIndex] : vNodes) {
+    // Build hierarchy in reverse ID order, this way we start from nodes without children and will continue
+    // to "move out" nodes without hitting deleted memory as parent nodes (see how to collect these IDs during
+    // the serialization).
+    for (auto& [pNode, optionalParentIndex] : std::views::reverse(vNodes)) {
         if (pNode == nullptr) [[unlikely]] {
             return Error("unexpected nullptr");
         }
+
         if (!optionalParentIndex.has_value()) {
             continue;
         }
-        vNodes[*optionalParentIndex].first->addChildNode(
+        auto& pParentNode = vNodes[*optionalParentIndex].first;
+        if (pParentNode == nullptr) [[unlikely]] {
+            return Error("unexpected nullptr");
+        }
+
+        pParentNode->addChildNode(
             std::move(pNode),
             AttachmentRule::KEEP_RELATIVE,
             AttachmentRule::KEEP_RELATIVE,
@@ -183,7 +198,7 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
     return std::move(vNodes[*optionalRootNodeIndex].first);
 }
 
-std::optional<Error> Node::serializeNodeTree(const std::filesystem::path& pathToFile, bool bEnableBackup) {
+std::optional<Error> Node::serializeNodeTree(std::filesystem::path pathToFile, bool bEnableBackup) {
     // Self check: make sure this node is marked to be serialized.
     if (!bSerialize) [[unlikely]] {
         return Error(
@@ -193,28 +208,33 @@ std::optional<Error> Node::serializeNodeTree(const std::filesystem::path& pathTo
                 sNodeName));
     }
 
+    // Add TOML extension here because other functions will rely on that.
+    if (!pathToFile.string().ends_with(".toml")) {
+        pathToFile += ".toml";
+    }
+
     lockChildren(); // make sure nothing is changed/deleted while we are serializing
     {
         // Collect information for serialization.
         size_t iId = 0;
-        auto result = getInformationForSerialization(iId, {});
+        auto result = getInformationForSerialization(pathToFile, iId, {});
         if (std::holds_alternative<Error>(result)) [[unlikely]] {
             auto error = std::get<Error>(result);
             error.addCurrentLocationToErrorStack();
             return error;
         }
-        const auto vOriginalNodesInfo =
+        auto vOriginalNodesInfo =
             std::get<std::vector<SerializableObjectInformationWithUniquePtr>>(std::move(result));
 
         // Convert information array.
         std::vector<SerializableObjectInformation> vNodesInfo;
-        for (const auto& info : vOriginalNodesInfo) {
+        vNodesInfo.reserve(vOriginalNodesInfo.size());
+        for (auto& info : vOriginalNodesInfo) {
             vNodesInfo.push_back(std::move(info.info));
         }
 
         // Serialize.
-        const auto optionalError =
-            Serializable::serializeMultiple(pathToFile, std::move(vNodesInfo), bEnableBackup);
+        const auto optionalError = Serializable::serializeMultiple(pathToFile, vNodesInfo, bEnableBackup);
         if (optionalError.has_value()) [[unlikely]] {
             auto err = optionalError.value();
             err.addCurrentLocationToErrorStack();
@@ -669,7 +689,13 @@ void Node::unlockChildren() {
 }
 
 std::variant<std::vector<Node::SerializableObjectInformationWithUniquePtr>, Error>
-Node::getInformationForSerialization(size_t& iId, std::optional<size_t> iParentId) {
+Node::getInformationForSerialization(
+    const std::filesystem::path& pathToSerializeTo, size_t& iId, std::optional<size_t> iParentId) {
+    if (!pathToSerializeTo.string().ends_with(".toml")) [[unlikely]] {
+        // internal Node code that called this function should have added .toml
+        Error::showErrorAndThrowException("unexpected state");
+    }
+
     // Prepare information about nodes.
     // Use custom attributes for storing hierarchy information.
     std::vector<SerializableObjectInformationWithUniquePtr> vNodesInfo;
@@ -692,47 +718,45 @@ Node::getInformationForSerialization(size_t& iId, std::optional<size_t> iParentI
         const auto sPathDeserializedFromRelativeRes = getPathDeserializedFromRelativeToRes()->first;
         const auto sObjectIdInDeserializedFile = getPathDeserializedFromRelativeToRes()->second;
 
-        // This entity was deserialized from the `res` directory.
-        // We should only serialize fields with changed values and additionally serialize
-        // the path to the original file so that the rest
-        // of the fields can be deserialized from that file.
-
-        // Check that the original file exists.
-        const auto pathToOriginalFile =
+        auto pathToOriginal =
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathDeserializedFromRelativeRes;
-        if (!std::filesystem::exists(pathToOriginalFile)) [[unlikely]] {
-            return Error(
-                std::format(
-                    "node \"{}\" has the path it was deserialized from ({}, ID {}) but this "
-                    "file \"{}\" does not exist",
-                    getNodeName(),
-                    sPathDeserializedFromRelativeRes,
-                    sObjectIdInDeserializedFile,
-                    pathToOriginalFile.string()));
+        if (!pathToOriginal.string().ends_with(".toml")) {
+            pathToOriginal += ".toml";
         }
 
-        // Deserialize the original.
-        std::unordered_map<std::string, std::string> customAttributes;
-        auto result = deserialize<Node>(pathToOriginalFile, sObjectIdInDeserializedFile, customAttributes);
-        if (std::holds_alternative<Error>(result)) [[unlikely]] {
-            auto error = std::get<Error>(result);
-            error.addCurrentLocationToErrorStack();
-            return error;
-        }
-        // Save original object to only save changed fields later.
-        pOptionalOriginalObject = std::get<std::unique_ptr<Node>>(std::move(result));
-        selfInfo.pOriginalObject = pOptionalOriginalObject.get();
+        // Make sure to not use an original object if the same file is being overwritten.
+        if (!std::filesystem::exists(pathToSerializeTo) ||
+            std::filesystem::canonical(pathToSerializeTo) != std::filesystem::canonical(pathToOriginal)) {
+            // This object was previously deserialized from the `res` directory and now is serialized
+            // into a different file in the `res` directory.
+            // We should only serialize fields with changed values and additionally serialize
+            // the path to the original file so that the rest of the fields can be deserialized from that
+            // file.
 
-        // Check if child nodes are located in the same file
-        // (i.e. check if this node is a root of some external node tree).
-        if (!mtxChildNodes.second.empty() &&
-            isTreeDeserializedFromOneFile(sPathDeserializedFromRelativeRes)) {
-            // Don't serialize information about child nodes,
-            // when referencing an external node tree, we should only
-            // allow modifying the root node, thus, because only root node
-            // can have changed fields, we don't include child nodes here.
-            bIncludeInformationAboutChildNodes = false;
-            selfInfo.customAttributes[sTomlKeyExternalNodeTreePath.data()] = sPathDeserializedFromRelativeRes;
+            // Deserialize the original.
+            std::unordered_map<std::string, std::string> customAttributes;
+            auto result = deserialize<Node>(pathToOriginal, sObjectIdInDeserializedFile, customAttributes);
+            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                auto error = std::get<Error>(result);
+                error.addCurrentLocationToErrorStack();
+                return error;
+            }
+            // Save original object to only save changed fields later.
+            pOptionalOriginalObject = std::get<std::unique_ptr<Node>>(std::move(result));
+            selfInfo.pOriginalObject = pOptionalOriginalObject.get();
+
+            // Check if child nodes are located in the same file
+            // (i.e. check if this node is a root of some external node tree).
+            if (!mtxChildNodes.second.empty() &&
+                isTreeDeserializedFromOneFile(sPathDeserializedFromRelativeRes)) {
+                // Don't serialize information about child nodes,
+                // when referencing an external node tree, we should only
+                // allow modifying the root node, thus, because only root node
+                // can have changed fields, we don't include child nodes here.
+                bIncludeInformationAboutChildNodes = false;
+                selfInfo.customAttributes[sTomlKeyExternalNodeTreePath.data()] =
+                    sPathDeserializedFromRelativeRes;
+            }
         }
     }
     vNodesInfo.push_back(
@@ -750,7 +774,7 @@ Node::getInformationForSerialization(size_t& iId, std::optional<size_t> iParentI
             }
 
             // Get serialization info.
-            auto result = pChildNode->getInformationForSerialization(iId, iMyId);
+            auto result = pChildNode->getInformationForSerialization(pathToSerializeTo, iId, iMyId);
             if (std::holds_alternative<Error>(result)) [[unlikely]] {
                 auto error = std::get<Error>(std::move(result));
                 return error;

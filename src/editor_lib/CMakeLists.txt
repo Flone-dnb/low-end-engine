@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
     private/input/EditorInputEventIds.hpp
     public/node/EditorCameraNode.h
     private/node/EditorCameraNode.cpp
+    public/misc/EditorNodeCreationHelpers.hpp
     # add your .h/.cpp files here
 )
 

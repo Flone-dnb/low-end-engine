@@ -3,6 +3,7 @@
 
 // Custom.
 #include "io/Serializable.h"
+#include "TestFilePaths.hpp"
 
 // External.
 #include "nameof.hpp"
@@ -11,8 +12,12 @@
 class TestSerializable : public Serializable {
 public:
     static bool bDestructorCalled;
+    static bool bOnAfterDeserializedCalled;
 
-    TestSerializable() { bDestructorCalled = false; };
+    TestSerializable() {
+        bDestructorCalled = false;
+        bOnAfterDeserializedCalled = false;
+    };
     virtual ~TestSerializable() override { bDestructorCalled = true; };
 
     static std::string getTypeGuidStatic() { return "test-guid"; }
@@ -166,6 +171,8 @@ public:
             std::move(variables));
     }
 
+    virtual void onAfterDeserialized() override { bOnAfterDeserializedCalled = true; }
+
     bool bBool = false;
     int iInt = 0;
     unsigned int iUnsignedInt = 0;
@@ -183,6 +190,7 @@ public:
     MeshGeometry meshGeometry;
 };
 bool TestSerializable::bDestructorCalled = false;
+bool TestSerializable::bOnAfterDeserializedCalled = false;
 
 class TestSerializableDerived : public TestSerializable {
 public:
@@ -247,7 +255,8 @@ TEST_CASE("serialize and deserialize a sample type") {
     pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
 
     // Serialize.
-    const auto pathToFile = std::filesystem::temp_directory_path() / "low-end-engine-tests" / "serializable";
+    const auto pathToFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / vUsedTestFileNames[0];
     auto optionalError = pToSerialize->serialize(pathToFile, false);
     if (optionalError.has_value()) [[unlikely]] {
         optionalError->addCurrentLocationToErrorStack();
@@ -256,6 +265,7 @@ TEST_CASE("serialize and deserialize a sample type") {
     }
 
     // Deserialize.
+    REQUIRE(!TestSerializable::bOnAfterDeserializedCalled);
     auto result = Serializable::deserialize<TestSerializable>(pathToFile);
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
@@ -265,6 +275,7 @@ TEST_CASE("serialize and deserialize a sample type") {
     }
     auto pDeserialized = std::get<std::unique_ptr<TestSerializable>>(std::move(result));
     REQUIRE(!TestSerializable::bDestructorCalled);
+    REQUIRE(TestSerializable::bOnAfterDeserializedCalled);
 
     constexpr float floatEpsilon = 0.00001f;
 
@@ -311,7 +322,7 @@ TEST_CASE("serialize and deserialize a derived type") {
 
     // Serialize.
     const auto pathToFile =
-        std::filesystem::temp_directory_path() / "low-end-engine-tests" / "serializableDerived";
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / vUsedTestFileNames[1];
     auto optionalError = pToSerialize->serialize(pathToFile, false);
     if (optionalError.has_value()) [[unlikely]] {
         optionalError->addCurrentLocationToErrorStack();
@@ -332,4 +343,165 @@ TEST_CASE("serialize and deserialize a derived type") {
 
     REQUIRE(pDeserialized->iInt == pToSerialize->iInt); // parent variables were also saved
     REQUIRE(pDeserialized->iDerivedInt == pToSerialize->iDerivedInt);
+}
+
+TEST_CASE("deserialize with original object") {
+    const auto pathToOriginalFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / vUsedTestFileNames[5];
+    const auto pathToModifiedFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / vUsedTestFileNames[6];
+
+    {
+        // Create 2 objects to serialize in a single file.
+        auto pToSerialize1 = std::make_unique<TestSerializable>();
+        auto pToSerialize2 = std::make_unique<TestSerializable>();
+
+        pToSerialize1->iInt = 100;
+        pToSerialize2->iInt = 200;
+
+        // Serialize.
+        auto optionalError = Serializable::serializeMultiple(
+            pathToOriginalFile,
+            {SerializableObjectInformation(pToSerialize1.get(), "0"),
+             SerializableObjectInformation(pToSerialize2.get(), "1")},
+            false);
+        if (optionalError.has_value()) [[unlikely]] {
+            optionalError->addCurrentLocationToErrorStack();
+            INFO(optionalError->getFullErrorMessage());
+            REQUIRE(false);
+        }
+    }
+
+    {
+        // Deserialize.
+        auto result = Serializable::deserializeMultiple<Serializable>(pathToOriginalFile);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto error = std::get<Error>(std::move(result));
+            error.addCurrentLocationToErrorStack();
+            INFO(error.getFullErrorMessage());
+            REQUIRE(false);
+        }
+        auto vDeserializedObjects =
+            std::get<std::vector<DeserializedObjectInformation<std::unique_ptr<Serializable>>>>(
+                std::move(result));
+
+        // Check correctness.
+        REQUIRE(vDeserializedObjects.size() == 2);
+
+        const auto pDeserialized1 = dynamic_cast<TestSerializable*>(vDeserializedObjects[0].pObject.get());
+        const auto pDeserialized2 = dynamic_cast<TestSerializable*>(vDeserializedObjects[1].pObject.get());
+        REQUIRE(pDeserialized1 != nullptr);
+        REQUIRE(pDeserialized2 != nullptr);
+
+        REQUIRE(pDeserialized1->iInt == 100);
+        REQUIRE(pDeserialized2->iInt == 200);
+
+        // Modify 2nd object.
+        pDeserialized2->sString = "Hello!";
+
+        // Serialize 2nd object, it should have a reference to the original object (1 of the objects from the
+        // original file, we need to make sure it references the correct object but not just the first one).
+        auto optionalError = pDeserialized2->serialize(pathToModifiedFile, false);
+        if (optionalError.has_value()) [[unlikely]] {
+            optionalError->addCurrentLocationToErrorStack();
+            INFO(optionalError->getFullErrorMessage());
+            REQUIRE(false);
+        }
+
+        // Find reference to the original.
+        ConfigManager modifiedToml;
+        optionalError = modifiedToml.loadFile(pathToModifiedFile);
+        if (optionalError.has_value()) [[unlikely]] {
+            optionalError->addCurrentLocationToErrorStack();
+            INFO(optionalError->getFullErrorMessage());
+            REQUIRE(false);
+        }
+
+        auto vKeys = modifiedToml.getAllKeysOfSection("0.test-guid");
+        REQUIRE(!vKeys.empty());
+        bool bFoundReferenceToOriginal = false;
+        for (const auto& sKeyName : vKeys) {
+            if (sKeyName.starts_with(".path_to_original")) {
+                bFoundReferenceToOriginal = true;
+                break;
+            }
+        }
+        REQUIRE(bFoundReferenceToOriginal);
+    }
+
+    // Deserialize 2nd object.
+    auto result = Serializable::deserialize<TestSerializable>(pathToModifiedFile);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        INFO(error.getFullErrorMessage());
+        REQUIRE(false);
+    }
+    auto pDeserialized2 = std::get<std::unique_ptr<TestSerializable>>(std::move(result));
+
+    REQUIRE(pDeserialized2->iInt == 200);
+    REQUIRE(pDeserialized2->sString == "Hello!");
+}
+
+TEST_CASE("deserialize, change, serialize in the same file (no reference to the original)") {
+    const auto pathToFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / vUsedTestFileNames[7];
+
+    {
+        auto pToSerialize = std::make_unique<TestSerializable>();
+        pToSerialize->iInt = 100;
+
+        // Serialize.
+        auto optionalError = pToSerialize->serialize(pathToFile, false);
+        if (optionalError.has_value()) [[unlikely]] {
+            optionalError->addCurrentLocationToErrorStack();
+            INFO(optionalError->getFullErrorMessage());
+            REQUIRE(false);
+        }
+    }
+
+    {
+        // Deserialize.
+        auto result = Serializable::deserialize<TestSerializable>(pathToFile);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            auto error = std::get<Error>(std::move(result));
+            error.addCurrentLocationToErrorStack();
+            INFO(error.getFullErrorMessage());
+            REQUIRE(false);
+        }
+        auto pDeserialized = std::get<std::unique_ptr<TestSerializable>>(std::move(result));
+
+        REQUIRE(pDeserialized->iInt == 100);
+
+        pDeserialized->iInt = 200;
+
+        // Serialize.
+        auto optionalError = pDeserialized->serialize(pathToFile, false);
+        if (optionalError.has_value()) [[unlikely]] {
+            optionalError->addCurrentLocationToErrorStack();
+            INFO(optionalError->getFullErrorMessage());
+            REQUIRE(false);
+        }
+
+        // Find reference to the original.
+        ConfigManager modifiedToml;
+        optionalError = modifiedToml.loadFile(pathToFile);
+        if (optionalError.has_value()) [[unlikely]] {
+            optionalError->addCurrentLocationToErrorStack();
+            INFO(optionalError->getFullErrorMessage());
+            REQUIRE(false);
+        }
+
+        auto vKeys = modifiedToml.getAllKeysOfSection("0.test-guid");
+        REQUIRE(!vKeys.empty());
+        bool bFoundReferenceToOriginal = false;
+        for (const auto& sKeyName : vKeys) {
+            if (sKeyName.starts_with(".path_to_original")) {
+                bFoundReferenceToOriginal = true;
+                break;
+            }
+        }
+        REQUIRE(
+            !bFoundReferenceToOriginal); // because we overwritten the same file there should be no reference
+    }
 }

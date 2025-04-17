@@ -3,6 +3,7 @@
 #include "game/node/SpatialNode.h"
 #include "game/GameInstance.h"
 #include "game/Window.h"
+#include "TestFilePaths.hpp"
 
 // External.
 #include "catch2/catch_test_macros.hpp"
@@ -1583,8 +1584,8 @@ TEST_CASE("serialize and deserialize node tree") {
                 pChildNode->setRelativeLocation(glm::vec3(1.0F, 2.0F, 3.0F));
 
                 // Serialize.
-                const auto pathToFile =
-                    std::filesystem::temp_directory_path() / "low-end-engine-tests" / "nodetree";
+                const auto pathToFile = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
+                                        sTestDirName / vUsedTestFileNames[2];
                 auto optionalError = pRootNode->serializeNodeTree(pathToFile, false);
                 if (optionalError.has_value()) [[unlikely]] {
                     optionalError->addCurrentLocationToErrorStack();
@@ -1616,6 +1617,173 @@ TEST_CASE("serialize and deserialize node tree") {
                             pDeserializedSpatialNode->getRelativeLocation(),
                             glm::vec3(1.0F, 2.0F, 3.0F),
                             0.00001F)));
+
+                getWindow()->close();
+            });
+        }
+    };
+
+    auto result = Window::create("", true);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        Error error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        INFO(error.getFullErrorMessage());
+        REQUIRE(false);
+    }
+
+    const std::unique_ptr<Window> pMainWindow = std::get<std::unique_ptr<Window>>(std::move(result));
+    pMainWindow->processEvents<TestGameInstance>();
+}
+
+TEST_CASE("serialize node tree that references an external node tree") {
+    class TestGameInstance : public GameInstance {
+    public:
+        TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
+        virtual ~TestGameInstance() override = default;
+
+        virtual void onGameStarted() override {
+            createWorld([&]() {
+                const auto pathToParentTree = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
+                                              sTestDirName / vUsedTestFileNames[3];
+                const auto pathToExternalTree = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
+                                                sTestDirName / vUsedTestFileNames[4];
+                {
+                    // Create external node tree.
+                    auto pExternalRootNode = std::make_unique<Node>("External root");
+                    pExternalRootNode->addChildNode(std::make_unique<SpatialNode>("External child"));
+
+                    // Serialize it.
+                    auto optionalError = pExternalRootNode->serializeNodeTree(pathToExternalTree, false);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                }
+
+                {
+                    // Deserialize.
+                    auto result = Node::deserializeNodeTree(pathToExternalTree);
+                    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                        auto error = std::get<Error>(std::move(result));
+                        error.addCurrentLocationToErrorStack();
+                        INFO(error.getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    auto pDeserializedExternalRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                    // Create a parent node tree and attach the external tree.
+                    auto pParentRootNode = std::make_unique<Node>("Parent root");
+                    const auto pExternalRootNode =
+                        pParentRootNode->addChildNode(std::move(pDeserializedExternalRootNode));
+
+                    // Make some changes.
+                    pExternalRootNode->setNodeName("changed external root name");
+                    {
+                        const auto mtxChildNodes = pExternalRootNode->getChildNodes();
+                        REQUIRE(mtxChildNodes.second.size() == 1);
+                        mtxChildNodes.second[0]->setNodeName("this will not be saved");
+                    }
+
+                    // Serialize parent tree.
+                    auto optionalError = pParentRootNode->serializeNodeTree(pathToParentTree, false);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                }
+
+                {
+                    // Deserialize.
+                    auto result = Node::deserializeNodeTree(pathToParentTree);
+                    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                        auto error = std::get<Error>(std::move(result));
+                        error.addCurrentLocationToErrorStack();
+                        INFO(error.getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    auto pDeserializedParentRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                    // Check names.
+                    REQUIRE(pDeserializedParentRootNode->getNodeName() == "Parent root");
+                    const auto mtxParentChildNodes = pDeserializedParentRootNode->getChildNodes();
+                    REQUIRE(mtxParentChildNodes.second.size() == 1);
+
+                    const auto pExternalRootNode = mtxParentChildNodes.second[0];
+                    REQUIRE(pExternalRootNode->getNodeName() == "changed external root name");
+                    const auto mtxExternalChildNodes = pExternalRootNode->getChildNodes();
+                    REQUIRE(mtxExternalChildNodes.second.size() == 1);
+
+                    const auto pExternalChildNode = mtxExternalChildNodes.second[0];
+                    REQUIRE(pExternalChildNode->getNodeName() == "External child");
+
+                    // Check paths deserialized from.
+                    REQUIRE(pDeserializedParentRootNode->getPathDeserializedFromRelativeToRes().has_value());
+                    REQUIRE(pExternalRootNode->getPathDeserializedFromRelativeToRes().has_value());
+                    REQUIRE(pExternalChildNode->getPathDeserializedFromRelativeToRes().has_value());
+
+                    REQUIRE(
+                        pExternalRootNode->getPathDeserializedFromRelativeToRes()->first ==
+                        pExternalChildNode->getPathDeserializedFromRelativeToRes()->first);
+                    REQUIRE(
+                        pDeserializedParentRootNode->getPathDeserializedFromRelativeToRes()->first !=
+                        pExternalRootNode->getPathDeserializedFromRelativeToRes()->first);
+
+                    // Now change something and overwrite the parent node tree.
+                    pDeserializedParentRootNode->setNodeName("new name");
+                    pExternalRootNode->setNodeName("new external root name");
+                    {
+                        const auto mtxChildNodes = pExternalRootNode->getChildNodes();
+                        REQUIRE(mtxChildNodes.second.size() == 1);
+                        mtxChildNodes.second[0]->setNodeName("this will not be saved");
+                    }
+
+                    auto optionalError =
+                        pDeserializedParentRootNode->serializeNodeTree(pathToParentTree, false);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                }
+
+                {
+                    // Deserialize.
+                    auto result = Node::deserializeNodeTree(pathToParentTree);
+                    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                        auto error = std::get<Error>(std::move(result));
+                        error.addCurrentLocationToErrorStack();
+                        INFO(error.getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    auto pDeserializedParentRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                    // Check names.
+                    REQUIRE(pDeserializedParentRootNode->getNodeName() == "new name");
+                    const auto mtxParentChildNodes = pDeserializedParentRootNode->getChildNodes();
+                    REQUIRE(mtxParentChildNodes.second.size() == 1);
+
+                    const auto pExternalRootNode = mtxParentChildNodes.second[0];
+                    REQUIRE(pExternalRootNode->getNodeName() == "new external root name");
+                    const auto mtxExternalChildNodes = pExternalRootNode->getChildNodes();
+                    REQUIRE(mtxExternalChildNodes.second.size() == 1);
+
+                    const auto pExternalChildNode = mtxExternalChildNodes.second[0];
+                    REQUIRE(pExternalChildNode->getNodeName() == "External child");
+
+                    // Check paths deserialized from.
+                    REQUIRE(pDeserializedParentRootNode->getPathDeserializedFromRelativeToRes().has_value());
+                    REQUIRE(pExternalRootNode->getPathDeserializedFromRelativeToRes().has_value());
+                    REQUIRE(pExternalChildNode->getPathDeserializedFromRelativeToRes().has_value());
+
+                    REQUIRE(
+                        pExternalRootNode->getPathDeserializedFromRelativeToRes()->first ==
+                        pExternalChildNode->getPathDeserializedFromRelativeToRes()->first);
+                    REQUIRE(
+                        pDeserializedParentRootNode->getPathDeserializedFromRelativeToRes()->first !=
+                        pExternalRootNode->getPathDeserializedFromRelativeToRes()->first);
+                }
 
                 getWindow()->close();
             });

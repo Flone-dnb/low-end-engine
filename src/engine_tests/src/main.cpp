@@ -3,8 +3,13 @@
 #include <crtdbg.h>
 #endif
 
+// Standard.
+#include <filesystem>
+
 // Custom.
 #include "io/Logger.h"
+#include "TestFilePaths.hpp"
+#include "misc/ProjectPaths.h"
 
 // External.
 #include "catch2/catch_session.hpp"
@@ -53,6 +58,13 @@ int main() {
 #elif defined(WIN32) && !defined(DEBUG)
     OutputDebugStringA("Using release build configuration, memory checks are disabled.");
 #endif
+
+    // Delete old temp files.
+    const auto pathToTempDir = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName;
+    if (std::filesystem::exists(pathToTempDir)) {
+        std::filesystem::remove_all(pathToTempDir);
+    }
+    std::filesystem::create_directory(pathToTempDir);
 
     return Catch::Session().run();
 }

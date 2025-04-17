@@ -65,6 +65,8 @@ If you don't know what node system is or haven't used Godot, here is a small int
 
 Nodes are generally used to take place in the node hierarchy, to be part of some parent node for example. Nodes are special and they use special garbage collected smart pointers (we will talk about them in one of the next sections) but not everything should be a node. If you want to implement some class that does not need to take a place in the node hierarchy, does not belong to some node or does not interact with nodes, for example a class to send bug reports, there's really no point in deriving you bug reporter class from `Node`, although nobody is stopping you from using nodes for everything and it's perfectly fine to do so, right now we want to smoothly transition to other important thing in your game. Your class/object might exist apart from node system and you can use it outside of the node system. For example, you can store your class/object in a `GameInstance`.
 
+This engine does not have a garbage collector so nodes have a specific ownership rule: parent nodes own child nodes (using `std::unique_ptr`) and child nodes reference parent nodes using raw pointers. You are free to move nodes in the hierarchy (even at runtime) the nodes will handle the ownership change. You will see how this works in more details in one of the next sections.
+
 ## Game instance
 
 > If you used Unreal Engine the `GameInstance` class works similarly (but not exactly) to how Unreal Engine's `UGameInstance` class works.
@@ -184,7 +186,163 @@ const auto pathToLogsDir = ProjectPaths::getPathToPlayerProgressDirectory();
 
 See `misc/ProjectPaths.h` for more.
 
-## Saving and loading user's progress data
+## Reflection basics
+
+Reflection comes down to writing additional code to your class, this additional code allows other systems to see/analyze your class/objects (see functions/fields).
+
+Let's consider an example: you want to have a save file for your game where you store player's progress. For this you can use `ConfigManager` but we won't cover it in this section instead we will handle the config data using reflection:
+
+```Cpp
+// PlayerSaveData.h
+
+// A very simple player save data class.
+class PlayerSaveData
+{
+public:
+    void setExperience(unsigned int iExperience) { this->iExperience = iExperience; }
+    unsigned int getExperience() const { return iExperience; }
+
+    void setName(const std::string& sName) { this->sName = sName; }
+    std::string getName() const { return sName; }
+
+private:
+    unsigned int iExperience = 0;
+    std::string sName;
+};
+```
+
+In order to save player's data we need to derive this class from `Serializable` and add a few functions:
+
+```Cpp
+// PlayerSaveData.h
+
+#include "io/Serializable.h"
+
+class PlayerSaveData : public Serializable
+{
+public:
+    PlayerSaveData() = default;
+    virtual ~PlayerSaveData() override = default;
+
+    static std::string getTypeGuidStatic();
+    virtual std::string getTypeGuid() const override;
+
+    static TypeReflectionInfo getReflectionInfo();
+
+    // ... getter/setter for private fields here ...
+};
+```
+
+Then in the .cpp file implement new functions:
+
+```Cpp
+// PlayerSaveData.cpp
+
+#include "nameof.hpp"
+
+namespace {
+    constexpr std::string_view sTypeGuid = "a8e1c213-05a4-4615-bf09-4e187772d359" // some random GUID
+}
+std::string PlayerSaveData::getTypeGuidStatic() { return sTypeGuid.data(); }
+std::string PlayerSaveData::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo PlayerSaveData::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    // TODO
+
+    return TypeReflectionInfo(
+        "", // parent GUID, if you derived from say a `Node` you would have here `Node::getTypeGuidStatic()`
+        NAMEOF_SHORT_TYPE(PlayerSaveData).data(), // type name
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<PlayerSaveData>(); }, // function to create your object
+        std::move(variables)); // reflected variables
+}
+```
+
+Before we fill the information about reflected variables you need to explicitly register your type, for example in your GameInstance's constructor:
+
+```Cpp
+#include "misc/ReflectionTypeDatabase.h"
+
+MyGameInstance::MyGameInstance(Window* pWindow) : GameInstance(pWindow) {
+    registerType(PlayerSaveData::getTypeGuidStatic(), PlayerSaveData::getReflectionInfo());
+}
+```
+
+Now we only need to fill the information about the reflected variables:
+
+```Cpp
+TypeReflectionInfo PlayerSaveData::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.unsignedInts[NAMEOF_MEMBER(&PlayerSaveData::iExperience).data()] =
+        ReflectedVariableInfo<unsigned int>{
+            .setter = [](Serializable* pThis, const unsigned int& iNewValue) {
+                    reinterpret_cast<PlayerSaveData*>(pThis)->setExperience(iNewValue);
+                },
+            .getter = [](Serializable* pThis) -> unsigned int {
+                return reinterpret_cast<PlayerSaveData*>(pThis)->getExperience();
+            }};
+
+    variables.strings[NAMEOF_MEMBER(&PlayerSaveData::sName).data()] =
+        ReflectedVariableInfo<std::string>{
+            .setter = [](Serializable* pThis, const std::string& sNewValue) {
+                    reinterpret_cast<PlayerSaveData*>(pThis)->setName(sNewValue);
+                },
+            .getter = [](Serializable* pThis) -> std::string {
+                return reinterpret_cast<PlayerSaveData*>(pThis)->getName();
+            }};
+
+    return TypeReflectionInfo(
+        "",
+        NAMEOF_SHORT_TYPE(PlayerSaveData).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<PlayerSaveData>(); },
+        std::move(variables));
+}
+```
+
+As you can see all you need is to provide a getter and a setter for a variable. Thanks to this such variables will now be displayed in the editor (if you are changing these values from the editor UI) and they will be serialized and deserialized. To make this section complete let's save and load this player data:
+
+```Cpp
+// have `std::unique_ptr<PlayerSaveData> pPlayerSaveData` somewhere, then:
+
+// to save the current state of the player data (and its variables):
+auto optionalError = pPlayerSaveData->serialize(
+    ProjectPaths::getPathToPlayerProgressDirectory() / "save1", // file will be created/overwritten
+    true); // also create a backup file
+if (optionalError.has_value()) [[unlikely]] {
+    // handle error
+}
+
+// then later in order to deserialize:
+
+auto result = Serializable::deserialize<PlayerSaveData>(ProjectPaths::getPathToPlayerProgressDirectory() / "save1");
+if (std::holds_alternative<Error>(result)) [[unlikely]] {
+    // handle error
+}
+auto pDeserializedSave = std::get<std::unique_ptr<PlayerSaveData>>(std::move(result));
+```
+
+## Memory leak checks
+
+### Debug builds
+
+By default in Debug builds memory leak checks are enabled, look for the output/debugger output tab of your IDE after running your project. If any leaks occurred it should print about them. You can test whether the memory leak checks are enabled or not by doing something like this:
+```Cpp
+new int(42);
+// don't `delete`
+```
+run your program that runs this code and after your program is finished you should see a message about the memory leak in the output/debugger output tab of your IDE.
+
+### About raw pointers
+
+Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For more information read the documentation for the functions you are using.
+
+## Saving and loading config files
+
+Although you can use reflection and `Serializable` types for saving and loading data you can also use `ConfigManager` for such purposes.
+
+### User's progress data
 
 `ConfigManager` uses `TOML` file format so if you don't know how this format looks like you can search it right now on the Internet. `TOML` format generally looks like `INI` format but with more features.
 
@@ -234,7 +392,7 @@ As you can see `ConfigManager` is a very simple system for very simple tasks. Ge
 
 `ConfigManager` also has support for backup files and some other interesting features (see documentation for `ConfigManager`).
 
-## Saving and loading user's input settings
+### User's input settings
 
 `InputManager` allows creating input events and axis events, i.e. allows binding names with multiple input keys. When working with input the workflow for creating, modifying, saving and loading inputs goes like this:
 
@@ -372,3 +530,86 @@ cmake -DCMAKE_BUILD_TYPE=Release -DDISABLE_DEV_STUFF=ON ..
 cmake --build . --target game
 ```
 Then copy the resulting binary (from `build/OUTPUT/game`) to your ARM64 Linux device. We don't worry about installing the SDL2 libraries because in most cases they are already installed the OS your ARM64 device is running. Inside of your ARM64 Linux device launch the game using some file explorer or a console.
+
+# Advanced topics
+
+## Writing custom shaders
+
+Materials can use custom GLSL shaders, here is an example of setting a custom fragment shader to a mesh.
+
+```Cpp
+pMeshNode->getMaterial().setPathToCustomFragmentShader("game/shaders/myshader.glsl"); // located in the `res/game/...` directory
+
+// then spawn your mesh node
+```
+
+See the directory `res/engine/shaders/node` for reference implementation.
+
+## Serialization internals
+
+Note:
+> Information described in this section might not be up to date, please notify the developers if something is not right / outdated.
+
+### General overview
+
+Most of the game assets are stored in the human-readable `TOML` format. This format is similar to `INI` format but has more features. This means that you can use any text editor to view or edit your asset files if you need to.
+
+When you serialize a serializable object (an object that derives from `Serializable`) the general TOML structure will look like this (comments start with #):
+
+```INI
+## <unique_id> is an integer, used to globally differentiate objects in the file
+## (in case objects have the same type (same GUID)), if you are serializing only 1 object the ID is 0 by default
+["<unique_id>.<type_guid>"]       ## section that describes an object with GUID
+<field_name> = <field_value>      ## not all fields will have their values stored like that
+<field_name> = <field_value>
+
+
+["<unique_id>.<type_guid>"]       ## some other object
+<field_name> = <field_value>      ## some other field
+".path_to_original" = <value>     ## keys that start with one dot are "internal attributes" they are used for storing 
+                                  ## internal info
+"..parent_node_id" = <unique_id>  ## keys that start with two dots are "custom attributes" (user-specified)
+                                  ## that you pass into `serialize`, they are used to store additional info
+                                  ## `Node` class uses custom attributes to save node hierarchy
+```
+
+### Storing only changed fields
+
+Imagine a case where you have serialized some object then deserialized it, modified and serialized in a different file. In this case only changed variables will be serialized and instead of saving unchanged variables we will save a path to the "original" object to deserialize other variables.
+
+```INI
+## res/game/my_new_data.toml
+
+["0.550ea9f9-dd8a-4089-a717-0fe4e351a687"]
+iLevel = 3
+".path_to_original" = ["game/my_data.toml", "0"]
+```
+
+If we open the file `res/game/my_data.toml` we will see something like this:
+
+```INI
+## res/game/my_data.toml
+
+["0.test-guid"]
+iLevel = 0
+iExperience = 50
+vAttributes = [32, 22, 31]
+```
+
+Now when we deserialize `res/game/my_new_data.toml` we will get and object with the following properties:
+
+```Cpp
+iLevel = 3
+iExperience = 50
+vAttributes = [32, 22, 31]
+```
+
+This will work only if the original object was previously deserialized from a file located in the `res` directory and a new object is serialized in a different path but still in the `res` directory (for more info see `Serializable::getPathDeserializedFromRelativeToRes`).
+
+### Referencing external node tree
+
+Imagine you had a serialized node tree then you deserialize it and in the engine/editor add it to some node of some other node tree (we'll call it a parent node tree), thus the parent node tree is seeing your previously deserialized node tree (that you attached) as an extrenal node tree.
+
+During the serialization of the node tree that uses an external node tree this external node tree is saved in a special way, that is, only the root node of the external node tree is saved with the parent node tree and the information about external node tree's child nodes is stored as a path to the external node tree file.
+
+This means that when we reference an external node tree, only changes to external node tree's root node will be saved.

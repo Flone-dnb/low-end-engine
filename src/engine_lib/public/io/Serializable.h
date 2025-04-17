@@ -277,7 +277,7 @@ private:
      * entity.
      */
     [[nodiscard]] std::variant<std::string, Error> serialize(
-        std::filesystem::path pathToFile,
+        const std::filesystem::path& pathToFile,
         toml::value& tomlData,
         Serializable* pOriginalObject = nullptr,
         std::string sEntityId = "",
@@ -301,7 +301,7 @@ private:
      * Name of the key which we use when we serialize an object that was previously
      * deserialized from the `res` directory.
      */
-    static constexpr std::string_view sTomlKeyPathRelativeToRes = ".path_relative_to_res";
+    static constexpr std::string_view sTomlKeyPathToOriginalRelativeToRes = ".path_to_original";
 
     /** Text that we add to custom (user-specified) attributes in TOML files. */
     static constexpr std::string_view sTomlKeyCustomAttributePrefix = "..";
@@ -393,8 +393,18 @@ Serializable::deserialize(const std::filesystem::path& pathToFile) {
     }
     auto vDeserializedObjects =
         std::get<std::vector<DeserializedObjectInformation<std::unique_ptr<T>>>>(std::move(result));
+
     if (vDeserializedObjects.empty()) [[unlikely]] {
         return Error(std::format("nothing was deserialized from file \"{}\"", pathToFile.string()));
+    }
+    if (vDeserializedObjects.size() > 1) [[unlikely]] {
+        return Error(
+            std::format(
+                "deserialized {} objects while expected only 1, this function assumes that there's only 1 "
+                "object to deserialize, otherwise use another `deserialize` function and specify an object "
+                "ID to deserialize (file \"{}\")",
+                vDeserializedObjects.size(),
+                pathToFile.string()));
     }
 
     return std::move(vDeserializedObjects[0].pObject);
@@ -485,24 +495,28 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
     // Collect keys from target section.
     const auto& sectionTable = targetSection.as_table();
     std::unordered_map<std::string_view, const toml::value*> fieldsToDeserialize;
-    std::unique_ptr<T> pOriginalObject = nullptr;
+    std::optional<std::pair<std::string, std::string>> originalObjectPathAndId;
     for (const auto& [sKey, value] : sectionTable) {
-        if (sKey == sTomlKeyPathRelativeToRes) {
-            // Make sure the value is a string.
-            if (!value.is_string()) [[unlikely]] {
+        if (sKey == sTomlKeyPathToOriginalRelativeToRes) {
+            if (!value.is_array()) [[unlikely]] {
                 return Error(
-                    std::format("found \"{}\" key's value is not string", sTomlKeyPathRelativeToRes));
+                    std::format("found key \"{}\" has wrong type", sTomlKeyPathToOriginalRelativeToRes));
+            }
+            auto tomlArray = value.as_array();
+
+            if (tomlArray.size() != 2) [[unlikely]] {
+                return Error(
+                    std::format(
+                        "found array key \"{}\" with unexpected size", sTomlKeyPathToOriginalRelativeToRes));
+            }
+            if (!tomlArray[0].is_string() || !tomlArray[1].is_string()) [[unlikely]] {
+                return Error(
+                    std::format(
+                        "found array key \"{}\" has unexpected element type",
+                        sTomlKeyPathToOriginalRelativeToRes));
             }
 
-            // Deserialize original entity.
-            auto deserializeResult = Serializable::deserialize<T>(
-                ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / value.as_string());
-            if (std::holds_alternative<Error>(deserializeResult)) [[unlikely]] {
-                auto error = std::get<Error>(std::move(deserializeResult));
-                error.addCurrentLocationToErrorStack();
-                return error;
-            }
-            pOriginalObject = std::get<std::unique_ptr<T>>(std::move(deserializeResult));
+            originalObjectPathAndId = {tomlArray[0].as_string(), tomlArray[1].as_string()};
         } else if (sKey.starts_with(sTomlKeyCustomAttributePrefix)) {
             // Custom attribute.
             // Make sure it's a string.
@@ -520,10 +534,24 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
     // Prepare to create a new object to fill with deserialized info.
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
     std::unique_ptr<T> pDeserializedObject = nullptr;
+    bool bUsedOriginalObject = false;
 
-    if (pOriginalObject != nullptr) {
+    if (originalObjectPathAndId.has_value()) {
+        const auto& [sPathRelativeResToOriginal, sOriginalObjectUniqueId] = *originalObjectPathAndId;
+
         // Use the original entity instead of creating a new one.
-        pDeserializedObject = std::move(pOriginalObject);
+        auto deserializeResult = Serializable::deserialize<T>(
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathRelativeResToOriginal,
+            sOriginalObjectUniqueId,
+            customAttributes);
+        if (std::holds_alternative<Error>(deserializeResult)) [[unlikely]] {
+            auto error = std::get<Error>(std::move(deserializeResult));
+            error.addCurrentLocationToErrorStack();
+            return error;
+        }
+        pDeserializedObject = std::get<std::unique_ptr<T>>(std::move(deserializeResult));
+
+        bUsedOriginalObject = true;
     } else {
         auto pTemp = typeInfo.createNewObject();
         if (dynamic_cast<T*>(pTemp.get()) == nullptr) [[unlikely]] {
@@ -1014,8 +1042,15 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
     }
 
-    if (pathToFile.string().starts_with(
-            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT).string())) {
+    // In case if we used an original object we should have "path deserialized from" already initialized
+    // with the path to the original object and it should stay like so, in this case we should reference the
+    // original object path (not the path we are deserialized from) so that if we have multiple modified
+    // copies of an object they all will point to the same original file instead of creating a weird reference
+    // scheme. Plus node trees (parent node trees) that use external node tree(s) need this when they (parent
+    // node trees) are being overwritten once again.
+
+    if (!bUsedOriginalObject && pathToFile.string().starts_with(
+                                    ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT).string())) {
         // File is located in the `res` directory, save a relative path to the `res` directory.
         auto sRelativePath =
             std::filesystem::relative(

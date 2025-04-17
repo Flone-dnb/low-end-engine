@@ -12,6 +12,7 @@
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
 #include "game/node/ui/TextNode.h"
+#include "misc/EditorNodeCreationHelpers.hpp"
 
 // External.
 #include "hwinfo/hwinfo.h"
@@ -200,7 +201,7 @@ void EditorGameInstance::registerEditorInputEvents() {
 
 void EditorGameInstance::addEditorNodesToCurrentWorld() {
     // Editor camera.
-    const auto pEditorCameraNode = getWorldRootNode()->addChildNode(std::make_unique<EditorCameraNode>());
+    const auto pEditorCameraNode = getWorldRootNode()->addChildNode(createEditorNode<EditorCameraNode>());
     pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F)); // NOLINT
     pEditorCameraNode->makeActive();
     if (isGamepadConnected()) {
@@ -208,37 +209,37 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
     }
 
     // Stats.
-    pStatsTextNode = getWorldRootNode()->addChildNode(std::make_unique<TextNode>());
+    pStatsTextNode = getWorldRootNode()->addChildNode(createEditorNode<TextNode>());
     pStatsTextNode->setTextSize(0.03F);                                                          // NOLINT
     pStatsTextNode->setPosition(glm::vec2(0.01F, 1.0F - 0.01F - pStatsTextNode->getTextSize())); // NOLINT
 
     // Stuff for testing.
     {
-        auto pFloor = std::make_unique<MeshNode>();
+        auto pFloor = createEditorNode<MeshNode>();
         pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));            // NOLINT
         pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pFloor));
 
-        auto pCube = std::make_unique<MeshNode>();
+        auto pCube = createEditorNode<MeshNode>();
         pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));           // NOLINT
         pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.3F, 0.0F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pCube));
 
-        auto pSun = std::make_unique<DirectionalLightNode>();
+        auto pSun = createEditorNode<DirectionalLightNode>();
         pSun->setLightIntensity(0.2F); // NOLINT
         pSun->setRelativeRotation(
             MathHelpers::convertNormalizedDirectionToRollPitchYaw(
                 glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSun));
 
-        auto pSpotlight = std::make_unique<SpotlightNode>();
+        auto pSpotlight = createEditorNode<SpotlightNode>();
         pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F)); // NOLINT
         pSpotlight->setRelativeRotation(
             MathHelpers::convertNormalizedDirectionToRollPitchYaw(
                 glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSpotlight));
 
-        auto pPointLight = std::make_unique<PointLightNode>();
+        auto pPointLight = createEditorNode<PointLightNode>();
         pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pPointLight));
     }

@@ -52,6 +52,7 @@ void GameManager::destroy() {
 }
 
 GameManager::~GameManager() {
+    // Manager must be destroyed by the Window before being set to `nullptr`.
     if (bIsDestroyed) {
         return;
     }

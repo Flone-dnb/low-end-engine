@@ -126,7 +126,7 @@ public:
      * serialization reflected field.
      */
     [[nodiscard]] std::optional<Error>
-    serializeNodeTree(const std::filesystem::path& pathToFile, bool bEnableBackup);
+    serializeNodeTree(std::filesystem::path pathToFile, bool bEnableBackup);
 
     /**
      * Detaches this node from the parent and optionally despawns this node and
@@ -760,6 +760,7 @@ private:
     /**
      * Collects and returns information for serialization for self and all child nodes.
      *
+     * @param pathToSerializeTo Path that this node will be serialized to.
      * @param iId       ID for serialization to use (will be incremented).
      * @param iParentId Parent's serialization ID (if this node has a parent and it will also
      * be serialized).
@@ -768,7 +769,8 @@ private:
      * that can be serialized.
      */
     std::variant<std::vector<SerializableObjectInformationWithUniquePtr>, Error>
-    getInformationForSerialization(size_t& iId, std::optional<size_t> iParentId);
+    getInformationForSerialization(
+        const std::filesystem::path& pathToSerializeTo, size_t& iId, std::optional<size_t> iParentId);
 
     /**
      * Checks if this node and all child nodes were deserialized from the same file
@@ -838,8 +840,7 @@ private:
     static constexpr std::string_view sTomlKeyParentNodeId = "parent_node_id";
 
     /** Name of the TOML key we use to store a path to an external node tree. */
-    static constexpr std::string_view sTomlKeyExternalNodeTreePath =
-        "external_node_tree_path_relative_to_res";
+    static constexpr std::string_view sTomlKeyExternalNodeTreePath = "root_node_of_external_node_tree";
 };
 
 template <typename NodeType>

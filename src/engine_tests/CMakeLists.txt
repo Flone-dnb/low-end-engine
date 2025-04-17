@@ -19,6 +19,7 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 # Sources.
 set(PROJECT_SOURCES
     src/main.cpp
+    src/TestFilePaths.hpp
     src/input/InputManager.cpp
     src/node/Node.cpp
     src/node/MeshNode.cpp

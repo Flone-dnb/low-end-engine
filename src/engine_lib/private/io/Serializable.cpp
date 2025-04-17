@@ -44,9 +44,60 @@ std::optional<Error> Serializable::serialize(
     }
 #endif
 
+    std::unique_ptr<Serializable> pOriginalObject;
+    if (getPathDeserializedFromRelativeToRes().has_value()) {
+        // Get path and ID.
+        const auto sPathDeserializedFromRelativeRes = getPathDeserializedFromRelativeToRes()->first;
+        const auto sObjectIdInDeserializedFile = getPathDeserializedFromRelativeToRes()->second;
+
+        auto pathToOriginal =
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathDeserializedFromRelativeRes;
+        if (!pathToOriginal.string().ends_with(".toml")) {
+            pathToOriginal += ".toml";
+        }
+
+        // Make sure to not use an original object if the same file is being overwritten.
+        if (!std::filesystem::exists(pathToFile) ||
+            std::filesystem::canonical(pathToFile) != std::filesystem::canonical(pathToOriginal)) {
+            // This object was previously deserialized from the `res` directory and now is serialized
+            // into a different file in the `res` directory.
+
+            // We should only serialize fields with changed values and additionally serialize
+            // the path to the original file so that the rest of the fields can be deserialized from that
+            // file.
+
+            // Check that the original file exists.
+            const auto pathToOriginalFile = pathToOriginal;
+            if (!std::filesystem::exists(pathToOriginalFile)) [[unlikely]] {
+                auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(getTypeGuid());
+                return Error(
+                    std::format(
+                        "object of type \"{}\" has the path it was deserialized from ({}, ID {}) but "
+                        "this "
+                        "file \"{}\" does not exist",
+                        typeInfo.sTypeName,
+                        sPathDeserializedFromRelativeRes,
+                        sObjectIdInDeserializedFile,
+                        pathToOriginalFile.string()));
+            }
+
+            // Deserialize the original.
+            std::unordered_map<std::string, std::string> customAttributes;
+            auto result =
+                deserialize<Serializable>(pathToOriginalFile, sObjectIdInDeserializedFile, customAttributes);
+            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                auto error = std::get<Error>(result);
+                error.addCurrentLocationToErrorStack();
+                return error;
+            }
+            // Save original object to only save changed fields later.
+            pOriginalObject = std::get<std::unique_ptr<Serializable>>(std::move(result));
+        }
+    }
+
     // Serialize data to TOML value.
     toml::value tomlData;
-    auto result = serialize(pathToFile, tomlData, nullptr, "", customAttributes);
+    auto result = serialize(pathToFile, tomlData, pOriginalObject.get(), "", customAttributes);
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -205,8 +256,8 @@ std::optional<Error> Serializable::serializeMultiple(
     return {};
 }
 
-std::variant<std::string, Error> Serializable::serialize(
-    std::filesystem::path pathToFile,
+std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
+    const std::filesystem::path& pathToFile,
     toml::value& tomlData,
     Serializable* pOriginalObject,
     std::string sEntityId,
@@ -252,7 +303,7 @@ std::variant<std::string, Error> Serializable::serialize(
         COMPARE_AND_ADD_TO_TOML(typeInfo.reflectedVariables.unsignedInts);
         COMPARE_AND_ADD_TO_TOML(typeInfo.reflectedVariables.longLongs);
 
-        constexpr float floatEpsilon = 0.00001f;
+        constexpr float floatEpsilon = 0.00001F;
 
         // Unsigned long long.
         for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.unsignedLongLongs) {
@@ -397,9 +448,11 @@ std::variant<std::string, Error> Serializable::serialize(
     }
 
     if (pOriginalObject != nullptr && pOriginalObject->getPathDeserializedFromRelativeToRes().has_value()) {
-        // Write path to the original entity.
-        tomlData[sSectionName][sTomlKeyPathRelativeToRes.data()] =
-            (*pOriginalObject->getPathDeserializedFromRelativeToRes()).first;
+        // Write path to the original and original ID.
+        toml::value tomlArray = toml::array();
+        tomlArray.push_back((*pOriginalObject->getPathDeserializedFromRelativeToRes()).first);
+        tomlArray.push_back((*pOriginalObject->getPathDeserializedFromRelativeToRes()).second);
+        tomlData[sSectionName][sTomlKeyPathToOriginalRelativeToRes.data()] = tomlArray;
     }
 
     // Write custom attributes, they will be written with two dots in the beginning.
