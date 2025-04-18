@@ -14,6 +14,7 @@
 #include "misc/Error.h"
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
+#include "misc/ThreadPool.h"
 
 class Renderer;
 class GameInstance;
@@ -47,6 +48,37 @@ public:
      * and other game objects will be destroyed while the world is changing.
      */
     void createWorld(const std::function<void()>& onCreated);
+
+    /**
+     * Asynchronously loads and deserializes a node tree as the new world. Node tree's root node will be used
+     * as world's root node.
+     *
+     * @warning Use GameInstance member functions as callback functions for loaded worlds, because all nodes
+     * and other game objects will be destroyed while the world is changing.
+     *
+     * @remark Replaces the old world (if existed).
+     *
+     * @param pathToNodeTreeFile Path to the file that contains a node tree to load, the ".toml"
+     * extension will be automatically added if not specified.
+     * @param onLoaded           Callback function that will be called on the main thread after the world
+     * is loaded.
+     */
+    void loadNodeTreeAsWorld(
+        const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded);
+
+    /**
+     * Adds a function to be executed asynchronously on the thread pool.
+     *
+     * @warning If you are using a member functions/fields inside of the task you need to make
+     * sure that the owner object of these member functions/fields will not be deleted until
+     * this task is finished.
+     *
+     * @remark In the task you don't need to check if the game is being destroyed,
+     * the engine makes sure all tasks are finished before the game is destroyed.
+     *
+     * @param task Function to execute.
+     */
+    void addTaskToThreadPool(const std::function<void()>& task);
 
     /**
      * Returns the total number of spawned nodes that receive input.
@@ -124,11 +156,26 @@ public:
 private:
     /** Groups data used during world creation. */
     struct WorldCreationTask {
+        /** Info about a task to load node tree as world. */
+        struct LoadNodeTreeTask {
+            /** Path to the file that stores the node tree to load. */
+            std::filesystem::path pathToNodeTreeToLoad;
+
+            /** `nullptr` if the node tree from @ref pathToNodeTreeToLoad is still being deserialized. */
+            std::unique_ptr<Node> pLoadedNodeTreeRoot;
+
+            /**
+             * Tells if we started a thread pool task to deserialize @ref pathToNodeTreeToLoad into @ref
+             * pLoadedNodeTreeRoot.
+             */
+            bool bIsAsyncTaskStarted = false;
+        };
+
         /** Callback to call after the world is created or loaded. */
         std::function<void()> onCreated;
 
         /** If empty then create an empty world (only root node), otherwise load the node tree. */
-        std::optional<std::filesystem::path> pathToNodeTreeToLoad;
+        std::optional<LoadNodeTreeTask> optionalNodeTreeLoadTask;
     };
 
     /** Groups world-related data. */
@@ -168,6 +215,9 @@ private:
      */
     GameManager(
         Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance);
+
+    /** Destroys @ref mtxWorldData if it exists. */
+    void destroyCurrentWorld();
 
     /**
      * Must be called before destructor to destroy the world, all nodes and various systems
@@ -294,6 +344,9 @@ private:
      * @param position    Axis position in range [-1.0; 1.0].
      */
     void triggerAxisEvents(GamepadAxis gamepadAxis, float position);
+
+    /** Thread pool for various async tasks. */
+    ThreadPool threadPool;
 
     /** Binds action/axis names with input keys. */
     InputManager inputManager;

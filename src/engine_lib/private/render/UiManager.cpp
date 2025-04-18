@@ -31,6 +31,7 @@ void UiManager::renderUi() {
     auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);
 
+    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     {
@@ -122,6 +123,7 @@ void UiManager::renderUi() {
         }
     }
     glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void UiManager::onNodeSpawning(TextNode* pNode) {

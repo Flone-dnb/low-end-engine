@@ -73,9 +73,11 @@ public:
     /**
      * Initializes world.
      *
-     * @param pGameManager Object that owns this world.
+     * @param pGameManager   Object that owns this world.
+     * @param pRootNodeToUse Optionally specify a root node to use, if `nullptr` a new root node will be
+     * created.
      */
-    World(GameManager* pGameManager);
+    World(GameManager* pGameManager, std::unique_ptr<Node> pRootNodeToUse = nullptr);
 
     /** Clears pointer to the root node which causes the world to recursively be despawned and destroyed. */
     void destroyWorld();

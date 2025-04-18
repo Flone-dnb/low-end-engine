@@ -10,6 +10,15 @@ void GameInstance::createWorld(const std::function<void()>& onCreated) {
     pWindow->getGameManager()->createWorld(onCreated);
 }
 
+void GameInstance::loadNodeTreeAsWorld(
+    const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded) {
+    pWindow->getGameManager()->loadNodeTreeAsWorld(pathToNodeTreeFile, onLoaded);
+}
+
+void GameInstance::addTaskToThreadPool(const std::function<void()>& task) const {
+    pWindow->getGameManager()->addTaskToThreadPool(task);
+}
+
 std::pair<
     std::recursive_mutex,
     std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&

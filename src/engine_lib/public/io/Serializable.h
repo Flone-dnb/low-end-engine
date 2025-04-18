@@ -1029,8 +1029,8 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
 
         for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
-            const auto pathToMeshGeometry =
-                pathToFile.parent_path() / (pathToFile.stem().string() + "." + sVariableName);
+            const auto pathToMeshGeometry = pathToFile.parent_path() / (pathToFile.stem().string() + "." +
+                                                                        sEntityId + "." + sVariableName);
             if (!std::filesystem::exists(pathToMeshGeometry)) {
                 // This means that the geometry was empty during serialization so the file was not created.
                 continue;

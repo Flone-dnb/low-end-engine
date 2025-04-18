@@ -17,6 +17,21 @@ GameManager::GameManager(
     ReflectedTypeDatabase::registerEngineTypes();
 }
 
+void GameManager::destroyCurrentWorld() {
+    // Wait for GPU to finish all work (just in case).
+    Renderer::waitForGpuToFinishWorkUpToThisPoint();
+
+    std::scoped_lock guard(mtxWorldData.first);
+
+    if (mtxWorldData.second.pWorld != nullptr) {
+        // Not clearing the pointer because some nodes can still reference world.
+        mtxWorldData.second.pWorld->destroyWorld();
+
+        // Can safely destroy the world object now.
+        mtxWorldData.second.pWorld = nullptr;
+    }
+}
+
 void GameManager::destroy() {
     // Log destruction so that it will be slightly easier to read logs.
     Logger::get().info(
@@ -24,24 +39,19 @@ void GameManager::destroy() {
         "--------------------\n\n");
     Logger::get().flushToDisk();
 
-    // Wait for GPU to finish all work. Make sure no GPU resource is used.
-    Renderer::waitForGpuToFinishWorkUpToThisPoint();
+    // Destroy world before game instance, so that no node will reference game instance.
+    destroyCurrentWorld();
 
-    // Destroy world if it exists.
-    {
-        std::scoped_lock guard(mtxWorldData.first);
+    threadPool.stop();
 
-        if (mtxWorldData.second.pWorld != nullptr) {
-            // Destroy world before game instance, so that no node will reference game instance.
-            // Not clearing the pointer because some nodes can still reference world.
-            mtxWorldData.second.pWorld->destroyWorld();
-
-            // Can safely destroy the world object now.
-            mtxWorldData.second.pWorld = nullptr;
-        }
+    // Make sure all nodes were destroyed.
+    const auto iAliveNodeCount = Node::getAliveNodeCount();
+    if (iAliveNodeCount != 0) {
+        Logger::get().error(
+            std::format("the world was destroyed but there are still {} node(s) alive", iAliveNodeCount));
     }
 
-    // Destroy game instance.
+    // Destroy game instance before renderer.
     pGameInstance = nullptr;
 
     // After game instance, destroy the renderer.
@@ -63,10 +73,41 @@ GameManager::~GameManager() {
 void GameManager::createWorld(const std::function<void()>& onCreated) {
     std::scoped_lock guard(mtxWorldData.first);
 
-    // Create new world on next tick because we might be currently iterating over "tickable" nodes
+    if (mtxWorldData.second.pendingWorldCreationTask.has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "world is already being created/loaded, wait until the world is loaded");
+    }
+
+    // Create new world on the next tick because we might be currently iterating over "tickable" nodes
     // or nodes that receiving input so avoid modifying those arrays in this case.
     mtxWorldData.second.pendingWorldCreationTask =
-        WorldCreationTask{.onCreated = onCreated, .pathToNodeTreeToLoad = {}};
+        WorldCreationTask{.onCreated = onCreated, .optionalNodeTreeLoadTask = {}};
+}
+
+void GameManager::loadNodeTreeAsWorld(
+    const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded) {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    if (mtxWorldData.second.pendingWorldCreationTask.has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "world is already being created/loaded, wait until the world is loaded");
+    }
+
+    // Create new world on the next tick because we might be currently iterating over "tickable" nodes
+    // or nodes that receiving input so avoid modifying those arrays in this case.
+    mtxWorldData.second.pendingWorldCreationTask = WorldCreationTask{
+        .onCreated = onLoaded,
+        .optionalNodeTreeLoadTask = WorldCreationTask::LoadNodeTreeTask{
+            .pathToNodeTreeToLoad = pathToNodeTreeFile, .pLoadedNodeTreeRoot = nullptr}};
+}
+
+void GameManager::addTaskToThreadPool(const std::function<void()>& task) {
+    if (threadPool.isStopped()) {
+        // Being destroyed, don't queue any new tasks.
+        return;
+    }
+
+    threadPool.addTask(task);
 }
 
 size_t GameManager::getReceivingInputNodeCount() {
@@ -123,18 +164,54 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     {
         std::scoped_lock guard(mtxWorldData.first);
 
-        // Create a new world if needed.
-        if (mtxWorldData.second.pendingWorldCreationTask.has_value()) {
-            // Create new world.
-            if (mtxWorldData.second.pWorld != nullptr) {
-                // Explicitly destroying instead of `nullptr` because some nodes can still reference world.
-                mtxWorldData.second.pWorld->destroyWorld();
-            }
-            mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
+        auto& worldCreationTask = mtxWorldData.second.pendingWorldCreationTask;
 
-            // Done.
-            mtxWorldData.second.pendingWorldCreationTask->onCreated();
-            mtxWorldData.second.pendingWorldCreationTask = {};
+        // Create a new world if needed.
+        if (worldCreationTask.has_value()) {
+            if (!worldCreationTask->optionalNodeTreeLoadTask.has_value()) {
+                destroyCurrentWorld();
+                mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
+
+                // Clear task before calling the callback because inside of the callback the user might
+                // queue new world creation.
+                auto callback = std::move(worldCreationTask->onCreated);
+                worldCreationTask = {};
+                callback();
+            } else {
+                if (!worldCreationTask->optionalNodeTreeLoadTask->bIsAsyncTaskStarted) {
+                    worldCreationTask->optionalNodeTreeLoadTask->bIsAsyncTaskStarted = true;
+
+                    addTaskToThreadPool(
+                        [this,
+                         pathToNodeTree = mtxWorldData.second.pendingWorldCreationTask
+                                              ->optionalNodeTreeLoadTask->pathToNodeTreeToLoad]() {
+                            // Deserialize node tree.
+                            auto result = Node::deserializeNodeTree(pathToNodeTree);
+                            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                                auto error = std::get<Error>(std::move(result));
+                                error.addCurrentLocationToErrorStack();
+                                error.showErrorAndThrowException();
+                            }
+                            auto pRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                            std::scoped_lock guard(mtxWorldData.first);
+
+                            // Create new world on the next tick in the main thread.
+                            mtxWorldData.second.pendingWorldCreationTask->optionalNodeTreeLoadTask
+                                ->pLoadedNodeTreeRoot = std::move(pRootNode);
+                        });
+                } else if (worldCreationTask->optionalNodeTreeLoadTask->pLoadedNodeTreeRoot != nullptr) {
+                    // Loaded.
+                    destroyCurrentWorld();
+                    mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(
+                        this, std::move(worldCreationTask->optionalNodeTreeLoadTask->pLoadedNodeTreeRoot)));
+
+                    // Same thing, clear task before callback.
+                    auto callback = std::move(worldCreationTask->onCreated);
+                    worldCreationTask = {};
+                    callback();
+                }
+            }
         }
     }
 

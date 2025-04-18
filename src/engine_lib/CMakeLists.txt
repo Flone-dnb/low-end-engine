@@ -68,6 +68,8 @@ set(PROJECT_SOURCES
     public/misc/ProjectPaths.h
     private/misc/ReflectedTypeDatabase.cpp
     public/misc/ReflectedTypeDatabase.h
+    private/misc/ThreadPool.cpp
+    private/misc/ThreadPool.h
     public/game/geometry/shapes/Frustum.h
     private/game/geometry/shapes/Frustum.cpp
     public/game/geometry/shapes/AABB.h

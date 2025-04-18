@@ -99,12 +99,12 @@ void Renderer::drawNextFrame() {
 
     const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
 
-    {
-        // Get camera and shader programs.
-        auto& mtxShaderPrograms = shaderManager.getShaderPrograms();
-        auto& mtxActiveCamera = pCameraManager->getActiveCamera();
-        std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
+    // Get camera and shader programs.
+    auto& mtxShaderPrograms = shaderManager.getShaderPrograms();
+    auto& mtxActiveCamera = pCameraManager->getActiveCamera();
+    std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
+    if (mtxActiveCamera.second != nullptr) {
         // Draw mesh nodes for each shader program.
         for (auto& [sProgramName, shaderProgram] :
              mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::MESH_NODE)]) {

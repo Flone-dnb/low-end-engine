@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <functional>
+#include <filesystem>
 
 // Custom.
 #include "input/KeyboardButton.hpp"
@@ -34,6 +35,48 @@ public:
     GameInstance& operator=(const GameInstance&) = delete;
 
     virtual ~GameInstance() = default;
+
+    /**
+     * Creates a new world that contains only one node - root node.
+     *
+     * @remark Replaces the old world (if existed).
+     *
+     * @param onCreated Callback function that will be called after the world is
+     * created. Use GameInstance member functions as callback functions for created worlds, because all nodes
+     * and other game objects will be destroyed while the world is changing.
+     */
+    void createWorld(const std::function<void()>& onCreated);
+
+    /**
+     * Asynchronously loads and deserializes a node tree as the new world. Node tree's root node will be used
+     * as world's root node.
+     *
+     * @warning Use GameInstance member functions as callback functions for loaded worlds, because all nodes
+     * and other game objects will be destroyed while the world is changing.
+     *
+     * @remark Replaces the old world (if existed).
+     *
+     * @param pathToNodeTreeFile Path to the file that contains a node tree to load, the ".toml"
+     * extension will be automatically added if not specified.
+     * @param onLoaded           Callback function that will be called on the main thread after the world
+     * is loaded.
+     */
+    void loadNodeTreeAsWorld(
+        const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded);
+
+    /**
+     * Adds a function to be executed asynchronously on the thread pool.
+     *
+     * @warning If you are using a member functions/fields inside of the task you need to make
+     * sure that the owner object of these member functions/fields will not be deleted until
+     * this task is finished.
+     *
+     * @remark In the task you don't need to check if the game is being destroyed,
+     * the engine makes sure all tasks are finished before the game is destroyed.
+     *
+     * @param task Function to execute.
+     */
+    void addTaskToThreadPool(const std::function<void()>& task) const;
 
     /**
      * Returns a pointer to world's root node.
@@ -208,17 +251,6 @@ protected:
      * the world will be destroyed and will be inaccessible (`nullptr`).
      */
     virtual void onWindowClose() {}
-
-    /**
-     * Creates a new world that contains only one node - root node.
-     *
-     * @remark Replaces the old world (if existed).
-     *
-     * @param onCreated Callback function that will be called after the world is
-     * created. Use GameInstance member functions as callback functions for created worlds, because all nodes
-     * and other game objects will be destroyed while the world is changing.
-     */
-    void createWorld(const std::function<void()>& onCreated);
 
     /**
      * Returns map of action events that this GameInstance is bound to (must be used with mutex).

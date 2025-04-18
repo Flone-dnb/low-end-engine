@@ -4,7 +4,6 @@
 #include "game/GameInstance.h"
 
 class Window;
-class GameManager;
 class EditorCameraNode;
 class TextNode;
 

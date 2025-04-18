@@ -438,7 +438,7 @@ std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
                     continue;
                 }
 
-                currentValue.serialize(basePathToBinaryFile.string() + "." + sVariableName);
+                currentValue.serialize(basePathToBinaryFile.string() + "." + sEntityId + "." + sVariableName);
             }
         }
 

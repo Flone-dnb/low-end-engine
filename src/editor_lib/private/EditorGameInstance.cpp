@@ -130,7 +130,11 @@ void EditorGameInstance::registerEditorInputEvents() {
 
         // Close editor.
         mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CLOSE_EDITOR)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressedDown) { getWindow()->close(); };
+            [this](KeyboardModifiers modifiers, bool bIsPressedDown) {
+                if (!bIsPressedDown) {
+                    getWindow()->close();
+                }
+            };
 
         // Capture mouse.
         mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR)] =

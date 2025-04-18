@@ -11,6 +11,8 @@
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/PointLightNode.h"
 #include "game/node/light/SpotlightNode.h"
+#include "game/node/ui/UiNode.h"
+#include "game/node/ui/TextNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -21,6 +23,8 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(DirectionalLightNode::getTypeGuidStatic(), DirectionalLightNode::getReflectionInfo());
     registerType(PointLightNode::getTypeGuidStatic(), PointLightNode::getReflectionInfo());
     registerType(SpotlightNode::getTypeGuidStatic(), SpotlightNode::getReflectionInfo());
+    registerType(UiNode::getTypeGuidStatic(), UiNode::getReflectionInfo());
+    registerType(TextNode::getTypeGuidStatic(), TextNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

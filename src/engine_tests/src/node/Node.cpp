@@ -1,6 +1,7 @@
 // Custom.
 #include "game/node/Node.h"
 #include "game/node/SpatialNode.h"
+#include "game/node/MeshNode.h"
 #include "game/GameInstance.h"
 #include "game/Window.h"
 #include "TestFilePaths.hpp"
@@ -1788,6 +1789,55 @@ TEST_CASE("serialize node tree that references an external node tree") {
                 getWindow()->close();
             });
         }
+    };
+
+    auto result = Window::create("", true);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        Error error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        INFO(error.getFullErrorMessage());
+        REQUIRE(false);
+    }
+
+    const std::unique_ptr<Window> pMainWindow = std::get<std::unique_ptr<Window>>(std::move(result));
+    pMainWindow->processEvents<TestGameInstance>();
+}
+
+TEST_CASE("load node tree as world") {
+    class TestGameInstance : public GameInstance {
+    public:
+        TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
+        virtual void onGameStarted() override {
+            createWorld([&]() {
+                auto pRoot = std::make_unique<Node>("my node");
+                pRoot->addChildNode(std::make_unique<MeshNode>("my mesh"));
+
+                const auto pathToDirectory = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
+                                             sTestDirName / vUsedTestFileNames[9];
+                auto optionalError = pRoot->serializeNodeTree(pathToDirectory / "test", false);
+                if (optionalError.has_value()) [[unlikely]] {
+                    optionalError->addCurrentLocationToErrorStack();
+                    INFO(optionalError->getFullErrorMessage());
+                    REQUIRE(false);
+                }
+
+                REQUIRE(std::filesystem::exists(pathToDirectory / "test.toml"));
+                REQUIRE(std::filesystem::exists(pathToDirectory / "test.1.geometry"));
+
+                loadNodeTreeAsWorld(pathToDirectory / "test", [this]() {
+                    REQUIRE(getWorldRootNode()->getNodeName() == "my node");
+                    const auto mtxChildNodes = getWorldRootNode()->getChildNodes();
+                    REQUIRE(mtxChildNodes.second.size() == 1);
+
+                    REQUIRE(mtxChildNodes.second[0]->getNodeName() == "my mesh");
+
+                    REQUIRE(Node::getAliveNodeCount() == 2);
+
+                    getWindow()->close();
+                });
+            });
+        }
+        virtual ~TestGameInstance() override {}
     };
 
     auto result = Window::create("", true);

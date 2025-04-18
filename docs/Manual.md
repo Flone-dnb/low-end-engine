@@ -338,6 +338,107 @@ run your program that runs this code and after your program is finished you shou
 
 Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For more information read the documentation for the functions you are using.
 
+## Creating a new world
+
+### World axes and world units
+
+The engine uses a left handed coordinate system. +X is world "forward" direction, +Y is world "right" direction and +Z is world "up" direction. These directions are stored in `Globals::WorldDirection` (`misc/Globals.h`).
+
+Rotations are applied in the following order: ZYX, so "yaw" is applied first, then "pitch" and then "roll". If you need to do math with rotations you can use `MathHelpers::buildRotationMatrix` that builds a rotation matrix with the correct rotation order.
+
+1 world unit is expected to be equal to 1 meter in your game.
+
+### Creating a world using C++
+
+Let's first make sure you know how to create a window, your `main.cpp` should generally look like this:
+
+```Cpp
+// Standard.
+#include <stdexcept>
+
+// Custom.
+#include "MyGameInstance.h"
+#include "game/Window.h"
+#include "misc/ProjectPaths.h"
+
+int main() {
+    using namespace ne;
+
+    // Create a game window.
+    auto result = Window::create("mygame");
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        error.showErrorAndThrowException();
+    }
+    auto pWindow = std::get<std::unique_ptr<Window>>(std::move(result));
+
+    // Run game loop.
+    pMainWindow->processEvents<MyGameInstance>();
+
+    return 0;
+}
+```
+
+And your game instance would generally look like this:
+
+```Cpp
+#pragma once
+
+// Custom.
+#include "game/GameInstance.h"
+
+class Window;
+
+class MyGameInstance : public GameInstance {
+public:
+    MyGameInstance(Window* pWindow);
+    virtual ~MyGameInstance() override = default;
+
+protected:
+    virtual void onGameStarted() override;
+};
+```
+
+Now let's see how we can create a world in `onGameStarted`:
+
+```Cpp
+#include "MyGameInstance.h"
+
+#include "game/node/MeshNode.h"
+
+MyGameInstance::MyGameInstance(Window* pWindow) : GameInstance(pWindow) {}
+
+void MyGameInstance::onGameStarted() {
+    createWorld([this]() {
+        // Spawn sample mesh, it gets spawned right away because world root node is spawned, if you
+        // need to configure the node before spawning configure it before `std::move`ing the `unique_ptr` to `addChildNode`
+        // here we are doing a shorter version for simplicity.
+        const auto pMeshNode = getWorldRootNode()->addChildNode(std::make_unique<MeshNode>());
+
+        // Set mesh location.
+        pMeshNode->setWorldLocation(glm::vec3(1.0F, 0.0F, 0.0F));
+    });
+}
+```
+
+The code from above creates a new world with just 2 nodes: a root node and a mesh node. As you can see you specify a callback function that will be called once the world is created.
+
+You would also need a camera to see your world but we will discuss this in one of the next sections, for now let's talk about world creation.
+
+If you instead want to load some level/map as your new world you need to use `loadNodeTreeAsWorld` instead of `createWorld`, see an example:
+
+```Cpp
+void MyGameInstance::onGameStarted() {
+    // Prepare path to your node tree to load.
+    const auto pathToMyLevel = ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME) / "mylevel.toml";
+
+    loadNodeTreeAsWorld(pathToMyLevel, [this]() {
+        // Level is loaded.
+    });
+}
+```
+
 ## Saving and loading config files
 
 Although you can use reflection and `Serializable` types for saving and loading data you can also use `ConfigManager` for such purposes.
