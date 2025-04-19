@@ -24,8 +24,6 @@ Note for Visual Studio users:
 Note for Windows users:
 > Windows 10 users need to run their IDE with admin privileges when building the project for the first time (only for the first build) when executing a post-build script the engine creates a symlink next to the built executable that points to the directory with engine/editor/game resources (called `res`). Creating symlinks on Windows requires admin privileges. When releasing your project we expect you to put an actual copy of your `res` directory next to the built executable but we will discuss this topic later in a separate section.
 
-Before you go ahead and dive into the engine yourself make sure to read a few more sections, there is one really important section further in the manual that you have to read, it contains general tips about things you need to keep an eye out!
-
 ## Which header files to include and which not to include
 
 ### General
