@@ -1,8 +1,6 @@
 # Manual
 
-This is a manual - a step-by-step guide to introduce you to various aspects of the engine. More specific documentation can be always found in the class/function/variable documentation in the source code or on this page (see left panel for navigation), every code entity is documented so you should not get lost.
-
-Note that this manual contains many sections and instead of scrolling this page you can click on a little arrow button in the left (navigation) panel, the little arrow button becomes visible once you hover your mouse cursor over a section name, by clicking on that litte arrow you can expand the section and see its subsections and quickly jump to needed sections.
+This is a manual - a step-by-step guide to introduce you to various aspects of the engine. More specific documentation can be always found in the class/function/variable documentation in the source code or on this page (use side panel for navigation), every code entity is documented so you should not get lost.
 
 This manual expects that you have a solid knowledge in writing programs using C++ language.
 
