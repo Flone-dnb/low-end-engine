@@ -7,6 +7,9 @@ in vec2 fragmentUv;
 
 uniform vec3 diffuseColor;
 
+uniform bool bIsUsingDiffuseTexture;
+layout(location = 0) uniform sampler2D diffuseTexture;
+
 out vec4 color;
 
 layout(early_fragment_tests) in;
@@ -16,7 +19,14 @@ void main() {
     // Normals may be unnormalized after the rasterization (when they are interpolated).
     vec3 fragmentNormalUnit = normalize(fragmentNormal);
 
-    vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, diffuseColor);
+    // Diffuse color.
+    vec3 fragmentDiffuseColor = diffuseColor;
+    if (bIsUsingDiffuseTexture) {
+        fragmentDiffuseColor *= texture(diffuseTexture, fragmentUv).rgb;
+    }
+
+    // Light.
+    vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor);
 
     color = vec4(lightColor, 1.0F);
 } 

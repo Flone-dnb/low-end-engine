@@ -222,6 +222,7 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
         auto pFloor = createEditorNode<MeshNode>();
         pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));            // NOLINT
         pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F)); // NOLINT
+        pFloor->getMaterial().setPathToDiffuseTexture("tiles.png");
         getWorldRootNode()->addChildNode(std::move(pFloor));
 
         auto pCube = createEditorNode<MeshNode>();

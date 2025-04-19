@@ -8,6 +8,7 @@
 #include <array>
 #include <vector>
 
+class Renderer;
 class Shader;
 class ShaderProgram;
 
@@ -83,8 +84,22 @@ public:
         return mtxDatabase;
     }
 
+    /**
+     * Returns renderer that created this manager.
+     *
+     * @return Renderer.
+     */
+    Renderer& getRenderer() const { return *pRenderer; }
+
 private:
-    ShaderManager() = default;
+    ShaderManager() = delete;
+
+    /**
+     * Creates a new manager.
+     *
+     * @param pRenderer Renderer.
+     */
+    ShaderManager(Renderer* pRenderer);
 
     /**
      * Compiles a .glsl shader file.
@@ -157,4 +172,7 @@ private:
             std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>,
             static_cast<size_t>(ShaderProgramUsage::COUNT)>>
         mtxDatabase;
+
+    /** Do not delete/free. Renderer that created this manager. */
+    Renderer* const pRenderer = nullptr;
 };

@@ -12,7 +12,7 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Type reflection
 - [X] Forward renderer using OpenGL ES 3.1
 - [X] Dynamic light sources
-- [ ] Texture import
+- [X] Texture import
 - [ ] GLTF/GLB import
 - [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
 - [ ] Dynamic shadows

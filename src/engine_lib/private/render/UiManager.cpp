@@ -12,6 +12,7 @@
 #include "render/wrapper/ShaderProgram.h"
 #include "render/wrapper/Texture.h"
 #include "game/Window.h"
+#include "render/GpuResourceManager.h"
 
 // External.
 #include "nameof.hpp"

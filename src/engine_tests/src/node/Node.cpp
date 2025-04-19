@@ -1822,7 +1822,7 @@ TEST_CASE("load node tree as world") {
                 }
 
                 REQUIRE(std::filesystem::exists(pathToDirectory / "test.toml"));
-                REQUIRE(std::filesystem::exists(pathToDirectory / "test.1.geometry"));
+                REQUIRE(std::filesystem::exists(pathToDirectory / "test.1.geometry.bin"));
 
                 loadNodeTreeAsWorld(pathToDirectory / "test", [this]() {
                     REQUIRE(getWorldRootNode()->getNodeName() == "my node");

@@ -5,7 +5,6 @@
 #include <variant>
 
 // Custom.
-#include "render/GpuResourceManager.h"
 #include "render/shader/ShaderManager.h"
 #include "misc/Error.h"
 #include "render/RenderStatistics.h"
@@ -19,6 +18,7 @@ class Window;
 class FontManager;
 class UiManager;
 class LightSourceManager;
+class TextureManager;
 
 /** OpenGL ES renderer. */
 class Renderer {
@@ -95,6 +95,13 @@ public:
     FontManager& getFontManager();
 
     /**
+     * Returns manager used to load textures.
+     *
+     * @return Manager.
+     */
+    TextureManager& getTextureManager();
+
+    /**
      * Returns various statistics about the rendering.
      *
      * @return Stats.
@@ -148,7 +155,10 @@ private:
     void calculateFrameStatistics();
 
     /** Database of all shaders. */
-    ShaderManager shaderManager;
+    std::unique_ptr<ShaderManager> pShaderManager;
+
+    /** Texture loading and management. */
+    std::unique_ptr<TextureManager> pTextureManager;
 
     /** UI rendering. */
     std::unique_ptr<UiManager> pUiManager;

@@ -6,6 +6,7 @@
 #include <functional>
 
 // Custom.
+#include "material/TextureHandle.h"
 #include "math/GLMath.hpp"
 
 class MeshNode;
@@ -19,8 +20,20 @@ class Material {
     friend class MeshNode;
 
 public:
-    /** Creates material with default shaders. */
     Material() = default;
+    ~Material() = default;
+
+    Material(const Material&) = delete;
+    Material& operator=(const Material&) = delete;
+
+    /** Move constructor. */
+    Material(Material&&) noexcept = default;
+
+    /**
+     * Move assignment.
+     * @return This.
+     */
+    Material& operator=(Material&&) noexcept = default;
 
     /**
      * Creates material with custom shaders.
@@ -36,6 +49,14 @@ public:
      * @param color Color in the RGB format.
      */
     void setDiffuseColor(const glm::vec3 color);
+
+    /**
+     * Sets path to diffuse texture to load (if not loaded yet by some other spawned object) when spawning and
+     * use.
+     *
+     * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
+     */
+    void setPathToDiffuseTexture(const std::string& sPathToTextureRelativeRes);
 
     /**
      * Sets GLSL vertex shader to use instead of the default one.
@@ -72,6 +93,13 @@ public:
      */
     std::string getPathToCustomFragmentShader() const { return sPathToCustomFragmentShader; }
 
+    /**
+     * Returns path to diffuse texture to use.
+     *
+     * @return Path relative to the `res` directory.
+     */
+    std::string getPathToDiffuseTexture() const { return sPathToDiffuseTextureRelativeRes; }
+
 private:
     /**
      * Called after node that owns this material was spawned.
@@ -107,7 +135,13 @@ private:
     glm::vec3 diffuseColor = glm::vec3(1.0F, 1.0F, 1.0F);
 
     /** Not `nullptr` if this material is used on a spawned renderable node. */
-    std::shared_ptr<ShaderProgram> shaderProgram;
+    std::shared_ptr<ShaderProgram> pShaderProgram;
+
+    /** Not `nullptr` if texture from @ref sPathToDiffuseTextureRelativeRes is loaded. */
+    std::unique_ptr<TextureHandle> pDiffuseTexture;
+
+    /** Path to the texture (relative the `res` directory) to load. */
+    std::string sPathToDiffuseTextureRelativeRes;
 
     /** Empty if using default shader, otherwise path to custom .glsl file (relative `res` directory). */
     std::string sPathToCustomVertexShader;

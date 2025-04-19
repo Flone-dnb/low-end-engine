@@ -11,6 +11,7 @@
 #include "misc/ProjectPaths.h"
 #include "render/LightSourceManager.h"
 #include "render/UiManager.h"
+#include "material/TextureManager.h"
 
 // External.
 #include "glad/glad.h"
@@ -69,8 +70,10 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
 Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWindow) {
     this->pContext = pCreatedContext;
 
+    pShaderManager = std::unique_ptr<ShaderManager>(new ShaderManager(this));
     pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager(this));
     pUiManager = std::unique_ptr<UiManager>(new UiManager(this));
+    pTextureManager = std::unique_ptr<TextureManager>(new TextureManager());
     pFontManager = FontManager::create(
         this,
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
@@ -100,7 +103,7 @@ void Renderer::drawNextFrame() {
     const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
 
     // Get camera and shader programs.
-    auto& mtxShaderPrograms = shaderManager.getShaderPrograms();
+    auto& mtxShaderPrograms = pShaderManager->getShaderPrograms();
     auto& mtxActiveCamera = pCameraManager->getActiveCamera();
     std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
@@ -134,6 +137,12 @@ void Renderer::drawNextFrame() {
 
                 // Draw.
                 glDrawElements(GL_TRIANGLES, vao.getIndexCount(), GL_UNSIGNED_SHORT, nullptr);
+            }
+
+            // Clear texture slots (if they where used).
+            for (int i = GL_TEXTURE0; i < 4; i++) { // NOLINT
+                glActiveTexture(i);
+                glBindTexture(GL_TEXTURE_2D, 0);
             }
         }
 
@@ -279,12 +288,14 @@ unsigned int Renderer::getFpsLimit() const { return renderStats.fpsLimitInfo.iFp
 
 Window* Renderer::getWindow() const { return pWindow; }
 
-ShaderManager& Renderer::getShaderManager() { return shaderManager; }
+ShaderManager& Renderer::getShaderManager() { return *pShaderManager; }
 
 LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceManager; }
 
 UiManager& Renderer::getUiManager() { return *pUiManager; }
 
 FontManager& Renderer::getFontManager() { return *pFontManager; }
+
+TextureManager& Renderer::getTextureManager() { return *pTextureManager; }
 
 RenderStatistics& Renderer::getRenderStatistics() { return renderStats; }

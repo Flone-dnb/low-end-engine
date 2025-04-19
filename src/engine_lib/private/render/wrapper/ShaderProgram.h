@@ -44,6 +44,14 @@ public:
     ~ShaderProgram();
 
     /**
+     * Sets the specified buffer to shader.
+     *
+     * @param sUniformBlockName Name of the uniform block from shader code.
+     * @param pBuffer Buffer to set.
+     */
+    inline void setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer);
+
+    /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
      *
      * @param sUniformName Name of the uniform variable from shader code.
@@ -92,12 +100,12 @@ public:
     inline void setUintToShader(const std::string& sUniformName, unsigned int iValue);
 
     /**
-     * Sets the specified buffer to shader.
+     * Sets the specified value to a `uniform` with the specified name in shaders.
      *
-     * @param sUniformBlockName Name of the uniform block from shader code.
-     * @param pBuffer Buffer to set.
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param bValue       Value to set.
      */
-    inline void setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer);
+    inline void setBoolToShader(const std::string& sUniformName, bool bValue);
 
     /**
      * Returns ID of this shader program.
@@ -105,6 +113,13 @@ public:
      * @return ID.
      */
     unsigned int getShaderProgramId() const { return iShaderProgramId; }
+
+    /**
+     * Return manager that created this program.
+     *
+     * @return Manager.
+     */
+    ShaderManager& getShaderManager() const { return *pShaderManager; }
 
     /**
      * Returns all spawned mesh nodes that use this program.
@@ -231,6 +246,10 @@ inline void ShaderProgram::setVector3ToShader(const std::string& sUniformName, c
 
 inline void ShaderProgram::setVector4ToShader(const std::string& sUniformName, const glm::vec4& vector) {
     glUniform4fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
+}
+
+inline void ShaderProgram::setBoolToShader(const std::string& sUniformName, bool bValue) {
+    glUniform1i(getShaderUniformLocation(sUniformName), bValue);
 }
 
 inline void ShaderProgram::setFloatToShader(const std::string& sUniformName, float value) {

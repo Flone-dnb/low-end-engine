@@ -7,11 +7,9 @@
 #include "math/GLMath.hpp"
 #include "game/node/SpatialNode.h"
 #include "game/geometry/MeshGeometry.h"
-#include "render/Material.h"
+#include "material/Material.h"
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/ShaderConstantsSetter.hpp"
-
-class MeshNode;
 
 /** Represents a node that can have 3D geometry to display (mesh). */
 class MeshNode : public SpatialNode {
@@ -81,7 +79,7 @@ public:
      *
      * @param material Material to use.
      */
-    void setMaterialBeforeSpawned(const Material& material);
+    void setMaterialBeforeSpawned(Material&& material);
 
     /**
      * Sets mesh geometry to use.

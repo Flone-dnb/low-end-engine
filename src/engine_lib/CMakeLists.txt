@@ -28,8 +28,13 @@ set(PROJECT_SOURCES
     private/render/SdlManager.hpp
     public/render/Renderer.h
     private/render/Renderer.cpp
-    private/render/Material.cpp
-    public/render/Material.h
+    private/material/Material.cpp
+    public/material/Material.h
+    private/material/TextureManager.cpp
+    public/material/TextureManager.h
+    private/material/TextureHandle.cpp
+    public/material/TextureHandle.h
+    public/material/TextureUsage.hpp
     private/render/RenderStatistics.cpp
     public/render/RenderStatistics.h
     private/render/GpuResourceManager.cpp

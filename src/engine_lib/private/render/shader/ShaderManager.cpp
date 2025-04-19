@@ -165,6 +165,8 @@ std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
     return it->second.first.lock();
 }
 
+ShaderManager::ShaderManager(Renderer* pRenderer) : pRenderer(pRenderer) {}
+
 std::shared_ptr<Shader> ShaderManager::getShader(const std::string& sPathToShaderRelativeRes) {
     std::scoped_lock guard(mtxPathsToShaders.first);
 

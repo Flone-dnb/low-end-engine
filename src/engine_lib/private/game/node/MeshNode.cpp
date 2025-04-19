@@ -35,6 +35,15 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getDiffuseColor();
         }};
 
+    variables.strings["materialDiffuseTexture"] = ReflectedVariableInfo<std::string>{
+        .setter =
+            [](Serializable* pThis, const std::string& sNewValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setPathToDiffuseTexture(sNewValue);
+            },
+        .getter = [](Serializable* pThis) -> std::string {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToDiffuseTexture();
+        }};
+
     variables.strings["materialCustomVertexShader"] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {
@@ -77,7 +86,7 @@ MeshNode::MeshNode(const std::string& sNodeName) : SpatialNode(sNodeName) {
     geometry = PrimitiveMeshGenerator::createCube(1.0F);
 }
 
-void MeshNode::setMaterialBeforeSpawned(const Material& material) {
+void MeshNode::setMaterialBeforeSpawned(Material&& material) {
     std::scoped_lock guard(getSpawnDespawnMutex());
 
     // For simplicity we don't allow changing material while spawned.
@@ -87,7 +96,7 @@ void MeshNode::setMaterialBeforeSpawned(const Material& material) {
             std::format("changing material of a spawned node is not allowed (node \"{}\")", getNodeName()));
     }
 
-    this->material = material;
+    this->material = std::move(material);
 }
 
 void MeshNode::setMeshGeometryBeforeSpawned(const MeshGeometry& meshGeometry) {

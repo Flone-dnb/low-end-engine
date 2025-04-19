@@ -439,6 +439,95 @@ void MyGameInstance::onGameStarted() {
 }
 ```
 
+## Textures and texture filtering
+
+There's no texture import or anything like that, if you want your mesh to have a texture just tell it the path to the texture like so:
+
+```Cpp
+auto pCube = std::make_unique<MeshNode>();
+pCube->getMaterial().setPathToDiffuseTexture("game/textures/cube.png"); // located at `res/game/...`
+```
+
+Of course when you import a GLTF file meshes and textures will be automatically imported (copied) in the `res` directory and meshes that use texture will have a path to a texture saved in the TOML file.
+
+By default the engine uses point filtering for all textures if you want to use linear filtering use the following:
+
+```Cpp
+#include "material/TextureManager.h"
+
+void MyGameInstance::onGameStarted() {
+    getRenderer()->getTextureManager().setUsePointFiltering(false);
+
+    // ... your game code here ...
+}
+```
+
+## Game asset file format
+
+### General overview
+
+Most of the game assets are stored in the human-readable `TOML` format. This format is similar to `INI` format but has more features. This means that you can use any text editor to view or edit your asset files if you need to. Note that some assets (like mesh geometry) will be stored in a separate binary file next to the main TOML file that describes a MeshNode.
+
+When you serialize a serializable object (an object that derives from `Serializable`) the general TOML structure will look like this (comments start with #):
+
+```INI
+## <unique_id> is an integer, used to globally differentiate objects in the file
+## (in case objects have the same type (same GUID)), if you are serializing only 1 object the ID is 0 by default
+["<unique_id>.<type_guid>"]       ## section that describes an object with GUID
+<field_name> = <field_value>      ## not all fields will have their values stored like that
+<field_name> = <field_value>
+
+
+["<unique_id>.<type_guid>"]       ## some other object
+<field_name> = <field_value>      ## some other field
+".path_to_original" = <value>     ## keys that start with one dot are "internal attributes" they are used for storing 
+                                  ## internal info
+"..parent_node_id" = <unique_id>  ## keys that start with two dots are "custom attributes" (user-specified)
+                                  ## that you pass into `serialize`, they are used to store additional info
+                                  ## `Node` class uses custom attributes to save node hierarchy
+```
+
+### Storing only changed fields
+
+In a case where you have serialized some object and then deserialized it, modified and serialized in a different file. In this case only changed variables will be serialized and instead of saving unchanged variables we will save a path to the "original" object to deserialize other variables.
+
+```INI
+## res/game/my_new_data.toml
+
+["0.550ea9f9-dd8a-4089-a717-0fe4e351a687"]
+iLevel = 3
+".path_to_original" = ["game/my_data.toml", "0"]
+```
+
+If we open the file `res/game/my_data.toml` we will see something like this:
+
+```INI
+## res/game/my_data.toml
+
+["0.test-guid"]
+iLevel = 0
+iExperience = 50
+vAttributes = [32, 22, 31]
+```
+
+Now when we deserialize `res/game/my_new_data.toml` we will get and object with the following properties:
+
+```Cpp
+iLevel = 3
+iExperience = 50
+vAttributes = [32, 22, 31]
+```
+
+This will work only if the original object was previously deserialized from a file located in the `res` directory and a new object is serialized in a different path but still in the `res` directory (for more info see `Serializable::getPathDeserializedFromRelativeToRes`).
+
+### Referencing external node tree
+
+Imagine you had a serialized node tree (for example a character node tree that has character's mesh, camera and etc.) then you deserialize it and in the engine/editor add it to a node of some other node tree (for example a game level, we'll call it a parent node tree), thus the parent node tree is seeing your previously deserialized node tree (that you attached) as an extrenal node tree.
+
+During the serialization of the node tree that uses an external node tree this external node tree is saved in a special way, that is, only the root node of the external node tree is saved with the parent node tree and the information about external node tree's child nodes is stored as a path to the external node tree file.
+
+This means that when we reference an external node tree, only changes to external node tree's root node will be saved.
+
 ## Saving and loading config files
 
 Although you can use reflection and `Serializable` types for saving and loading data you can also use `ConfigManager` for such purposes.
@@ -551,6 +640,18 @@ if (optionalError.has_value()){
 
 As it was shown `InputManager` can be acquired using `GameInstance::getInputManager()`, so both game instance and nodes (using `getGameInstance()->getInputManager()`) can work with the input manager.
 
+## Writing custom shaders
+
+Materials can use custom GLSL shaders, here is an example of setting a custom fragment shader to a mesh.
+
+```Cpp
+pMeshNode->getMaterial().setPathToCustomFragmentShader("game/shaders/myshader.glsl"); // located in the `res/game/...` directory
+
+// then spawn your mesh node
+```
+
+See the directory `res/engine/shaders/node` for reference implementation.
+
 ## Simulating input for automated tests
 
 Your game has a `..._tests` target for automated testing (which relies on https://github.com/catchorg/Catch2) and generally it will be very useful to simulate user input. Here is an example on how to do that:
@@ -631,86 +732,3 @@ cmake -DCMAKE_BUILD_TYPE=Release -DDISABLE_DEV_STUFF=ON ..
 cmake --build . --target game
 ```
 Then copy the resulting binary (from `build/OUTPUT/game`) to your ARM64 Linux device. We don't worry about installing the SDL2 libraries because in most cases they are already installed the OS your ARM64 device is running. Inside of your ARM64 Linux device launch the game using some file explorer or a console.
-
-# Advanced topics
-
-## Writing custom shaders
-
-Materials can use custom GLSL shaders, here is an example of setting a custom fragment shader to a mesh.
-
-```Cpp
-pMeshNode->getMaterial().setPathToCustomFragmentShader("game/shaders/myshader.glsl"); // located in the `res/game/...` directory
-
-// then spawn your mesh node
-```
-
-See the directory `res/engine/shaders/node` for reference implementation.
-
-## Serialization internals
-
-Note:
-> Information described in this section might not be up to date, please notify the developers if something is not right / outdated.
-
-### General overview
-
-Most of the game assets are stored in the human-readable `TOML` format. This format is similar to `INI` format but has more features. This means that you can use any text editor to view or edit your asset files if you need to.
-
-When you serialize a serializable object (an object that derives from `Serializable`) the general TOML structure will look like this (comments start with #):
-
-```INI
-## <unique_id> is an integer, used to globally differentiate objects in the file
-## (in case objects have the same type (same GUID)), if you are serializing only 1 object the ID is 0 by default
-["<unique_id>.<type_guid>"]       ## section that describes an object with GUID
-<field_name> = <field_value>      ## not all fields will have their values stored like that
-<field_name> = <field_value>
-
-
-["<unique_id>.<type_guid>"]       ## some other object
-<field_name> = <field_value>      ## some other field
-".path_to_original" = <value>     ## keys that start with one dot are "internal attributes" they are used for storing 
-                                  ## internal info
-"..parent_node_id" = <unique_id>  ## keys that start with two dots are "custom attributes" (user-specified)
-                                  ## that you pass into `serialize`, they are used to store additional info
-                                  ## `Node` class uses custom attributes to save node hierarchy
-```
-
-### Storing only changed fields
-
-Imagine a case where you have serialized some object then deserialized it, modified and serialized in a different file. In this case only changed variables will be serialized and instead of saving unchanged variables we will save a path to the "original" object to deserialize other variables.
-
-```INI
-## res/game/my_new_data.toml
-
-["0.550ea9f9-dd8a-4089-a717-0fe4e351a687"]
-iLevel = 3
-".path_to_original" = ["game/my_data.toml", "0"]
-```
-
-If we open the file `res/game/my_data.toml` we will see something like this:
-
-```INI
-## res/game/my_data.toml
-
-["0.test-guid"]
-iLevel = 0
-iExperience = 50
-vAttributes = [32, 22, 31]
-```
-
-Now when we deserialize `res/game/my_new_data.toml` we will get and object with the following properties:
-
-```Cpp
-iLevel = 3
-iExperience = 50
-vAttributes = [32, 22, 31]
-```
-
-This will work only if the original object was previously deserialized from a file located in the `res` directory and a new object is serialized in a different path but still in the `res` directory (for more info see `Serializable::getPathDeserializedFromRelativeToRes`).
-
-### Referencing external node tree
-
-Imagine you had a serialized node tree then you deserialize it and in the engine/editor add it to some node of some other node tree (we'll call it a parent node tree), thus the parent node tree is seeing your previously deserialized node tree (that you attached) as an extrenal node tree.
-
-During the serialization of the node tree that uses an external node tree this external node tree is saved in a special way, that is, only the root node of the external node tree is saved with the parent node tree and the information about external node tree's child nodes is stored as a path to the external node tree file.
-
-This means that when we reference an external node tree, only changes to external node tree's root node will be saved.

@@ -10,7 +10,7 @@
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Buffer.h"
 
-/** A single place for "talking" with OpenGL context about GPU resources. */
+/** Manages creation of GPU resources. */
 class GpuResourceManager {
 public:
     GpuResourceManager() = default;

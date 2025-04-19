@@ -305,6 +305,9 @@ private:
 
     /** Text that we add to custom (user-specified) attributes in TOML files. */
     static constexpr std::string_view sTomlKeyCustomAttributePrefix = "..";
+
+    /** Extension that all serialized binary files have (for example mesh geometry). */
+    static constexpr std::string_view sBinaryFileExtension = "bin";
 };
 
 template <typename T>
@@ -1029,8 +1032,9 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
 
         for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
-            const auto pathToMeshGeometry = pathToFile.parent_path() / (pathToFile.stem().string() + "." +
-                                                                        sEntityId + "." + sVariableName);
+            const auto pathToMeshGeometry =
+                pathToFile.parent_path() / (pathToFile.stem().string() + "." + sEntityId + "." +
+                                            sVariableName + "." + std::string(sBinaryFileExtension));
             if (!std::filesystem::exists(pathToMeshGeometry)) {
                 // This means that the geometry was empty during serialization so the file was not created.
                 continue;
