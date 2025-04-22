@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard.
+#include <cstdint>
 #include <string>
 #include <mutex>
 #include <vector>
@@ -32,12 +33,15 @@ class Node : public Serializable {
     // GameManager will propagate functions to all nodes in the world such as `onBeforeNewFrame`.
     friend class GameManager;
 
+    // Importer can take ownership of child nodes.
+    friend class GltfImporter;
+
 public:
     /**
      * Defines how location, rotation or scale of a node being attached as a child node
      * should change after the attachment process (after `onAfterAttachedToNewParent` was called).
      */
-    enum class AttachmentRule {
+    enum class AttachmentRule : uint8_t {
         RESET_RELATIVE, //< After the new child node was attached, resets its relative location or rotation to
                         // 0 and relative scale to 1.
         KEEP_RELATIVE,  //< After the new child node was attached, its relative location/rotation/scale will

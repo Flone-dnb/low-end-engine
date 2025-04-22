@@ -32,7 +32,9 @@ void UiManager::renderUi() {
     auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);
 
-    glDisable(GL_DEPTH_TEST);
+    int depthFunc = 0;
+    glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+    glDepthFunc(GL_ALWAYS); // disable depth tests for UI
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     {
@@ -124,7 +126,7 @@ void UiManager::renderUi() {
         }
     }
     glDisable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(depthFunc);
 }
 
 void UiManager::onNodeSpawning(TextNode* pNode) {

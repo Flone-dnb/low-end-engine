@@ -84,10 +84,15 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
         GL_CHECK_ERROR(glFramebufferTexture2D(
             GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, iColorTextureId, 0));
 
+        auto attachment = GL_DEPTH_ATTACHMENT;
+        if (iDepthGlFormat == GL_DEPTH24_STENCIL8 || iDepthGlFormat == GL_DEPTH32F_STENCIL8) {
+            attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+        }
+
         // Configure and attach depth/stencil buffer to the framebuffer.
         GL_CHECK_ERROR(glRenderbufferStorage(GL_RENDERBUFFER, iDepthGlFormat, iWidth, iHeight));
-        GL_CHECK_ERROR(glFramebufferRenderbuffer(
-            GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, iDepthStencilBufferId));
+        GL_CHECK_ERROR(
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, iDepthStencilBufferId));
 
         // Specify color texture to draw into.
         const std::array<GLenum, 1> vAttachments = {GL_COLOR_ATTACHMENT0};

@@ -19,6 +19,7 @@ class FontManager;
 class UiManager;
 class LightSourceManager;
 class TextureManager;
+class Framebuffer;
 
 /** OpenGL ES renderer. */
 class Renderer {
@@ -168,6 +169,9 @@ private:
 
     /** Light sources to render. */
     std::unique_ptr<LightSourceManager> pLightSourceManager;
+
+    /** Framebuffer for rendering. */
+    std::unique_ptr<Framebuffer> pMainFramebuffer;
 
     /** Various statistics about rendering. */
     RenderStatistics renderStats;

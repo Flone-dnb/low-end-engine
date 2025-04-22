@@ -12,6 +12,7 @@
 #include "render/LightSourceManager.h"
 #include "render/UiManager.h"
 #include "material/TextureManager.h"
+#include "render/GpuResourceManager.h"
 
 // External.
 #include "glad/glad.h"
@@ -40,13 +41,9 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT); // front because we use DirectX/Vulkan conversion for everything
 
-    // Enable depth testing.
-    GL_CHECK_ERROR(glEnable(GL_DEPTH_TEST));
-    glDepthFunc(GL_LESS);
-    glClearDepthf(1.0F);
-
-    // Setup clear color.
+    // Setup clear values.
     glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+    glClearDepthf(1.0F);
 
     // Disable VSync.
     if (SDL_GL_SetSwapInterval(0) < 0) [[unlikely]] {
@@ -82,6 +79,11 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     for (auto& fence : frameSync.vFences) {
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
     }
+
+    // Create main framebuffer.
+    const auto windowSize = pWindow->getWindowSize();
+    pMainFramebuffer = GpuResourceManager::createFramebuffer(
+        windowSize.first, windowSize.second, GL_RGB8, GL_DEPTH_COMPONENT24);
 }
 
 void Renderer::drawNextFrame() {
@@ -96,8 +98,11 @@ void Renderer::drawNextFrame() {
     glWaitSync(frameSync.vFences[frameSync.iCurrentFrameIndex], 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(frameSync.vFences[frameSync.iCurrentFrameIndex]);
 
-    // Render to window framebuffer.
-    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    // Set framebuffer.
+    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId()));
     GL_CHECK_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
@@ -149,6 +154,13 @@ void Renderer::drawNextFrame() {
         // Draw UI.
         pUiManager->renderUi();
     }
+
+    // Copy rendered image to window's framebuffer.
+    const auto [iWidth, iHeight] = pWindow->getWindowSize();
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
 
