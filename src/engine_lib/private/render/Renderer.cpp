@@ -171,44 +171,6 @@ void Renderer::drawNextFrame() {
     calculateFrameStatistics();
 }
 
-#if defined(WIN32)
-void Renderer::nanosleep(long long iNanoseconds) {
-    iNanoseconds /= 100; // NOLINT: The time after which the state of the timer is to be set to signaled,
-                         // in 100 nanosecond intervals.
-
-    // Prepare some variables to use.
-    HANDLE pTimer;
-    LARGE_INTEGER interval;
-
-    // Create timer.
-    pTimer = CreateWaitableTimer(NULL, TRUE, NULL);
-    if (pTimer == NULL) [[unlikely]] {
-        Logger::get().error(
-            std::format(
-                "failed to wait create a waitable timer for {} nanoseconds (error code: {})",
-                iNanoseconds,
-                GetLastError()));
-    }
-
-    // Set timer.
-    interval.QuadPart = -iNanoseconds;
-    if (SetWaitableTimer(pTimer, &interval, 0, NULL, NULL, FALSE) == 0) [[unlikely]] {
-        CloseHandle(pTimer);
-        Logger::get().error(
-            std::format(
-                "failed to set a waitable timer for {} nanoseconds (error code: {})",
-                iNanoseconds,
-                GetLastError()));
-    }
-
-    // Wait for it to be signaled.
-    WaitForSingleObject(pTimer, INFINITE);
-
-    // Delete timer.
-    CloseHandle(pTimer);
-}
-#endif
-
 void Renderer::calculateFrameStatistics() {
     using namespace std::chrono;
 
@@ -234,44 +196,55 @@ void Renderer::calculateFrameStatistics() {
         }
     }
 
-    // Update FPS limit stats.
-    {
-        // Check if FPS limit is set.
-        if (renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs.has_value()) {
-            // Get time that we should keep.
-            const auto targetTimeToRenderFrameInNs =
-                *renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs;
-
-            // Get time spent on last frame.
-            const auto frameTimeInNs = duration<double, nanoseconds::period>(
-                                           steady_clock::now() - renderStats.fpsLimitInfo.frameStartTime)
-                                           .count();
-
-            // Check if the last frame was rendered too fast.
-            if (targetTimeToRenderFrameInNs > frameTimeInNs) {
-                // Calculate time to wait.
-                const auto timeToWaitInNs = targetTimeToRenderFrameInNs - frameTimeInNs;
+    // FPS limit.
+    if (renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs.has_value()) {
+        auto& limitInfo = renderStats.fpsLimitInfo;
 
 #if defined(WIN32)
-                const auto adjustTime =
-                    static_cast<double>(renderStats.fpsLimitInfo.iFpsLimit) * 0.0002;   // NOLINT: don't ask
-                const auto timeToWaitFraction = std::clamp(1.0 - adjustTime, 0.9, 1.0); // NOLINT: trust me XD
+        LARGE_INTEGER counter;
+        QueryPerformanceCounter(&counter);
+        long long iFrameEndTime = counter.QuadPart;
+
+        unsigned long iSleepTimeMs = 0;
+        if (iFrameEndTime < limitInfo.iPerfCounterLastFrameEnd + limitInfo.iMinTimeStampsPerSecond) {
+            iSleepTimeMs = static_cast<unsigned long>(std::max(
+                (limitInfo.iPerfCounterLastFrameEnd + limitInfo.iMinTimeStampsPerSecond - iFrameEndTime) *
+                    1000 / limitInfo.iTimeStampsPerSecond, // NOLINT
+                1LL));
+
+            if (iSleepTimeMs > 0) {
                 timeBeginPeriod(1);
-                nanosleep(static_cast<long long>(std::floor(timeToWaitInNs * timeToWaitFraction)));
+                Sleep(iSleepTimeMs);
                 timeEndPeriod(1);
-#else
-                struct timespec tim;
-                struct timespec tim2;
-                tim.tv_sec = 0;
-                tim.tv_nsec = static_cast<long>(timeToWaitInNs);
-                nanosleep(&tim, &tim2);
-#endif
             }
         }
+#else
+        const auto targetTimeToRenderFrameInNs = *limitInfo.optionalTargetTimeToRenderFrameInNs;
 
-        // Update frame start/end time.
-        renderStats.fpsLimitInfo.frameStartTime = steady_clock::now();
+        const auto frameTimeInNs =
+            duration<double, nanoseconds::period>(steady_clock::now() - limitInfo.frameStartTime).count();
+
+        if (targetTimeToRenderFrameInNs > frameTimeInNs) {
+            // Calculate time to wait.
+            const auto timeToWaitInNs = targetTimeToRenderFrameInNs - frameTimeInNs;
+
+            struct timespec tim;
+            struct timespec tim2;
+            tim.tv_sec = 0;
+            tim.tv_nsec = static_cast<long>(timeToWaitInNs);
+            nanosleep(&tim, &tim2);
+        }
+#endif
     }
+
+    // Update frame start/end time.
+    renderStats.fpsLimitInfo.frameStartTime = steady_clock::now();
+
+#if defined(WIN32)
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    renderStats.fpsLimitInfo.iPerfCounterLastFrameEnd = counter.QuadPart;
+#endif
 }
 
 Renderer::~Renderer() {
@@ -285,14 +258,16 @@ Renderer::~Renderer() {
 void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }
 
 void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
+    auto& data = renderStats.fpsLimitInfo;
+
     // Update time to render a frame.
     if (iNewFpsLimit == 0) {
-        renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs = {};
-        renderStats.fpsLimitInfo.iFpsLimit = 0;
+        data.optionalTargetTimeToRenderFrameInNs = {};
+        data.iFpsLimit = 0;
     } else {
-        renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs =
-            1000000000.0 / static_cast<double>(iNewFpsLimit); // NOLINT
-        renderStats.fpsLimitInfo.iFpsLimit = iNewFpsLimit;
+        data.optionalTargetTimeToRenderFrameInNs = 1000000000.0 / static_cast<double>(iNewFpsLimit); // NOLINT
+        data.iFpsLimit = iNewFpsLimit;
+        data.iMinTimeStampsPerSecond = data.iTimeStampsPerSecond / iNewFpsLimit;
     }
 }
 

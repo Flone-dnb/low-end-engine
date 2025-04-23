@@ -10,7 +10,7 @@ class RenderStatistics {
     friend class Renderer;
 
 public:
-    RenderStatistics() = default;
+    RenderStatistics();
 
     RenderStatistics(const RenderStatistics&) = delete;
     RenderStatistics& operator=(const RenderStatistics&) = delete;
@@ -51,6 +51,17 @@ private:
 
         /** Not empty if FPS limit is set, defines time in nanoseconds that one frame should take. */
         std::optional<double> optionalTargetTimeToRenderFrameInNs;
+
+#if defined(WIN32)
+        /** Result of `QueryPerformanceFrequency`. */
+        long long iTimeStampsPerSecond = 0;
+
+        /** @ref iTimeStampsPerSecond divided by @ref iFpsLimit. */
+        long long iMinTimeStampsPerSecond = 0;
+
+        /** `QueryPerformanceCounter` at the end of the last frame. */
+        long long iPerfCounterLastFrameEnd = 0;
+#endif
     };
 
     /** Info related to measuring frame count per second. */

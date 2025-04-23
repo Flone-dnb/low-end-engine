@@ -139,15 +139,6 @@ private:
     /** Called by window that owns this renderer to draw a new frame. */
     void drawNextFrame();
 
-#if defined(WIN32)
-    /**
-     * Uses Windows' WaitableTimer to wait for the specified number of nanoseconds.
-     *
-     * @param iNanoseconds Nanoseconds to wait for.
-     */
-    static void nanosleep(long long iNanoseconds);
-#endif
-
     /**
      * Calculates some frame-related statistics.
      *
