@@ -7,6 +7,7 @@
 
 // Custom.
 #include "misc/Error.h"
+#include "misc/Profiler.hpp"
 
 // External.
 #include "glad/glad.h"
@@ -14,6 +15,8 @@
 std::mutex GpuResourceManager::mtx{};
 
 std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(const MeshGeometry& geometry) {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtx);
 
     // Create VAO.
@@ -63,6 +66,8 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(c
 
 std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
     unsigned int iWidth, unsigned int iHeight, int iColorGlFormat, int iDepthGlFormat) {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtx);
 
     unsigned int iFramebufferId = 0;
@@ -112,6 +117,8 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
 }
 
 std::unique_ptr<Buffer> GpuResourceManager::createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic) {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtx);
 
     unsigned int iBufferId = 0;

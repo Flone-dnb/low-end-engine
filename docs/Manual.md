@@ -636,6 +636,42 @@ if (optionalError.has_value()){
 
 As it was shown `InputManager` can be acquired using `GameInstance::getInputManager()`, so both game instance and nodes (using `getGameInstance()->getInputManager()`) can work with the input manager.
 
+## Using profiler
+
+The engine uses [tracy profiler](https://github.com/wolfpld/tracy), by default it's enabled in DEBUG builds.
+
+Include `misc/Profiler.hpp` in order to use the profiler macros:
+
+- `PROFILE_FUNC` add in the beginning of your function to track it in the profiler
+- `PROFILE_SCOPE(name)` same as above but works only in a scope
+- `PROFILE_ADD_SCOPE_TEXT(text, size)` copies the specified string and adds it to the last profiler mark (func or scope).
+
+In non-debug builds these macros will do nothing. Here are some examples:
+
+```Cpp
+void MyClass::myFunc() {
+    PROFILE_FUNC
+
+    // some code
+
+    for (size_t i = 0; i < iMyObjCount; i++) {
+        PROFILE_SCOPE("my scope")
+        PROFILE_ADD_SCOPE_TEXT(myObjects[i].sName.c_str(), myObjects[i].sName.size()) // using `std::string sName`
+
+        // some code
+    }
+}
+```
+
+In order to view profiled data you need to build and launch the tracy server app. In the `ext/tracy` directory run the following commands:
+
+```
+cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release
+cmake --build profiler/build --config Release --parallel
+```
+
+Then built tracy server will be located at `ext/tracy/profiler/build/Release/tracy-profiler.exe`, open it and connect to your game.
+
 ## Writing custom shaders
 
 Materials can use custom GLSL shaders, here is an example of setting a custom fragment shader to a mesh.

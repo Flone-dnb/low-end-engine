@@ -29,6 +29,8 @@ UiManager::~UiManager() {
 }
 
 void UiManager::renderUi() {
+    PROFILE_FUNC;
+
     auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);
 

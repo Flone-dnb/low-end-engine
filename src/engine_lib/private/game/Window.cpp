@@ -51,6 +51,8 @@ void Window::setCursorVisibility(bool bIsVisible) {
 void Window::close() { bQuitRequested = true; }
 
 bool Window::processWindowEvent(const SDL_Event& event) {
+    PROFILE_FUNC
+
     switch (event.type) {
     case (SDL_MOUSEMOTION): {
         pGameManager->onMouseMove(event.motion.xrel, event.motion.yrel);

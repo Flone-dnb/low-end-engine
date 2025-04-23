@@ -78,6 +78,8 @@ void Material::onNodeSpawning(
     MeshNode* pNode,
     Renderer* pRenderer,
     const std::function<void(ShaderProgram*)>& onShaderProgramReceived) {
+    PROFILE_FUNC
+
     // Self check:
     if (pShaderProgram != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
@@ -132,6 +134,8 @@ void Material::onNodeSpawning(
 }
 
 void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
+    PROFILE_FUNC
+
     // Self check:
     if (pShaderProgram == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(

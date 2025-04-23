@@ -7,6 +7,10 @@
 // Custom.
 #include "io/Logger.h"
 
+#if defined(ENGINE_PROFILER_ENABLED)
+#include "tracy/public/common/TracySystem.hpp"
+#endif
+
 ThreadPool::ThreadPool() {
     auto iThreadCount = std::thread::hardware_concurrency();
     if (iThreadCount == 0) {
@@ -25,6 +29,10 @@ ThreadPool::ThreadPool() {
 }
 
 void ThreadPool::processTasksThread() {
+#if defined(ENGINE_PROFILER_ENABLED)
+    tracy::SetThreadName("thread pool thread");
+#endif
+
     do {
         std::function<void()> task;
         {

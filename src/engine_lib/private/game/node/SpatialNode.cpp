@@ -201,6 +201,8 @@ void SpatialNode::setWorldScale(const glm::vec3& scale) {
 }
 
 void SpatialNode::onSpawning() {
+    PROFILE_FUNC
+
     Node::onSpawning();
 
     // No need to notify child nodes since this function is called before any of
@@ -214,6 +216,8 @@ glm::mat4x4 SpatialNode::getWorldMatrix() {
 }
 
 void SpatialNode::recalculateWorldMatrix(bool bNotifyChildren) {
+    PROFILE_FUNC
+
     // Prepare some variables.
     glm::mat4x4 parentWorldMatrix = glm::identity<glm::mat4x4>();
     glm::quat parentWorldRotationQuat = glm::identity<glm::quat>();
@@ -288,6 +292,8 @@ void SpatialNode::recalculateWorldMatrix(bool bNotifyChildren) {
 }
 
 void SpatialNode::recalculateWorldMatrixForNodeAndNotifyChildren(Node* pNode) {
+    PROFILE_FUNC
+
     const auto pSpatialNode = dynamic_cast<SpatialNode*>(pNode);
     if (pSpatialNode != nullptr) {
         pSpatialNode->recalculateWorldMatrix(); // recalculates for its children
@@ -318,6 +324,8 @@ void SpatialNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
 }
 
 void SpatialNode::recalculateLocalMatrix() {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtxLocalSpace.first);
 
     mtxLocalSpace.second.relativeRotationMatrix = MathHelpers::buildRotationMatrix(relativeRotation);

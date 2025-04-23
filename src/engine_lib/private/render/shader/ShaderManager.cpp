@@ -9,12 +9,15 @@
 #include "render/shader/Shader.h"
 #include "misc/ProjectPaths.h"
 #include "render/wrapper/ShaderProgram.h"
+#include "misc/Profiler.hpp"
 
 // External.
 #include "glad/glad.h"
 #include "GLSL-Include/src/glsl_include.hpp"
 
 std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToShaderRelativeRes) {
+    PROFILE_FUNC
+
     // Construct full path.
     const auto pathToShader =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToShaderRelativeRes;
@@ -133,6 +136,8 @@ std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
     const std::string& sPathToVertexShaderRelativeRes,
     const std::string& sPathToFragmentShaderRelativeRes,
     ShaderProgramUsage usage) {
+    PROFILE_FUNC
+
     // Get shaders.
     auto pVertexShader = getShader(sPathToVertexShaderRelativeRes);
     auto pFragmentShader = getShader(sPathToFragmentShaderRelativeRes);

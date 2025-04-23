@@ -17,6 +17,8 @@ CameraNode::CameraNode() : CameraNode("Camera Node") {}
 CameraNode::CameraNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}
 
 void CameraNode::onWorldLocationRotationScaleChanged() {
+    PROFILE_FUNC
+
     SpatialNode::onWorldLocationRotationScaleChanged();
 
     {
@@ -51,6 +53,8 @@ void CameraNode::onDespawning() {
 }
 
 void CameraNode::updateCameraProperties() {
+    PROFILE_FUNC
+
     // Update camera properties.
     std::scoped_lock cameraPropertiesGuard(cameraProperties.mtxData.first);
 

@@ -87,6 +87,8 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 }
 
 void Renderer::drawNextFrame() {
+    PROFILE_FUNC
+
     // Make sure there was no GL error during the last frame.
     const auto lastError = glGetError();
     if (lastError != GL_NO_ERROR) [[unlikely]] {
@@ -117,6 +119,9 @@ void Renderer::drawNextFrame() {
         for (auto& [sProgramName, shaderProgram] :
              mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::MESH_NODE)]) {
             const auto& [pWeakPtr, pShaderProgram] = shaderProgram;
+
+            PROFILE_SCOPE("render mesh nodes of shader program")
+            PROFILE_ADD_SCOPE_TEXT(sProgramName.c_str(), sProgramName.size());
 
             // Set shader program.
             glUseProgram(pShaderProgram->getShaderProgramId());
@@ -169,9 +174,13 @@ void Renderer::drawNextFrame() {
     frameSync.iCurrentFrameIndex = (frameSync.iCurrentFrameIndex + 1) % frameSync.vFences.size();
 
     calculateFrameStatistics();
+
+    FrameMark;
 }
 
 void Renderer::calculateFrameStatistics() {
+    PROFILE_FUNC
+
     using namespace std::chrono;
 
     // Update FPS stats.
@@ -198,6 +207,8 @@ void Renderer::calculateFrameStatistics() {
 
     // FPS limit.
     if (renderStats.fpsLimitInfo.optionalTargetTimeToRenderFrameInNs.has_value()) {
+        PROFILE_SCOPE("fps limit sleep")
+
         auto& limitInfo = renderStats.fpsLimitInfo;
 
 #if defined(WIN32)

@@ -6,10 +6,21 @@
 #include "misc/ReflectedTypeDatabase.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/Node.h"
+#include "misc/Profiler.hpp"
+
+// External.
+#if defined(ENGINE_PROFILER_ENABLED)
+#include "tracy/public/common/TracySystem.hpp"
+#endif
 
 GameManager::GameManager(
     Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance)
     : pWindow(pWindow) {
+#if defined(ENGINE_PROFILER_ENABLED)
+    tracy::SetThreadName("main thread");
+    Logger::get().info("profiler enabled");
+#endif
+
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pCameraManager = std::make_unique<CameraManager>(pRenderer.get());
@@ -161,7 +172,11 @@ void GameManager::onGameStarted() {
 }
 
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
+    PROFILE_FUNC
+
     {
+        PROFILE_SCOPE("check world creation task")
+
         std::scoped_lock guard(mtxWorldData.first);
 
         auto& worldCreationTask = mtxWorldData.second.pendingWorldCreationTask;
@@ -215,10 +230,14 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         }
     }
 
-    // Tick game instance.
-    pGameInstance->onBeforeNewFrame(timeSincePrevCallInSec);
+    {
+        PROFILE_SCOPE("tick game instance")
+        pGameInstance->onBeforeNewFrame(timeSincePrevCallInSec);
+    }
 
     {
+        PROFILE_SCOPE("tick nodes")
+
         // Tick nodes.
         std::scoped_lock guard(mtxWorldData.first);
         if (mtxWorldData.second.pWorld == nullptr) {

@@ -131,6 +131,8 @@ bool MeshNode::isVisible() {
 }
 
 void MeshNode::onSpawning() {
+    PROFILE_FUNC
+
     SpatialNode::onSpawning();
 
     // Create VAO.
@@ -166,6 +168,8 @@ void MeshNode::onDespawning() {
 }
 
 void MeshNode::onWorldLocationRotationScaleChanged() {
+    PROFILE_FUNC
+
     SpatialNode::onWorldLocationRotationScaleChanged();
 
     // Update shader constants.

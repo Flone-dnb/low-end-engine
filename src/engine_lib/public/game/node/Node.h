@@ -18,6 +18,7 @@
 #include "math/GLMath.hpp"
 #include "misc/Error.h"
 #include "misc/ReflectedTypeDatabase.h"
+#include "misc/Profiler.hpp"
 
 class GameInstance;
 class World;
@@ -876,6 +877,9 @@ inline NodeType* Node::addChildNode(
     AttachmentRule locationRule,
     AttachmentRule rotationRule,
     AttachmentRule scaleRule) {
+    PROFILE_FUNC
+    PROFILE_ADD_SCOPE_TEXT(sNodeName.c_str(), sNodeName.size());
+
     // Save raw pointer for now.
     NodeType* pNode = nullptr;
     if (std::holds_alternative<NodeType*>(node)) {

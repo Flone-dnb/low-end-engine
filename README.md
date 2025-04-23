@@ -14,9 +14,9 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Dynamic light sources
 - [X] Texture import
 - [X] GLTF/GLB import
+- [X] Profiler
 - [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
 - [ ] Dynamic shadows
-- [ ] Profiler
 - [ ] Post-processing effects
 - [ ] Instancing
 - [ ] GUI

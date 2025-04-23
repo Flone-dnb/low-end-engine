@@ -8,6 +8,7 @@
 #include "misc/ProjectPaths.h"
 #include "io/Logger.h"
 #include "render/GpuResourceManager.h"
+#include "misc/Profiler.hpp"
 
 // External.
 #include "nameof.hpp"
@@ -51,6 +52,8 @@ void TextureManager::setUsePointFiltering(bool bUsePointFiltering) {
 
 std::variant<std::unique_ptr<TextureHandle>, Error>
 TextureManager::getTexture(const std::string& sPathToTextureRelativeRes, TextureUsage usage) {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtxLoadedTextures.first);
 
     // See if a texture by this path is already loaded.
@@ -152,6 +155,8 @@ std::unique_ptr<TextureHandle> TextureManager::createNewHandleForLoadedTexture(
 
 std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureAndCreateNewHandle(
     const std::string& sPathToTextureRelativeRes, TextureUsage usage) {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtxLoadedTextures.first, GpuResourceManager::mtx);
 
     // Construct full path to the texture.
@@ -173,8 +178,12 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
     int iWidth = 0;
     int iHeight = 0;
     int iChannels = 0;
-    const auto pPixels =
-        stbi_load(pathToTexture.string().c_str(), &iWidth, &iHeight, &iChannels, iStbiFormat);
+    unsigned char* pPixels = nullptr;
+    {
+        PROFILE_SCOPE("STB image load");
+        PROFILE_ADD_SCOPE_TEXT(pathToTexture.string().c_str(), pathToTexture.string().size());
+        pPixels = stbi_load(pathToTexture.string().c_str(), &iWidth, &iHeight, &iChannels, iStbiFormat);
+    }
     if (pPixels == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("failed to load image from path \"{}\"", pathToTexture.string()));

@@ -6,10 +6,9 @@
 // Custom.
 #include "misc/Globals.h"
 #include "io/Logger.h"
-
-// External.
 #include "math/GLMath.hpp"
 #include "misc/Error.h"
+#include "misc/Profiler.hpp"
 
 /** Static helper functions for math. */
 class MathHelpers {
@@ -110,6 +109,8 @@ private:
 };
 
 glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3& direction) {
+    PROFILE_FUNC
+
     // Ignore zero vectors.
     if (glm::all(glm::epsilonEqual(direction, glm::vec3(0.0F, 0.0F, 0.0F), smallFloatEpsilon))) {
         return glm::vec3(0.0F, 0.0F, 0.0F);
@@ -190,6 +191,8 @@ void MathHelpers::convertCartesianCoordinatesToSpherical(
 }
 
 glm::vec3 MathHelpers::calculateReciprocalVector(const glm::vec3& vector) {
+    PROFILE_FUNC
+
     glm::vec3 reciprocal;
 
     if (std::abs(vector.x) < smallFloatEpsilon) [[unlikely]] {

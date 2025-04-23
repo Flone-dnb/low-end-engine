@@ -35,6 +35,8 @@ std::string Node::getTypeGuid() const { return sTypeGuid.data(); }
 
 std::variant<std::unique_ptr<Node>, Error>
 Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
+    PROFILE_FUNC
+
     // Deserialize all nodes.
     auto deserializeResult = Serializable::deserializeMultiple<Node>(pathToFile);
     if (std::holds_alternative<Error>(deserializeResult)) [[unlikely]] {
@@ -522,6 +524,9 @@ Node::getAxisEventBindings() {
 std::recursive_mutex& Node::getSpawnDespawnMutex() { return mtxIsSpawned.first; }
 
 void Node::spawn() {
+    PROFILE_FUNC
+    PROFILE_ADD_SCOPE_TEXT(sNodeName.c_str(), sNodeName.size());
+
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (mtxIsSpawned.second) [[unlikely]] {
@@ -551,8 +556,12 @@ void Node::spawn() {
     // Notify world in order for node ID to be registered before running custom user spawn logic.
     pWorldWeSpawnedIn->onNodeSpawned(this);
 
-    // Do custom user spawn logic.
-    onSpawning();
+    {
+        // Do custom user spawn logic.
+        PROFILE_SCOPE("on spawning");
+        PROFILE_ADD_SCOPE_TEXT(sNodeName.c_str(), sNodeName.size());
+        onSpawning();
+    }
 
     // We spawn self first and only then child nodes.
     // This spawn order is required for some nodes and engine parts to work correctly.
@@ -568,11 +577,18 @@ void Node::spawn() {
         }
     }
 
-    // Notify user code.
-    onChildNodesSpawned();
+    {
+        // Notify user code.
+        PROFILE_SCOPE("on child nodes spawned");
+        PROFILE_ADD_SCOPE_TEXT(sNodeName.c_str(), sNodeName.size());
+        onChildNodesSpawned();
+    }
 }
 
 void Node::despawn() {
+    PROFILE_FUNC
+    PROFILE_ADD_SCOPE_TEXT(sNodeName.c_str(), sNodeName.size());
+
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (!mtxIsSpawned.second) [[unlikely]] {

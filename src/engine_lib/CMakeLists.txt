@@ -75,6 +75,7 @@ set(PROJECT_SOURCES
     public/misc/ReflectedTypeDatabase.h
     private/misc/ThreadPool.cpp
     private/misc/ThreadPool.h
+    public/misc/Profiler.hpp
     public/game/geometry/shapes/Frustum.h
     private/game/geometry/shapes/Frustum.cpp
     public/game/geometry/shapes/AABB.h
@@ -254,3 +255,17 @@ add_subdirectory(${RELATIVE_EXT_PATH}/tinygltf ${DEPENDENCY_BUILD_DIR_NAME}/tiny
 target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
 set_target_properties(tinygltf PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 add_dependencies(${PROJECT_NAME} tinygltf)
+
+if (NOT IS_RELEASE_BUILD)
+    # Add tracy.
+    message(STATUS "${PROJECT_NAME}: adding external dependency \"tracy\"...")
+    set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+    set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
+    set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "" FORCE)
+    add_subdirectory(${RELATIVE_EXT_PATH}/tracy ${DEPENDENCY_BUILD_DIR_NAME}/tracy SYSTEM)
+    target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
+    set_target_properties(TracyClient PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+    add_dependencies(${PROJECT_NAME} TracyClient)
+
+    add_compile_definitions(ENGINE_PROFILER_ENABLED)
+endif()

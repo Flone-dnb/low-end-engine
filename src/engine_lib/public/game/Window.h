@@ -12,6 +12,7 @@
 #include "render/Renderer.h"
 #include "game/GameManager.h"
 #include "io/Logger.h"
+#include "misc/Profiler.hpp"
 
 // External.
 #include "SDL_timer.h"
@@ -213,6 +214,8 @@ inline void Window::processEvents() {
     // Run game loop.
     bQuitRequested = false;
     while (!bQuitRequested) {
+        PROFILE_SCOPE("game loop cycle");
+
         // Process available window events.
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0) {
