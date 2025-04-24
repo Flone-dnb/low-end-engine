@@ -24,6 +24,18 @@ Note for Visual Studio users:
 Note for Windows users:
 > Windows 10 users need to run their IDE with admin privileges when building the project for the first time (only for the first build) when executing a post-build script the engine creates a symlink next to the built executable that points to the directory with engine/editor/game resources (called `res`). Creating symlinks on Windows requires admin privileges. When releasing your project we expect you to put an actual copy of your `res` directory next to the built executable but we will discuss this topic later in a separate section.
 
+## Build mode
+
+By default we recommend you to use "RelWithDebInfo" build mode instead of the "Debug" build mode in order to improve performance of deserialization and level loading so that there's less time to wait until your game/level is loaded during development. When releasing your game you will use the usual "Release" build mode.
+
+In case you want to debug a specific target's code (your game's code for example) you need to disable optimizations for that specific target like so:
+
+```Cpp
+if (NOT IS_RELEASE_BUILD)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+endif()
+```
+
 ## Which header files to include and which not to include
 
 ### General
@@ -50,7 +62,7 @@ The engine does not require you to use them but their usage is highly recommende
 
 `clang-format` can be used in your IDE to automatically format your code (for example) each time you press Ctrl+S. If you want to make sure that your IDE is using our `.clang-format` config you can do the following check: in your source code create 2 or more consecutive empty lines, since our `.clang-format` config contains a rule `MaxEmptyLinesToKeep: 1` after you format the file only 1 empty line should remain. The action with which you format your source code depends on your IDE settings that you might want to configure, generally IDEs have a shortcut to "format" your source code but some have option to automatically use "format" action when you are saving your file.
 
-`clang-tidy` has a lot of checks enabled and is generally not that fast as you might expect, because of this we have `clang-tidy` enabled only in release builds to speed up build times for debug builds. This means that if your game builds in debug mode it may very well fail to build in release mode due to some `clang-tidy` warnings that are treated as errors. Because of this it's highly recommended to regularly (say once or twice a week) build your project in release mode to check for `clang-tidy` warnings/errors.
+`clang-tidy` has a lot of checks enabled and is generally not that fast as you might expect, because of this we have `clang-tidy` enabled only in release builds to speed up build times for non-release dev builds. Because of this it's highly recommended to regularly (say once or twice a week) build your project in release mode to check for `clang-tidy` warnings/errors.
 
 ## Node system
 
@@ -321,9 +333,9 @@ auto pDeserializedSave = std::get<std::unique_ptr<PlayerSaveData>>(std::move(res
 
 ## Memory leak checks
 
-### Debug builds
+### Non-release builds
 
-By default in Debug builds memory leak checks are enabled, look for the output/debugger output tab of your IDE after running your project. If any leaks occurred it should print about them. You can test whether the memory leak checks are enabled or not by doing something like this:
+By default in non-release builds memory leak checks are enabled, look for the output/debugger output tab of your IDE after running your project. If any leaks occurred it should print about them. You can test whether the memory leak checks are enabled or not by doing something like this:
 ```Cpp
 new int(42);
 // don't `delete`
@@ -638,7 +650,7 @@ As it was shown `InputManager` can be acquired using `GameInstance::getInputMana
 
 ## Using profiler
 
-The engine uses [tracy profiler](https://github.com/wolfpld/tracy), by default it's enabled in DEBUG builds.
+The engine uses [tracy profiler](https://github.com/wolfpld/tracy), by default it's enabled in non-release builds.
 
 Include `misc/Profiler.hpp` in order to use the profiler macros:
 
@@ -646,7 +658,7 @@ Include `misc/Profiler.hpp` in order to use the profiler macros:
 - `PROFILE_SCOPE(name)` same as above but works only in a scope
 - `PROFILE_ADD_SCOPE_TEXT(text, size)` copies the specified string and adds it to the last profiler mark (func or scope).
 
-In non-debug builds these macros will do nothing. Here are some examples:
+In release builds these macros will do nothing. Here are some examples:
 
 ```Cpp
 void MyClass::myFunc() {

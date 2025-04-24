@@ -6,6 +6,15 @@ option(DISABLE_DEV_STUFF "Enable to disable things like tests, clang-tidy and ot
 
 set(BUILD_DIRECTORY_NAME OUTPUT)
 
+# Set default build mode.
+if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
+    # There's very little reason to use slow debug build type.
+    message(FATAL_ERROR "Use RelWithDebInfo build type instead of the Debug build type.")
+endif()
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 # Add executable targets.
 message(STATUS "Adding executable targets...")
 

@@ -59,7 +59,7 @@ void MeshGeometry::serialize(const std::filesystem::path& pathToFile) const {
     file.write(reinterpret_cast<const char*>(vUvData.data()), vUvData.size());
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(MeshGeometry) == 64, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
 #endif
 }
 
@@ -141,7 +141,7 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
     }
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(MeshGeometry) == 64, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
 #endif
 
     MeshGeometry geometry;
@@ -218,7 +218,7 @@ bool MeshGeometry::operator==(const MeshGeometry& other) const {
     }
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(MeshGeometry) == 64, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
 #endif
 
     return true;

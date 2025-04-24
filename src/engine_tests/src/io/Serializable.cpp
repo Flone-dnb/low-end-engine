@@ -161,7 +161,7 @@ public:
                 }};
 
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(ReflectedVariables) == 1120, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(ReflectedVariables) == 896, "add new variables here"); // NOLINT: current size
 #endif
 
         return TypeReflectionInfo(
@@ -301,7 +301,7 @@ TEST_CASE("serialize and deserialize a sample type") {
     REQUIRE(pDeserialized->meshGeometry == pToSerialize->meshGeometry);
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(ReflectedVariables) == 1120, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(ReflectedVariables) == 896, "add new variables here"); // NOLINT: current size
 #endif
 
     pDeserialized = nullptr;

@@ -445,7 +445,7 @@ std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
         }
 
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1344, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #endif
     }
 

@@ -91,7 +91,7 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
     ADD_VARIABLES_OF_TYPE(vectorVec3s);
     ADD_VARIABLES_OF_TYPE(meshGeometries);
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 1344, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #endif
 
     return names;
@@ -152,7 +152,7 @@ TypeReflectionInfo::TypeReflectionInfo(
         ADD_PARENT_VARIABLES(vectorVec3s);
         ADD_PARENT_VARIABLES(meshGeometries);
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1344, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #endif
     }
 
@@ -180,6 +180,6 @@ TypeReflectionInfo::TypeReflectionInfo(
     VARIABLE_TYPE_TO_MAP(vectorVec3s, ReflectedVariableType::VECTOR_VEC3);
     VARIABLE_TYPE_TO_MAP(meshGeometries, ReflectedVariableType::MESH_GEOMETRY);
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 1344, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #endif
 }

@@ -171,6 +171,8 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
         return Error(std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
     }
 
+    const auto sPathToTexture = pathToTexture.string();
+
     const auto iStbiFormat = STBI_rgb_alpha;
     const auto iGlFormat = GL_RGBA;
 
@@ -180,13 +182,13 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
     int iChannels = 0;
     unsigned char* pPixels = nullptr;
     {
-        PROFILE_SCOPE("STB image load");
-        PROFILE_ADD_SCOPE_TEXT(pathToTexture.string().c_str(), pathToTexture.string().size());
-        pPixels = stbi_load(pathToTexture.string().c_str(), &iWidth, &iHeight, &iChannels, iStbiFormat);
+        PROFILE_SCOPE("load image");
+        PROFILE_ADD_SCOPE_TEXT(sPathToTexture.c_str(), sPathToTexture.size());
+        pPixels = stbi_load(sPathToTexture.c_str(), &iWidth, &iHeight, &iChannels, iStbiFormat);
     }
     if (pPixels == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
-            std::format("failed to load image from path \"{}\"", pathToTexture.string()));
+            std::format("failed to load image from path \"{}\"", sPathToTexture));
     }
 
     // Create a new texture object.
