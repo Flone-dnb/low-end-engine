@@ -18,7 +18,11 @@ Material::Material(
     : sPathToCustomVertexShader(sPathToCustomVertexShader),
       sPathToCustomFragmentShader(sPathToCustomFragmentShader) {}
 
-void Material::setDiffuseColor(const glm::vec3 color) { diffuseColor = color; }
+void Material::setDiffuseColor(const glm::vec3& color) {
+    diffuseColor = glm::vec4(color.x, color.y, color.z, diffuseColor.w);
+}
+
+void Material::setOpacity(float opacity) { diffuseColor.w = opacity; }
 
 void Material::setPathToDiffuseTexture(const std::string& sPathToTextureRelativeRes) {
     if (pShaderProgram != nullptr) [[unlikely]] {
@@ -98,7 +102,7 @@ void Material::onNodeSpawning(
 
 // Set general shader constants (branch independent constants).
 #define SHADER_CONSTANTS_CODE                                                                                \
-    pShaderProgram->setVector3ToShader(NAMEOF(diffuseColor).c_str(), diffuseColor);                          \
+    pShaderProgram->setVector4ToShader(NAMEOF(diffuseColor).c_str(), diffuseColor);                          \
     pShaderProgram->setBoolToShader("bIsUsingDiffuseTexture", false);                                        \
     glActiveTexture(GL_TEXTURE0);                                                                            \
     glBindTexture(GL_TEXTURE_2D, 0);

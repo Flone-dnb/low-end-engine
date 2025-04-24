@@ -1,15 +1,14 @@
 #include "game/Window.h"
 
 // Custom.
-#include "render/SdlManager.hpp"
+#include "misc/InitManager.hpp"
 
 #if defined(_WIN32)
 #include <Windows.h>
 #endif
 
 std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName, bool bIsHidden) {
-    // Initialize SDL.
-    SdlManager::init();
+    InitManager::init();
 
     // Get display resolution.
     SDL_DisplayMode mode;

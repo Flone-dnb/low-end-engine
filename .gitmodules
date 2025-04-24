@@ -34,3 +34,6 @@
 [submodule "ext/tracy"]
 	path = ext/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "ext/fpng"]
+	path = ext/fpng
+	url = https://github.com/richgel999/fpng.git

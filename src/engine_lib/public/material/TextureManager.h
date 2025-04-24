@@ -3,9 +3,11 @@
 // Standard.
 #include <unordered_map>
 #include <string>
+#include <filesystem>
 #include <mutex>
 #include <memory>
 #include <variant>
+#include <optional>
 
 // Custom.
 #include "misc/Error.h"
@@ -28,6 +30,37 @@ public:
 
     /** Makes sure that no texture is still loaded in the memory. */
     ~TextureManager();
+
+    /**
+     * Converts the image to be used in the engine.
+     *
+     * @param pathToImport                  Path to the image to convert.
+     * @param sPathToDirToImportRelativeRes Path an existing directory relative to the `res` directory
+     * to place the resulting (imported) image.
+     *
+     * @return Error if something went wrong.
+     */
+    static std::optional<Error> importTextureFromFile(
+        const std::filesystem::path& pathToImport, const std::string& sPathToDirToImportRelativeRes);
+
+    /**
+     * Converts the image to be used in the engine.
+     *
+     * @param sPathToResultRelativeRes Path a file (which does not exist yet) relative to the `res` directory
+     * to place the resulting (imported) image.
+     * @param vImageData               Image data to convert.
+     * @param iWidth                   Width of the image in pixels.
+     * @param iHeight                  Height of the image in pixels.
+     * @param iChannelCount            The number of channels the image data has (either 3 or 4).
+     *
+     * @return Error if something went wrong.
+     */
+    static std::optional<Error> importTextureFromMemory(
+        const std::string& sPathToResultRelativeRes,
+        const std::vector<unsigned char>& vImageData,
+        unsigned int iWidth,
+        unsigned int iHeight,
+        unsigned int iChannelCount);
 
     /**
      * Returns the current number of textures loaded in the memory.

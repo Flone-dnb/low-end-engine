@@ -26,13 +26,16 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->isVisible();
         }};
 
-    variables.vec3s["materialDiffuseColor"] = ReflectedVariableInfo<glm::vec3>{
+    variables.vec4s["materialDiffuseColor"] = ReflectedVariableInfo<glm::vec4>{
         .setter =
-            [](Serializable* pThis, const glm::vec3& newValue) {
-                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setDiffuseColor(newValue);
+            [](Serializable* pThis, const glm::vec4& newValue) {
+                auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
+                material.setDiffuseColor(newValue);
+                material.setOpacity(newValue.w);
             },
-        .getter = [](Serializable* pThis) -> glm::vec3 {
-            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getDiffuseColor();
+        .getter = [](Serializable* pThis) -> glm::vec4 {
+            auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
+            return glm::vec4(material.getDiffuseColor(), material.getOpacity());
         }};
 
     variables.strings["materialDiffuseTexture"] = ReflectedVariableInfo<std::string>{

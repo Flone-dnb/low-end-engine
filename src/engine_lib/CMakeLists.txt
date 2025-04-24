@@ -25,7 +25,6 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 set(PROJECT_SOURCES
     private/game/Window.cpp
     public/game/Window.h
-    private/render/SdlManager.hpp
     public/render/Renderer.h
     private/render/Renderer.cpp
     private/material/Material.cpp
@@ -65,6 +64,7 @@ set(PROJECT_SOURCES
     public/render/ShaderAlignmentConstants.hpp
     private/render/font/FontManager.cpp
     private/render/font/FontManager.h
+    private/misc/InitManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h
     public/misc/Globals.h
@@ -255,6 +255,17 @@ add_subdirectory(${RELATIVE_EXT_PATH}/tinygltf ${DEPENDENCY_BUILD_DIR_NAME}/tiny
 target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
 set_target_properties(tinygltf PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 add_dependencies(${PROJECT_NAME} tinygltf)
+
+# Add fpng.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"fpng\"...")
+add_library(fpng
+    ${RELATIVE_EXT_PATH}/fpng/src/fpng.cpp
+    ${RELATIVE_EXT_PATH}/fpng/src/fpng.h
+)
+target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/fpng/src/)
+target_link_libraries(${PROJECT_NAME} PUBLIC fpng)
+set_target_properties(fpng PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${PROJECT_NAME} fpng)
 
 if (NOT IS_RELEASE_BUILD)
     # Add tracy.

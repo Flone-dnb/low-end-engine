@@ -48,7 +48,14 @@ public:
      *
      * @param color Color in the RGB format.
      */
-    void setDiffuseColor(const glm::vec3 color);
+    void setDiffuseColor(const glm::vec3& color);
+
+    /**
+     * Sets value in range [0.0; 1.0] where 1.0 means opaque and 0.0 transparent.
+     *
+     * @param opacity Opacity.
+     */
+    void setOpacity(float opacity);
 
     /**
      * Sets path to diffuse texture to load (if not loaded yet by some other spawned object) when spawning and
@@ -78,6 +85,13 @@ public:
      * @return Diffuse light color.
      */
     glm::vec3 getDiffuseColor() { return diffuseColor; }
+
+    /**
+     * Returns value in range [0.0; 1.0] where 1 means opaque and 0 means transparent.
+     *
+     * @return Opacity.
+     */
+    float getOpacity() const { return diffuseColor.w; }
 
     /**
      * Returns GLSL shader that the material uses instead of the default one.
@@ -132,7 +146,7 @@ private:
     void onNodeChangedVisibilityWhileSpawned(bool bIsVisible, MeshNode* pNode, Renderer* pRenderer);
 
     /** Diffuse light color. */
-    glm::vec3 diffuseColor = glm::vec3(1.0F, 1.0F, 1.0F);
+    glm::vec4 diffuseColor = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
     /** Not `nullptr` if this material is used on a spawned renderable node. */
     std::shared_ptr<ShaderProgram> pShaderProgram;

@@ -6,36 +6,22 @@
 // Custom.
 #include "misc/ProjectPaths.h"
 #include "game/node/MeshNode.h"
+#include "material/TextureManager.h"
 
 // External.
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
-inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::filesystem::path& pathToImage) {
-    // Prepare callbacks.
-    tinygltf::FsCallbacks fsCallbacks = {
-        &tinygltf::FileExists,
-        &tinygltf::ExpandFilePath,
-        &tinygltf::ReadWholeFile,
-        &tinygltf::WriteWholeFile,
-        &tinygltf::GetFileSizeInBytes,
-        nullptr};
-    tinygltf::URICallbacks uriCallbacks;
-    uriCallbacks.encode = nullptr;
-    uriCallbacks.decode = [](const std::string& sInUri, std::string* pOutUri, void* pUserData) -> bool {
-        *pOutUri = sInUri;
-        return true;
-    };
+inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::string& sPathRelativeResToImage) {
+    auto optionalError = TextureManager::importTextureFromMemory(
+        sPathRelativeResToImage, image.image, image.width, image.height, image.component);
+    if (optionalError.has_value()) [[unlikely]] {
+        Logger::get().error(optionalError->getFullErrorMessage());
+        return false;
+    }
 
-    // Prepare paths.
-    const auto sFilename = pathToImage.stem().string() + pathToImage.extension().string();
-    const auto sBasePath = pathToImage.parent_path().string();
-    std::string sOutputUri;
-
-    // Write image to disk.
-    return tinygltf::WriteImageData(
-        &sBasePath, &sFilename, &image, false, &fsCallbacks, &uriCallbacks, &sOutputUri, nullptr);
+    return true;
 }
 
 inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMesh( // NOLINT: too complex
@@ -337,10 +323,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     }
                     sPathDiffuseTextureRelativeRes += sDiffuseTextureName + sImageExtension;
 
-                    const auto pathToDiffuseImage =
-                        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
-                        sPathDiffuseTextureRelativeRes;
-
                     // Mark progress.
                     onProgress(
                         std::format(
@@ -351,10 +333,10 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                             mesh.primitives.size()));
 
                     // Write image to disk.
-                    if (!writeGltfTextureToDisk(diffuseImage, pathToDiffuseImage)) [[unlikely]] {
+                    if (!writeGltfTextureToDisk(diffuseImage, sPathDiffuseTextureRelativeRes)) [[unlikely]] {
                         return Error(
                             std::format(
-                                "failed to write GLTF image to path \"{}\"", pathToDiffuseImage.string()));
+                                "failed to write GLTF image to path \"{}\"", sPathDiffuseTextureRelativeRes));
                     }
 
                     // Specify texture path.
