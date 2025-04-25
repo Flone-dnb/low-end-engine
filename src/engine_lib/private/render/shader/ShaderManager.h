@@ -19,6 +19,8 @@ class ShaderProgram;
  */
 enum class ShaderProgramUsage : unsigned char {
     MESH_NODE = 0,
+    TRANSPARENT_MESH_NODE, // TODO: not a really good solution because if we will have the same shader used
+                           // for both opaque and transparent objects we will duplicate that shader
     OTHER,
     // ... new types go here ...
 

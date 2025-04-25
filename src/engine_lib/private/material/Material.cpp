@@ -22,6 +22,20 @@ void Material::setDiffuseColor(const glm::vec3& color) {
     diffuseColor = glm::vec4(color.x, color.y, color.z, diffuseColor.w);
 }
 
+void Material::setEnableTransparency(bool bEnable) {
+    if (pShaderProgram != nullptr) [[unlikely]] {
+        // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
+        // for simplicity, plus if this function is called from a non-main thread it will add more headache
+        //
+        // moreover, ShaderProgram expects that we don't change our transparency state while using it
+        Error::showErrorAndThrowException(
+            "changing material's transparency state (enabled/disabled) is not allowed while the material is "
+            "used on a spawned node");
+    }
+
+    bIsTransparencyEnabled = bEnable;
+}
+
 void Material::setOpacity(float opacity) { diffuseColor.w = opacity; }
 
 void Material::setPathToDiffuseTexture(const std::string& sPathToTextureRelativeRes) {
@@ -97,7 +111,7 @@ void Material::onNodeSpawning(
                                           : sPathToCustomVertexShader,
         sPathToCustomFragmentShader.empty() ? MeshNode::getDefaultFragmentShaderForMeshNode().data()
                                             : sPathToCustomFragmentShader,
-        ShaderProgramUsage::MESH_NODE);
+        bIsTransparencyEnabled ? ShaderProgramUsage::TRANSPARENT_MESH_NODE : ShaderProgramUsage::MESH_NODE);
     onShaderProgramReceived(pShaderProgram.get());
 
 // Set general shader constants (branch independent constants).

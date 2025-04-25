@@ -51,7 +51,19 @@ public:
     void setDiffuseColor(const glm::vec3& color);
 
     /**
+     * Enables transparency that can be configured using @ref setOpacity.
+     *
+     * @remark If your diffuse texture (@ref setPathToDiffuseTexture) has an alpha channel
+     * it will be used as an additional opacity value for your object (on top of @ref setOpacity).
+     *
+     * @param bEnable New state.
+     */
+    void setEnableTransparency(bool bEnable);
+
+    /**
      * Sets value in range [0.0; 1.0] where 1.0 means opaque and 0.0 transparent.
+     *
+     * @remark Ignored if @ref setEnableTransparency is not enabled.
      *
      * @param opacity Opacity.
      */
@@ -92,6 +104,13 @@ public:
      * @return Opacity.
      */
     float getOpacity() const { return diffuseColor.w; }
+
+    /**
+     * Determines if transparency is ignored or not.
+     *
+     * @return State.
+     */
+    bool isTransparencyEnabled() const { return bIsTransparencyEnabled; }
 
     /**
      * Returns GLSL shader that the material uses instead of the default one.
@@ -162,4 +181,7 @@ private:
 
     /** Empty if using default shader, otherwise path to custom .glsl file (relative `res` directory). */
     std::string sPathToCustomFragmentShader;
+
+    /** Determines if @ref diffuseColor alpha (W component) is ignored or not. */
+    bool bIsTransparencyEnabled = false;
 };

@@ -249,7 +249,7 @@ inline void ShaderProgram::setVector4ToShader(const std::string& sUniformName, c
 }
 
 inline void ShaderProgram::setBoolToShader(const std::string& sUniformName, bool bValue) {
-    glUniform1i(getShaderUniformLocation(sUniformName), bValue);
+    glUniform1i(getShaderUniformLocation(sUniformName), static_cast<int>(bValue));
 }
 
 inline void ShaderProgram::setFloatToShader(const std::string& sUniformName, float value) {

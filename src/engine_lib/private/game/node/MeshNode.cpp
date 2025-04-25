@@ -65,6 +65,24 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToCustomFragmentShader();
         }};
 
+    variables.floats["materialOpacity"] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setOpacity(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getOpacity();
+        }};
+
+    variables.bools["materialTransparencyEnabled"] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setEnableTransparency(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().isTransparencyEnabled();
+        }};
+
     variables.meshGeometries[NAMEOF_MEMBER(&MeshNode::geometry).data()] = ReflectedVariableInfo<MeshGeometry>{
         .setter =
             [](Serializable* pThis, const MeshGeometry& newValue) {

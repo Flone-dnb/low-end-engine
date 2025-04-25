@@ -115,46 +115,62 @@ void Renderer::drawNextFrame() {
     std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
     if (mtxActiveCamera.second != nullptr) {
-        // Draw mesh nodes for each shader program.
-        for (auto& [sProgramName, shaderProgram] :
-             mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::MESH_NODE)]) {
-            const auto& [pWeakPtr, pShaderProgram] = shaderProgram;
+        // Prepare a handy lambda.
+        const auto drawMeshes =
+            [&](const std::unordered_map<
+                std::string,
+                std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>& shaderPrograms) {
+                for (auto& [sProgramName, shaderProgram] : shaderPrograms) {
+                    const auto& [pWeakPtr, pShaderProgram] = shaderProgram;
 
-            PROFILE_SCOPE("render mesh nodes of shader program")
-            PROFILE_ADD_SCOPE_TEXT(sProgramName.c_str(), sProgramName.size());
+                    PROFILE_SCOPE("render mesh nodes of shader program")
+                    PROFILE_ADD_SCOPE_TEXT(sProgramName.c_str(), sProgramName.size());
 
-            // Set shader program.
-            glUseProgram(pShaderProgram->getShaderProgramId());
+                    // Set shader program.
+                    glUseProgram(pShaderProgram->getShaderProgramId());
 
-            // Set camera uniforms.
-            mtxActiveCamera.second->getCameraProperties()->getShaderConstantsSetter().setConstantsToShader(
-                pShaderProgram);
+                    // Set camera uniforms.
+                    mtxActiveCamera.second->getCameraProperties()
+                        ->getShaderConstantsSetter()
+                        .setConstantsToShader(pShaderProgram);
 
-            // Set light arrays.
-            pLightSourceManager->setArrayPropertiesToShader(pShaderProgram);
+                    // Set light arrays.
+                    pLightSourceManager->setArrayPropertiesToShader(pShaderProgram);
 
-            // Get mesh nodes.
-            auto& mtxMeshNodes = pShaderProgram->getMeshNodesUsingThisProgram();
-            std::scoped_lock guard(mtxMeshNodes.first);
+                    // Get mesh nodes.
+                    auto& mtxMeshNodes = pShaderProgram->getMeshNodesUsingThisProgram();
+                    std::scoped_lock guard(mtxMeshNodes.first);
 
-            for (const auto& pMeshNode : mtxMeshNodes.second) {
-                // Set mesh.
-                auto& vao = pMeshNode->getVertexArrayObjectWhileSpawned();
-                glBindVertexArray(vao.getVertexArrayObjectId());
+                    for (const auto& pMeshNode : mtxMeshNodes.second) {
+                        // Set mesh.
+                        auto& vao = pMeshNode->getVertexArrayObjectWhileSpawned();
+                        glBindVertexArray(vao.getVertexArrayObjectId());
 
-                // Set mesh uniforms.
-                pMeshNode->getShaderConstantsSetterWhileSpawned().setConstantsToShader(pShaderProgram);
+                        // Set mesh uniforms.
+                        pMeshNode->getShaderConstantsSetterWhileSpawned().setConstantsToShader(
+                            pShaderProgram);
 
-                // Draw.
-                glDrawElements(GL_TRIANGLES, vao.getIndexCount(), GL_UNSIGNED_SHORT, nullptr);
-            }
+                        // Draw.
+                        glDrawElements(GL_TRIANGLES, vao.getIndexCount(), GL_UNSIGNED_SHORT, nullptr);
+                    }
 
-            // Clear texture slots (if they where used).
-            for (int i = GL_TEXTURE0; i < 4; i++) { // NOLINT
-                glActiveTexture(i);
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
+                    // Clear texture slots (if they where used).
+                    for (int i = GL_TEXTURE0; i < 4; i++) { // NOLINT
+                        glActiveTexture(i);
+                        glBindTexture(GL_TEXTURE_2D, 0);
+                    }
+                }
+            };
+
+        // Draw meshes.
+        drawMeshes(mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::MESH_NODE)]);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        {
+            drawMeshes(
+                mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::TRANSPARENT_MESH_NODE)]);
         }
+        glDisable(GL_BLEND);
 
         // Draw UI.
         pUiManager->renderUi();

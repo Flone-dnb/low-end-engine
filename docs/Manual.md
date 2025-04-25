@@ -370,8 +370,6 @@ Let's first make sure you know how to create a window, your `main.cpp` should ge
 #include "misc/ProjectPaths.h"
 
 int main() {
-    using namespace ne;
-
     // Create a game window.
     auto result = Window::create("mygame");
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
@@ -445,6 +443,48 @@ void MyGameInstance::onGameStarted() {
         // Level is loaded.
     });
 }
+```
+
+## Importing meshes
+
+Note
+> We only support import from GLTF/GLB format.
+
+### Export settings in Blender
+
+Usually the only thing that you need to do is to untick the "+Y up" checkbox in "Transform" section (since we use +Z as our UP axis).
+
+### Import in the engine using C++
+
+In order to import your file you need to use `GltfImporter` like so:
+
+```Cpp
+#include "io/GltfImporter.h"
+
+auto optionalError = GltfImporter::importFileAsNodeTree(
+    "C:\\models\\sword.glb",       // importing GLB as an example, you can import GLTF in the same way
+    "game/models",                 // path to the output directory relative `res` (should exist)
+    "sword",                       // name of the new directory that will be created (should not exist yet)
+    [](std::string_view sState) {
+        Logger::get().info(sState);
+    });
+if (optionalError.has_value()) [[unlikely]] {
+    // ... handle error ...
+}
+```
+
+If the import process went without errors you can then find your imported model(s) in form of a node tree inside of the resulting directory. You can then deserialize that node tree and use it in your game as any other node tree:
+
+```Cpp
+// Deserialize node tree.
+auto result = Node::deserializeNodeTree(
+    ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME) / "models/sword/sword.toml");
+if (std::holds_alternative<Error>(result)) [[unlikely]] {
+    // ... process errorr ...
+}
+
+// Spawn node tree.
+const auto pImportedRootNode = getWorldRootNode()->addChildNode(std::get<std::unique_ptr<Node>>(std::move(result)));
 ```
 
 ## Textures and texture filtering

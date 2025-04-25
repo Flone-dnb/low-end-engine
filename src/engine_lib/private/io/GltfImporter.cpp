@@ -280,6 +280,18 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             auto& material = model.materials[primitive.material];
             auto& meshMaterial = pMeshNode->getMaterial();
 
+            // IGNORE TRANSPARENCY in order to avoid accidentally importing transparent meshes (which will
+            // affect the performance), instead force the developer to carefully think and enable transparency
+            // (in the editor) for meshes that actually need it.
+            // if (material.alphaMode == "MASK") {
+            //     Logger::get().warn(
+            //         "found material with transparency enabled, transparent materials have "
+            //         "very serious impact on the performance so you might want to avoid using them");
+            //     meshMaterial.setEnableTransparency(true);
+            //     meshMaterial.setOpacity(
+            //         1.0F - static_cast<float>(std::clamp(material.alphaCutoff, 0.0, 1.0)));
+            // }
+
             // Process base color.
             meshMaterial.setDiffuseColor(
                 glm::vec3(
