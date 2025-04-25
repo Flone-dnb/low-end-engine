@@ -35,42 +35,21 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
     // Prepare array to fill.
     std::vector<std::unique_ptr<MeshNode>> vMeshNodes;
 
-    // Prepare variables.
     const std::string sTexturesDirectoryName = "tex";
-    const std::string sImageExtension = ".png";
+    const std::string sImageExtension = "png";
     const std::string sDiffuseTextureName = "diffuse";
-    std::string sBasePathToImportTexturesRelativeRes = sPathToOutputDirRelativeRes;
-    if (!sBasePathToImportTexturesRelativeRes.ends_with('/')) {
-        sBasePathToImportTexturesRelativeRes += "/";
-    }
-    sBasePathToImportTexturesRelativeRes +=
-        iTotalGltfNodesToProcess > 1 ? sTexturesDirectoryName + "_" + std::to_string(iGltfNodeProcessedCount)
-                                     : sTexturesDirectoryName;
 
-    // Clear temp directory.
-    const std::filesystem::path pathToTempFiles =
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToOutputDirRelativeRes / "temp";
-    if (std::filesystem::exists(pathToTempFiles)) {
-        std::filesystem::remove_all(pathToTempFiles);
+    // Prepare textures directory.
+    const std::filesystem::path pathToTexturesDir =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToOutputDirRelativeRes /
+        sTexturesDirectoryName;
+    if (std::filesystem::exists(pathToTexturesDir)) {
+        std::filesystem::remove_all(pathToTexturesDir);
     }
-    std::filesystem::create_directory(pathToTempFiles);
+    std::filesystem::create_directory(pathToTexturesDir);
 
     // Go through each mesh in this node.
     for (size_t iPrimitive = 0; iPrimitive < mesh.primitives.size(); iPrimitive++) {
-        // Append primitive index for unique names.
-        const auto sPathToImportTexturesRelativeRes =
-            mesh.primitives.size() > 1
-                ? sBasePathToImportTexturesRelativeRes + "_" + std::to_string(iPrimitive)
-                : sBasePathToImportTexturesRelativeRes;
-
-        // Prepare textures directory.
-        const std::filesystem::path pathToImportTextures =
-            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToImportTexturesRelativeRes;
-        if (std::filesystem::exists(pathToImportTextures)) {
-            std::filesystem::remove_all(pathToImportTextures);
-        }
-        std::filesystem::create_directory(pathToImportTextures);
-
         auto& primitive = mesh.primitives[iPrimitive];
 
         MeshGeometry meshGeometry;
@@ -317,11 +296,16 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     auto& diffuseImage = model.images[diffuseTexture.source];
 
                     // Construct path to imported texture directory.
-                    std::string sPathDiffuseTextureRelativeRes = sPathToImportTexturesRelativeRes;
-                    if (!sPathDiffuseTextureRelativeRes.ends_with('/')) {
-                        sPathDiffuseTextureRelativeRes += "/";
-                    }
-                    sPathDiffuseTextureRelativeRes += sDiffuseTextureName + sImageExtension;
+                    const auto pathDiffuseTextureRelativeRes =
+                        pathToTexturesDir /
+                        std::format(
+                            "{}_{}.{}", sDiffuseTextureName, std::to_string(iPrimitive), sImageExtension);
+
+                    const auto sTexturePathRelativeRes =
+                        std::filesystem::relative(
+                            pathDiffuseTextureRelativeRes,
+                            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT))
+                            .string();
 
                     // Mark progress.
                     onProgress(
@@ -333,14 +317,14 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                             mesh.primitives.size()));
 
                     // Write image to disk.
-                    if (!writeGltfTextureToDisk(diffuseImage, sPathDiffuseTextureRelativeRes)) [[unlikely]] {
+                    if (!writeGltfTextureToDisk(diffuseImage, sTexturePathRelativeRes)) [[unlikely]] {
                         return Error(
                             std::format(
-                                "failed to write GLTF image to path \"{}\"", sPathDiffuseTextureRelativeRes));
+                                "failed to write GLTF image to path \"{}\"", sTexturePathRelativeRes));
                     }
 
                     // Specify texture path.
-                    meshMaterial.setPathToDiffuseTexture(sPathDiffuseTextureRelativeRes);
+                    meshMaterial.setPathToDiffuseTexture(sTexturePathRelativeRes);
                 }
             }
         }
@@ -348,9 +332,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
         // Add this new mesh node to results.
         vMeshNodes.push_back(std::move(pMeshNode));
     }
-
-    // Delete temp directory.
-    std::filesystem::remove_all(pathToTempFiles);
 
     return vMeshNodes;
 }
