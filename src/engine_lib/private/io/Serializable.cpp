@@ -7,6 +7,17 @@
 #include "io/Logger.h"
 #include "misc/Error.h"
 
+// To suppress GCC's false-positive about dangling reference.
+#if __GNUC__ >= 13
+#define GCC_PUSH_DIAGNOSTIC_DISABLE_DANGLING_REF                                                             \
+    _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdangling-reference\"")
+
+#define GCC_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
+#else
+#define GCC_PUSH_DIAGNOSTIC_DISABLE_DANGLING_REF
+#define GCC_DIAGNOSTIC_POP
+#endif
+
 std::optional<Error> Serializable::serialize(
     std::filesystem::path pathToFile,
     bool bEnableBackup,
@@ -67,9 +78,9 @@ std::optional<Error> Serializable::serialize(
             // file.
 
             // Check that the original file exists.
-            const auto pathToOriginalFile = pathToOriginal;
-            if (!std::filesystem::exists(pathToOriginalFile)) [[unlikely]] {
-                auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(getTypeGuid());
+            if (!std::filesystem::exists(pathToOriginal)) [[unlikely]] {
+                GCC_PUSH_DIAGNOSTIC_DISABLE_DANGLING_REF
+                const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(getTypeGuid());
                 return Error(
                     std::format(
                         "object of type \"{}\" has the path it was deserialized from ({}, ID {}) but "
@@ -78,13 +89,14 @@ std::optional<Error> Serializable::serialize(
                         typeInfo.sTypeName,
                         sPathDeserializedFromRelativeRes,
                         sObjectIdInDeserializedFile,
-                        pathToOriginalFile.string()));
+                        pathToOriginal.string()));
+                GCC_DIAGNOSTIC_POP
             }
 
             // Deserialize the original.
             std::unordered_map<std::string, std::string> customAttributes;
             auto result =
-                deserialize<Serializable>(pathToOriginalFile, sObjectIdInDeserializedFile, customAttributes);
+                deserialize<Serializable>(pathToOriginal, sObjectIdInDeserializedFile, customAttributes);
             if (std::holds_alternative<Error>(result)) [[unlikely]] {
                 auto error = std::get<Error>(result);
                 error.addCurrentLocationToErrorStack();

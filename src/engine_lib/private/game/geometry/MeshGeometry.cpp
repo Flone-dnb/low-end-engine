@@ -2,6 +2,7 @@
 
 // Standard.
 #include <fstream>
+#include <format>
 
 // Custom.
 #include "misc/Error.h"

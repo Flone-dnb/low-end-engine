@@ -190,7 +190,9 @@ void Renderer::drawNextFrame() {
 
     calculateFrameStatistics();
 
+#if defined(ENGINE_PROFILER_ENABLED)
     FrameMark;
+#endif
 }
 
 void Renderer::drawPostProcessingScreenQuad(CameraProperties* pCameraProperties) {
@@ -335,7 +337,10 @@ void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
     } else {
         data.optionalTargetTimeToRenderFrameInNs = 1000000000.0 / static_cast<double>(iNewFpsLimit); // NOLINT
         data.iFpsLimit = iNewFpsLimit;
+
+#if defined(WIN32)
         data.iMinTimeStampsPerSecond = data.iTimeStampsPerSecond / iNewFpsLimit;
+#endif
     }
 }
 
