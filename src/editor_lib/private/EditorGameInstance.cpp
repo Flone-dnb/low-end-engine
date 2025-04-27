@@ -110,17 +110,29 @@ void EditorGameInstance::registerEditorInputEvents() {
                 static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR),
                 {MouseButton::RIGHT}));
 
-        // Increase camera speed.
+        // Increase camera movement speed.
         showErrorIfNotEmpty(
             getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_SPEED),
+                static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED),
                 {KeyboardButton::LEFT_SHIFT}));
 
-        // Decrease camera speed.
+        // Decrease camera movement speed.
         showErrorIfNotEmpty(
             getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_SPEED),
+                static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED),
                 {KeyboardButton::LEFT_CONTROL}));
+
+        // Increase camera rotation speed.
+        showErrorIfNotEmpty(
+            getInputManager()->addActionEvent(
+                static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_ROTATION_SPEED),
+                {GamepadButton::RIGHT_SHOULDER}));
+
+        // Decrease camera rotation speed.
+        showErrorIfNotEmpty(
+            getInputManager()->addActionEvent(
+                static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_ROTATION_SPEED),
+                {GamepadButton::LEFT_SHOULDER}));
     }
 
     // Bind to action events.

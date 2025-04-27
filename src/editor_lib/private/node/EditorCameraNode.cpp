@@ -60,9 +60,9 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
         auto& mtxActionEvents = getActionEventBindings();
         std::scoped_lock guard(mtxActionEvents.first);
 
-        // Bind increase speed.
+        // Bind increase movement speed.
         mtxActionEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_SPEED)] =
+            .second[static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] =
             [this](KeyboardModifiers modifiers, bool bIsPressed) {
                 if (bIsPressed) {
                     currentMovementSpeedMultiplier = speedIncreaseMultiplier;
@@ -71,14 +71,32 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
                 }
             };
 
-        // Bind decrease speed.
+        // Bind decrease movement speed.
         mtxActionEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_SPEED)] =
+            .second[static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED)] =
             [this](KeyboardModifiers modifiers, bool bIsPressed) {
                 if (bIsPressed) {
                     currentMovementSpeedMultiplier = speedDecreaseMultiplier;
                 } else {
                     currentMovementSpeedMultiplier = 1.0F;
+                }
+            };
+
+        // Bind increase rotation speed.
+        mtxActionEvents
+            .second[static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_ROTATION_SPEED)] =
+            [this](KeyboardModifiers modifiers, bool bIsPressed) {
+                if (!bIsPressed) {
+                    rotationSensitivity += 0.1F; // NOLINT
+                }
+            };
+
+        // Bind decrease rotation speed.
+        mtxActionEvents
+            .second[static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_ROTATION_SPEED)] =
+            [this](KeyboardModifiers modifiers, bool bIsPressed) {
+                if (!bIsPressed) {
+                    rotationSensitivity = std::max(0.1F, rotationSensitivity - 0.1F); // NOLINT
                 }
             };
     }

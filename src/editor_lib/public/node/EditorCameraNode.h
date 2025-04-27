@@ -101,7 +101,7 @@ private:
     float currentMovementSpeedMultiplier = 1.0F;
 
     /** Rotation multiplier for editor's camera. */
-    static constexpr float rotationSensitivity = 0.1F; // NOLINT: default value
+    float rotationSensitivity = 0.1F; // NOLINT: default value
 
     /** Speed of editor camera's movement. */
     static constexpr float movementSpeed = 5.0F;
