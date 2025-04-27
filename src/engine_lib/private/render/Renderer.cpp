@@ -74,6 +74,8 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pFontManager = FontManager::create(
         this,
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
+    pPostProcessingSettings =
+        std::unique_ptr<PostProcessSettings>(new PostProcessSettings(pShaderManager.get()));
 
     // Initialize fences.
     for (auto& fence : frameSync.vFences) {
@@ -104,8 +106,8 @@ void Renderer::drawNextFrame() {
     glDepthFunc(GL_LESS);
 
     // Set framebuffer.
-    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId()));
-    GL_CHECK_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
 
@@ -176,13 +178,10 @@ void Renderer::drawNextFrame() {
         pUiManager->renderUi();
     }
 
-    // Copy rendered image to window's framebuffer.
-    const auto [iWidth, iHeight] = pWindow->getWindowSize();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    // Do post processing.
+    drawPostProcessingScreenQuad(mtxActiveCamera.second->getCameraProperties());
 
+    // Swap.
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
 
     // Insert a fence.
@@ -192,6 +191,48 @@ void Renderer::drawNextFrame() {
     calculateFrameStatistics();
 
     FrameMark;
+}
+
+void Renderer::drawPostProcessingScreenQuad(CameraProperties* pCameraProperties) {
+    PROFILE_FUNC
+
+    // Render on window's framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(pPostProcessingSettings->pShaderProgram->getShaderProgramId());
+
+    glDisable(GL_DEPTH_TEST);
+    {
+        // Bind textures on which our scene was rendered.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pMainFramebuffer->getColorTextureId());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, pMainFramebuffer->getDepthStencilTextureId());
+
+        auto& shader = pPostProcessingSettings->pShaderProgram;
+        const auto& optionalDistanceFog = pPostProcessingSettings->getDistanceFogSettings();
+
+        // Set shader parameters.
+        shader->setFloatToShader("zNear", pCameraProperties->getNearClipPlaneDistance());
+        shader->setFloatToShader("zFar", pCameraProperties->getFarClipPlaneDistance());
+        shader->setBoolToShader("bIsDistanceFogEnabled", optionalDistanceFog.has_value());
+        if (optionalDistanceFog.has_value()) {
+            shader->setVector3ToShader("distanceFogColor", optionalDistanceFog->getColor());
+            shader->setFloatToShader("distanceFogStartDistance", optionalDistanceFog->getStartDistance());
+        }
+
+        // Draw.
+        glBindVertexArray(pPostProcessingSettings->pFullScreenQuad->getVao().getVertexArrayObjectId());
+        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+
+        // Reset texture slots.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    // glEnable(GL_DEPTH_TEST); don't enable on window's framebuffer - there's no need
 }
 
 void Renderer::calculateFrameStatistics() {
@@ -313,3 +354,5 @@ FontManager& Renderer::getFontManager() { return *pFontManager; }
 TextureManager& Renderer::getTextureManager() { return *pTextureManager; }
 
 RenderStatistics& Renderer::getRenderStatistics() { return renderStats; }
+
+PostProcessSettings& Renderer::getPostProcessingSettings() { return *pPostProcessingSettings; }

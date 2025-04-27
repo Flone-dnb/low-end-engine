@@ -5,7 +5,7 @@
 
 // Custom.
 #include "render/Renderer.h"
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 #include "game/node/MeshNode.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "material/TextureManager.h"

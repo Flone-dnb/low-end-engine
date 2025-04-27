@@ -5,9 +5,10 @@
 #include <variant>
 
 // Custom.
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 #include "misc/Error.h"
 #include "render/RenderStatistics.h"
+#include "render/PostProcessSettings.h"
 
 // External.
 #include "SDL_video.h"
@@ -20,6 +21,7 @@ class UiManager;
 class LightSourceManager;
 class TextureManager;
 class Framebuffer;
+class CameraProperties;
 
 /** OpenGL ES renderer. */
 class Renderer {
@@ -109,6 +111,13 @@ public:
      */
     RenderStatistics& getRenderStatistics();
 
+    /**
+     * Returns settings for post processing of the rendered image.
+     *
+     * @return Settings.
+     */
+    PostProcessSettings& getPostProcessingSettings();
+
 private:
     /** Groups stuff used to synchronize GPU and CPU. */
     struct FrameSync {
@@ -140,6 +149,13 @@ private:
     void drawNextFrame();
 
     /**
+     * Does post processing on the rendered image.
+     *
+     * @param pCameraProperties Properties of the main camera.
+     */
+    void drawPostProcessingScreenQuad(CameraProperties* pCameraProperties);
+
+    /**
      * Calculates some frame-related statistics.
      *
      * @remark Must be called after a frame was submitted.
@@ -163,6 +179,9 @@ private:
 
     /** Framebuffer for rendering. */
     std::unique_ptr<Framebuffer> pMainFramebuffer;
+
+    /** Settings for post processing of the rendered image. */
+    std::unique_ptr<PostProcessSettings> pPostProcessingSettings;
 
     /** Various statistics about rendering. */
     RenderStatistics renderStats;

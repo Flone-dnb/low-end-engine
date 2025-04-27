@@ -4,7 +4,7 @@
 #include <array>
 
 // Custom.
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 
 ShaderProgram::~ShaderProgram() {
     {

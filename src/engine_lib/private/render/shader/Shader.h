@@ -34,7 +34,7 @@ public:
      *
      * @return ID.
      */
-    unsigned int getShaderId() { return iShaderId; }
+    unsigned int getShaderId() const { return iShaderId; }
 
 private:
     /**

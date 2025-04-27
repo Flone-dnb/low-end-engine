@@ -3,6 +3,8 @@
 #define MAX_SPOT_LIGHT_COUNT 30
 #define MAX_DIRECTIONAL_LIGHT_COUNT 3
 
+uniform vec3 ambientLightColor;
+
 // ------------------------------------------------------------------------------------------------
 
 /** Directional light description. */
@@ -117,7 +119,7 @@ float calculateLightAttenuation(float distanceToLightSource, float lightIntensit
  * @return Light color.
  */
 vec3 calculateColorFromLights(vec3 fragmentPosition, vec3 fragmentNormalUnit, vec3 fragmentDiffuseColor) {
-    vec3 lightColor = vec3(0.0F, 0.0F, 0.0F);
+    vec3 lightColor = ambientLightColor * fragmentDiffuseColor;
 
     // Apply directional lights.
     for (uint i = 0u; i < iDirectionalLightCount; i++) {

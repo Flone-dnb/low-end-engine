@@ -1,4 +1,4 @@
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 
 // Standard.
 #include <format>
@@ -84,7 +84,6 @@ std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
         GL_CHECK_ERROR(glAttachShader(iShaderProgramId, pShader->getShaderId()));
     }
     GL_CHECK_ERROR(glLinkProgram(iShaderProgramId));
-
     // See if there were any linking errors.
     int iSuccess = 0;
     glGetProgramiv(iShaderProgramId, GL_LINK_STATUS, &iSuccess);

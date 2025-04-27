@@ -220,13 +220,13 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
     // Stuff for testing.
     {
         auto pFloor = createEditorNode<MeshNode>();
-        pFloor->setRelativeScale(glm::vec3(50.0F, 50.0F, 1.0F));            // NOLINT
-        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.1F, 0.0F, 0.1F)); // NOLINT
+        pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));           // NOLINT
+        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.22F, 0.0F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pFloor));
 
         auto pCube = createEditorNode<MeshNode>();
-        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));           // NOLINT
-        pCube->getMaterial().setDiffuseColor(glm::vec3(0.9F, 0.3F, 0.0F)); // NOLINT
+        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));            // NOLINT
+        pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.26F, 0.0F)); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pCube));
 
         auto pSun = createEditorNode<DirectionalLightNode>();

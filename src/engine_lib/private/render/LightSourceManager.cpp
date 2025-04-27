@@ -2,10 +2,11 @@
 
 // Custom.
 #include "render/shader/LightSourceShaderArray.h"
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
+#include "render/Renderer.h"
 
 LightSourceManager::LightSourceManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     // Create array of directional lights.
@@ -46,6 +47,9 @@ void LightSourceManager::setArrayPropertiesToShader(ShaderProgram* pShaderProgra
     pDirectionalLightsArray->setArrayPropertiesToShader(pShaderProgram);
     pSpotlightsArray->setArrayPropertiesToShader(pShaderProgram);
     pPointLightsArray->setArrayPropertiesToShader(pShaderProgram);
+
+    pShaderProgram->setVector3ToShader(
+        "ambientLightColor", pRenderer->getPostProcessingSettings().getAmbientLightColor());
 }
 
 Renderer* LightSourceManager::getRenderer() const { return pRenderer; }

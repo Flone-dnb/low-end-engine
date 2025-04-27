@@ -38,7 +38,7 @@ set(PROJECT_SOURCES
     public/render/RenderStatistics.h
     private/render/GpuResourceManager.cpp
     private/render/GpuResourceManager.h
-    private/render/shader/ShaderManager.h
+    public/render/ShaderManager.h
     private/render/shader/ShaderManager.cpp
     private/render/shader/Shader.h
     private/render/shader/Shader.cpp
@@ -64,6 +64,8 @@ set(PROJECT_SOURCES
     public/render/ShaderAlignmentConstants.hpp
     private/render/font/FontManager.cpp
     private/render/font/FontManager.h
+    public/render/PostProcessSettings.h
+    private/render/PostProcessSettings.cpp
     private/misc/InitManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h
@@ -90,6 +92,8 @@ set(PROJECT_SOURCES
     public/game/geometry/MeshGeometry.h
     public/game/geometry/PrimitiveMeshGenerator.h
     private/game/geometry/PrimitiveMeshGenerator.cpp
+    private/game/geometry/ScreenQuadGeometry.cpp
+    public/game/geometry/ScreenQuadGeometry.h
     public/math/GLMath.hpp
     public/math/MathHelpers.hpp
     public/io/Logger.h

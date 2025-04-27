@@ -5,7 +5,7 @@
 
 // Custom.
 #include "game/node/ui/TextNode.h"
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 #include "render/Renderer.h"
 #include "misc/Error.h"
 #include "render/font/FontManager.h"
@@ -36,7 +36,7 @@ void UiManager::renderUi() {
 
     int depthFunc = 0;
     glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
-    glDepthFunc(GL_ALWAYS); // disable depth tests for UI
+    glDepthFunc(GL_NEVER); // disable depth tests for UI
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     {
@@ -210,7 +210,8 @@ UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     glBindBuffer(GL_ARRAY_BUFFER, iVbo);
     {
         // Allocate vertices, each vec4 will store screen space position (in XY) and UVs (in ZW).
-        glBufferData(GL_ARRAY_BUFFER, iTextQuadVertexCount * sizeof(glm::vec4), nullptr, GL_DYNAMIC_DRAW);
+        GL_CHECK_ERROR(glBufferData(
+            GL_ARRAY_BUFFER, iTextQuadVertexCount * sizeof(glm::vec4), nullptr, GL_DYNAMIC_DRAW));
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);

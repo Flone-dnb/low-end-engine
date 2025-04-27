@@ -12,7 +12,7 @@
  * @remark RAII-like object that automatically deletes OpenGL objects during destruction.
  */
 class VertexArrayObject {
-    // Only GPU resource manager and UI manager are expected to create objects of this type.
+    // Only these are expected to create objects of this type.
     friend class GpuResourceManager;
     friend class UiManager;
 
@@ -31,14 +31,14 @@ public:
      *
      * @return VAO.
      */
-    unsigned int getVertexArrayObjectId() { return iVertexArrayObjectId; }
+    unsigned int getVertexArrayObjectId() const { return iVertexArrayObjectId; }
 
     /**
      * Returns VBO.
      *
      * @return VBO.
      */
-    unsigned int getVertexBufferObjectId() { return iVertexBufferObjectId; }
+    unsigned int getVertexBufferObjectId() const { return iVertexBufferObjectId; }
 
     /**
      * Returns number of indices to draw.

@@ -15,11 +15,11 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Texture import
 - [X] GLTF/GLB import
 - [X] Profiler
+- [X] Post-processing effects
+- [ ] GUI
 - [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
 - [ ] Dynamic shadows
-- [ ] Post-processing effects
 - [ ] Instancing
-- [ ] GUI
 - [ ] Skeletal animations
 - [ ] Simple editor
 - [ ] Audio engine (using [SoLoud](https://github.com/jarikomppa/soloud))

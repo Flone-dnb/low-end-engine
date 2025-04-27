@@ -12,7 +12,7 @@
 #include "misc/Error.h"
 #include "math/GLMath.hpp"
 #include "render/wrapper/Buffer.h"
-#include "render/shader/ShaderManager.h"
+#include "render/ShaderManager.h"
 
 // External.
 #include "glad/glad.h"
@@ -98,6 +98,14 @@ public:
      * @param iValue       Value to set.
      */
     inline void setUintToShader(const std::string& sUniformName, unsigned int iValue);
+
+    /**
+     * Sets the specified value to a `uniform` with the specified name in shaders.
+     *
+     * @param sUniformName Name of the uniform variable from shader code.
+     * @param iValue       Value to set.
+     */
+    inline void setIntToShader(const std::string& sUniformName, int iValue);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -258,6 +266,10 @@ inline void ShaderProgram::setFloatToShader(const std::string& sUniformName, flo
 
 inline void ShaderProgram::setUintToShader(const std::string& sUniformName, unsigned int iValue) {
     glUniform1ui(getShaderUniformLocation(sUniformName), iValue);
+}
+
+inline void ShaderProgram::setIntToShader(const std::string& sUniformName, int iValue) {
+    glUniform1i(getShaderUniformLocation(sUniformName), iValue);
 }
 
 inline void ShaderProgram::setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer) {

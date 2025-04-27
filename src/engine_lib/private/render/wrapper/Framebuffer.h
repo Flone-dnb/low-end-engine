@@ -18,11 +18,25 @@ public:
     ~Framebuffer();
 
     /**
-     * Returns ID of the framebuffer.
+     * Returns OpenGL ID of the framebuffer.
      *
-     * @return ID.
+     * @return OpenGL ID.
      */
     unsigned int getFramebufferId() const { return iFramebufferId; }
+
+    /**
+     * Returns OpenGL ID of the framebuffer's color texture.
+     *
+     * @return OpenGL ID.
+     */
+    unsigned int getColorTextureId() const { return iColorTextureId; }
+
+    /**
+     * Returns OpenGL ID of the framebuffer's depth/stencil texture.
+     *
+     * @return OpenGL ID.
+     */
+    unsigned int getDepthStencilTextureId() const { return iDepthStencilBufferId; }
 
 private:
     /**
