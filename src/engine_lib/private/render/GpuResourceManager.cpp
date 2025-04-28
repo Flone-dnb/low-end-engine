@@ -155,17 +155,25 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
         if (iDepthGlFormat != 0) {
             glBindTexture(GL_TEXTURE_2D, iDepthStencilBufferId);
 
+            auto componentType = GL_UNSIGNED_INT;
+            if (iDepthGlFormat == GL_DEPTH_COMPONENT16) {
+                componentType = GL_UNSIGNED_SHORT;
+            } else if (iDepthGlFormat == GL_DEPTH_COMPONENT32F) {
+                componentType = GL_FLOAT;
+            } else if (iDepthGlFormat == GL_DEPTH24_STENCIL8) {
+                componentType = GL_UNSIGNED_INT_24_8;
+            } else if (iDepthGlFormat == GL_DEPTH32F_STENCIL8) {
+                componentType = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+            }
+
+            auto format = GL_DEPTH_COMPONENT;
+            if (iDepthGlFormat == GL_DEPTH24_STENCIL8 || iDepthGlFormat == GL_DEPTH32F_STENCIL8) {
+                format = GL_DEPTH_STENCIL;
+            }
+
             // Configure depth texture.
             GL_CHECK_ERROR(glTexImage2D(
-                GL_TEXTURE_2D,
-                0,
-                iDepthGlFormat,
-                iWidth,
-                iHeight,
-                0,
-                GL_DEPTH_COMPONENT,
-                GL_UNSIGNED_INT,
-                nullptr));
+                GL_TEXTURE_2D, 0, iDepthGlFormat, iWidth, iHeight, 0, format, componentType, nullptr));
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
