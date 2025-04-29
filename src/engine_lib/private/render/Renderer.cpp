@@ -82,6 +82,13 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
     }
 
+    // Check if window's framebuffer has sRGB format or not.
+    int iIsSrgbFramebuffer = 0;
+    SDL_GL_GetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, &iIsSrgbFramebuffer);
+    pPostProcessingSettings->bApplyGammaCorrection = !static_cast<bool>(iIsSrgbFramebuffer);
+    Logger::get().info(
+        std::format("is window's framebuffer uses sRGB format: {}", static_cast<bool>(iIsSrgbFramebuffer)));
+
     // Create main framebuffer.
     const auto windowSize = pWindow->getWindowSize();
     pMainFramebuffer = GpuResourceManager::createFramebuffer(
@@ -216,6 +223,7 @@ void Renderer::drawPostProcessingScreenQuad(CameraProperties* pCameraProperties)
         const auto& optionalDistanceFog = pPostProcessingSettings->getDistanceFogSettings();
 
         // Set shader parameters.
+        shader->setBoolToShader("bApplyGammaCorrection", pPostProcessingSettings->bApplyGammaCorrection);
         shader->setFloatToShader("zNear", pCameraProperties->getNearClipPlaneDistance());
         shader->setFloatToShader("zFar", pCameraProperties->getFarClipPlaneDistance());
         shader->setBoolToShader("bIsDistanceFogEnabled", optionalDistanceFog.has_value());

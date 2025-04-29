@@ -47,7 +47,7 @@ private:
     glm::vec3 color = glm::vec3(0.0F, 0.0F, 0.0F);
 
     /** Distance in range [0.0; 1.0] where 0.0 is camera's near plane and 1.0 is far plane position. */
-    float startDistance = 0.7F; // NOLINT
+    float startDistance = 0.01F; // NOLINT
 };
 
 /** Settings for post processing of the rendered image. */
@@ -105,4 +105,7 @@ private:
 
     /** Constant light that will be added. */
     glm::vec3 ambientLightColor = glm::vec3(0.1F, 0.1F, 0.1F); // NOLINT: have a bit of ambient by default
+
+    /** `true` when window's framebuffer does not have sRGB format. */
+    bool bApplyGammaCorrection = false;
 };
