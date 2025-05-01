@@ -90,10 +90,10 @@ public:
             bool bLightGridFrustumsNeedUpdate = true;
 
             /** Distance from camera (view) space origin to camera's near clip plane. */
-            float nearClipPlaneDistance = 0.1F; // NOLINT
+            float nearClipPlaneDistance = 0.2F; // NOLINT
 
             /** Distance to camera's far clip plane. */
-            float farClipPlaneDistance = 200.0F; // NOLINT
+            float farClipPlaneDistance = 300.0F; // NOLINT
 
             /** Vertical field of view. */
             unsigned int iVerticalFov = 90; // NOLINT
