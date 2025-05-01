@@ -39,7 +39,7 @@ std::optional<Error> TextureManager::importTextureFromFile(
             std::format("expected the resulting path \"{}\" to be a directory", pathToResultingDir.string()));
     }
 
-    const auto pathToResultingImage = pathToResultingDir / pathToImport.filename();
+    const auto pathToResultingImage = pathToResultingDir / (pathToImport.stem().string() + ".png");
 
     // Load image pixels.
     int iWidth = 0;
