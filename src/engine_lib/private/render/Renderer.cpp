@@ -92,7 +92,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     // Create main framebuffer.
     const auto windowSize = pWindow->getWindowSize();
     pMainFramebuffer = GpuResourceManager::createFramebuffer(
-        windowSize.first, windowSize.second, GL_RGB8, GL_DEPTH_COMPONENT32F);
+        windowSize.first, windowSize.second, GL_RGB8, GL_DEPTH_COMPONENT24);
 }
 
 void Renderer::drawNextFrame() {

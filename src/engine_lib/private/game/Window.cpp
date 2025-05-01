@@ -21,6 +21,9 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
         windowFlags |= SDL_WINDOW_HIDDEN;
     }
 
+    // We don't need depth buffer for window's framebuffer (we have a depth buffer in our custom framebuffer).
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+
     // Create SDL window.
     const auto pSdlWindow = SDL_CreateWindow(
         sWindowName.data(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mode.w, mode.h, windowFlags);

@@ -90,13 +90,13 @@ public:
             bool bLightGridFrustumsNeedUpdate = true;
 
             /** Distance from camera (view) space origin to camera's near clip plane. */
-            float nearClipPlaneDistance = 0.3F; // NOLINT: magic number
+            float nearClipPlaneDistance = 0.1F; // NOLINT
 
             /** Distance to camera's far clip plane. */
-            float farClipPlaneDistance = 100.0F; // NOLINT: good default value
+            float farClipPlaneDistance = 200.0F; // NOLINT
 
             /** Vertical field of view. */
-            unsigned int iVerticalFov = 90; // NOLINT: magic number
+            unsigned int iVerticalFov = 90; // NOLINT
 
             /** Width of the buffer we are rendering the image to. */
             unsigned int iRenderTargetWidth = 800; // NOLINT: default value, will be changed at runtime
