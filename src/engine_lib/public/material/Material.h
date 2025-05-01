@@ -75,7 +75,7 @@ public:
      *
      * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
      */
-    void setPathToDiffuseTexture(const std::string& sPathToTextureRelativeRes);
+    void setPathToDiffuseTexture(std::string sPathToTextureRelativeRes);
 
     /**
      * Sets GLSL vertex shader to use instead of the default one.

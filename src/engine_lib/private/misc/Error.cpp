@@ -52,8 +52,9 @@ void checkLastGlError(const std::source_location location) {
 Error::Error(std::string_view sMessage, const std::source_location location) {
     // Also add RAM usage to the error message.
     hwinfo::Memory memory;
-    const auto iRamUsedMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
     const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;    // NOLINT
+    const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
+    const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
 
     this->sMessage = std::string(sMessage) + std::format("\n\nRAM (MB): {}/{}\n", iRamUsedMb, iRamTotalMb);
 

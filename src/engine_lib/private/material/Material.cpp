@@ -38,12 +38,19 @@ void Material::setEnableTransparency(bool bEnable) {
 
 void Material::setOpacity(float opacity) { diffuseColor.w = opacity; }
 
-void Material::setPathToDiffuseTexture(const std::string& sPathToTextureRelativeRes) {
+void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
     if (pShaderProgram != nullptr) [[unlikely]] {
         // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
         // for simplicity, plus if this function is called from a non-main thread it will add more headache
         Error::showErrorAndThrowException(
             "changing material's textures is not allowed while the material is used on a spawned node");
+    }
+
+    // Normalize slash.
+    for (size_t i = 0; i < sPathToTextureRelativeRes.size(); i++) {
+        if (sPathToTextureRelativeRes[i] == '\\') {
+            sPathToTextureRelativeRes[i] = '/';
+        }
     }
 
     if (!sPathToDiffuseTextureRelativeRes.empty()) {
