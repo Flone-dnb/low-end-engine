@@ -22,7 +22,6 @@ endif()
 
 # Define some names.
 set(DEPENDENCY_BUILD_DIR_NAME dep)
-set(DLL_DIRECTORY_TO_COPY dlls_to_copy)
 set(SUPER_CALL_CHECKER_NAME node_super_call_checker)
 
 # Enable cmake folders.

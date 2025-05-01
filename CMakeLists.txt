@@ -4,6 +4,7 @@ project(low_end_engine)
 
 option(DISABLE_DEV_STUFF "Enable to disable things like tests, clang-tidy and other dev tools." OFF)
 
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(BUILD_DIRECTORY_NAME OUTPUT)
 
 # Set default build mode.
