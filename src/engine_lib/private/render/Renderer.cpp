@@ -183,10 +183,10 @@ void Renderer::drawNextFrame() {
 
         // Draw UI.
         pUiManager->renderUi();
-    }
 
-    // Do post processing.
-    drawPostProcessingScreenQuad(mtxActiveCamera.second->getCameraProperties());
+        // Do post processing.
+        drawPostProcessingScreenQuad(mtxActiveCamera.second->getCameraProperties());
+    }
 
     // Swap.
     SDL_GL_SwapWindow(pWindow->getSdlWindow());

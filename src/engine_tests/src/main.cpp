@@ -66,5 +66,13 @@ int main() {
     }
     std::filesystem::create_directory(pathToTempDir);
 
-    return Catch::Session().run();
+    const int iResult = Catch::Session().run();
+    if (iResult != 0) {
+        return iResult;
+    }
+
+    // Cleanup temp files.
+    std::filesystem::remove_all(pathToTempDir);
+
+    return 0;
 }
