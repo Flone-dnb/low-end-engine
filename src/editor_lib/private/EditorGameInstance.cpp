@@ -60,8 +60,8 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
         // RAM.
         hwinfo::Memory memory;
-        const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024; // NOLINT
-        const auto iRamFreeMb = memory.free_Bytes() / 1024 / 1024;   // NOLINT
+        const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;    // NOLINT
+        const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
         const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
         const auto ratio = static_cast<float>(iRamUsedMb) / static_cast<float>(iRamTotalMb);
 

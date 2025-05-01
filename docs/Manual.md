@@ -817,6 +817,6 @@ cd tmp/game
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DDISABLE_DEV_STUFF=ON ..
-cmake --build . --target game
+cmake --build . --config Release --target game
 ```
 Then copy the resulting binary (from `build/OUTPUT/game`) to your ARM64 Linux device. We don't worry about installing the SDL2 libraries because in most cases they are already installed the OS your ARM64 device is running. Inside of your ARM64 Linux device launch the game using some file explorer or a console.
