@@ -45,8 +45,7 @@ std::optional<Error> TextureManager::importTextureFromFile(
     int iWidth = 0;
     int iHeight = 0;
     int iChannels = 0;
-    unsigned char* pPixels =
-        stbi_load(pathToImport.string().c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
+    unsigned char* pPixels = stbi_load(pathToImport.string().c_str(), &iWidth, &iHeight, &iChannels, 0);
     if (pPixels == nullptr) [[unlikely]] {
         return Error(std::format("failed to load image from path \"{}\"", pathToImport.string()));
     }
