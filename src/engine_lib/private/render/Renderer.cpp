@@ -78,8 +78,11 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pFullscreenQuad = GpuResourceManager::createQuad(false);
 
     const auto windowSize = pWindow->getWindowSize();
+
+#if !defined(ENGINE_UI_ONLY)
     pPostProcessManager = std::unique_ptr<PostProcessManager>(
         new PostProcessManager(pShaderManager.get(), windowSize.first, windowSize.second));
+#endif
 
     // Initialize fences.
     for (auto& fence : frameSync.vFences) {
@@ -99,9 +102,17 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
             ShaderProgramUsage::OTHER);
     }
 
-    // Create main framebuffer.
-    pMainFramebuffer = GpuResourceManager::createFramebuffer(
-        windowSize.first, windowSize.second, GL_RGB8, GL_DEPTH_COMPONENT24);
+    // Main framebuffer.
+    auto bCreateMainFramebuffer = true;
+    auto iDepthFormat = GL_DEPTH_COMPONENT24;
+#if defined(ENGINE_UI_ONLY)
+    iDepthFormat = 0;
+    bCreateMainFramebuffer = bApplyGammaCorrection;
+#endif
+    if (bCreateMainFramebuffer) {
+        pMainFramebuffer =
+            GpuResourceManager::createFramebuffer(windowSize.first, windowSize.second, GL_RGB8, iDepthFormat);
+    }
 }
 
 void Renderer::drawNextFrame() {
@@ -118,19 +129,35 @@ void Renderer::drawNextFrame() {
     glWaitSync(frameSync.vFences[frameSync.iCurrentFrameIndex], 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(frameSync.vFences[frameSync.iCurrentFrameIndex]);
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-
-    // Set framebuffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
 
     // Get camera and shader programs.
     auto& mtxShaderPrograms = pShaderManager->getShaderPrograms();
     auto& mtxActiveCamera = pCameraManager->getActiveCamera();
     std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+#if defined(ENGINE_UI_ONLY)
+    if (pMainFramebuffer == nullptr) {
+        // Gamme correction is not needed.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        pUiManager->renderUi(0);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        pUiManager->renderUi(pMainFramebuffer->getFramebufferId());
+
+        drawGammaCorrectionScreenQuad(0, pMainFramebuffer->getColorTextureId());
+    }
+#else
+    // Set framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (mtxActiveCamera.second != nullptr) {
         // Prepare a handy lambda.
@@ -199,26 +226,7 @@ void Renderer::drawNextFrame() {
 
         if (bApplyGammaCorrection) {
             // Render gamma correction fullscreen quad to window's framebuffer.
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            glUseProgram(pGammaCorrectionShaderProgram->getShaderProgramId());
-
-            glDisable(GL_DEPTH_TEST);
-            {
-                // Bind rendered image.
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, pPostProcessManager->pFramebuffer->getColorTextureId());
-
-                // Draw.
-                glBindVertexArray(pFullscreenQuad->getVao().getVertexArrayObjectId());
-                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
-
-                // Reset texture slot.
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-            glEnable(GL_DEPTH_TEST);
+            drawGammaCorrectionScreenQuad(0, pPostProcessManager->pFramebuffer->getColorTextureId());
         } else {
             // Copy rendered image to window's framebuffer.
             const auto [iWidth, iHeight] = pWindow->getWindowSize();
@@ -228,6 +236,7 @@ void Renderer::drawNextFrame() {
             glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
         }
     }
+#endif
 
     // Swap.
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
@@ -241,6 +250,29 @@ void Renderer::drawNextFrame() {
 #if defined(ENGINE_PROFILER_ENABLED)
     FrameMark;
 #endif
+}
+
+void Renderer::drawGammaCorrectionScreenQuad(unsigned int iDrawFramebufferId, unsigned int iReadTextureId) {
+    glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(pGammaCorrectionShaderProgram->getShaderProgramId());
+
+    glDisable(GL_DEPTH_TEST);
+    {
+        // Bind rendered image.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, iReadTextureId);
+
+        // Draw.
+        glBindVertexArray(pFullscreenQuad->getVao().getVertexArrayObjectId());
+        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+
+        // Reset texture slot.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::calculateFrameStatistics() {

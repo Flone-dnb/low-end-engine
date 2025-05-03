@@ -156,6 +156,14 @@ private:
     void drawPostProcessingScreenQuad(CameraProperties* pCameraProperties);
 
     /**
+     * Draws a fullscreen quad to do gamma correction.
+     *
+     * @param iDrawFramebufferId Framebuffer to draw to.
+     * @param iReadTextureId     Color texture to read from.
+     */
+    void drawGammaCorrectionScreenQuad(unsigned int iDrawFramebufferId, unsigned int iReadTextureId);
+
+    /**
      * Calculates some frame-related statistics.
      *
      * @remark Must be called after a frame was submitted.
