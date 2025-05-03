@@ -16,12 +16,12 @@ class CameraProperties;
 class DistanceFogSettings {
 public:
     /**
-     * Sets distance to start applying the fog.
+     * Sets start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera in
+     * world units.
      *
-     * @param distance Value in range [0.0; 1.0] where 0.0 is camera's near plane and 1.0 is far plane
-     * position.
+     * @param range Start and end positions.
      */
-    void setStartDistance(float distance);
+    void setFogRange(const glm::vec2& range);
 
     /**
      * Sets color of the fog.
@@ -31,11 +31,12 @@ public:
     void setColor(const glm::vec3& color);
 
     /**
-     * Returns distance in view space to start distance fog.
+     * Returns start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera in
+     * world units.
      *
-     * @return Distance in range [0.0; 1.0].
+     * @return Fog start and end positions.
      */
-    float getStartDistance() const { return startDistance; }
+    glm::vec2 getFogRange() const { return fogRange; }
 
     /**
      * Returns color of the fog.
@@ -48,8 +49,11 @@ private:
     /** Color of the fog. */
     glm::vec3 color = glm::vec3(0.0F, 0.0F, 0.0F);
 
-    /** Distance in range [0.0; 1.0] where 0.0 is camera's near plane and 1.0 is far plane position. */
-    float startDistance = 0.01F; // NOLINT
+    /**
+     * Start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera in
+     * world units.
+     */
+    glm::vec2 fogRange = glm::vec2(0.0F, 50.0F);
 };
 
 /** Settings for post processing of the rendered image. */

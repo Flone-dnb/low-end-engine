@@ -7,25 +7,30 @@ layout(binding = 1) uniform sampler2D depthTexture;
 
 uniform bool bIsDistanceFogEnabled;
 uniform vec3 distanceFogColor;
-uniform float distanceFogStartDistance; // in range [0.0; 1.0]
-uniform float zNear;
-uniform float zFar;
+uniform vec2 distanceFogRange; // start and end pos as distance from camera in world units
+uniform mat4 invProjMatrix;
 
 out vec4 color;
 
 /**
- * Converts depth from depth texture (range [0; 1]) to a linear depth.
+ * Converts depth to distance from the origin in view space.
  *
- * @param depth Depth from texture.
- * @param zNear Camera's near clip plane.
- * @param zFar  Camera's far clip plane.
- *
- * @return Linear depth in range [0; 1].
+ * @param fragmentUv UV coordinates of a fullscreen quad in range [0; 1].
+ * @param depth      Depth value in this coordinate.
+ * 
+ * @return Length of the view space vector.
  */
-float convertDepthToLinear(float depth, float zNear, float zFar) {
-    float zNdc = depth * 2.0F - 1.0F; // from [0; 1] to [-1; 1]
-    float zView = (2.0F * zNear * zFar) / (zFar + zNear - zNdc * (zFar - zNear)); // zView in range [near; far]
-    return zView / zFar;
+float convertDepthToViewSpaceDistance(vec2 fragmentUv, float depth) {
+    vec4 toNdc = vec4(
+        fragmentUv.x * 2.0 - 1.0,
+        fragmentUv.y * 2.0 - 1.0,
+        depth * 2.0 - 1.0,
+        1.0);
+
+    vec4 viewPos = invProjMatrix * toNdc;
+    viewPos.xyz /= viewPos.w;
+
+    return length(viewPos.xyz);
 }
 
 /// Rendering full screen quad.
@@ -33,7 +38,7 @@ void main() {
     color = vec4(texture(renderedColorTexture, fragmentUv).rgb, 1.0F);
 
     if (bIsDistanceFogEnabled) {
-        float depth = convertDepthToLinear(texture(depthTexture, fragmentUv).r, zNear, zFar);
-        color.rgb = mix(color.rgb, distanceFogColor, max(0.0F, depth - distanceFogStartDistance) * (1.0F / (1.0F - distanceFogStartDistance)));
+        float dist = convertDepthToViewSpaceDistance(fragmentUv, texture(depthTexture, fragmentUv).r);
+        color.rgb = mix(color.rgb, distanceFogColor, smoothstep(distanceFogRange.x, distanceFogRange.y, dist));
     }
 }

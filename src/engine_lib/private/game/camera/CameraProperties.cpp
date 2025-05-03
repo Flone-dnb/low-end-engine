@@ -132,6 +132,14 @@ glm::mat4x4 CameraProperties::getProjectionMatrix() {
     return mtxData.second.projectionData.projectionMatrix;
 }
 
+glm::mat4x4 CameraProperties::getInverseProjectionMatrix() {
+    std::scoped_lock guard(mtxData.first);
+
+    makeSureProjectionMatrixAndClipPlanesAreUpToDate();
+
+    return mtxData.second.projectionData.invProjectionMatrix;
+}
+
 void CameraProperties::makeSureViewMatrixIsUpToDate() {
     std::scoped_lock guard(mtxData.first);
 
@@ -172,6 +180,7 @@ void CameraProperties::makeSureProjectionMatrixAndClipPlanesAreUpToDate() {
         static_cast<float>(projectionData.iRenderTargetHeight),
         projectionData.nearClipPlaneDistance,
         projectionData.farClipPlaneDistance);
+    projectionData.invProjectionMatrix = glm::inverse(projectionData.projectionMatrix);
 
     // Projection window width/height in normalized device coordinates.
     constexpr float projectionWindowDimensionSize = 2.0F; // because view space window is [-1; 1]

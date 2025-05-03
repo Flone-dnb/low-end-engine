@@ -77,6 +77,9 @@ public:
              */
             glm::mat4x4 projectionMatrix = glm::identity<glm::mat4x4>();
 
+            /** Inverse of @ref projectionMatrix. */
+            glm::mat4x4 invProjectionMatrix = glm::identity<glm::mat4x4>();
+
             /** Whether @ref projectionMatrix needs to be recalculated or not. */
             bool bProjectionMatrixNeedsUpdate = true;
 
@@ -219,6 +222,14 @@ public:
      * @return Projection matrix.
      */
     glm::mat4x4 getProjectionMatrix();
+
+    /**
+     * Returns a matrix that transforms positions to view (camera) space from 2D projection window
+     * (homogeneous clip space).
+     *
+     * @return Inverse of the projection matrix.
+     */
+    glm::mat4x4 getInverseProjectionMatrix();
 
     /**
      * Returns camera's frustum for fast read-only access.

@@ -11,8 +11,9 @@
 // External.
 #include "glad/glad.h"
 
-void DistanceFogSettings::setStartDistance(float distance) {
-    startDistance = std::clamp(distance, 0.01F, 0.99F); // NOLINT: to avoid corner cases in shaders
+void DistanceFogSettings::setFogRange(const glm::vec2& range) {
+    fogRange.x = std::max(range.x, 0.0F);
+    fogRange.y = std::max(range.y, fogRange.x);
 }
 
 void DistanceFogSettings::setColor(const glm::vec3& color) { this->color = color; }
@@ -54,14 +55,12 @@ void PostProcessSettings::drawPostProcessing(
         glBindTexture(GL_TEXTURE_2D, readFramebuffer.getDepthStencilTextureId());
 
         // Set shader parameters.
-        pShaderProgram->setFloatToShader("zNear", pCameraProperties->getNearClipPlaneDistance());
-        pShaderProgram->setFloatToShader("zFar", pCameraProperties->getFarClipPlaneDistance());
         pShaderProgram->setBoolToShader("bIsDistanceFogEnabled", distanceFogSettings.has_value());
         if (distanceFogSettings.has_value()) {
             pShaderProgram->setVector3ToShader("distanceFogColor", distanceFogSettings->getColor());
-            pShaderProgram->setFloatToShader(
-                "distanceFogStartDistance", distanceFogSettings->getStartDistance());
+            pShaderProgram->setVector2ToShader("distanceFogRange", distanceFogSettings->getFogRange());
         }
+        pShaderProgram->setMatrix4ToShader("invProjMatrix", pCameraProperties->getInverseProjectionMatrix());
 
         // Draw.
         glBindVertexArray(fullscreenQuadGeometry.getVao().getVertexArrayObjectId());
