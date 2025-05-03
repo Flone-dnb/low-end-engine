@@ -78,8 +78,8 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pFullscreenQuad = GpuResourceManager::createQuad(false);
 
     const auto windowSize = pWindow->getWindowSize();
-    pPostProcessingSettings = std::unique_ptr<PostProcessSettings>(
-        new PostProcessSettings(pShaderManager.get(), windowSize.first, windowSize.second));
+    pPostProcessManager = std::unique_ptr<PostProcessManager>(
+        new PostProcessManager(pShaderManager.get(), windowSize.first, windowSize.second));
 
     // Initialize fences.
     for (auto& fence : frameSync.vFences) {
@@ -191,11 +191,11 @@ void Renderer::drawNextFrame() {
         glDisable(GL_BLEND);
 
         // Do post processing before UI.
-        pPostProcessingSettings->drawPostProcessing(
+        pPostProcessManager->drawPostProcessing(
             *pFullscreenQuad, *pMainFramebuffer, mtxActiveCamera.second->getCameraProperties());
 
         // Draw UI on top of post-processing results.
-        pUiManager->renderUi(pPostProcessingSettings->pFramebuffer->getFramebufferId());
+        pUiManager->renderUi(pPostProcessManager->pFramebuffer->getFramebufferId());
 
         if (bApplyGammaCorrection) {
             // Render gamma correction fullscreen quad to window's framebuffer.
@@ -208,7 +208,7 @@ void Renderer::drawNextFrame() {
             {
                 // Bind rendered image.
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, pPostProcessingSettings->pFramebuffer->getColorTextureId());
+                glBindTexture(GL_TEXTURE_2D, pPostProcessManager->pFramebuffer->getColorTextureId());
 
                 // Draw.
                 glBindVertexArray(pFullscreenQuad->getVao().getVertexArrayObjectId());
@@ -222,7 +222,7 @@ void Renderer::drawNextFrame() {
         } else {
             // Copy rendered image to window's framebuffer.
             const auto [iWidth, iHeight] = pWindow->getWindowSize();
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, pPostProcessingSettings->pFramebuffer->getFramebufferId());
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, pPostProcessManager->pFramebuffer->getFramebufferId());
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
             glReadBuffer(GL_COLOR_ATTACHMENT0);
             glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
@@ -369,4 +369,4 @@ TextureManager& Renderer::getTextureManager() { return *pTextureManager; }
 
 RenderStatistics& Renderer::getRenderStatistics() { return renderStats; }
 
-PostProcessSettings& Renderer::getPostProcessingSettings() { return *pPostProcessingSettings; }
+PostProcessManager& Renderer::getPostProcessManager() { return *pPostProcessManager; }

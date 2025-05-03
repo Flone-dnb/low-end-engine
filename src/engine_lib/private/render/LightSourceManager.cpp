@@ -49,7 +49,7 @@ void LightSourceManager::setArrayPropertiesToShader(ShaderProgram* pShaderProgra
     pPointLightsArray->setArrayPropertiesToShader(pShaderProgram);
 
     pShaderProgram->setVector3ToShader(
-        "ambientLightColor", pRenderer->getPostProcessingSettings().getAmbientLightColor());
+        "ambientLightColor", pRenderer->getPostProcessManager().getAmbientLightColor());
 }
 
 Renderer* LightSourceManager::getRenderer() const { return pRenderer; }

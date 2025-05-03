@@ -57,12 +57,12 @@ private:
 };
 
 /** Settings for post processing of the rendered image. */
-class PostProcessSettings {
+class PostProcessManager {
     // Only renderer is supposed to create such objects.
     friend class Renderer;
 
 public:
-    PostProcessSettings() = delete;
+    PostProcessManager() = delete;
 
     /**
      * Sets color of the light that will be added to every rendered object.
@@ -100,7 +100,7 @@ private:
      * @param iWidth         Width of the post-processing framebuffer.
      * @param iHeight        Height of the post-processing framebuffer.
      */
-    PostProcessSettings(ShaderManager* pShaderManager, unsigned int iWidth, unsigned int iHeight);
+    PostProcessManager(ShaderManager* pShaderManager, unsigned int iWidth, unsigned int iHeight);
 
     /**
      * Draws post-processing fullscreen quad on @ref pFramebuffer.

@@ -64,8 +64,8 @@ set(PROJECT_SOURCES
     public/render/ShaderAlignmentConstants.hpp
     private/render/font/FontManager.cpp
     private/render/font/FontManager.h
-    public/render/PostProcessSettings.h
-    private/render/PostProcessSettings.cpp
+    public/render/PostProcessManager.h
+    private/render/PostProcessManager.cpp
     private/misc/InitManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h
@@ -246,6 +246,8 @@ set_target_properties(freetype PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 message(STATUS "${PROJECT_NAME}: adding external dependency \"hwinfo\"...")
 set(HWINFO_SHARED OFF CACHE BOOL "" FORCE)
 set(HWINFO_STATIC ON CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/hwinfo ${DEPENDENCY_BUILD_DIR_NAME}/hwinfo SYSTEM)
 target_link_libraries(${PROJECT_NAME} PUBLIC lfreist-hwinfo::hwinfo)
 set_target_properties(hwinfo PROPERTIES FOLDER ${EXTERNAL_FOLDER})

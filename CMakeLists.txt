@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(low_end_engine)
 
 option(DISABLE_DEV_STUFF "Enable to disable things like tests, clang-tidy and other dev tools." OFF)
+option(ENGINE_UI_ONLY "Enable in case you're making a UI-only app, this way the app will be slightly more performant and will use slightly less RAM." OFF)
 
 set(BUILD_DIRECTORY_NAME OUTPUT)
 

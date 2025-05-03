@@ -8,7 +8,7 @@
 #include "render/ShaderManager.h"
 #include "misc/Error.h"
 #include "render/RenderStatistics.h"
-#include "render/PostProcessSettings.h"
+#include "render/PostProcessManager.h"
 
 // External.
 #include "SDL_video.h"
@@ -116,7 +116,7 @@ public:
      *
      * @return Settings.
      */
-    PostProcessSettings& getPostProcessingSettings();
+    PostProcessManager& getPostProcessManager();
 
 private:
     /** Groups stuff used to synchronize GPU and CPU. */
@@ -181,7 +181,7 @@ private:
     std::unique_ptr<Framebuffer> pMainFramebuffer;
 
     /** Settings for post processing of the rendered image. */
-    std::unique_ptr<PostProcessSettings> pPostProcessingSettings;
+    std::unique_ptr<PostProcessManager> pPostProcessManager;
 
     /** Fullscreen quad for rendering. */
     std::unique_ptr<ScreenQuadGeometry> pFullscreenQuad;

@@ -1,4 +1,4 @@
-#include "render/PostProcessSettings.h"
+#include "render/PostProcessManager.h"
 
 // Standard.
 #include <algorithm>
@@ -18,13 +18,13 @@ void DistanceFogSettings::setFogRange(const glm::vec2& range) {
 
 void DistanceFogSettings::setColor(const glm::vec3& color) { this->color = color; }
 
-void PostProcessSettings::setAmbientLightColor(const glm::vec3& color) { ambientLightColor = color; }
+void PostProcessManager::setAmbientLightColor(const glm::vec3& color) { ambientLightColor = color; }
 
-void PostProcessSettings::setDistanceFogSettings(const std::optional<DistanceFogSettings>& settings) {
+void PostProcessManager::setDistanceFogSettings(const std::optional<DistanceFogSettings>& settings) {
     distanceFogSettings = settings;
 }
 
-PostProcessSettings::PostProcessSettings(
+PostProcessManager::PostProcessManager(
     ShaderManager* pShaderManager, unsigned int iWidth, unsigned int iHeight) {
     pShaderProgram = pShaderManager->getShaderProgram(
         "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
@@ -34,7 +34,7 @@ PostProcessSettings::PostProcessSettings(
     pFramebuffer = GpuResourceManager::createFramebuffer(iWidth, iHeight, GL_RGB8, 0);
 }
 
-void PostProcessSettings::drawPostProcessing(
+void PostProcessManager::drawPostProcessing(
     const ScreenQuadGeometry& fullscreenQuadGeometry,
     const Framebuffer& readFramebuffer,
     CameraProperties* pCameraProperties) {
