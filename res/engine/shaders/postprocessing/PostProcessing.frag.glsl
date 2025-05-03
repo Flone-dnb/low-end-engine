@@ -5,7 +5,6 @@ in vec2 fragmentUv;
 layout(binding = 0) uniform sampler2D renderedColorTexture;
 layout(binding = 1) uniform sampler2D depthTexture;
 
-uniform bool bApplyGammaCorrection;
 uniform bool bIsDistanceFogEnabled;
 uniform vec3 distanceFogColor;
 uniform float distanceFogStartDistance; // in range [0.0; 1.0]
@@ -36,9 +35,5 @@ void main() {
     if (bIsDistanceFogEnabled) {
         float depth = convertDepthToLinear(texture(depthTexture, fragmentUv).r, zNear, zFar);
         color.rgb = mix(color.rgb, distanceFogColor, max(0.0F, depth - distanceFogStartDistance) * (1.0F / (1.0F - distanceFogStartDistance)));
-    }
-
-    if (bApplyGammaCorrection) {
-        color.rgb = pow(color.rgb, vec3(1.0F/2.2F));
     }
 }

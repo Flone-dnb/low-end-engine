@@ -9,6 +9,8 @@
 #include "math/GLMath.hpp"
 
 class ShaderManager;
+class Framebuffer;
+class CameraProperties;
 
 /** Tint color for rendered image based on distance from camera. */
 class DistanceFogSettings {
@@ -91,21 +93,32 @@ private:
      * Creates a new object.
      *
      * @param pShaderManager Shader manager.
+     * @param iWidth         Width of the post-processing framebuffer.
+     * @param iHeight        Height of the post-processing framebuffer.
      */
-    PostProcessSettings(ShaderManager* pShaderManager);
+    PostProcessSettings(ShaderManager* pShaderManager, unsigned int iWidth, unsigned int iHeight);
 
-    /** Full screen quad for rendering. */
-    std::unique_ptr<ScreenQuadGeometry> pFullScreenQuad;
+    /**
+     * Draws post-processing fullscreen quad on @ref pFramebuffer.
+     *
+     * @param fullscreenQuadGeometry Fullscreen quad to draw.
+     * @param readFramebuffer        Framebuffer to read from.
+     * @param pCameraProperties      Properties of the main camera.
+     */
+    void drawPostProcessing(
+        const ScreenQuadGeometry& fullscreenQuadGeometry,
+        const Framebuffer& readFramebuffer,
+        CameraProperties* pCameraProperties);
 
-    /** Shader program used for rendering @ref pFullScreenQuad. */
+    /** Shader program used for rendering fullscreen quad. */
     std::shared_ptr<ShaderProgram> pShaderProgram;
+
+    /** Framebuffer to draw results of the post-processing */
+    std::unique_ptr<Framebuffer> pFramebuffer;
 
     /** Empty if disabled. */
     std::optional<DistanceFogSettings> distanceFogSettings;
 
     /** Constant light that will be added. */
     glm::vec3 ambientLightColor = glm::vec3(0.1F, 0.1F, 0.1F); // NOLINT: have a bit of ambient by default
-
-    /** `true` when window's framebuffer does not have sRGB format. */
-    bool bApplyGammaCorrection = false;
 };

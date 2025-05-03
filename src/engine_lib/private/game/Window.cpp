@@ -148,13 +148,7 @@ SDL_GameController* Window::findConnectedGamepad() {
     return nullptr;
 }
 
-std::pair<unsigned int, unsigned int> Window::getWindowSize() const {
-    int iWidth = 0;
-    int iHeight = 0;
-    SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
-
-    return {static_cast<unsigned int>(iWidth), static_cast<unsigned int>(iHeight)};
-}
+std::pair<unsigned int, unsigned int> Window::getWindowSize() const { return windowSize; }
 
 std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
     showErrorIfNotOnMainThread();
@@ -195,6 +189,13 @@ Window::Window(SDL_Window* pCreatedWindow) {
 
     // Save ID of this thread (should be main thread).
     mainThreadId = std::this_thread::get_id();
+
+    // Save size.
+    int iWidth = 0;
+    int iHeight = 0;
+    SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
+    windowSize.first = iWidth;
+    windowSize.second = iHeight;
 }
 
 void Window::showErrorIfNotOnMainThread() const {

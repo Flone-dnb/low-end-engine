@@ -14,6 +14,8 @@
 #include "game/node/ui/TextNode.h"
 #include "misc/EditorNodeCreationHelpers.hpp"
 
+#include "io/GltfImporter.h"
+
 // External.
 #include "hwinfo/hwinfo.h"
 
@@ -231,34 +233,59 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
 
     // Stuff for testing.
     {
-        auto pFloor = createEditorNode<MeshNode>();
-        pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));           // NOLINT
-        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.22F, 0.0F)); // NOLINT
-        getWorldRootNode()->addChildNode(std::move(pFloor));
+        // auto pFloor = createEditorNode<MeshNode>();
+        // pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));           // NOLINT
+        // pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.22F, 0.0F)); // NOLINT
+        // getWorldRootNode()->addChildNode(std::move(pFloor));
 
-        auto pCube = createEditorNode<MeshNode>();
-        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));            // NOLINT
-        pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.26F, 0.0F)); // NOLINT
-        getWorldRootNode()->addChildNode(std::move(pCube));
+        // auto pCube = createEditorNode<MeshNode>();
+        // pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));            // NOLINT
+        // pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.26F, 0.0F)); // NOLINT
+        // getWorldRootNode()->addChildNode(std::move(pCube));
 
         auto pSun = createEditorNode<DirectionalLightNode>();
-        pSun->setLightIntensity(0.2F); // NOLINT
+        pSun->setLightIntensity(0.5F); // NOLINT
         pSun->setRelativeRotation(
             MathHelpers::convertNormalizedDirectionToRollPitchYaw(
                 glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSun));
 
-        auto pSpotlight = createEditorNode<SpotlightNode>();
-        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F)); // NOLINT
-        pSpotlight->setRelativeRotation(
-            MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
-        getWorldRootNode()->addChildNode(std::move(pSpotlight));
+        // auto pSpotlight = createEditorNode<SpotlightNode>();
+        // pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F)); // NOLINT
+        // pSpotlight->setRelativeRotation(
+        //     MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+        //         glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
+        // getWorldRootNode()->addChildNode(std::move(pSpotlight));
 
-        auto pPointLight = createEditorNode<PointLightNode>();
-        pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F)); // NOLINT
-        getWorldRootNode()->addChildNode(std::move(pPointLight));
+        // auto pPointLight = createEditorNode<PointLightNode>();
+        // pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F)); // NOLINT
+        // getWorldRootNode()->addChildNode(std::move(pPointLight));
     }
+
+    // auto optionalError = GltfImporter::importFileAsNodeTree(
+    //     "C:\\Users\\flone\\Downloads\\sponza_gltf_low_quality\\Sponza.gltf",
+    //     "editor",
+    //     "sponza",
+    //     [](std::string_view sMessage) { Logger::get().info(sMessage); });
+    // if (optionalError.has_value()) {
+    //     optionalError->showErrorAndThrowException();
+    //     return;
+    // }
+
+    auto result = Node::deserializeNodeTree(
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::EDITOR) / "sponza" / "sponza.toml");
+    if (std::holds_alternative<Error>(result)) {
+        auto error = std::get<Error>(std::move(result));
+        error.showErrorAndThrowException();
+        return;
+    }
+
+    auto pRoot = std::make_unique<SpatialNode>();
+    pRoot->setRelativeRotation(glm::vec3(90.0F, 0.0F, -90.0F));
+    pRoot->setRelativeScale(glm::vec3(0.02F, 0.02F, 0.02F));
+    pRoot->addChildNode(std::get<std::unique_ptr<Node>>(std::move(result)));
+
+    getWorldRootNode()->addChildNode(std::move(pRoot));
 }
 
 EditorCameraNode* EditorGameInstance::getEditorCameraNode() {

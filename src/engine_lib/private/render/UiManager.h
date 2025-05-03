@@ -25,8 +25,12 @@ public:
     UiManager() = delete;
     ~UiManager();
 
-    /** Renders the UI on the current framebuffer. */
-    void renderUi();
+    /**
+     * Renders the UI on the specified framebuffer.
+     *
+     * @param iDrawFramebufferId Framebuffer to draw to.
+     */
+    void renderUi(unsigned int iDrawFramebufferId);
 
     /**
      * Called by UI nodes after they are spawned.

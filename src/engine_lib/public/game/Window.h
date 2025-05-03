@@ -171,6 +171,9 @@ private:
     /** `nullptr` if there's a connected gamepad. */
     SDL_GameController* pConnectedGamepad = nullptr;
 
+    /** Width and height of the window. */
+    std::pair<unsigned int, unsigned int> windowSize;
+
     /** Current state of @ref setCursorVisibility. */
     bool bIsCursorVisible = false;
 

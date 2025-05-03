@@ -28,8 +28,10 @@ UiManager::~UiManager() {
     }
 }
 
-void UiManager::renderUi() {
+void UiManager::renderUi(unsigned int iDrawFramebufferId) {
     PROFILE_FUNC;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
 
     auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);

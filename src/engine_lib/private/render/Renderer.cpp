@@ -74,8 +74,12 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pFontManager = FontManager::create(
         this,
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
-    pPostProcessingSettings =
-        std::unique_ptr<PostProcessSettings>(new PostProcessSettings(pShaderManager.get()));
+
+    pFullscreenQuad = GpuResourceManager::createQuad(false);
+
+    const auto windowSize = pWindow->getWindowSize();
+    pPostProcessingSettings = std::unique_ptr<PostProcessSettings>(
+        new PostProcessSettings(pShaderManager.get(), windowSize.first, windowSize.second));
 
     // Initialize fences.
     for (auto& fence : frameSync.vFences) {
@@ -85,12 +89,17 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     // Check if window's framebuffer has sRGB format or not.
     int iIsSrgbFramebuffer = 0;
     SDL_GL_GetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, &iIsSrgbFramebuffer);
-    pPostProcessingSettings->bApplyGammaCorrection = !static_cast<bool>(iIsSrgbFramebuffer);
+    bApplyGammaCorrection = !static_cast<bool>(iIsSrgbFramebuffer);
     Logger::get().info(
         std::format("is window's framebuffer uses sRGB format: {}", static_cast<bool>(iIsSrgbFramebuffer)));
+    if (bApplyGammaCorrection) {
+        pGammaCorrectionShaderProgram = pShaderManager->getShaderProgram(
+            "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
+            "engine/shaders/postprocessing/GammaCorrection.frag.glsl",
+            ShaderProgramUsage::OTHER);
+    }
 
     // Create main framebuffer.
-    const auto windowSize = pWindow->getWindowSize();
     pMainFramebuffer = GpuResourceManager::createFramebuffer(
         windowSize.first, windowSize.second, GL_RGB8, GL_DEPTH_COMPONENT24);
 }
@@ -181,11 +190,43 @@ void Renderer::drawNextFrame() {
         }
         glDisable(GL_BLEND);
 
-        // Draw UI.
-        pUiManager->renderUi();
+        // Do post processing before UI.
+        pPostProcessingSettings->drawPostProcessing(
+            *pFullscreenQuad, *pMainFramebuffer, mtxActiveCamera.second->getCameraProperties());
 
-        // Do post processing.
-        drawPostProcessingScreenQuad(mtxActiveCamera.second->getCameraProperties());
+        // Draw UI on top of post-processing results.
+        pUiManager->renderUi(pPostProcessingSettings->pFramebuffer->getFramebufferId());
+
+        if (bApplyGammaCorrection) {
+            // Render gamma correction fullscreen quad to window's framebuffer.
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            glUseProgram(pGammaCorrectionShaderProgram->getShaderProgramId());
+
+            glDisable(GL_DEPTH_TEST);
+            {
+                // Bind rendered image.
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, pPostProcessingSettings->pFramebuffer->getColorTextureId());
+
+                // Draw.
+                glBindVertexArray(pFullscreenQuad->getVao().getVertexArrayObjectId());
+                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+
+                // Reset texture slot.
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+            glEnable(GL_DEPTH_TEST);
+        } else {
+            // Copy rendered image to window's framebuffer.
+            const auto [iWidth, iHeight] = pWindow->getWindowSize();
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, pPostProcessingSettings->pFramebuffer->getFramebufferId());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
+            glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        }
     }
 
     // Swap.
@@ -200,49 +241,6 @@ void Renderer::drawNextFrame() {
 #if defined(ENGINE_PROFILER_ENABLED)
     FrameMark;
 #endif
-}
-
-void Renderer::drawPostProcessingScreenQuad(CameraProperties* pCameraProperties) {
-    PROFILE_FUNC
-
-    // Render on window's framebuffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glUseProgram(pPostProcessingSettings->pShaderProgram->getShaderProgramId());
-
-    glDisable(GL_DEPTH_TEST);
-    {
-        // Bind textures on which our scene was rendered.
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, pMainFramebuffer->getColorTextureId());
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, pMainFramebuffer->getDepthStencilTextureId());
-
-        auto& shader = pPostProcessingSettings->pShaderProgram;
-        const auto& optionalDistanceFog = pPostProcessingSettings->getDistanceFogSettings();
-
-        // Set shader parameters.
-        shader->setBoolToShader("bApplyGammaCorrection", pPostProcessingSettings->bApplyGammaCorrection);
-        shader->setFloatToShader("zNear", pCameraProperties->getNearClipPlaneDistance());
-        shader->setFloatToShader("zFar", pCameraProperties->getFarClipPlaneDistance());
-        shader->setBoolToShader("bIsDistanceFogEnabled", optionalDistanceFog.has_value());
-        if (optionalDistanceFog.has_value()) {
-            shader->setVector3ToShader("distanceFogColor", optionalDistanceFog->getColor());
-            shader->setFloatToShader("distanceFogStartDistance", optionalDistanceFog->getStartDistance());
-        }
-
-        // Draw.
-        glBindVertexArray(pPostProcessingSettings->pFullScreenQuad->getVao().getVertexArrayObjectId());
-        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
-
-        // Reset texture slots.
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    // glEnable(GL_DEPTH_TEST); don't enable on window's framebuffer - there's no need
 }
 
 void Renderer::calculateFrameStatistics() {
@@ -326,6 +324,9 @@ void Renderer::calculateFrameStatistics() {
 }
 
 Renderer::~Renderer() {
+    pFullscreenQuad = nullptr;
+    pGammaCorrectionShaderProgram = nullptr;
+
     for (auto& fence : frameSync.vFences) {
         glDeleteSync(fence);
     }

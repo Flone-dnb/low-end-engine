@@ -183,6 +183,12 @@ private:
     /** Settings for post processing of the rendered image. */
     std::unique_ptr<PostProcessSettings> pPostProcessingSettings;
 
+    /** Fullscreen quad for rendering. */
+    std::unique_ptr<ScreenQuadGeometry> pFullscreenQuad;
+
+    /** Not `nullptr` if @ref bApplyGammaCorrection is `true`. */
+    std::shared_ptr<ShaderProgram> pGammaCorrectionShaderProgram;
+
     /** Various statistics about rendering. */
     RenderStatistics renderStats;
 
@@ -194,4 +200,7 @@ private:
 
     /** Do not delete (free) this pointer. Always valid pointer. */
     Window* const pWindow = nullptr;
+
+    /** `true` when window's framebuffer does not have sRGB format. */
+    bool bApplyGammaCorrection = false;
 };

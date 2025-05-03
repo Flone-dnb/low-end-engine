@@ -14,6 +14,12 @@ if(NOT IS_RELEASE_BUILD)
     add_compile_definitions(DEBUG)
 endif()
 
+# Define ENGINE_UI_ONLY macro.
+if (ENGINE_UI_ONLY)
+    message(STATUS "${PROJECT_NAME}: adding ENGINE_UI_ONLY macro.")
+    add_compile_definitions(ENGINE_UI_ONLY)
+endif()
+
 # Add `WIN32` and `_WIN32` macros on Windows (some setups don't define them).
 if(WIN32)
     add_compile_definitions(WIN32)
