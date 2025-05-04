@@ -217,7 +217,7 @@ protected:
      * Used to execute post-deserialization logic.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      */
     virtual void onAfterDeserialized() override;
 
@@ -229,7 +229,7 @@ protected:
      * @remark This function is called before any of the child nodes are spawned.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      */
     virtual void onSpawning() override;
 
@@ -238,7 +238,7 @@ protected:
      * was attached to a new parent node.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark This function will also be called on all child nodes after this function
      * is finished.
@@ -252,7 +252,7 @@ protected:
      * Called after node's world location/rotation/scale was changed.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark If you change location/rotation/scale inside of this function,
      * this function will not be called again (no recursion will occur).

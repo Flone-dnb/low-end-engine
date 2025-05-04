@@ -3,18 +3,20 @@
 // Standard.
 #include <unordered_set>
 #include <mutex>
-#include <array>
 #include <memory>
 
 // Custom.
-#include "render/wrapper/VertexArrayObject.h"
+#include "game/geometry/ScreenQuadGeometry.h"
+#include "render/UiLayer.hpp"
 
 // External.
 #include "math/GLMath.hpp"
 
+class Node;
 class Renderer;
-class TextUiNode;
 class ShaderProgram;
+class TextUiNode;
+class RectUiNode;
 
 /** Keeps track of spawned UI nodes and handles UI rendering. */
 class UiManager {
@@ -30,7 +32,7 @@ public:
      *
      * @param iDrawFramebufferId Framebuffer to draw to.
      */
-    void renderUi(unsigned int iDrawFramebufferId);
+    void drawUi(unsigned int iDrawFramebufferId);
 
     /**
      * Called by UI nodes after they are spawned.
@@ -40,11 +42,25 @@ public:
     void onNodeSpawning(TextUiNode* pNode);
 
     /**
+     * Called by UI nodes after they are spawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeSpawning(RectUiNode* pNode);
+
+    /**
      * Called by spawned UI nodes after they changed their visibility.
      *
      * @param pNode UI node.
      */
     void onSpawnedNodeChangedVisibility(TextUiNode* pNode);
+
+    /**
+     * Called by spawned UI nodes after they changed their visibility.
+     *
+     * @param pNode UI node.
+     */
+    void onSpawnedNodeChangedVisibility(RectUiNode* pNode);
 
     /**
      * Called by UI nodes before they are despawned.
@@ -53,30 +69,48 @@ public:
      */
     void onNodeDespawning(TextUiNode* pNode);
 
+    /**
+     * Called by UI nodes before they are despawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeDespawning(RectUiNode* pNode);
+
 private:
-    /** Types of UI shaders. */
-    enum class UiShaderType : unsigned char {
-        TEXT = 0,
-        // ... new types go here ...
-
-        COUNT, //< marks the size of this enum
-    };
-
     /** Groups mutex-guarded data. */
     struct Data {
+        /** Groups various types of spawned and visible UI nodes. */
+        struct SpawnedVisibleUiNodes {
+            /** Text nodes. */
+            std::unordered_set<TextUiNode*> textNodes;
+
+            /** Rect nodes. */
+            std::unordered_set<RectUiNode*> rectNodes;
+
+            /**
+             * Returns total number of nodes.
+             *
+             * @return Node count.
+             */
+            size_t getTotalNodeCount() const { return textNodes.size() + rectNodes.size(); }
+        };
+
         /**
-         * All spawned and visible text nodes.
+         * All spawned and visible UI nodes.
          *
          * @remark It's safe to store raw pointers here because node will notify this manager when
          * the node is becoming invisible or despawning.
          */
-        std::unordered_set<TextUiNode*> spawnedVisibleTextNodes;
+        std::array<SpawnedVisibleUiNodes, static_cast<size_t>(UiLayer::COUNT)> vSpawnedVisibleNodes;
 
-        /** Loaded UI shaders (not `nullptr` if loaded). */
-        std::array<std::shared_ptr<ShaderProgram>, static_cast<size_t>(UiShaderType::COUNT)> vLoadedShaders;
+        /** Shader program used for rendering text. */
+        std::shared_ptr<ShaderProgram> pTextShaderProgram;
 
-        /** Quad used for rendering text. */
-        std::unique_ptr<VertexArrayObject> pQuadVaoForText;
+        /** Shader program used for rendering rect UI nodes. */
+        std::shared_ptr<ShaderProgram> pRectShaderProgram;
+
+        /** Quad used for rendering some nodes. */
+        std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
     };
 
     /**
@@ -86,15 +120,26 @@ private:
      */
     UiManager(Renderer* pRenderer);
 
-    /** UI-related data. */
-    std::pair<std::mutex, Data> mtxData;
+    /**
+     * Renders the UI rect nodes on the current framebuffer.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawRectNodes(size_t iLayer);
 
-    /** Orthographic projection matrix for rendering text. */
-    glm::mat4 projectionMatrix;
+    /**
+     * Renders the UI text nodes on the current framebuffer.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawTextNodes(size_t iLayer);
+
+    /** UI-related data. */
+    std::pair<std::recursive_mutex, Data> mtxData;
+
+    /** Orthographic projection matrix for rendering UI elements. */
+    glm::mat4 uiProjMatrix;
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
-
-    /** Number of vertices used for rendering a single glyph of text. */
-    static constexpr int iTextQuadVertexCount = 6; // NOLINT
 };

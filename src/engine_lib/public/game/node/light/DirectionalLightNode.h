@@ -108,7 +108,7 @@ protected:
      * need to do some logic after child nodes are spawned use @ref onChildNodesSpawned.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      */
     virtual void onSpawning() override;
 
@@ -116,7 +116,7 @@ protected:
      * Called before this node is despawned from the world to execute custom despawn logic.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark This node will be marked as despawned after this function is called.
      * @remark This function is called after all child nodes were despawned.
@@ -128,7 +128,7 @@ protected:
      * Called after node's world location/rotation/scale was changed.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark If you change location/rotation/scale inside of this function,
      * this function will not be called again (no recursion will occur).

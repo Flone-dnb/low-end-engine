@@ -53,28 +53,11 @@ void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
         }
     }
 
-    if (!sPathToDiffuseTextureRelativeRes.empty()) {
-        if (sPathToDiffuseTextureRelativeRes == sPathToTextureRelativeRes) {
-            return;
-        }
-
-        sPathToDiffuseTextureRelativeRes = "";
-        pDiffuseTexture = nullptr;
+    if (sPathToDiffuseTextureRelativeRes == sPathToTextureRelativeRes) {
+        return;
     }
 
     sPathToDiffuseTextureRelativeRes = sPathToTextureRelativeRes;
-
-    if (pShaderProgram != nullptr) {
-        // Get texture.
-        auto result = pShaderProgram->getShaderManager().getRenderer().getTextureManager().getTexture(
-            sPathToDiffuseTextureRelativeRes, TextureUsage::DIFFUSE);
-        if (std::holds_alternative<Error>(result)) [[unlikely]] {
-            auto error = std::get<Error>(std::move(result));
-            error.addCurrentLocationToErrorStack();
-            error.showErrorAndThrowException();
-        }
-        pDiffuseTexture = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
-    }
 }
 
 void Material::setPathToCustomVertexShader(const std::string& sPathToCustomVertexShader) {

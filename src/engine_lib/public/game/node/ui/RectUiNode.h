@@ -6,20 +6,24 @@
 // Custom.
 #include "game/node/ui/UiNode.h"
 #include "math/GLMath.hpp"
+#include "material/TextureHandle.h"
 
-/** 2D text rendering. */
-class TextUiNode : public UiNode {
+/** Screen quad with a custom fragment shader. */
+class RectUiNode : public UiNode {
+    // Needs access to texture handle.
+    friend class UiManager;
+
 public:
-    TextUiNode();
+    RectUiNode();
 
     /**
      * Creates a new node with the specified name.
      *
      * @param sNodeName Name of this node.
      */
-    TextUiNode(const std::string& sNodeName);
+    RectUiNode(const std::string& sNodeName);
 
-    virtual ~TextUiNode() override = default;
+    virtual ~RectUiNode() override = default;
 
     /**
      * Returns reflection info about this type.
@@ -45,61 +49,46 @@ public:
     virtual std::string getTypeGuid() const override;
 
     /**
-     * Sets text to display.
+     * Sets width and height in range [0.0; 1.0].
      *
-     * @param sText Text.
+     * @param size New size.
      */
-    void setText(const std::string& sText);
+    void setSize(const glm::vec2& size);
 
     /**
-     * Sets size of the text.
+     * Set color to fill the UI node area.
      *
-     * @param size Size in range [0.0F; 1.0F].
+     * @param color RGBA color.
      */
-    void setTextSize(float size);
+    void setColor(const glm::vec4& color);
 
     /**
-     * Sets color of the text.
+     * Sets path to texture to load (if it was not loaded in the memory yet) when spawning and use.
      *
-     * @param color Color in the RGBA format.
+     * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
      */
-    void setTextColor(const glm::vec4& color);
+    void setPathToTexture(std::string sPathToTextureRelativeRes);
 
     /**
-     * Sets vertical space between horizontal lines of text.
+     * Returns width and height in range [0.0; 1.0].
      *
-     * @param lineSpacing Spacing in range [0.0F; +inf] proportional to the height of the text.
+     * @return Width and height.
      */
-    void setTextLineSpacing(float lineSpacing);
+    glm::vec2 getSize() const { return size; }
 
     /**
-     * Returns displayed text.
+     * Returns color to fill the UI node area.
      *
-     * @return Text.
+     * @return RGBA color.
      */
-    std::string_view getText() const { return sText; }
+    glm::vec4 getColor() const { return color; }
 
     /**
-     * Returns size of the text in range [0.0F; 1.0F]
+     * Returns path to the texture (relative to the `res` directory) to display.
      *
-     * @return Size.
+     * @return Empty if not used.
      */
-    float getTextSize() const { return size; }
-
-    /**
-     * Returns color of the text in the RGBA format.
-     *
-     * @return Color.
-     */
-    glm::vec4 getTextColor() const { return color; }
-
-    /**
-     * Returns vertical space between horizontal lines of text, in range [0.0F; +inf]
-     * proportional to the height of the text.
-     *
-     * @return Line spacing.
-     */
-    float getTextLineSpacing() const { return lineSpacing; }
+    std::string getPathToTexture() const { return sPathToTextureRelativeRes; }
 
 protected:
     /**
@@ -129,18 +118,15 @@ protected:
     virtual void onVisibilityChanged() override;
 
 private:
-    /** Color of the text in the RGBA format. */
+    /** Not `nullptr` if texture from @ref sPathToTextureRelativeRes is loaded. */
+    std::unique_ptr<TextureHandle> pTexture;
+
+    /** Fill color. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
-    /** Size in range [0.0F; 1.0F] proportional to screen height. */
-    float size = 0.05F; // NOLINT
+    /** Width and height in range [0.0; 1.0]. */
+    glm::vec2 size = glm::vec2(0.2F, 0.2F); // NOLINT
 
-    /**
-     * Vertical space between horizontal lines of text, in range [0.0F; +inf]
-     * proportional to the height of the text.
-     */
-    float lineSpacing = 0.25F; // NOLINT
-
-    /** Text to display. */
-    std::string sText;
+    /** Empty if not used, otherwise path to the texture (relative the `res` directory) to load. */
+    std::string sPathToTextureRelativeRes;
 };

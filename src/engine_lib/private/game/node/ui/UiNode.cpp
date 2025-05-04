@@ -20,6 +20,15 @@ TypeReflectionInfo UiNode::getReflectionInfo() {
             return reinterpret_cast<UiNode*>(pThis)->getPosition();
         }};
 
+    variables.unsignedInts[NAMEOF_MEMBER(&UiNode::layer).data()] = ReflectedVariableInfo<unsigned int>{
+        .setter =
+            [](Serializable* pThis, const unsigned int& iNewValue) {
+                reinterpret_cast<UiNode*>(pThis)->setUiLayer(static_cast<UiLayer>(iNewValue));
+            },
+        .getter = [](Serializable* pThis) -> unsigned int {
+            return static_cast<unsigned int>(reinterpret_cast<UiNode*>(pThis)->getUiLayer());
+        }};
+
     variables.bools[NAMEOF_MEMBER(&UiNode::bIsVisible).data()] = ReflectedVariableInfo<bool>{
         .setter = [](Serializable* pThis,
                      const bool& bNewValue) { reinterpret_cast<UiNode*>(pThis)->setIsVisible(bNewValue); },
@@ -50,6 +59,15 @@ void UiNode::setIsVisible(bool bIsVisible) {
     onVisibilityChanged();
 }
 
-glm::vec2 UiNode::getPosition() const { return position; }
+void UiNode::setUiLayer(UiLayer layer) {
+    if (layer >= UiLayer::COUNT) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format("invalid UI layer on node \"{}\"", getNodeName()));
+    }
 
-bool UiNode::isVisible() const { return bIsVisible; }
+    if (isSpawned()) [[unlikely]] {
+        // not allowed because UI manager does not expect this
+        Error::showErrorAndThrowException("changing node UI layer is now allowed while it's spawned");
+    }
+
+    this->layer = layer;
+}

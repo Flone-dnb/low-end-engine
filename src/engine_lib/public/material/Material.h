@@ -70,8 +70,7 @@ public:
     void setOpacity(float opacity);
 
     /**
-     * Sets path to diffuse texture to load (if not loaded yet by some other spawned object) when spawning and
-     * use.
+     * Sets path to diffuse texture to load (if it was not loaded in the memory yet) when spawning and use.
      *
      * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
      */

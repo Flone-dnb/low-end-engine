@@ -171,7 +171,7 @@ protected:
      * @remark This function is called before any of the child nodes are spawned.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      */
     virtual void onSpawning() override;
 
@@ -182,7 +182,7 @@ protected:
      * @remark This function is called after all child nodes were despawned.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      */
     virtual void onDespawning() override;
 
@@ -190,7 +190,7 @@ protected:
      * Called after node's world location/rotation/scale was changed.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      */
     virtual void onWorldLocationRotationScaleChanged() override;
 

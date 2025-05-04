@@ -222,7 +222,7 @@ void Renderer::drawNextFrame() {
             *pFullscreenQuad, *pMainFramebuffer, mtxActiveCamera.second->getCameraProperties());
 
         // Draw UI on top of post-processing results.
-        pUiManager->renderUi(pPostProcessManager->pFramebuffer->getFramebufferId());
+        pUiManager->drawUi(pPostProcessManager->pFramebuffer->getFramebufferId());
 
         if (bApplyGammaCorrection) {
             // Render gamma correction fullscreen quad to window's framebuffer.

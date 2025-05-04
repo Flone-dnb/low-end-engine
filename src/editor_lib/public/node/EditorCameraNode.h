@@ -39,7 +39,7 @@ protected:
      * @remark This function will only be called while this node is spawned.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic (if there is any).
+     * (before executing your logic) to execute parent's logic (if there is any).
      *
      * @param timeSincePrevFrameInSec Also known as deltatime - time in seconds that has passed since
      * the last frame was rendered.
@@ -63,7 +63,7 @@ protected:
      * was attached to a new parent node.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark This function will also be called on all child nodes after this function
      * is finished.

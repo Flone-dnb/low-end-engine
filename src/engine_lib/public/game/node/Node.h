@@ -379,7 +379,7 @@ protected:
      * that is spawned or set as world's root node.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark This node will be marked as spawned before this function is called.
      * @remark @ref getSpawnDespawnMutex is locked while this function is called.
@@ -393,7 +393,7 @@ protected:
      * of spawning) were spawned.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark Generally you might want to prefer to use @ref onSpawning, this function
      * is mostly used to do some logic related to child nodes after all child nodes were spawned
@@ -405,7 +405,7 @@ protected:
      * Called before this node is despawned from the world to execute custom despawn logic.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark This node will be marked as despawned after this function is called.
      * @remark This function is called after all child nodes were despawned.
@@ -418,7 +418,7 @@ protected:
      * is about to be detached from the current parent node.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark If this node is being detached from its parent @ref getParentNode will return
      * `nullptr` after this function is finished.
@@ -436,7 +436,7 @@ protected:
      * was attached to a new parent node.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic.
+     * (before executing your logic) to execute parent's logic.
      *
      * @remark This function will also be called on all child nodes after this function
      * is finished.
@@ -450,7 +450,7 @@ protected:
      * Called before a new frame is rendered.
      *
      * @warning If overriding you must call the parent's version of this function first
-     * (before executing your login) to execute parent's logic (if there is any).
+     * (before executing your logic) to execute parent's logic (if there is any).
      *
      * @remark This function is disabled by default, use @ref setIsCalledEveryFrame to enable it.
      * @remark This function will only be called while this node is spawned.

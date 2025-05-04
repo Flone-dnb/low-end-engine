@@ -65,6 +65,7 @@ set(PROJECT_SOURCES
     private/render/font/FontManager.cpp
     private/render/font/FontManager.h
     public/render/PostProcessManager.h
+    public/render/UiLayer.hpp
     private/render/PostProcessManager.cpp
     private/misc/InitManager.hpp
     private/misc/Error.cpp
@@ -129,6 +130,8 @@ set(PROJECT_SOURCES
     public/game/node/ui/UiNode.h
     private/game/node/ui/TextUiNode.cpp
     public/game/node/ui/TextUiNode.h
+    private/game/node/ui/RectUiNode.cpp
+    public/game/node/ui/RectUiNode.h
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

@@ -1,6 +1,6 @@
 #include "../Base.glsl"
 
-in vec2 uv;
+in vec2 fragmentUv;
 out vec4 color;
 
 /** Single-channel bitmap. */
@@ -9,5 +9,5 @@ uniform vec4 textColor;
 
 /// Entry.
 void main() {
-    color = vec4(textColor.r, textColor.g, textColor.b, texture(glyphBitmap, uv).r * textColor);
+    color = vec4(textColor.r, textColor.g, textColor.b, texture(glyphBitmap, fragmentUv).r * textColor);
 }  
