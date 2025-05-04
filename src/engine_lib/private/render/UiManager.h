@@ -13,7 +13,7 @@
 #include "math/GLMath.hpp"
 
 class Renderer;
-class TextNode;
+class TextUiNode;
 class ShaderProgram;
 
 /** Keeps track of spawned UI nodes and handles UI rendering. */
@@ -37,21 +37,21 @@ public:
      *
      * @param pNode UI node.
      */
-    void onNodeSpawning(TextNode* pNode);
+    void onNodeSpawning(TextUiNode* pNode);
 
     /**
      * Called by spawned UI nodes after they changed their visibility.
      *
      * @param pNode UI node.
      */
-    void onSpawnedNodeChangedVisibility(TextNode* pNode);
+    void onSpawnedNodeChangedVisibility(TextUiNode* pNode);
 
     /**
      * Called by UI nodes before they are despawned.
      *
      * @param pNode UI node.
      */
-    void onNodeDespawning(TextNode* pNode);
+    void onNodeDespawning(TextUiNode* pNode);
 
 private:
     /** Types of UI shaders. */
@@ -70,7 +70,7 @@ private:
          * @remark It's safe to store raw pointers here because node will notify this manager when
          * the node is becoming invisible or despawning.
          */
-        std::unordered_set<TextNode*> spawnedVisibleTextNodes;
+        std::unordered_set<TextUiNode*> spawnedVisibleTextNodes;
 
         /** Loaded UI shaders (not `nullptr` if loaded). */
         std::array<std::shared_ptr<ShaderProgram>, static_cast<size_t>(UiShaderType::COUNT)> vLoadedShaders;

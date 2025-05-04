@@ -11,7 +11,7 @@
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
-#include "game/node/ui/TextNode.h"
+#include "game/node/ui/TextUiNode.h"
 #include "misc/EditorNodeCreationHelpers.hpp"
 
 // External.
@@ -225,7 +225,7 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
     }
 
     // Stats.
-    pStatsTextNode = getWorldRootNode()->addChildNode(createEditorNode<TextNode>());
+    pStatsTextNode = getWorldRootNode()->addChildNode(createEditorNode<TextUiNode>());
     pStatsTextNode->setTextSize(0.03F);                                                          // NOLINT
     pStatsTextNode->setPosition(glm::vec2(0.01F, 1.0F - 0.01F - pStatsTextNode->getTextSize())); // NOLINT
 

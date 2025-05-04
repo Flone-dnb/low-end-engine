@@ -8,18 +8,18 @@
 #include "math/GLMath.hpp"
 
 /** 2D text rendering. */
-class TextNode : public UiNode {
+class TextUiNode : public UiNode {
 public:
-    TextNode();
+    TextUiNode();
 
     /**
      * Creates a new node with the specified name.
      *
      * @param sNodeName Name of this node.
      */
-    TextNode(const std::string& sNodeName);
+    TextUiNode(const std::string& sNodeName);
 
-    virtual ~TextNode() override = default;
+    virtual ~TextUiNode() override = default;
 
     /**
      * Returns reflection info about this type.

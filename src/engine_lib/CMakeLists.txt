@@ -127,8 +127,8 @@ set(PROJECT_SOURCES
     private/game/node/light/PointLightNode.cpp
     private/game/node/ui/UiNode.cpp
     public/game/node/ui/UiNode.h
-    private/game/node/ui/TextNode.cpp
-    public/game/node/ui/TextNode.h
+    private/game/node/ui/TextUiNode.cpp
+    public/game/node/ui/TextUiNode.h
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

@@ -5,7 +5,7 @@
 
 class Window;
 class EditorCameraNode;
-class TextNode;
+class TextUiNode;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -70,5 +70,5 @@ private:
     EditorCameraNode* getEditorCameraNode();
 
     /** Text node used to print statistics in the editor. */
-    TextNode* pStatsTextNode = nullptr;
+    TextUiNode* pStatsTextNode = nullptr;
 };

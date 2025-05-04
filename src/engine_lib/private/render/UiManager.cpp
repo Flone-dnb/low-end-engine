@@ -4,7 +4,7 @@
 #include <format>
 
 // Custom.
-#include "game/node/ui/TextNode.h"
+#include "game/node/ui/TextUiNode.h"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
 #include "misc/Error.h"
@@ -131,7 +131,7 @@ void UiManager::renderUi(unsigned int iDrawFramebufferId) {
     glEnable(GL_DEPTH_TEST);
 }
 
-void UiManager::onNodeSpawning(TextNode* pNode) {
+void UiManager::onNodeSpawning(TextUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
 
@@ -154,7 +154,7 @@ void UiManager::onNodeSpawning(TextNode* pNode) {
     }
 }
 
-void UiManager::onSpawnedNodeChangedVisibility(TextNode* pNode) {
+void UiManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
 
@@ -174,7 +174,7 @@ void UiManager::onSpawnedNodeChangedVisibility(TextNode* pNode) {
     }
 }
 
-void UiManager::onNodeDespawning(TextNode* pNode) {
+void UiManager::onNodeDespawning(TextUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
 
