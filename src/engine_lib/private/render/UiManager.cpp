@@ -347,11 +347,18 @@ void UiManager::drawTextNodes(size_t iLayer) {
                     }
 
                     // Get glyph.
-                    const auto charIt = mtxLoadedGlyphs.second.find(character);
+                    auto charIt = mtxLoadedGlyphs.second.find(character);
                     if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-                        Error::showErrorAndThrowException(
-                            std::format(
-                                "unable to find loaded glyph to render the character \"{}\"", character));
+                        // No glyph found for this character, use ? instead.
+                        // DON'T log a warning - you will slow everything down due to log flushing.
+                        charIt = mtxLoadedGlyphs.second.find('?');
+                        if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
+                            Error::showErrorAndThrowException(
+                                std::format(
+                                    "unable to find loaded glyph to render the character \"{}\" and also "
+                                    "can't find a glyph for `?` to render it instead",
+                                    character));
+                        }
                     }
                     const auto& glyph = charIt->second;
 
