@@ -15,6 +15,7 @@
 class Node;
 class Renderer;
 class ShaderProgram;
+class UiNode;
 class TextUiNode;
 class RectUiNode;
 
@@ -76,23 +77,30 @@ public:
      */
     void onNodeDespawning(RectUiNode* pNode);
 
+    /**
+     * Called by UI nodes after their depth (in the node tree) was changed.
+     *
+     * @param pTargetNode UI node.
+     */
+    void onNodeChangedDepth(UiNode* pTargetNode);
+
 private:
     /** Groups mutex-guarded data. */
     struct Data {
-        /** Groups various types of spawned and visible UI nodes. */
+        /** Groups various types of spawned and visible UI nodes to render. */
         struct SpawnedVisibleUiNodes {
-            /** Text nodes. */
-            std::unordered_set<TextUiNode*> textNodes;
+            /** Node depth - text nodes on this depth. */
+            std::vector<std::pair<size_t, std::unordered_set<TextUiNode*>>> vTextNodes;
 
-            /** Rect nodes. */
-            std::unordered_set<RectUiNode*> rectNodes;
+            /** Node depth - rect nodes on this depth. */
+            std::vector<std::pair<size_t, std::unordered_set<RectUiNode*>>> vRectNodes;
 
             /**
-             * Returns total number of nodes.
+             * Returns total number of node arrays.
              *
-             * @return Node count.
+             * @return Node array count.
              */
-            size_t getTotalNodeCount() const { return textNodes.size() + rectNodes.size(); }
+            size_t getTotalNodeArray() const { return vTextNodes.size() + vRectNodes.size(); }
         };
 
         /**

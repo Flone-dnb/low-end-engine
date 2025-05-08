@@ -1,6 +1,9 @@
 #include "game/node/ui/UiNode.h"
 
 // Custom.
+#include "game/GameInstance.h"
+#include "render/Renderer.h"
+#include "render/UiManager.h"
 #include "game/node/ui/LayoutUiNode.h"
 
 // External.
@@ -124,6 +127,32 @@ void UiNode::setUiLayer(UiLayer layer) {
     this->layer = layer;
 }
 
+size_t UiNode::getNodeDepthWhileSpawned() {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called while spawned");
+    }
+
+    return iNodeDepth;
+}
+
+void UiNode::onSpawning() {
+    Node::onSpawning();
+
+    recalculateNodeDepthWhileSpawned();
+}
+
+void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
+    Node::onAfterAttachedToNewParent(bThisNodeBeingAttached);
+
+    if (!isSpawned()) {
+        return;
+    }
+
+    recalculateNodeDepthWhileSpawned();
+
+    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onNodeChangedDepth(this);
+}
+
 void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     Node::onAfterNewDirectChildAttached(pNewDirectChild);
 
@@ -131,4 +160,24 @@ void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     if (dynamic_cast<UiNode*>(pNewDirectChild) == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("UI nodes can have only UI nodes as child nodes");
     }
+}
+
+void countDepthToRoot(Node* pCurrentNode, size_t& iDepth) {
+    const auto mtxParent = pCurrentNode->getParentNode();
+    std::scoped_lock guard(*mtxParent.first);
+
+    if (mtxParent.second == nullptr) {
+        return;
+    }
+
+    iDepth += 1;
+
+    countDepthToRoot(mtxParent.second, iDepth);
+}
+
+void UiNode::recalculateNodeDepthWhileSpawned() {
+    size_t iDepth = 0;
+    countDepthToRoot(this, iDepth);
+
+    iNodeDepth = iDepth;
 }

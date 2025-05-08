@@ -113,7 +113,44 @@ public:
      */
     UiLayer getUiLayer() const { return layer; }
 
+    /**
+     * Returns how much nodes from the world's root node to skip to reach this node. Used to determine which
+     * UI nodes should be in the front and which behind. Deepest nodes rendered last (in front).
+     *
+     * @warning If used while despawned an error will be shown.
+     *
+     * @return Node depth.
+     */
+    size_t getNodeDepthWhileSpawned();
+
 protected:
+    /**
+     * Called when this node was not spawned previously and it was either attached to a parent node
+     * that is spawned or set as world's root node to execute custom spawn logic.
+     *
+     * @remark This node will be marked as spawned before this function is called.
+     * @remark This function is called before any of the child nodes are spawned.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     */
+    virtual void onSpawning() override;
+
+    /**
+     * Called after this node or one of the node's parents (in the parent hierarchy)
+     * was attached to a new parent node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This function will also be called on all child nodes after this function
+     * is finished.
+     *
+     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
+     * `false` if some node in the parent hierarchy was attached to a parent.
+     */
+    virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) override;
+
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() {}
 
@@ -128,6 +165,9 @@ protected:
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
 private:
+    /** Recalculates @ref iNodeDepth. Must be called only while spawned. */
+    void recalculateNodeDepthWhileSpawned();
+
     /** Width and height in range [0.0; 1.0]. */
     glm::vec2 size = glm::vec2(0.2F, 0.2F); // NOLINT
 
@@ -139,6 +179,14 @@ private:
      * portion of the remaining (free) space in the layout to fill (relative to other nodes).
      */
     unsigned int iExpandPortionInLayout = 1;
+
+    /**
+     * How much nodes from the world's root node to skip to reach this node. Used to determine which UI nodes
+     * should be in the front and which behind. Deepest nodes rendered last (in front).
+     *
+     * @remark Only valid while spawned.
+     */
+    size_t iNodeDepth = 0;
 
     /** UI layer. */
     UiLayer layer = UiLayer::LAYER1;
