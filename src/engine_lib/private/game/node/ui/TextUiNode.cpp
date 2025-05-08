@@ -19,7 +19,7 @@ TextUiNode::TextUiNode() : TextUiNode("Text UI Node") {}
 
 TextUiNode::TextUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     // Text generally needs less size that default for nodes.
-    setSize(glm::vec2(0.2F, 0.03F));
+    setSize(glm::vec2(0.2F, 0.03F)); // NOLINT
 }
 
 TypeReflectionInfo TextUiNode::getReflectionInfo() {

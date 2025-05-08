@@ -84,7 +84,7 @@ void UiNode::setExpandPortionInLayout(unsigned int iPortion) {
     std::scoped_lock guard(*mtxParent.first);
 
     if (auto pParentLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
-        pParentLayout->recalculatePosAndSizeForDirectChildNodes(false);
+        pParentLayout->recalculatePosAndSizeForDirectChildNodes();
     }
 }
 

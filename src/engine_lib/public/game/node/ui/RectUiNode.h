@@ -63,6 +63,13 @@ public:
     void setPathToTexture(std::string sPathToTextureRelativeRes);
 
     /**
+     * Sets padding for child node in range [0.0; 0.5] where 1.0 is full size of the node.
+     *
+     * @param padding Padding.
+     */
+    void setPadding(float padding);
+
+    /**
      * Returns color to fill the UI node area.
      *
      * @return RGBA color.
@@ -75,6 +82,13 @@ public:
      * @return Empty if not used.
      */
     std::string getPathToTexture() const { return sPathToTextureRelativeRes; }
+
+    /**
+     * Returns padding for child node in range [0.0; 0.5] where 1.0 is full size of the node.
+     *
+     * @return Padding.
+     */
+    float getPadding() const { return padding; }
 
 protected:
     /**
@@ -103,9 +117,25 @@ protected:
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() override;
 
+    /**
+     * Called after some child node was attached to this node.
+     *
+     * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
+     */
+    virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
+
+    /** Called after size of this UI node was changed. */
+    virtual void onAfterSizeChanged() override;
+
 private:
+    /** Updates position and size of the child node to the current position and size of the node. */
+    void updateChildNodePosAndSize();
+
     /** Not `nullptr` if texture from @ref sPathToTextureRelativeRes is loaded. */
     std::unique_ptr<TextureHandle> pTexture;
+
+    /** Padding for child node in range [0.0; 0.5] where 1.0 is full size of the node. */
+    float padding = 0.0F;
 
     /** Fill color. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);

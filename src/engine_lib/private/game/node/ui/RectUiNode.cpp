@@ -36,6 +36,13 @@ TypeReflectionInfo RectUiNode::getReflectionInfo() {
                 return reinterpret_cast<RectUiNode*>(pThis)->getPathToTexture();
             }};
 
+    variables.floats[NAMEOF_MEMBER(&RectUiNode::padding).data()] = ReflectedVariableInfo<float>{
+        .setter = [](Serializable* pThis,
+                     const float& newValue) { reinterpret_cast<RectUiNode*>(pThis)->setPadding(newValue); },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<RectUiNode*>(pThis)->getPadding();
+        }};
+
     return TypeReflectionInfo(
         UiNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(RectUiNode).data(),
@@ -78,6 +85,12 @@ void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
     }
 }
 
+void RectUiNode::setPadding(float padding) {
+    this->padding = std::clamp(padding, 0.0F, 0.5F); // NOLINT
+
+    updateChildNodePosAndSize();
+}
+
 void RectUiNode::onSpawning() {
     UiNode::onSpawning();
 
@@ -114,4 +127,42 @@ void RectUiNode::onVisibilityChanged() {
     // Notify manager.
     auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
     uiManager.onSpawnedNodeChangedVisibility(this);
+}
+
+void RectUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
+    UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
+
+    updateChildNodePosAndSize();
+}
+
+void RectUiNode::onAfterSizeChanged() {
+    UiNode::onAfterSizeChanged();
+
+    updateChildNodePosAndSize();
+}
+
+void RectUiNode::updateChildNodePosAndSize() {
+    const auto mtxChildNodes = getChildNodes();
+    std::scoped_lock guard(*mtxChildNodes.first);
+
+    if (mtxChildNodes.second.empty()) {
+        return;
+    }
+
+    if (mtxChildNodes.second.size() >= 2) [[unlikely]] {
+        // For simplicity of the UI system.
+        Error::showErrorAndThrowException(
+            std::format("rect ui nodes can only have 1 child node (rect node \"{}\")", getNodeName()));
+    }
+
+    const auto pUiChild = dynamic_cast<UiNode*>(mtxChildNodes.second[0]);
+    if (pUiChild == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected a UI node");
+    }
+
+    const auto size = getSize();
+    const auto paddingRealSize = size * padding;
+
+    pUiChild->setPosition(getPosition() + paddingRealSize);
+    pUiChild->setSize(size - paddingRealSize * 2.0F); // NOLINT
 }

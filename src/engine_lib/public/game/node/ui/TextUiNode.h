@@ -125,5 +125,5 @@ private:
     float lineSpacing = 0.25F; // NOLINT
 
     /** Text to display. */
-    std::string sText;
+    std::string sText = "text";
 };

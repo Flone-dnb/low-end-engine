@@ -47,7 +47,7 @@ TypeReflectionInfo LayoutUiNode::getReflectionInfo() {
                 reinterpret_cast<LayoutUiNode*>(pThis)->setIsHorizontal(bNewValue);
             },
         .getter = [](Serializable* pThis) -> bool {
-            return reinterpret_cast<LayoutUiNode*>(pThis)->isHorizontal();
+            return reinterpret_cast<LayoutUiNode*>(pThis)->getIsHorizontal();
         }};
 
     return TypeReflectionInfo(
@@ -58,61 +58,80 @@ TypeReflectionInfo LayoutUiNode::getReflectionInfo() {
 }
 
 LayoutUiNode::LayoutUiNode() : UiNode("Layout UI Node") {}
-LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {}
+LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
+    mtxLayoutParent.second = nullptr;
+}
 
 void LayoutUiNode::onAfterSizeChanged() {
     UiNode::onAfterSizeChanged();
 
-    if (bIsCurrentlyUpdatingChildNodes) {
-        return;
-    }
-
-    recalculatePosAndSizeForDirectChildNodes(
-        false); // don't notify parent because maybe parent layout caused our change in size
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIndexTo) {
     UiNode::onAfterChildNodePositionChanged(iIndexFrom, iIndexTo);
 
-    recalculatePosAndSizeForDirectChildNodes(false);
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
-void LayoutUiNode::setIsHorizontal(bool bIsHorizontal) { this->bIsHorizontal = bIsHorizontal; }
+void LayoutUiNode::setIsHorizontal(bool bIsHorizontal) {
+    this->bIsHorizontal = bIsHorizontal;
+
+    recalculatePosAndSizeForDirectChildNodes();
+}
 
 void LayoutUiNode::setChildNodeSpacing(float spacing) {
     childNodeSpacing = std::clamp(spacing, 0.0F, 1.0F);
-    recalculatePosAndSizeForDirectChildNodes(true);
+
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
-void LayoutUiNode::setChildNodeExpandRule(ChildNodeExpandRule expandRule) { childExpandRule = expandRule; }
+void LayoutUiNode::setChildNodeExpandRule(ChildNodeExpandRule expandRule) {
+    childExpandRule = expandRule;
+
+    recalculatePosAndSizeForDirectChildNodes();
+}
 
 void LayoutUiNode::setPadding(float padding) {
-    this->padding = std::clamp(padding, 0.0F, 0.5F);
+    this->padding = std::clamp(padding, 0.0F, 0.5F); // NOLINT
 
-    recalculatePosAndSizeForDirectChildNodes(false);
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onChildNodesSpawned() {
     UiNode::onChildNodesSpawned();
 
-    recalculatePosAndSizeForDirectChildNodes(true);
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
 
-    recalculatePosAndSizeForDirectChildNodes(true);
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterDirectChildDetached(Node* pDetachedDirectChild) {
     UiNode::onAfterDirectChildDetached(pDetachedDirectChild);
 
-    recalculatePosAndSizeForDirectChildNodes(true);
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
-void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLayout) {
+void LayoutUiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
+    UiNode::onAfterAttachedToNewParent(bThisNodeBeingAttached);
+
+    // Find a layout node in the parent chain and save it.
+    std::scoped_lock parentGuard(mtxLayoutParent.first);
+
+    mtxLayoutParent.second = getParentNodeOfType<LayoutUiNode>();
+}
+
+void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
     const auto mtxChildNodes = getChildNodes();
     std::scoped_lock childGuard(*mtxChildNodes.first);
+
+    if (bIsCurrentlyUpdatingChildNodes) {
+        return;
+    }
 
     bIsCurrentlyUpdatingChildNodes = true;
     {
@@ -129,17 +148,16 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLa
         }
 
         const auto layoutOldSize = getSize();
-        glm::vec2 childPos = getPosition();
+        // because pivot is left-bottom but we need to start from top-left corner of the layout
+        glm::vec2 childPosTopLeft = glm::vec2(getPosition().x, getPosition().y + layoutOldSize.y);
 
         // Consider padding.
         if (bIsHorizontal) {
-            childPos.y += padding * layoutOldSize.y;
+            childPosTopLeft.y -= padding * layoutOldSize.y;
         } else {
-            childPos.x += padding * layoutOldSize.x;
+            childPosTopLeft.x += padding * layoutOldSize.x;
         }
-        const auto areaForChildNodes = glm::vec2(
-            layoutOldSize.x - 2.0F * (padding * layoutOldSize.x),
-            layoutOldSize.y - 2.0F * (padding * layoutOldSize.y));
+        const auto areaForChildNodes = glm::vec2(layoutOldSize - 2.0F * (padding * layoutOldSize));
 
         // Add spacers to total portion sum.
         const auto spacerPortion = expandPortionSum * childNodeSpacing;
@@ -149,7 +167,8 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLa
                                              ? childNodeSpacing
                                              : spacerPortion / expandPortionSum;
 
-        float layoutNewSizeOnMainAxis = padding * 2.0F; // will be updated while iterating over child nodes
+        float layoutNewSizeOnMainAxis =
+            padding * 2.0F; // NOLINT: will be updated while iterating over child nodes
 
         // Update position and size for all direct child nodes.
         for (const auto& pChildNode : mtxChildNodes.second) {
@@ -187,7 +206,11 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLa
                 break;
             }
             case (ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS): {
-                childNewSize = expandFactor * areaForChildNodes;
+                if (bIsHorizontal) {
+                    childNewSize = glm::vec2(expandFactor * areaForChildNodes.x, areaForChildNodes.y);
+                } else {
+                    childNewSize = glm::vec2(areaForChildNodes.x, expandFactor * areaForChildNodes.y);
+                }
                 break;
             }
             default:
@@ -198,20 +221,17 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLa
             }
 
             pUiChild->setSize(childNewSize);
-            if (bIsHorizontal) {
-                pUiChild->setPosition(childPos);
-            } else {
-                // Pivot is left-bottom.
-                pUiChild->setPosition(glm::vec2(childPos.x, childPos.y - childNewSize.y));
-            }
+
+            // Set position for pivot (left-bottom).
+            pUiChild->setPosition(glm::vec2(childPosTopLeft.x, childPosTopLeft.y - childNewSize.y));
 
             if (bIsHorizontal) {
                 const auto lastNodeSize = childNewSize.x + spacerActualPortion * areaForChildNodes.x;
-                childPos.x += lastNodeSize;
+                childPosTopLeft.x += lastNodeSize;
                 layoutNewSizeOnMainAxis += lastNodeSize;
             } else {
                 const auto lastNodeSize = childNewSize.y + spacerActualPortion * areaForChildNodes.y;
-                childPos.y -= lastNodeSize;
+                childPosTopLeft.y -= lastNodeSize;
                 layoutNewSizeOnMainAxis += lastNodeSize;
             }
         }
@@ -227,17 +247,27 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLa
 
         // Expand our size if needed to fit all child nodes (but don't shrink if can shrink).
         if (bIsHorizontal && layoutNewSizeOnMainAxis > layoutOldSize.x) {
+            // Self check:
+            if (childExpandRule != ChildNodeExpandRule::DONT_EXPAND) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format("unexpected for node \"{}\" to expand", getNodeName()));
+            }
+
             setSize(glm::vec2(layoutNewSizeOnMainAxis, layoutOldSize.y));
         } else if (!bIsHorizontal && layoutNewSizeOnMainAxis > layoutOldSize.y) {
+            // Self check:
+            if (childExpandRule != ChildNodeExpandRule::DONT_EXPAND) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format("unexpected for node \"{}\" to expand", getNodeName()));
+            }
+
             setSize(glm::vec2(layoutOldSize.x, layoutNewSizeOnMainAxis));
         }
 
-        if (bNotifyParentLayout) {
-            const auto mtxParentNode = getParentNode();
-            std::scoped_lock guard(*mtxParentNode.first);
-            if (auto pParentLayout = dynamic_cast<LayoutUiNode*>(mtxParentNode.second)) {
-                pParentLayout->recalculatePosAndSizeForDirectChildNodes(true);
-            }
+        // Notify parent layout.
+        std::scoped_lock guard(mtxLayoutParent.first);
+        if (mtxLayoutParent.second != nullptr) {
+            mtxLayoutParent.second->recalculatePosAndSizeForDirectChildNodes();
         }
     }
     bIsCurrentlyUpdatingChildNodes = false;

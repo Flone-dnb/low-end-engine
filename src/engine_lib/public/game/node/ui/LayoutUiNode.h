@@ -27,6 +27,9 @@ class LayoutUiNode : public UiNode {
     // When node's expand portion in layout is changed it notifies the parent layout.
     friend class UiNode;
 
+    // If layout is a child node of a rect node the rect node will notify about changes in size.
+    friend class RectUiNode;
+
 public:
     LayoutUiNode();
 
@@ -84,7 +87,7 @@ public:
     void setChildNodeExpandRule(ChildNodeExpandRule expandRule);
 
     /**
-     * Sets padding for elements in range [0.0; 0.5] where 1.0 is full size of the layout.
+     * Sets padding for child nodes in range [0.0; 0.5] where 1.0 is full size of the layout.
      *
      * @param padding Padding.
      */
@@ -95,7 +98,7 @@ public:
      *
      * @return `true` for horizontal, `false` for vertical.
      */
-    bool isHorizontal() const { return bIsHorizontal; }
+    bool getIsHorizontal() const { return bIsHorizontal; }
 
     /**
      * Returns spacing between child nodes in range [0.0; 1.0] where 1.0 is full size of the layout.
@@ -105,7 +108,7 @@ public:
     float getChildNodeSpacing() const { return childNodeSpacing; }
 
     /**
-     * Returns padding for elements in range [0.0; 0.5] where 1.0 is full size of the layout.
+     * Returns padding for child nodes in range [0.0; 0.5] where 1.0 is full size of the layout.
      *
      * @return Padding.
      */
@@ -147,6 +150,21 @@ protected:
      */
     virtual void onAfterDirectChildDetached(Node* pDetachedDirectChild) override;
 
+    /**
+     * Called after this node or one of the node's parents (in the parent hierarchy)
+     * was attached to a new parent node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This function will also be called on all child nodes after this function
+     * is finished.
+     *
+     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
+     * `false` if some node in the parent hierarchy was attached to a parent.
+     */
+    virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) override;
+
     /** Called after size of this UI node was changed. */
     virtual void onAfterSizeChanged() override;
 
@@ -159,13 +177,11 @@ protected:
     virtual void onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIndexTo) override;
 
 private:
-    /**
-     * Recalculates position and size for direct child nodes.
-     *
-     * @param bNotifyParentLayout If `true` and this node's parent is a layout node it will be notified
-     * about our size being changed.
-     */
-    void recalculatePosAndSizeForDirectChildNodes(bool bNotifyParentLayout);
+    /** Recalculates position and size for direct child nodes. */
+    void recalculatePosAndSizeForDirectChildNodes();
+
+    /** First (most closer to this node) layout node in the parent chain. */
+    std::pair<std::recursive_mutex, LayoutUiNode*> mtxLayoutParent;
 
     /** Expand rule for child nodes. */
     ChildNodeExpandRule childExpandRule = ChildNodeExpandRule::DONT_EXPAND;
@@ -173,7 +189,7 @@ private:
     /** Spacing between child nodes in range [0.0; 1.0] where 1.0 is full size of the layout. */
     float childNodeSpacing = 0.0F;
 
-    /** Padding for elements in range [0.0; 0.5] where 1.0 is full size of the layout. */
+    /** Padding for child nodes in range [0.0; 0.5] where 1.0 is full size of the layout. */
     float padding = 0.0F;
 
     /** `false` for vertical layout, `true` for horizontal. */

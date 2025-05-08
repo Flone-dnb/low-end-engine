@@ -207,8 +207,8 @@ void UiManager::drawRectNodes(size_t iLayer) {
 
         // Render nodes.
         for (const auto& pRectNode : nodes) {
-            const auto pos = pRectNode->getPosition();
-            const auto size = pRectNode->getSize();
+            auto pos = pRectNode->getPosition();
+            auto size = pRectNode->getSize();
 
             // Set shader parameters.
             pShaderProgram->setVector4ToShader("color", pRectNode->getColor());
@@ -220,18 +220,18 @@ void UiManager::drawRectNodes(size_t iLayer) {
                 pShaderProgram->setBoolToShader("bIsUsingTexture", false);
             }
 
-            const glm::vec2 screenPosStart = glm::vec2(pos.x * iWindowWidth, pos.y * iWindowHeight);
-            const glm::vec2 screenSize = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
+            pos = glm::vec2(pos.x * iWindowWidth, pos.y * iWindowHeight);
+            size = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
 
             // Update VBO.
             const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                glm::vec4(screenPosStart.x, screenPosStart.y + screenSize.y, 0.0F, 0.0F),
-                glm::vec4(screenPosStart.x + screenSize.x, screenPosStart.y, 1.0F, 1.0F),
-                glm::vec4(screenPosStart.x, screenPosStart.y, 0.0F, 1.0F),
+                glm::vec4(pos.x, pos.y + size.y, 0.0F, 0.0F),
+                glm::vec4(pos.x + size.x, pos.y, 1.0F, 1.0F),
+                glm::vec4(pos.x, pos.y, 0.0F, 1.0F),
 
-                glm::vec4(screenPosStart.x, screenPosStart.y + screenSize.y, 0.0F, 0.0F),
-                glm::vec4(screenPosStart.x + screenSize.x, screenPosStart.y + screenSize.y, 1.0F, 0.0F),
-                glm::vec4(screenPosStart.x + screenSize.x, screenPosStart.y, 1.0F, 1.0F)};
+                glm::vec4(pos.x, pos.y + size.y, 0.0F, 0.0F),
+                glm::vec4(pos.x + size.x, pos.y + size.y, 1.0F, 0.0F),
+                glm::vec4(pos.x + size.x, pos.y, 1.0F, 1.0F)};
 
             // Copy new vertex data to VBO.
             glBindBuffer(
