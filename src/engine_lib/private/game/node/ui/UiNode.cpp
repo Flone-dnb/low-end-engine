@@ -94,6 +94,20 @@ void UiNode::setIsVisible(bool bIsVisible) {
     }
     this->bIsVisible = bIsVisible;
 
+    // Affects all child nodes.
+    {
+        const auto mtxChildNodes = getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
+            if (pUiChild == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected a UI node");
+            }
+            pUiChild->setIsVisible(bIsVisible);
+        }
+    }
+
     onVisibilityChanged();
 }
 

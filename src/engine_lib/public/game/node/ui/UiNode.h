@@ -64,7 +64,7 @@ public:
     void setExpandPortionInLayout(unsigned int iPortion);
 
     /**
-     * Sets if this node should be included in the rendering or not.
+     * Sets if this node (and all child nodes) should be included in the rendering or not.
      *
      * @param bIsVisible New visibility.
      */
