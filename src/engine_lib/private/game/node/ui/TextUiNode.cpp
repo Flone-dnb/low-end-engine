@@ -17,7 +17,10 @@ std::string TextUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 
 TextUiNode::TextUiNode() : TextUiNode("Text UI Node") {}
 
-TextUiNode::TextUiNode(const std::string& sNodeName) : UiNode(sNodeName) {}
+TextUiNode::TextUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
+    // Text generally needs less size that default for nodes.
+    setSize(glm::vec2(0.2F, 0.03F));
+}
 
 TypeReflectionInfo TextUiNode::getReflectionInfo() {
     ReflectedVariables variables;
@@ -29,13 +32,6 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
             },
         .getter = [](Serializable* pThis) -> glm::vec4 {
             return reinterpret_cast<TextUiNode*>(pThis)->getTextColor();
-        }};
-
-    variables.floats[NAMEOF_MEMBER(&TextUiNode::size).data()] = ReflectedVariableInfo<float>{
-        .setter = [](Serializable* pThis,
-                     const float& newValue) { reinterpret_cast<TextUiNode*>(pThis)->setTextSize(newValue); },
-        .getter = [](Serializable* pThis) -> float {
-            return reinterpret_cast<TextUiNode*>(pThis)->getTextSize();
         }};
 
     variables.floats[NAMEOF_MEMBER(&TextUiNode::lineSpacing).data()] = ReflectedVariableInfo<float>{
@@ -64,10 +60,6 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
 }
 
 void TextUiNode::setText(const std::string& sText) { this->sText = sText; }
-
-void TextUiNode::setTextSize(float size) {
-    this->size = std::clamp(size, 0.001F, 1.0F); // NOLINT: avoid zero size
-}
 
 void TextUiNode::setTextColor(const glm::vec4& color) { this->color = color; }
 

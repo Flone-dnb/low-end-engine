@@ -52,13 +52,6 @@ public:
     void setText(const std::string& sText);
 
     /**
-     * Sets size of the text.
-     *
-     * @param size Size in range [0.0F; 1.0F].
-     */
-    void setTextSize(float size);
-
-    /**
      * Sets color of the text.
      *
      * @param color Color in the RGBA format.
@@ -78,13 +71,6 @@ public:
      * @return Text.
      */
     std::string_view getText() const { return sText; }
-
-    /**
-     * Returns size of the text in range [0.0F; 1.0F]
-     *
-     * @return Size.
-     */
-    float getTextSize() const { return size; }
 
     /**
      * Returns color of the text in the RGBA format.
@@ -131,9 +117,6 @@ protected:
 private:
     /** Color of the text in the RGBA format. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
-
-    /** Size in range [0.0F; 1.0F] proportional to screen height. */
-    float size = 0.05F; // NOLINT
 
     /**
      * Vertical space between horizontal lines of text, in range [0.0F; +inf]

@@ -13,18 +13,27 @@
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/ui/UiNode.h"
 #include "game/node/ui/TextUiNode.h"
+#include "game/node/ui/RectUiNode.h"
+#include "game/node/ui/LayoutUiNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
 void ReflectedTypeDatabase::registerEngineTypes() {
+    // General.
     registerType(Node::getTypeGuidStatic(), Node::getReflectionInfo());
     registerType(SpatialNode::getTypeGuidStatic(), SpatialNode::getReflectionInfo());
     registerType(MeshNode::getTypeGuidStatic(), MeshNode::getReflectionInfo());
+
+    // Light.
     registerType(DirectionalLightNode::getTypeGuidStatic(), DirectionalLightNode::getReflectionInfo());
     registerType(PointLightNode::getTypeGuidStatic(), PointLightNode::getReflectionInfo());
     registerType(SpotlightNode::getTypeGuidStatic(), SpotlightNode::getReflectionInfo());
+
+    // UI.
     registerType(UiNode::getTypeGuidStatic(), UiNode::getReflectionInfo());
     registerType(TextUiNode::getTypeGuidStatic(), TextUiNode::getReflectionInfo());
+    registerType(RectUiNode::getTypeGuidStatic(), RectUiNode::getReflectionInfo());
+    registerType(LayoutUiNode::getTypeGuidStatic(), LayoutUiNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

@@ -19,13 +19,6 @@ std::string RectUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 TypeReflectionInfo RectUiNode::getReflectionInfo() {
     ReflectedVariables variables;
 
-    variables.vec2s[NAMEOF_MEMBER(&RectUiNode::size).data()] = ReflectedVariableInfo<glm::vec2>{
-        .setter = [](Serializable* pThis,
-                     const glm::vec2& newValue) { reinterpret_cast<RectUiNode*>(pThis)->setSize(newValue); },
-        .getter = [](Serializable* pThis) -> glm::vec2 {
-            return reinterpret_cast<RectUiNode*>(pThis)->getSize();
-        }};
-
     variables.vec4s[NAMEOF_MEMBER(&RectUiNode::color).data()] = ReflectedVariableInfo<glm::vec4>{
         .setter = [](Serializable* pThis,
                      const glm::vec4& newValue) { reinterpret_cast<RectUiNode*>(pThis)->setColor(newValue); },
@@ -83,11 +76,6 @@ void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
             pTexture = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
         }
     }
-}
-
-void RectUiNode::setSize(const glm::vec2& size) {
-    this->size.x = std::clamp(size.x, 0.0F, 1.0F);
-    this->size.y = std::clamp(size.y, 0.0F, 1.0F);
 }
 
 void RectUiNode::onSpawning() {

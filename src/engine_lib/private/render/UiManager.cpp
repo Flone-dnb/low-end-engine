@@ -282,7 +282,7 @@ void UiManager::drawTextNodes(size_t iLayer) {
 
             float screenX = textRelativePos.x * iWindowWidth;
             float screenY = textRelativePos.y * iWindowHeight;
-            const auto scale = pTextNode->getTextSize() / FontManager::getFontHeightToLoad();
+            const auto scale = pTextNode->getSize().y / FontManager::getFontHeightToLoad();
 
             const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
             const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;

@@ -49,6 +49,21 @@ public:
     void setPosition(const glm::vec2& position);
 
     /**
+     * Sets width and height in range [0.0; 1.0].
+     *
+     * @param size New size.
+     */
+    void setSize(const glm::vec2& size);
+
+    /**
+     * When this node is a child node of a layout node with an "expand child nodes rule" this value defines a
+     * portion of the remaining (free) space in the layout to fill (relative to other nodes).
+     *
+     * @param iPortion Positive value (can be bigger than 1 to fill more space relative to other nodes).
+     */
+    void setExpandPortionInLayout(unsigned int iPortion);
+
+    /**
      * Sets if this node should be included in the rendering or not.
      *
      * @param bIsVisible New visibility.
@@ -70,6 +85,21 @@ public:
     glm::vec2 getPosition() const { return position; }
 
     /**
+     * Returns width and height in range [0.0; 1.0].
+     *
+     * @return Width and height.
+     */
+    glm::vec2 getSize() const { return size; }
+
+    /**
+     * When this node is a child node of a layout node with an "expand child nodes rule" this value defines a
+     * portion of the remaining (free) space in the layout to fill (relative to other nodes).
+     *
+     * @return Fill portion.
+     */
+    unsigned int getExpandPortionInLayout() const { return iExpandPortionInLayout; }
+
+    /**
      * Tells if this node is included in the rendering or not.
      *
      * @return Visibility.
@@ -87,9 +117,28 @@ protected:
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() {}
 
+    /** Called after size of this UI node was changed. */
+    virtual void onAfterSizeChanged() {}
+
+    /**
+     * Called after some child node was attached to this node.
+     *
+     * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
+     */
+    virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
+
 private:
+    /** Width and height in range [0.0; 1.0]. */
+    glm::vec2 size = glm::vec2(0.2F, 0.2F); // NOLINT
+
     /** Position on the screen in range [0.0; 1.0]. */
-    glm::vec2 position;
+    glm::vec2 position = glm::vec2(0.2F, 0.5F); // NOLINT
+
+    /**
+     * When this node is a child node of a layout node with an "expand child nodes rule" this value defines a
+     * portion of the remaining (free) space in the layout to fill (relative to other nodes).
+     */
+    unsigned int iExpandPortionInLayout = 1;
 
     /** UI layer. */
     UiLayer layer = UiLayer::LAYER1;

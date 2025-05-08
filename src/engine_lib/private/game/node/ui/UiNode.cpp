@@ -1,5 +1,8 @@
 #include "game/node/ui/UiNode.h"
 
+// Custom.
+#include "game/node/ui/LayoutUiNode.h"
+
 // External.
 #include "nameof.hpp"
 
@@ -12,6 +15,13 @@ std::string UiNode::getTypeGuid() const { return sTypeGuid.data(); }
 
 TypeReflectionInfo UiNode::getReflectionInfo() {
     ReflectedVariables variables;
+
+    variables.vec2s[NAMEOF_MEMBER(&UiNode::size).data()] = ReflectedVariableInfo<glm::vec2>{
+        .setter = [](Serializable* pThis,
+                     const glm::vec2& newValue) { reinterpret_cast<UiNode*>(pThis)->setSize(newValue); },
+        .getter = [](Serializable* pThis) -> glm::vec2 {
+            return reinterpret_cast<UiNode*>(pThis)->getSize();
+        }};
 
     variables.vec2s[NAMEOF_MEMBER(&UiNode::position).data()] = ReflectedVariableInfo<glm::vec2>{
         .setter = [](Serializable* pThis,
@@ -28,6 +38,16 @@ TypeReflectionInfo UiNode::getReflectionInfo() {
         .getter = [](Serializable* pThis) -> unsigned int {
             return static_cast<unsigned int>(reinterpret_cast<UiNode*>(pThis)->getUiLayer());
         }};
+
+    variables.unsignedInts[NAMEOF_MEMBER(&UiNode::iExpandPortionInLayout).data()] =
+        ReflectedVariableInfo<unsigned int>{
+            .setter =
+                [](Serializable* pThis, const unsigned int& iNewValue) {
+                    reinterpret_cast<UiNode*>(pThis)->setExpandPortionInLayout(iNewValue);
+                },
+            .getter = [](Serializable* pThis) -> unsigned int {
+                return reinterpret_cast<UiNode*>(pThis)->getExpandPortionInLayout();
+            }};
 
     variables.bools[NAMEOF_MEMBER(&UiNode::bIsVisible).data()] = ReflectedVariableInfo<bool>{
         .setter = [](Serializable* pThis,
@@ -50,6 +70,24 @@ void UiNode::setPosition(const glm::vec2& position) {
     this->position.y = std::clamp(position.y, 0.0F, 1.0F);
 }
 
+void UiNode::setSize(const glm::vec2& size) {
+    this->size.x = std::clamp(size.x, 0.0F, 1.0F);
+    this->size.y = std::clamp(size.y, 0.0F, 1.0F);
+
+    onAfterSizeChanged();
+}
+
+void UiNode::setExpandPortionInLayout(unsigned int iPortion) {
+    iExpandPortionInLayout = std::max(1U, iPortion); // don't allow 0
+
+    const auto mtxParent = getParentNode();
+    std::scoped_lock guard(*mtxParent.first);
+
+    if (auto pParentLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
+        pParentLayout->recalculatePosAndSizeForDirectChildNodes(false);
+    }
+}
+
 void UiNode::setIsVisible(bool bIsVisible) {
     if (this->bIsVisible == bIsVisible) {
         return;
@@ -70,4 +108,13 @@ void UiNode::setUiLayer(UiLayer layer) {
     }
 
     this->layer = layer;
+}
+
+void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
+    Node::onAfterNewDirectChildAttached(pNewDirectChild);
+
+    // This rule just makes it easier to work with UI node hierarchy.
+    if (dynamic_cast<UiNode*>(pNewDirectChild) == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("UI nodes can have only UI nodes as child nodes");
+    }
 }

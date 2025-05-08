@@ -132,6 +132,8 @@ set(PROJECT_SOURCES
     public/game/node/ui/TextUiNode.h
     private/game/node/ui/RectUiNode.cpp
     public/game/node/ui/RectUiNode.h
+    private/game/node/ui/LayoutUiNode.cpp
+    public/game/node/ui/LayoutUiNode.h
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

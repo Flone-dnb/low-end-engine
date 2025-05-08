@@ -233,6 +233,14 @@ public:
         AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
 
     /**
+     * Changes the position of a child node in the array of child nodes.
+     *
+     * @param iIndexFrom Index of the node to move.
+     * @param iIndexTo   Index to insert the node to.
+     */
+    void changeChildNodePositionIndex(size_t iIndexFrom, size_t iIndexTo);
+
+    /**
      * Returns world's root node.
      *
      * @return `nullptr` if this node is not spawned or was despawned or world is being destroyed
@@ -447,6 +455,21 @@ protected:
     virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {}
 
     /**
+     * Called after some child node was attached to this node.
+     *
+     * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
+     */
+    virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) {}
+
+    /**
+     * Called after some child node was detached from this node.
+     *
+     * @param pDetachedDirectChild Direct child node that was detached (child of this node, not a child of
+     * some child node).
+     */
+    virtual void onAfterDirectChildDetached(Node* pDetachedDirectChild) {}
+
+    /**
      * Called before a new frame is rendered.
      *
      * @warning If overriding you must call the parent's version of this function first
@@ -459,6 +482,14 @@ protected:
      * the last frame was rendered.
      */
     virtual void onBeforeNewFrame(float timeSincePrevFrameInSec) {}
+
+    /**
+     * Called after a child node changed its position in the array of child nodes.
+     *
+     * @param iIndexFrom Moved from.
+     * @param iIndexTo   Moved to.
+     */
+    virtual void onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIndexTo) {}
 
     /**
      * Called when the window received mouse movement.
@@ -844,6 +875,9 @@ private:
     /** Name of the TOML key we use to serialize information about parent node. */
     static constexpr std::string_view sTomlKeyParentNodeId = "parent_node_id";
 
+    /** Name of the TOML key we use to serialize information about position in parent's child node array. */
+    static constexpr std::string_view sTomlKeyChildNodeArrayIndex = "child_node_array_index";
+
     /** Name of the TOML key we use to store a path to an external node tree. */
     static constexpr std::string_view sTomlKeyExternalNodeTreePath = "root_node_of_external_node_tree";
 };
@@ -997,9 +1031,7 @@ inline NodeType* Node::addChildNode(
     pNode->mtxParentNode.second = this;
     mtxChildNodes.second.push_back(std::move(pNodeToAttachToThis));
 
-    // The specified node is not attached.
-
-    // Notify the node (here, SpatialNode will save a pointer to the first SpatialNode in the parent
+    // Notify the child node (here, SpatialNode will save a pointer to the first SpatialNode in the parent
     // chain and will use it in `setWorld...` operations).
     pNode->notifyAboutAttachedToNewParent(true);
 
@@ -1019,6 +1051,9 @@ inline NodeType* Node::addChildNode(
         // Despawn node.
         pNode->despawn();
     }
+
+    // Notify self.
+    onAfterNewDirectChildAttached(pNode);
 
     return pNode;
 }

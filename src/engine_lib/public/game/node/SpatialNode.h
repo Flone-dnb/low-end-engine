@@ -378,11 +378,11 @@ private:
     glm::vec3 relativeScale = glm::vec3(1.0F, 1.0F, 1.0F);
 
     /** First (most closer to this node) spatial node in the parent chain. */
-    std::pair<std::recursive_mutex, SpatialNode*> mtxSpatialParent{};
+    std::pair<std::recursive_mutex, SpatialNode*> mtxSpatialParent;
 
     /** Matrix that describes basis vectors that define node's local space. */
-    std::pair<std::recursive_mutex, LocalSpaceInformation> mtxLocalSpace{};
+    std::pair<std::recursive_mutex, LocalSpaceInformation> mtxLocalSpace;
 
     /** World related information, must be used with mutex. */
-    std::pair<std::recursive_mutex, WorldMatrixInformation> mtxWorldMatrix{};
+    std::pair<std::recursive_mutex, WorldMatrixInformation> mtxWorldMatrix;
 };

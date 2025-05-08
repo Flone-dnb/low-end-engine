@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
     src/input/InputManager.cpp
     src/node/Node.cpp
     src/node/MeshNode.cpp
+    src/node/LayoutUiNode.cpp
     src/io/Serializable.cpp
     # add your .h/.cpp files here
 )

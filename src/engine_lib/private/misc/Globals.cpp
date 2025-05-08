@@ -55,22 +55,16 @@ std::string Globals::wstringToString(const std::wstring& sText) {
     sOutput.resize(sText.length());
 
 #if defined(WIN32)
-
     size_t iResultBytes;
     wcstombs_s(&iResultBytes, sOutput.data(), sOutput.size() + 1, sText.c_str(), sText.size());
-
 #elif __linux__
-
     static std::mutex mtxWcstombs;
     {
         std::scoped_lock guard(mtxWcstombs);
         wcstombs(sOutput.data(), sText.c_str(), sOutput.size()); // NOLINT: not thread safe
     }
-
 #else
-
     static_assert(false, "not implemented");
-
 #endif
 
     return sOutput;

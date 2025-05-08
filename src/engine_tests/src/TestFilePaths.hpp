@@ -5,7 +5,7 @@
 
 static constexpr std::string_view sTestDirName = "test";
 
-static constexpr std::array<std::string_view, 10> vUsedTestFileNames = {
+static constexpr std::array<std::string_view, 11> vUsedTestFileNames = {
     "serializable",
     "serializable_derived",
     "node_tree",
@@ -15,4 +15,5 @@ static constexpr std::array<std::string_view, 10> vUsedTestFileNames = {
     "modified_original",
     "modified_same_file",
     "2mesh_nodes",
-    "load_node_tree_as_world"};
+    "load_node_tree_as_world",
+    "layout_ui"};

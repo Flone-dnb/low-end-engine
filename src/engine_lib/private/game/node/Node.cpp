@@ -97,15 +97,23 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
         };
     }
 
-    // Sort all nodes by their ID. Prepare array of pairs: Node - Parent index.
+    // Sort all nodes by their ID. Prepare array of pairs: node - parent info.
+    struct ParentInfo {
+        size_t iParentId = 0;
+        size_t iIndexInChildNodeArray = 0;
+    };
+    struct NodeInfo {
+        std::optional<ParentInfo> optionalParentInfo;
+    };
+
     std::optional<size_t> optionalRootNodeIndex;
-    std::vector<std::pair<std::unique_ptr<Node>, std::optional<size_t>>> vNodes(vDeserializedInfo.size());
+    std::vector<std::pair<std::unique_ptr<Node>, NodeInfo>> vNodes(vDeserializedInfo.size());
     for (size_t i = 0; i < vDeserializedInfo.size(); i++) {
         auto& nodeInfo = vDeserializedInfo[i];
         bool bIsRootNode = false;
 
         // Check that this object has required attribute about parent ID.
-        std::optional<size_t> iParentNodeId = {};
+        std::optional<ParentInfo> parentInfo;
         const auto parentNodeAttributeIt = nodeInfo.customAttributes.find(sTomlKeyParentNodeId.data());
         if (parentNodeAttributeIt == nodeInfo.customAttributes.end()) {
             if (!optionalRootNodeIndex.has_value()) {
@@ -117,8 +125,9 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
                         nodeInfo.pObject->getNodeName()));
             }
         } else {
+            parentInfo = ParentInfo{};
             try {
-                iParentNodeId = std::stoull(parentNodeAttributeIt->second);
+                parentInfo->iParentId = std::stoull(parentNodeAttributeIt->second);
             } catch (std::exception& exception) {
                 return Error(
                     std::format(
@@ -129,12 +138,34 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
             }
 
             // Check if this parent ID is outside of out array bounds.
-            if (iParentNodeId.value() >= vNodes.size()) [[unlikely]] {
+            if (parentInfo->iParentId >= vNodes.size()) [[unlikely]] {
                 return Error(
                     std::format(
                         "parsed parent node ID is outside of bounds: {} >= {}",
-                        iParentNodeId.value(),
+                        parentInfo->iParentId,
                         vNodes.size()));
+            }
+
+            // There's also must be a value about node's index in parent's array of child nodes.
+            const auto it = nodeInfo.customAttributes.find(sTomlKeyChildNodeArrayIndex.data());
+            if (it == nodeInfo.customAttributes.end()) [[unlikely]] {
+                return Error(
+                    std::format(
+                        "error while deserializing node \"{}\" (ID in the file: {}): found parent index in "
+                        "the file but also expected an index in the parent's array of child node (which was "
+                        "not found)",
+                        nodeInfo.pObject->getNodeName(),
+                        nodeInfo.sObjectUniqueId));
+            }
+            try {
+                parentInfo->iIndexInChildNodeArray = std::stoull(it->second);
+            } catch (std::exception& exception) {
+                return Error(
+                    std::format(
+                        "failed to convert attribute \"{}\" with value \"{}\" to integer, error: {}",
+                        sTomlKeyChildNodeArrayIndex,
+                        it->second,
+                        exception.what()));
             }
         }
 
@@ -162,7 +193,7 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
 
         // Save node.
         vNodes[iNodeId].first = std::move(nodeInfo.pObject);
-        vNodes[iNodeId].second = iParentNodeId;
+        vNodes[iNodeId].second = NodeInfo{.optionalParentInfo = parentInfo};
 
         if (bIsRootNode) {
             optionalRootNodeIndex = iNodeId;
@@ -175,26 +206,43 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
     }
 
     // Build hierarchy in reverse ID order, this way we start from nodes without children and will continue
-    // to "move out" nodes without hitting deleted memory as parent nodes (see how to collect these IDs during
-    // the serialization).
-    for (auto& [pNode, optionalParentIndex] : std::views::reverse(vNodes)) {
+    // to "std::move" nodes without hitting deleted memory as parent nodes (see how to collect these IDs
+    // during the serialization).
+    std::unordered_map<Node*, std::vector<std::unique_ptr<Node>>> parentNodeToChildNodes;
+    for (auto& [pNode, nodeInfo] : std::views::reverse(vNodes)) {
         if (pNode == nullptr) [[unlikely]] {
             return Error("unexpected nullptr");
         }
 
-        if (!optionalParentIndex.has_value()) {
+        if (!nodeInfo.optionalParentInfo.has_value()) {
             continue;
         }
-        auto& pParentNode = vNodes[*optionalParentIndex].first;
+        auto& parentInfo = *nodeInfo.optionalParentInfo;
+
+        // Get parent.
+        auto& pParentNode = vNodes[parentInfo.iParentId].first;
         if (pParentNode == nullptr) [[unlikely]] {
             return Error("unexpected nullptr");
         }
 
-        pParentNode->addChildNode(
-            std::move(pNode),
-            AttachmentRule::KEEP_RELATIVE,
-            AttachmentRule::KEEP_RELATIVE,
-            AttachmentRule::KEEP_RELATIVE);
+        auto& vChildNodesArray = parentNodeToChildNodes[pParentNode.get()];
+
+        if (vChildNodesArray.size() <= parentInfo.iIndexInChildNodeArray) {
+            vChildNodesArray.resize(parentInfo.iIndexInChildNodeArray + 1);
+        }
+
+        vChildNodesArray[parentInfo.iIndexInChildNodeArray] = std::move(pNode);
+    }
+
+    // Add child nodes in the correct order.
+    for (auto& [pParentNode, vChildNodeArray] : parentNodeToChildNodes) {
+        for (auto& pChildNode : vChildNodeArray) {
+            pParentNode->addChildNode(
+                std::move(pChildNode),
+                AttachmentRule::KEEP_RELATIVE,
+                AttachmentRule::KEEP_RELATIVE,
+                AttachmentRule::KEEP_RELATIVE);
+        }
     }
 
     return std::move(vNodes[*optionalRootNodeIndex].first);
@@ -286,7 +334,7 @@ void Node::unsafeDetachFromParentAndDespawn() {
         std::scoped_lock guard(mtxIsSpawned.first, mtxParentNode.first);
 
         if (mtxParentNode.second != nullptr) {
-            // Notify.
+            // Notify self.
             notifyAboutDetachingFromParent(true);
 
             // Remove this node from parent's children array.
@@ -307,6 +355,9 @@ void Node::unsafeDetachFromParentAndDespawn() {
                         "does not contain this node.",
                         getNodeName()));
             }
+
+            // Notify parent.
+            mtxParentNode.second->onAfterDirectChildDetached(pSelf.get());
 
             // Clear parent.
             mtxParentNode.second = nullptr;
@@ -349,6 +400,30 @@ Node::~Node() {
 }
 
 void Node::setNodeName(const std::string& sName) { this->sNodeName = sName; }
+
+void Node::changeChildNodePositionIndex(size_t iIndexFrom, size_t iIndexTo) {
+    {
+        std::scoped_lock guard(mtxChildNodes.first);
+
+        if (iIndexFrom >= mtxChildNodes.second.size() || iIndexTo >= mtxChildNodes.second.size())
+            [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format(
+                    "node \"{}\" received invalid index to move the child node (from {} to {})",
+                    sNodeName,
+                    iIndexFrom,
+                    iIndexTo));
+        }
+
+        if (iIndexFrom == iIndexTo) {
+            return;
+        }
+
+        std::swap(mtxChildNodes.second[iIndexFrom], mtxChildNodes.second[iIndexTo]);
+    }
+
+    onAfterChildNodePositionChanged(iIndexFrom, iIndexTo);
+}
 
 Node* Node::getWorldRootNodeWhileSpawned() {
     std::scoped_lock guard(mtxIsSpawned.first);
@@ -724,6 +799,22 @@ Node::getInformationForSerialization(
     // Add parent ID.
     if (iParentId.has_value()) {
         selfInfo.customAttributes[sTomlKeyParentNodeId.data()] = std::to_string(iParentId.value());
+
+        // Find self in the parent's array of child nodes.
+        const auto mtxChildNodes = mtxParentNode.second->getChildNodes();
+        std::optional<size_t> optionalIndex;
+        for (size_t i = 0; i < mtxChildNodes.second.size(); i++) {
+            if (mtxChildNodes.second[i] == this) {
+                optionalIndex = i;
+                break;
+            }
+        }
+        if (!optionalIndex.has_value()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format(
+                    "unable to find child node \"{}\" in parent's array of child nodes", getNodeName()));
+        }
+        selfInfo.customAttributes[sTomlKeyChildNodeArrayIndex.data()] = std::to_string(*optionalIndex);
     }
 
     // Add original object (if was specified).

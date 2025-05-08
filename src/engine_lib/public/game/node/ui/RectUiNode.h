@@ -49,13 +49,6 @@ public:
     virtual std::string getTypeGuid() const override;
 
     /**
-     * Sets width and height in range [0.0; 1.0].
-     *
-     * @param size New size.
-     */
-    void setSize(const glm::vec2& size);
-
-    /**
      * Set color to fill the UI node area.
      *
      * @param color RGBA color.
@@ -68,13 +61,6 @@ public:
      * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
      */
     void setPathToTexture(std::string sPathToTextureRelativeRes);
-
-    /**
-     * Returns width and height in range [0.0; 1.0].
-     *
-     * @return Width and height.
-     */
-    glm::vec2 getSize() const { return size; }
 
     /**
      * Returns color to fill the UI node area.
@@ -123,9 +109,6 @@ private:
 
     /** Fill color. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
-
-    /** Width and height in range [0.0; 1.0]. */
-    glm::vec2 size = glm::vec2(0.2F, 0.2F); // NOLINT
 
     /** Empty if not used, otherwise path to the texture (relative the `res` directory) to load. */
     std::string sPathToTextureRelativeRes;
