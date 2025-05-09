@@ -87,6 +87,24 @@ public:
     void onNodeChangedDepth(UiNode* pTargetNode);
 
     /**
+     * Makes the specified UI node (tree) a modal UI node (tree) that takes all input to itself.
+     *
+     * @remark Replaces old modal node (tree).
+     * @remark Automatically becomes non-modal when a node gets despawned, becomes invisible or disables
+     * input.
+     *
+     * @param pNewModalNode `nullptr` to remove modal node, otherwise node to make modal.
+     */
+    void setModalNode(UiNode* pNewModalNode);
+
+    /**
+     * Sets node that will have focus to receive keyboard/gamepad input.
+     *
+     * @param pFocusedNode Node.
+     */
+    void setFocusedNode(UiNode* pFocusedNode);
+
+    /**
      * Called by UI nodes to notify about a UI node that receives input being spawned/despawned
      * or if a UI node enabled/disable input while spawned.
      *
@@ -128,6 +146,13 @@ public:
      */
     void onMouseScrollMove(int iOffset);
 
+    /**
+     * Tells if there is a modal UI node (tree) that should take all input instead of others.
+     *
+     * @return `true` if modal node (tree) exists.
+     */
+    bool hasModalUiNodeTree();
+
 private:
     /** Groups mutex-guarded data. */
     struct Data {
@@ -164,6 +189,9 @@ private:
 
         /** UI node that had mouse cursor floating over it last frame. */
         UiNode* pHoveredNodeLastFrame = nullptr;
+
+        /** Empty if no modal node (tree). Nodes that receive input from node (tree) that was made modal. */
+        std::unordered_set<UiNode*> modalInputReceivingNodes;
 
         /** Tells if check for @ref pHoveredNodeLastFrame was done this frame or not. */
         bool bWasHoveredNodeCheckedThisFrame = false;

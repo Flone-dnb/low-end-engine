@@ -206,6 +206,106 @@ void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
 #endif
 }
 
+void collectInputReceivingChildNodes(UiNode* pParent, std::unordered_set<UiNode*>& inputReceivingNodes) {
+    if (pParent->isReceivingInput()) {
+        inputReceivingNodes.insert(pParent);
+    }
+
+    const auto mtxChildNodes = pParent->getChildNodes();
+    std::scoped_lock guard(*mtxChildNodes.first);
+    for (const auto& pChildNode : mtxChildNodes.second) {
+        const auto pUiNode = dynamic_cast<UiNode*>(pChildNode);
+        if (pUiNode == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected a UI node");
+        }
+
+        collectInputReceivingChildNodes(pUiNode, inputReceivingNodes);
+    }
+}
+
+void UiManager::setModalNode(UiNode* pNewModalNode) {
+    std::scoped_lock guard(mtxData.first);
+
+    mtxData.second.modalInputReceivingNodes.clear();
+
+    if (pNewModalNode == nullptr) {
+        return;
+    }
+
+    // Collect all child nodes that receive input.
+    std::unordered_set<UiNode*> inputReceivingNodes;
+    collectInputReceivingChildNodes(pNewModalNode, inputReceivingNodes);
+
+    if (inputReceivingNodes.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "unable to make a modal node because the node or its child nodes don't receive input");
+    }
+
+    // Make sure there are all spawned and visible (i.e. stored in our arrays so that we will automatically
+    // clean modalitty on them in case they became invisible or despawn or etc.).
+    // Also make deepest node a focused one.
+    UiNode* pDeepestNode = nullptr;
+    size_t iNodeDepth = 0;
+    for (const auto& pNode : inputReceivingNodes) {
+        bool bFound = false;
+
+        if (pNode->iNodeDepth > iNodeDepth) {
+            iNodeDepth = pNode->iNodeDepth;
+            pDeepestNode = pNode;
+        }
+
+        for (const auto& layerNodes : mtxData.second.vSpawnedVisibleNodes) {
+            const auto it = layerNodes.receivingInputUiNodes.find(pNode);
+            if (it != layerNodes.receivingInputUiNodes.end()) {
+                bFound = true;
+                break;
+            }
+        }
+
+        if (!bFound) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format(
+                    "unable to find node \"{}\" to be spawned, visible and receiving input to make modal",
+                    pNode->getNodeName()));
+        }
+    }
+
+    if (pDeepestNode == nullptr) {
+        if (inputReceivingNodes.size() == 1) {
+            pDeepestNode = *inputReceivingNodes.begin();
+        } else {
+            Error::showErrorAndThrowException("unexpected case");
+        }
+    }
+
+    mtxData.second.modalInputReceivingNodes = std::move(inputReceivingNodes);
+    mtxData.second.pFocusedNode = pDeepestNode;
+}
+
+void UiManager::setFocusedNode(UiNode* pFocusedNode) {
+    std::scoped_lock guard(mtxData.first);
+
+    // Find in our arrays so that we will automatically clean focus state when becomes invisible or despawns.
+    bool bFound = false;
+
+    for (const auto& layerNodes : mtxData.second.vSpawnedVisibleNodes) {
+        const auto it = layerNodes.receivingInputUiNodes.find(pFocusedNode);
+        if (it != layerNodes.receivingInputUiNodes.end()) {
+            bFound = true;
+            break;
+        }
+    }
+
+    if (!bFound) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format(
+                "unable to find node \"{}\" to be spawned, visible and receiving input to make focused",
+                pFocusedNode->getNodeName()));
+    }
+
+    mtxData.second.pFocusedNode = pFocusedNode;
+}
+
 void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput) {
     std::scoped_lock guard(mtxData.first);
     auto& nodes =
@@ -246,6 +346,10 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
         if (mtxData.second.pHoveredNodeLastFrame == pNode) {
             mtxData.second.pHoveredNodeLastFrame = nullptr;
         }
+
+        if (!mtxData.second.modalInputReceivingNodes.empty()) {
+            mtxData.second.modalInputReceivingNodes.erase(pNode);
+        }
     }
 }
 
@@ -268,6 +372,31 @@ void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bo
     const glm::vec2 cursorPos = glm::vec2(
         static_cast<float>(iCursorX) / static_cast<float>(iWidth),
         1.0F - static_cast<float>(iCursorY) / static_cast<float>(iHeight)); // flip Y
+
+    if (!mtxData.second.modalInputReceivingNodes.empty()) {
+        for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
+            const auto leftBottomPos = pNode->getPosition();
+            const auto size = pNode->getSize();
+
+            if (leftBottomPos.y > cursorPos.y) {
+                continue;
+            }
+            if (leftBottomPos.x > cursorPos.x) {
+                continue;
+            }
+            if (leftBottomPos.y + size.y < cursorPos.y) {
+                continue;
+            }
+            if (leftBottomPos.x + size.x < cursorPos.x) {
+                continue;
+            }
+
+            pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
+            break;
+        }
+
+        return;
+    }
 
     // Check rendered input nodes in reverse order (from front layer to back layer).
     for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
@@ -311,10 +440,10 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
         static_cast<float>(iCursorX) / static_cast<float>(iWidth),
         1.0F - static_cast<float>(iCursorY) / static_cast<float>(iHeight)); // flip Y
 
-    // Check rendered input nodes in reverse order (from front layer to back layer).
     bool bFoundNode = false;
-    for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
-        for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
+
+    if (!mtxData.second.modalInputReceivingNodes.empty()) {
+        for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
             const auto leftBottomPos = pNode->getPosition();
             const auto size = pNode->getSize();
 
@@ -331,7 +460,6 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
                 continue;
             }
 
-            bFoundNode = true;
             pNode->bIsHoveredCurrFrame = true;
             mtxData.second.pHoveredNodeLastFrame = pNode;
 
@@ -342,9 +470,41 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
             // mouse move is called by game manager not us
             break;
         }
+    } else {
+        // Check rendered input nodes in reverse order (from front layer to back layer).
+        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+            for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
+                const auto leftBottomPos = pNode->getPosition();
+                const auto size = pNode->getSize();
 
-        if (bFoundNode) {
-            break;
+                if (leftBottomPos.y > cursorPos.y) {
+                    continue;
+                }
+                if (leftBottomPos.x > cursorPos.x) {
+                    continue;
+                }
+                if (leftBottomPos.y + size.y < cursorPos.y) {
+                    continue;
+                }
+                if (leftBottomPos.x + size.x < cursorPos.x) {
+                    continue;
+                }
+
+                bFoundNode = true;
+                pNode->bIsHoveredCurrFrame = true;
+                mtxData.second.pHoveredNodeLastFrame = pNode;
+
+                if (!pNode->bIsHoveredPrevFrame) {
+                    pNode->onMouseEntered();
+                }
+
+                // mouse move is called by game manager not us
+                break;
+            }
+
+            if (bFoundNode) {
+                break;
+            }
         }
     }
 
@@ -363,6 +523,12 @@ void UiManager::onMouseScrollMove(int iOffset) {
     }
 
     mtxData.second.pHoveredNodeLastFrame->onMouseScrollMoveWhileHovered(iOffset);
+}
+
+bool UiManager::hasModalUiNodeTree() {
+    std::scoped_lock guard(mtxData.first);
+
+    return !mtxData.second.modalInputReceivingNodes.empty();
 }
 
 UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
@@ -597,6 +763,10 @@ UiManager::~UiManager() {
     if (mtxData.second.pHoveredNodeLastFrame != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             "UI manager is being destroyed but hovered node pointer is still not `nullptr`");
+    }
+    if (!mtxData.second.modalInputReceivingNodes.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "UI manager is being destroyed but array of modal nodes is still not empty");
     }
 
     // Make sure all nodes removed.

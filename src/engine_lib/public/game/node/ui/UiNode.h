@@ -82,6 +82,24 @@ public:
     void setUiLayer(UiLayer layer);
 
     /**
+     * Makes this node and its child nodes a modal UI node that takes all input.
+     *
+     * @warning If used while not spawned or invisible an error will be shown.
+     *
+     * @remark Replaces old modal node (tree).
+     * @remark Automatically becomes non-modal when a node gets despawned, becomes invisible or disables
+     * input.
+     */
+    void setModal();
+
+    /**
+     * Sets node that will have focus to receive keyboard/gamepad input.
+     *
+     * @warning If used while not spawned or invisible an error will be shown.
+     */
+    void setFocused();
+
+    /**
      * Returns position on the screen in range [0.0; 1.0].
      *
      * @return Position.

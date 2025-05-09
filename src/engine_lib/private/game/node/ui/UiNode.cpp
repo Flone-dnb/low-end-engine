@@ -127,6 +127,32 @@ void UiNode::setUiLayer(UiLayer layer) {
     this->layer = layer;
 }
 
+void UiNode::setModal() {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called while spawned");
+    }
+    if (!bIsVisible) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called on visible nodes");
+    }
+    // don't check if receiving input, some child nodes can receive input instead of this one
+
+    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().setModalNode(this);
+}
+
+void UiNode::setFocused() {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called while spawned");
+    }
+    if (!bIsVisible) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called on visible nodes");
+    }
+    if (!isReceivingInput()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called on nodes that receive input");
+    }
+
+    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().setFocusedNode(this);
+}
+
 size_t UiNode::getNodeDepthWhileSpawned() {
     if (!isSpawned()) [[unlikely]] {
         Error::showErrorAndThrowException("this function can only be called while spawned");

@@ -250,39 +250,47 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 }
 
 void GameManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    // Trigger raw (no events) input processing function.
-    pGameInstance->onKeyboardInput(key, modifiers, bIsPressedDown);
+    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+        // Trigger raw (no events) input processing function.
+        pGameInstance->onKeyboardInput(key, modifiers, bIsPressedDown);
 
-    // Trigger input events.
-    triggerActionEvents(key, modifiers, bIsPressedDown);
-    triggerAxisEvents(key, modifiers, bIsPressedDown);
+        // Trigger input events.
+        triggerActionEvents(key, modifiers, bIsPressedDown);
+        triggerAxisEvents(key, modifiers, bIsPressedDown);
+    }
 
     // Notify UI.
     pRenderer->getUiManager().onKeyboardInput(key, modifiers, bIsPressedDown);
 }
 
 void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
-    // Trigger raw (no events) input processing function.
-    pGameInstance->onGamepadInput(button, bIsPressedDown);
+    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+        // Trigger raw (no events) input processing function.
+        pGameInstance->onGamepadInput(button, bIsPressedDown);
 
-    // Trigger action events.
-    triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
+        // Trigger action events.
+        triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
+    }
 }
 
 void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {
-    // Trigger raw (no events) input processing function.
-    pGameInstance->onGamepadAxisMoved(axis, position);
+    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+        // Trigger raw (no events) input processing function.
+        pGameInstance->onGamepadAxisMoved(axis, position);
 
-    // Trigger axis events.
-    triggerAxisEvents(axis, position);
+        // Trigger axis events.
+        triggerAxisEvents(axis, position);
+    }
 }
 
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    // Trigger raw (no events) input processing function.
-    pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
+    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+        // Trigger raw (no events) input processing function.
+        pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
 
-    // Trigger input events.
-    triggerActionEvents(button, modifiers, bIsPressedDown);
+        // Trigger input events.
+        triggerActionEvents(button, modifiers, bIsPressedDown);
+    }
 
     if (getWindow()->isCursorVisible()) {
         // Notify UI.
@@ -291,16 +299,18 @@ void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, 
 }
 
 void GameManager::onMouseMove(int iXOffset, int iYOffset) {
-    // Trigger game instance logic.
-    pGameInstance->onMouseMove(iXOffset, iYOffset);
+    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+        // Trigger game instance logic.
+        pGameInstance->onMouseMove(iXOffset, iYOffset);
 
-    // Call on nodes that receive input.
-    std::scoped_lock guard(mtxWorldData.first);
-    if (mtxWorldData.second.pWorld != nullptr) {
-        const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
-        const auto pNodes = nodesGuard.getNodes();
-        for (const auto& pNode : *pNodes) {
-            pNode->onMouseMove(iXOffset, iYOffset);
+        // Call on nodes that receive input.
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.pWorld != nullptr) {
+            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+            const auto pNodes = nodesGuard.getNodes();
+            for (const auto& pNode : *pNodes) {
+                pNode->onMouseMove(iXOffset, iYOffset);
+            }
         }
     }
 
@@ -311,16 +321,18 @@ void GameManager::onMouseMove(int iXOffset, int iYOffset) {
 }
 
 void GameManager::onMouseScrollMove(int iOffset) {
-    // Trigger game instance logic.
-    pGameInstance->onMouseScrollMove(iOffset);
+    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+        // Trigger game instance logic.
+        pGameInstance->onMouseScrollMove(iOffset);
 
-    // Call on nodes that receive input.
-    std::scoped_lock guard(mtxWorldData.first);
-    if (mtxWorldData.second.pWorld != nullptr) {
-        const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
-        const auto pNodes = nodesGuard.getNodes();
-        for (const auto& pNode : *pNodes) {
-            pNode->onMouseScrollMove(iOffset);
+        // Call on nodes that receive input.
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.pWorld != nullptr) {
+            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+            const auto pNodes = nodesGuard.getNodes();
+            for (const auto& pNode : *pNodes) {
+                pNode->onMouseScrollMove(iOffset);
+            }
         }
     }
 
