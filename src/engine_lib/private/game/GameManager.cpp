@@ -7,6 +7,8 @@
 #include "game/camera/CameraManager.h"
 #include "game/node/Node.h"
 #include "misc/Profiler.hpp"
+#include "render/UiManager.h"
+#include "game/Window.h"
 
 // External.
 #if defined(ENGINE_PROFILER_ENABLED)
@@ -254,6 +256,9 @@ void GameManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifier
     // Trigger input events.
     triggerActionEvents(key, modifiers, bIsPressedDown);
     triggerAxisEvents(key, modifiers, bIsPressedDown);
+
+    // Notify UI.
+    pRenderer->getUiManager().onKeyboardInput(key, modifiers, bIsPressedDown);
 }
 
 void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
@@ -278,6 +283,11 @@ void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, 
 
     // Trigger input events.
     triggerActionEvents(button, modifiers, bIsPressedDown);
+
+    if (getWindow()->isCursorVisible()) {
+        // Notify UI.
+        pRenderer->getUiManager().onMouseInput(button, modifiers, bIsPressedDown);
+    }
 }
 
 void GameManager::onMouseMove(int iXOffset, int iYOffset) {
@@ -293,6 +303,11 @@ void GameManager::onMouseMove(int iXOffset, int iYOffset) {
             pNode->onMouseMove(iXOffset, iYOffset);
         }
     }
+
+    if (getWindow()->isCursorVisible()) {
+        // Notify UI.
+        pRenderer->getUiManager().onMouseMove(iXOffset, iYOffset);
+    }
 }
 
 void GameManager::onMouseScrollMove(int iOffset) {
@@ -307,6 +322,11 @@ void GameManager::onMouseScrollMove(int iOffset) {
         for (const auto& pNode : *pNodes) {
             pNode->onMouseScrollMove(iOffset);
         }
+    }
+
+    if (getWindow()->isCursorVisible()) {
+        // Notify UI.
+        pRenderer->getUiManager().onMouseScrollMove(iOffset);
     }
 }
 

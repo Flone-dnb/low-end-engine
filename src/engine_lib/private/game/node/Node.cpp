@@ -549,6 +549,8 @@ void Node::setIsReceivingInput(bool bEnable) {
 
     // Notify the world.
     pWorldWeSpawnedIn->onSpawnedNodeChangedIsReceivingInput(this);
+
+    onChangedReceivingInputWhileSpawned(bEnable);
 }
 
 void Node::setTickGroup(TickGroup tickGroup) {

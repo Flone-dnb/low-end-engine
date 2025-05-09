@@ -53,7 +53,13 @@ TypeReflectionInfo RectUiNode::getReflectionInfo() {
 RectUiNode::RectUiNode() : UiNode("Rect UI Node") {}
 RectUiNode::RectUiNode(const std::string& sNodeName) : UiNode(sNodeName) {}
 
-void RectUiNode::setColor(const glm::vec4& color) { this->color = color; }
+void RectUiNode::setColor(const glm::vec4& color) {
+    this->color = color;
+
+    if (isSpawned()) {
+        onColorChangedWhileSpawned();
+    }
+}
 
 void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
     // Normalize slash.

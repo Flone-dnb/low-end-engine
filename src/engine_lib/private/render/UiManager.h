@@ -8,6 +8,8 @@
 // Custom.
 #include "game/geometry/ScreenQuadGeometry.h"
 #include "render/UiLayer.hpp"
+#include "input/KeyboardButton.hpp"
+#include "input/MouseButton.hpp"
 
 // External.
 #include "math/GLMath.hpp"
@@ -84,6 +86,48 @@ public:
      */
     void onNodeChangedDepth(UiNode* pTargetNode);
 
+    /**
+     * Called by UI nodes to notify about a UI node that receives input being spawned/despawned
+     * or if a UI node enabled/disable input while spawned.
+     *
+     * @param pNode         UI node.
+     * @param bEnabledInput `true` if the node enabled input receiving, `false` otherwise.
+     */
+    void onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput);
+
+    /**
+     * Called by game manager when window received keyboard input.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Called by game manager when window received mouse input.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the button down event occurred or button up.
+     */
+    void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Called by game manager when window received mouse movement.
+     *
+     * @param iXOffset Mouse X movement delta in pixels.
+     * @param iYOffset Mouse Y movement delta in pixels.
+     */
+    void onMouseMove(int iXOffset, int iYOffset);
+
+    /**
+     * Called when the window received mouse scroll movement.
+     *
+     * @param iOffset Movement offset. Positive is away from the user, negative otherwise.
+     */
+    void onMouseScrollMove(int iOffset);
+
 private:
     /** Groups mutex-guarded data. */
     struct Data {
@@ -95,13 +139,34 @@ private:
             /** Node depth - rect nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<RectUiNode*>>> vRectNodes;
 
+            /** UI nodes that receive input. */
+            std::unordered_set<UiNode*> receivingInputUiNodes;
+
             /**
-             * Returns total number of node arrays.
-             *
-             * @return Node array count.
+             * Nodes from @ref receivingInputUiNodes that were rendered (not outside of the screen bounds)
+             * last frame.
              */
-            size_t getTotalNodeArray() const { return vTextNodes.size() + vRectNodes.size(); }
+            std::vector<UiNode*> receivingInputUiNodesRenderedLastFrame;
+
+            /**
+             * Returns total number of nodes considered.
+             *
+             * @return Node count.
+             */
+            size_t getTotalNodeCount() const {
+                return vTextNodes.size() + vRectNodes.size() + receivingInputUiNodes.size() +
+                       receivingInputUiNodesRenderedLastFrame.size();
+            }
         };
+
+        /** UI node that currently has the focus. */
+        UiNode* pFocusedNode = nullptr;
+
+        /** UI node that had mouse cursor floating over it last frame. */
+        UiNode* pHoveredNodeLastFrame = nullptr;
+
+        /** Tells if check for @ref pHoveredNodeLastFrame was done this frame or not. */
+        bool bWasHoveredNodeCheckedThisFrame = false;
 
         /**
          * All spawned and visible UI nodes.

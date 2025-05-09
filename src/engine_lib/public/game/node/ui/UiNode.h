@@ -3,9 +3,13 @@
 // Custom.
 #include "game/node/Node.h"
 #include "render/UiLayer.hpp"
+#include "input/MouseButton.hpp"
 
 /** Base class for UI nodes. Provides functionality for positioning on the screen. */
 class UiNode : public Node {
+    // Manager calls input functions.
+    friend class UiManager;
+
 public:
     UiNode();
 
@@ -125,6 +129,60 @@ public:
 
 protected:
     /**
+     * Called when the window receives keyboard input.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * @remark This function will only be called if this UI node has focus.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    virtual void
+    onKeyboardInputOnUiNode(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {};
+
+    /**
+     * Called when the window receives mouse input while floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * @remark This function will only be called if the user clicked on this UI node.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the button down event occurred or button up.
+     */
+    virtual void onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
+    };
+
+    /**
+     * Called when the window receives mouse scroll movement while floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iOffset Movement offset.
+     */
+    virtual void onMouseScrollMoveWhileHovered(int iOffset) {}
+
+    /**
+     * Called when the mouse cursor started floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     */
+    virtual void onMouseEntered() {}
+
+    /**
+     * Called when the mouse cursor stopped floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     */
+    virtual void onMouseLeft() {}
+
+    /**
      * Called when this node was not spawned previously and it was either attached to a parent node
      * that is spawned or set as world's root node to execute custom spawn logic.
      *
@@ -135,6 +193,25 @@ protected:
      * (before executing your logic) to execute parent's logic.
      */
     virtual void onSpawning() override;
+
+    /**
+     * Called before this node is despawned from the world to execute custom despawn logic.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This node will be marked as despawned after this function is called.
+     * @remark This function is called after all child nodes were despawned.
+     * @remark @ref getSpawnDespawnMutex is locked while this function is called.
+     */
+    virtual void onDespawning() override;
+
+    /**
+     * Called after the node changed its "receiving input" state (while spawned).
+     *
+     * @param bEnabledNow `true` if node enabled input, `false` if disabled.
+     */
+    virtual void onChangedReceivingInputWhileSpawned(bool bEnabledNow) override;
 
     /**
      * Called after this node or one of the node's parents (in the parent hierarchy)
@@ -193,4 +270,18 @@ private:
 
     /** Rendered or not. */
     bool bIsVisible = true;
+
+    /**
+     * If receiving input is enabled, `true` if the mouse cursor is currently floating over this UI node.
+     *
+     * @remark UI manager modifies this value and calls @ref onMouseEntered @ref onMouseLeft if needed.
+     */
+    bool bIsHoveredCurrFrame = false;
+
+    /**
+     * @ref bIsHoveredCurrFrame on previous frame.
+     *
+     * @remark UI manager modifies this value and calls @ref onMouseEntered @ref onMouseLeft if needed.
+     */
+    bool bIsHoveredPrevFrame = false;
 };

@@ -324,6 +324,15 @@ public:
     bool isReceivingInput();
 
     /**
+     * @ref isReceivingInput but without locking the mutex. Should be slightly faster than the original
+     * version of the function if used multiple times in a single frame but you need to guarantee that there
+     * won't be threading problems.
+     *
+     * @return Whether this node receives input or not.
+     */
+    bool isReceivingInputUnsafe() const { return mtxIsReceivingInput.second; }
+
+    /**
      * Returns whether this node is spawned in the world or not.
      *
      * @return Whether this node is spawned in the world or not.
@@ -490,6 +499,13 @@ protected:
      * @param iIndexTo   Moved to.
      */
     virtual void onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIndexTo) {}
+
+    /**
+     * Called after the node changed its "receiving input" state (while spawned).
+     *
+     * @param bEnabledNow `true` if node enabled input, `false` if disabled.
+     */
+    virtual void onChangedReceivingInputWhileSpawned(bool bEnabledNow) {}
 
     /**
      * Called when the window received mouse movement.

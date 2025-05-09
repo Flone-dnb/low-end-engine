@@ -139,6 +139,27 @@ void UiNode::onSpawning() {
     Node::onSpawning();
 
     recalculateNodeDepthWhileSpawned();
+
+    if (isReceivingInput()) {
+        getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onSpawnedUiNodeInputStateChange(
+            this, true);
+    }
+}
+
+void UiNode::onDespawning() {
+    Node::onDespawning();
+
+    if (isReceivingInput()) {
+        getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onSpawnedUiNodeInputStateChange(
+            this, false);
+    }
+}
+
+void UiNode::onChangedReceivingInputWhileSpawned(bool bEnabledNow) {
+    Node::onChangedReceivingInputWhileSpawned(bEnabledNow);
+
+    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onSpawnedUiNodeInputStateChange(
+        this, bEnabledNow);
 }
 
 void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {

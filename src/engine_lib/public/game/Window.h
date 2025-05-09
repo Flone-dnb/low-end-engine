@@ -175,7 +175,7 @@ private:
     std::pair<unsigned int, unsigned int> windowSize;
 
     /** Current state of @ref setCursorVisibility. */
-    bool bIsCursorVisible = false;
+    bool bIsCursorVisible = true;
 
     /** Used in the window message loop. */
     bool bQuitRequested = false;
