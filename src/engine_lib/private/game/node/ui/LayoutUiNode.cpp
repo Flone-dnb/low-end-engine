@@ -57,7 +57,7 @@ TypeReflectionInfo LayoutUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-LayoutUiNode::LayoutUiNode() : UiNode("Layout UI Node") {}
+LayoutUiNode::LayoutUiNode() : LayoutUiNode("Layout UI Node") {}
 LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     mtxLayoutParent.second = nullptr;
 }

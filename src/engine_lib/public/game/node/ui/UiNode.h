@@ -153,12 +153,19 @@ protected:
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if this UI node has focus.
      *
-     * @param key            Keyboard key.
+     * @param button         Keyboard button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
     virtual void
-    onKeyboardInputOnUiNode(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {};
+    onKeyboardInputWhileFocused(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
+
+    /**
+     * Called by game manager when window received an event about text character being inputted.
+     *
+     * @param sTextCharacter Character that was typed.
+     */
+    virtual void onKeyboardInputTextCharacterWhileFocused(const std::string& sTextCharacter) {}
 
     /**
      * Called when the window receives mouse input while floating over this UI node.
@@ -171,8 +178,7 @@ protected:
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
      */
-    virtual void onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    };
+    virtual void onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
 
     /**
      * Called when the window receives mouse scroll movement while floating over this UI node.
@@ -199,6 +205,12 @@ protected:
      * @remark This function will only be called while this node is spawned.
      */
     virtual void onMouseLeft() {}
+
+    /** Called after the node gained keyboard/gamepad focus. */
+    virtual void onGainedFocus() {}
+
+    /** Called after the node lost keyboard/gamepad focus. */
+    virtual void onLostFocus() {}
 
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node

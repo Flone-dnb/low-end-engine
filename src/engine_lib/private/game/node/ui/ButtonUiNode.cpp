@@ -40,7 +40,7 @@ TypeReflectionInfo ButtonUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-ButtonUiNode::ButtonUiNode() : RectUiNode("Button UI Node") {}
+ButtonUiNode::ButtonUiNode() : ButtonUiNode("Button UI Node") {}
 ButtonUiNode::ButtonUiNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setColor(glm::vec4(1.0F, 0.26F, 0.0F, 1.0F)); // NOLINT
     setSize(glm::vec2(0.15F, 0.075F));            // NOLINT

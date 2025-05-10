@@ -71,19 +71,23 @@ bool Window::processWindowEvent(const SDL_Event& event) {
         break;
     }
     case (SDL_KEYDOWN): {
-        if (event.key.repeat == 0) {
-            onKeyboardInput(
-                static_cast<KeyboardButton>(event.key.keysym.sym),
-                KeyboardModifiers(event.key.keysym.mod),
-                true);
-        }
+        onKeyboardInput(
+            static_cast<KeyboardButton>(event.key.keysym.sym),
+            KeyboardModifiers(event.key.keysym.mod),
+            true,
+            event.key.repeat != 0);
         break;
     }
     case (SDL_KEYUP): {
         onKeyboardInput(
             static_cast<KeyboardButton>(event.key.keysym.sym),
             KeyboardModifiers(event.key.keysym.mod),
-            false);
+            false,
+            event.key.repeat != 0);
+        break;
+    }
+    case (SDL_TEXTINPUT): {
+        onKeyboardInputTextCharacter(event.text.text);
         break;
     }
     case (SDL_MOUSEWHEEL): {
@@ -176,8 +180,13 @@ unsigned int Window::getScreenRefreshRate() {
     return mode.refresh_rate;
 }
 
-void Window::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) const {
-    pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown);
+void Window::onKeyboardInput(
+    KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) const {
+    pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown, bIsRepeat);
+}
+
+void Window::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+    pGameManager->onKeyboardInputTextCharacter(sTextCharacter);
 }
 
 void Window::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const {

@@ -50,7 +50,7 @@ TypeReflectionInfo RectUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-RectUiNode::RectUiNode() : UiNode("Rect UI Node") {}
+RectUiNode::RectUiNode() : RectUiNode("Rect UI Node") {}
 RectUiNode::RectUiNode(const std::string& sNodeName) : UiNode(sNodeName) {}
 
 void RectUiNode::setColor(const glm::vec4& color) {

@@ -249,8 +249,18 @@ private:
      * @param key            Keyboard key.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
+     * @param bIsRepeat      Whether this event if a "repeat button" event (used while holding the button
+     * down).
      */
-    void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
+    void
+    onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat);
+
+    /**
+     * Called when the window (that owns this object) receives an event about text character being inputted.
+     *
+     * @param sTextCharacter Character that was typed.
+     */
+    void onKeyboardInputTextCharacter(const std::string& sTextCharacter);
 
     /**
      * Called when the game receives gamepad input.

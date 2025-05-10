@@ -358,6 +358,8 @@ void Renderer::calculateFrameStatistics() {
 Renderer::~Renderer() {
     pFullscreenQuad = nullptr;
     pGammaCorrectionShaderProgram = nullptr;
+    pUiManager =
+        nullptr; // UI manager uses some shaders programs while alive so destroy it before shader manager
 
     for (auto& fence : frameSync.vFences) {
         glDeleteSync(fence);

@@ -462,8 +462,8 @@ TEST_CASE("input event callbacks in Node are triggered") {
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate input.
-            getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true);
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true, false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
 
             REQUIRE(pMyNode->bAction1Triggered);
             REQUIRE(pMyNode->bAxis1Triggered);
@@ -610,8 +610,8 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
 
             if (iTickCount == 1) {
                 // Simulate input.
-                getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true);
-                getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+                getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true, false);
+                getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
 
                 REQUIRE(pMyNode->bAction1Triggered);
                 REQUIRE(pMyNode->bAxis1Triggered);
@@ -631,8 +631,8 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
                 REQUIRE(Node::getAliveNodeCount() == 1);
                 REQUIRE(getReceivingInputNodeCount() == 0);
 
-                getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true);
-                getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+                getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true, false);
+                getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
                 REQUIRE(getReceivingInputNodeCount() == 0);
             } else if (iTickCount == 3) {
                 getWindow()->close();
@@ -1036,7 +1036,7 @@ TEST_CASE("disable receiving input while processing input") {
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             if (!bInitialTriggerFinished) {
                 // Simulate input.
-                getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+                getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
                 REQUIRE(pMyNode->iAction1TriggerCount == 1);
 
                 // node should disable its input processing now using a deferred task
@@ -1046,7 +1046,7 @@ TEST_CASE("disable receiving input while processing input") {
             }
 
             // Simulate input again.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 1);
 
             getWindow()->close();
@@ -1120,13 +1120,13 @@ TEST_CASE("disable receiving input and despawn") {
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate input.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
             REQUIRE(iAction1TriggerCount == 1);
 
             pMyNode->test();
 
             // Simulate input again.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
             REQUIRE(iAction1TriggerCount == 1);
 
             getWindow()->close();
@@ -1198,13 +1198,13 @@ TEST_CASE("enable receiving input and despawn") {
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate input.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
             REQUIRE(iAction1TriggerCount == 0);
 
             pMyNode->test();
 
             // Simulate input again.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
             REQUIRE(iAction1TriggerCount == 0);
 
             getWindow()->close();
@@ -1276,13 +1276,13 @@ TEST_CASE("enable receiving input while spawned") {
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate input.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 0);
 
             pMyNode->test();
 
             // Simulate input again.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 1);
 
             getWindow()->close();
@@ -1355,13 +1355,13 @@ TEST_CASE("quickly enable receiving input and disable while spawned") {
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate input.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 0);
 
             pMyNode->test();
 
             // Simulate input again.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 0);
 
             getWindow()->close();
@@ -1435,13 +1435,13 @@ TEST_CASE("quickly disable receiving input and enable while spawned") {
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate input.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 1);
 
             pMyNode->test();
 
             // Simulate input again.
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
             REQUIRE(pMyNode->iAction1TriggerCount == 2);
 
             getWindow()->close();
@@ -1528,21 +1528,21 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
 
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
             // Simulate "pressed" input.
-            getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true);
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true, false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
 
             REQUIRE(pMyNode->iAction1TriggerCount == 1);
             REQUIRE(pMyNode->iAxis1TriggerCount == 1);
 
             // Simulate the same "pressed" input again.
-            getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true);
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true);
+            getWindow()->onKeyboardInput(KeyboardButton::A, KeyboardModifiers(0), true, false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), true, false);
 
             // Input callbacks should not be triggered since the input is the same as the last one.
             REQUIRE(pMyNode->iAction1TriggerCount == 1);
             REQUIRE(pMyNode->iAxis1TriggerCount == 2); // axis events are "floating" and can't compare states
 
-            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false);
+            getWindow()->onKeyboardInput(KeyboardButton::W, KeyboardModifiers(0), false, false);
 
             // Input differs from the last one.
             REQUIRE(pMyNode->iAction1TriggerCount == 2);

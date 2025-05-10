@@ -249,8 +249,9 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     }
 }
 
-void GameManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
+void GameManager::onKeyboardInput(
+    KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) {
+    if (!bIsRepeat && !pRenderer->getUiManager().hasModalUiNodeTree()) {
         // Trigger raw (no events) input processing function.
         pGameInstance->onKeyboardInput(key, modifiers, bIsPressedDown);
 
@@ -261,6 +262,10 @@ void GameManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifier
 
     // Notify UI.
     pRenderer->getUiManager().onKeyboardInput(key, modifiers, bIsPressedDown);
+}
+
+void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+    pRenderer->getUiManager().onKeyboardInputTextCharacter(sTextCharacter);
 }
 
 void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {

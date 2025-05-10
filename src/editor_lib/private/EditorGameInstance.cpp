@@ -226,8 +226,8 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
 
     // Stats.
     pStatsTextNode = getWorldRootNode()->addChildNode(createEditorNode<TextUiNode>());
-    pStatsTextNode->setSize(glm::vec2(0.5F, 0.03F));                                           // NOLINT
-    pStatsTextNode->setPosition(glm::vec2(0.01F, 1.0F - 0.01F - pStatsTextNode->getSize().y)); // NOLINT
+    pStatsTextNode->setSize(glm::vec2(1.0F, 1.0F));
+    pStatsTextNode->setPosition(glm::vec2(0.0F, 0.0F));
 
     // Stuff for testing.
     {

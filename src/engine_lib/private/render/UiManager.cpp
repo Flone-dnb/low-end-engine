@@ -6,6 +6,7 @@
 
 // Custom.
 #include "game/node/ui/TextUiNode.h"
+#include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
@@ -105,14 +106,6 @@ void UiManager::onNodeSpawning(RectUiNode* pNode) {
     }
 
     ADD_NODE_TO_RENDERING(RectUiNode);
-
-    if (mtxData.second.pRectShaderProgram == nullptr) {
-        // Load shader.
-        mtxData.second.pRectShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-            "engine/shaders/ui/UiScreenQuad.vert.glsl",
-            "engine/shaders/ui/RectUiNode.frag.glsl",
-            ShaderProgramUsage::OTHER);
-    }
 }
 
 void UiManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
@@ -166,9 +159,7 @@ void UiManager::onNodeDespawning(RectUiNode* pNode) {
 
     REMOVE_NODE_FROM_RENDERING(RectUiNode);
 
-    if (vNodesByDepth.empty()) {
-        mtxData.second.pRectShaderProgram = nullptr;
-    }
+    // don't unload rect shader program because it's also used for drawing cursors
 }
 
 void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
@@ -279,7 +270,7 @@ void UiManager::setModalNode(UiNode* pNewModalNode) {
     }
 
     mtxData.second.modalInputReceivingNodes = std::move(inputReceivingNodes);
-    mtxData.second.pFocusedNode = pDeepestNode;
+    changeFocusedNode(pDeepestNode);
 }
 
 void UiManager::setFocusedNode(UiNode* pFocusedNode) {
@@ -303,7 +294,7 @@ void UiManager::setFocusedNode(UiNode* pFocusedNode) {
                 pFocusedNode->getNodeName()));
     }
 
-    mtxData.second.pFocusedNode = pFocusedNode;
+    changeFocusedNode(pFocusedNode);
 }
 
 void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput) {
@@ -341,7 +332,7 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
         }
 
         if (mtxData.second.pFocusedNode == pNode) {
-            mtxData.second.pFocusedNode = nullptr;
+            changeFocusedNode(nullptr);
         }
         if (mtxData.second.pHoveredNodeLastFrame == pNode) {
             mtxData.second.pHoveredNodeLastFrame = nullptr;
@@ -360,7 +351,17 @@ void UiManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers,
         return;
     }
 
-    mtxData.second.pFocusedNode->onKeyboardInputOnUiNode(key, modifiers, bIsPressedDown);
+    mtxData.second.pFocusedNode->onKeyboardInputWhileFocused(key, modifiers, bIsPressedDown);
+}
+
+void UiManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+    std::scoped_lock guard(mtxData.first);
+
+    if (mtxData.second.pFocusedNode == nullptr) {
+        return;
+    }
+
+    mtxData.second.pFocusedNode->onKeyboardInputTextCharacterWhileFocused(sTextCharacter);
 }
 
 void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
@@ -391,6 +392,7 @@ void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bo
                 continue;
             }
 
+            changeFocusedNode(pNode);
             pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
             break;
         }
@@ -420,6 +422,7 @@ void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bo
             }
 
             bFoundNode = true;
+            changeFocusedNode(pNode);
             pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
             break;
         }
@@ -536,6 +539,12 @@ UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
 
     mtxData.second.pScreenQuadGeometry = GpuResourceManager::createQuad(true);
+
+    // Load shader.
+    mtxData.second.pRectAndCursorShaderProgram = pRenderer->getShaderManager().getShaderProgram(
+        "engine/shaders/ui/UiScreenQuad.vert.glsl",
+        "engine/shaders/ui/RectUiNode.frag.glsl",
+        ShaderProgramUsage::OTHER);
 }
 
 void UiManager::drawUi(unsigned int iDrawFramebufferId) {
@@ -579,7 +588,7 @@ void UiManager::drawRectNodes(size_t iLayer) {
         const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
 
         // Set shader program.
-        auto& pShaderProgram = mtxData.second.pRectShaderProgram;
+        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
         if (pShaderProgram == nullptr) [[unlikely]] {
             Error::showErrorAndThrowException("expected the shader to be loaded at this point");
         }
@@ -653,6 +662,14 @@ void UiManager::drawTextNodes(size_t iLayer) {
     if (vNodesByDepth.empty()) {
         return;
     }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    // Prepare a placeholder glyph for unknown glyphs.
+    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find('?');
+    if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
+        Error::showErrorAndThrowException("can't find a glyph for `?`");
+    }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -671,28 +688,76 @@ void UiManager::drawTextNodes(size_t iLayer) {
         pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
         glActiveTexture(GL_TEXTURE0); // glyph's bitmap
 
+        struct CursorDrawInfo {
+            glm::vec2 screenPos = glm::vec2(0.0F, 0.0F);
+            float height = 0.0F;
+        };
+
+        std::vector<CursorDrawInfo> vCursorScreenPosToDraw;
+
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
             for (const auto& pTextNode : nodes) {
                 // Prepare some variables.
-                const auto textRelativePos = pTextNode->getPosition();
+                const auto sText = pTextNode->getText();
+                const auto leftBottomTextPos = pTextNode->getPosition();
+                const auto screenMaxXForWordWrap =
+                    (leftBottomTextPos.x + pTextNode->getSize().x) * iWindowWidth;
 
-                float screenX = textRelativePos.x * iWindowWidth;
-                float screenY = textRelativePos.y * iWindowHeight;
-                const auto scale = pTextNode->getSize().y / FontManager::getFontHeightToLoad();
+                float screenX = leftBottomTextPos.x * iWindowWidth;
+                float screenY = (1.0F - leftBottomTextPos.y) * iWindowHeight;
+                const auto scale = pTextNode->getTextHeight() / FontManager::getFontHeightToLoad();
 
                 const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
                 const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
 
+                // Check cursor.
+                std::optional<size_t> optionalCursorOffset;
+                if (auto pTextEdit = dynamic_cast<TextEditUiNode*>(pTextNode)) {
+                    if (pTextEdit->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                               // (it will wait on our mutex)
+                        vInputNodesRendered.push_back(pTextNode);
+                    }
+                    optionalCursorOffset = pTextEdit->optionalCursorOffset;
+                }
+
                 // Set color.
                 pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
 
+                // Switch to the first row of text.
+                screenY -= textHeightInPixels;
+
                 // Render each character.
-                for (const auto& character : pTextNode->getText()) {
+                for (size_t iCharIndex = 0; iCharIndex < sText.size(); iCharIndex++) {
+                    const char& character = sText[iCharIndex];
+
                     // Handle new line.
-                    if (character == '\n') {
+                    if (character == '\n' && pTextNode->getHandleNewLineChars()) {
+                        if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
+                            vCursorScreenPosToDraw.push_back(
+                                CursorDrawInfo{
+                                    .screenPos = glm::vec2(screenX, screenY),
+                                    .height = FontManager::getFontHeightToLoad() * scale});
+                        }
+
+                        // Switch to a new line.
                         screenY -= textHeightInPixels + lineSpacingInPixels;
-                        screenX = textRelativePos.x * iWindowWidth;
-                        continue;
+                        screenX = leftBottomTextPos.x * iWindowWidth;
+                        continue; // don't render \n
+                    }
+
+                    // Handle word wrap.
+                    // TODO: do per-character wrap for now, rework later
+                    if (screenX >= screenMaxXForWordWrap && pTextNode->getIsWordWrapEnabled()) {
+                        // Switch to a new line.
+                        screenY -= textHeightInPixels + lineSpacingInPixels;
+                        screenX = leftBottomTextPos.x * iWindowWidth;
+                    }
+
+                    if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
+                        vCursorScreenPosToDraw.push_back(
+                            CursorDrawInfo{
+                                .screenPos = glm::vec2(screenX, screenY),
+                                .height = FontManager::getFontHeightToLoad() * scale});
                     }
 
                     // Get glyph.
@@ -700,14 +765,7 @@ void UiManager::drawTextNodes(size_t iLayer) {
                     if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
                         // No glyph found for this character, use ? instead.
                         // DON'T log a warning - you will slow everything down due to log flushing.
-                        charIt = mtxLoadedGlyphs.second.find('?');
-                        if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-                            Error::showErrorAndThrowException(
-                                std::format(
-                                    "unable to find loaded glyph to render the character \"{}\" and also "
-                                    "can't find a glyph for `?` to render it instead",
-                                    character));
-                        }
+                        charIt = placeHolderGlythIt;
                     }
                     const auto& glyph = charIt->second;
 
@@ -717,33 +775,85 @@ void UiManager::drawTextNodes(size_t iLayer) {
                     float width = static_cast<float>(glyph.size.x) * scale;
                     float height = static_cast<float>(glyph.size.y) * scale;
 
-                    // Update VBO.
-                    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                        glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
-                        glm::vec4(xpos + width, ypos, 1.0F, 1.0F),
-                        glm::vec4(xpos, ypos, 0.0F, 1.0F),
+                    // Space character has 0 width so don't submit any rendering.
+                    if (glyph.size.x != 0) {
+                        // Update VBO.
+                        const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+                            glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
+                            glm::vec4(xpos + width, ypos, 1.0F, 1.0F),
+                            glm::vec4(xpos, ypos, 0.0F, 1.0F),
 
-                        glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
-                        glm::vec4(xpos + width, ypos + height, 1.0F, 0.0F),
-                        glm::vec4(xpos + width, ypos, 1.0F, 1.0F)};
+                            glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
+                            glm::vec4(xpos + width, ypos + height, 1.0F, 0.0F),
+                            glm::vec4(xpos + width, ypos, 1.0F, 1.0F)};
 
-                    glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
+                        glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
 
-                    // Copy new vertex data to VBO.
-                    glBindBuffer(
-                        GL_ARRAY_BUFFER,
-                        mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+                        // Copy new vertex data to VBO.
+                        glBindBuffer(
+                            GL_ARRAY_BUFFER,
+                            mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+                        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+                        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-                    // Render quad.
-                    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                        // Render quad.
+                        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                    }
 
                     // Advance current pos to the next glyph (note that advance is number of 1/64 pixels).
                     screenX +=
                         (glyph.advance >> 6) * // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
                         scale;
                 }
+
+                if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size()) {
+                    vCursorScreenPosToDraw.push_back(
+                        CursorDrawInfo{
+                            .screenPos = glm::vec2(screenX, screenY),
+                            .height = FontManager::getFontHeightToLoad() * scale});
+                }
+            }
+        }
+
+        if (!vCursorScreenPosToDraw.empty()) {
+            // Draw cursors.
+
+            // Set shader program.
+            auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+            if (pShaderProgram == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+            }
+            glUseProgram(pShaderProgram->getShaderProgramId());
+
+            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+            // Set shader parameters.
+            pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+            pShaderProgram->setVector4ToShader("color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+            for (const auto& cursorInfo : vCursorScreenPosToDraw) {
+                const auto screenPos = cursorInfo.screenPos;
+                const float cursorWidth = 2.0F; // NOLINT
+                const float cursorHeight = cursorInfo.height * iWindowHeight;
+
+                const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+                    glm::vec4(screenPos.x, screenPos.y + cursorHeight, 0.0F, 0.0F),
+                    glm::vec4(screenPos.x + cursorWidth, screenPos.y, 1.0F, 1.0F),
+                    glm::vec4(screenPos.x, screenPos.y, 0.0F, 1.0F),
+
+                    glm::vec4(screenPos.x, screenPos.y + cursorHeight, 0.0F, 0.0F),
+                    glm::vec4(screenPos.x + cursorWidth, screenPos.y + cursorHeight, 1.0F, 0.0F),
+                    glm::vec4(screenPos.x + cursorWidth, screenPos.y, 1.0F, 1.0F)};
+
+                // Copy new vertex data to VBO.
+                glBindBuffer(
+                    GL_ARRAY_BUFFER, mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                // Render quad.
+                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
             }
         }
 
@@ -753,8 +863,28 @@ void UiManager::drawTextNodes(size_t iLayer) {
     glDisable(GL_BLEND);
 }
 
+void UiManager::changeFocusedNode(UiNode* pNode) {
+    std::scoped_lock guard(mtxData.first);
+
+    if (mtxData.second.pFocusedNode == pNode) {
+        return;
+    }
+
+    if (mtxData.second.pFocusedNode != nullptr) {
+        mtxData.second.pFocusedNode->onLostFocus();
+    }
+
+    mtxData.second.pFocusedNode = pNode;
+
+    if (mtxData.second.pFocusedNode != nullptr) {
+        mtxData.second.pFocusedNode->onGainedFocus();
+    }
+}
+
 UiManager::~UiManager() {
     std::scoped_lock guard(mtxData.first);
+
+    mtxData.second.pRectAndCursorShaderProgram = nullptr;
 
     if (mtxData.second.pFocusedNode != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(

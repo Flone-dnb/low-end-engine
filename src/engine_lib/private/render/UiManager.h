@@ -123,6 +123,13 @@ public:
     void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
 
     /**
+     * Called by game manager when window received an event about text character being inputted.
+     *
+     * @param sTextCharacter Character that was typed.
+     */
+    void onKeyboardInputTextCharacter(const std::string& sTextCharacter);
+
+    /**
      * Called by game manager when window received mouse input.
      *
      * @param button         Mouse button.
@@ -207,8 +214,8 @@ private:
         /** Shader program used for rendering text. */
         std::shared_ptr<ShaderProgram> pTextShaderProgram;
 
-        /** Shader program used for rendering rect UI nodes. */
-        std::shared_ptr<ShaderProgram> pRectShaderProgram;
+        /** Shader program used for rendering rect UI nodes and text edit's cursor. */
+        std::shared_ptr<ShaderProgram> pRectAndCursorShaderProgram;
 
         /** Quad used for rendering some nodes. */
         std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
@@ -234,6 +241,15 @@ private:
      * @param iLayer UI layer to render to.
      */
     void drawTextNodes(size_t iLayer);
+
+    /**
+     * Changes node that has focus.
+     *
+     * @remark Triggers UiNode focus related functions.
+     *
+     * @param pNode `nullptr` to remove focus.
+     */
+    void changeFocusedNode(UiNode* pNode);
 
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;

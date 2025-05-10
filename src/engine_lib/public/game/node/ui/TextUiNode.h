@@ -7,7 +7,7 @@
 #include "game/node/ui/UiNode.h"
 #include "math/GLMath.hpp"
 
-/** 2D text rendering. */
+/** Single-line or a multi-line text rendering. */
 class TextUiNode : public UiNode {
 public:
     TextUiNode();
@@ -59,11 +59,32 @@ public:
     void setTextColor(const glm::vec4& color);
 
     /**
+     * Sets height of the text in range [0.0; 1.0] relative to screen height.
+     *
+     * @param height Text height.
+     */
+    void setTextHeight(float height);
+
+    /**
      * Sets vertical space between horizontal lines of text.
      *
      * @param lineSpacing Spacing in range [0.0F; +inf] proportional to the height of the text.
      */
     void setTextLineSpacing(float lineSpacing);
+
+    /**
+     * Sets if the text will be automatically transferred to a new line if it does not fit in a single line.
+     *
+     * @param bIsEnabled `true` to enable word wrap.
+     */
+    void setIsWordWrapEnabled(bool bIsEnabled);
+
+    /**
+     * Sets whether `\n` characters in the text create new lines or not.
+     *
+     * @param bHandleNewLineChars `true` to allow `\n` characters in the text to create new lines.
+     */
+    void setHandleNewLineChars(bool bHandleNewLineChars);
 
     /**
      * Returns displayed text.
@@ -80,12 +101,33 @@ public:
     glm::vec4 getTextColor() const { return color; }
 
     /**
+     * Height of the text in range [0.0; 1.0] relative to screen height.
+     *
+     * @return Text height.
+     */
+    float getTextHeight() const { return textHeight; }
+
+    /**
      * Returns vertical space between horizontal lines of text, in range [0.0F; +inf]
      * proportional to the height of the text.
      *
      * @return Line spacing.
      */
     float getTextLineSpacing() const { return lineSpacing; }
+
+    /**
+     * Tells if the text will be automatically transferred to a new line if it does not fit in a single line.
+     *
+     * @return Word wrap state.
+     */
+    bool getIsWordWrapEnabled() const { return bIsWordWrapEnabled; }
+
+    /**
+     * Tells whether `\n` characters in the text create new lines or not.
+     *
+     * @return `true` to allow `\n` characters in the text to create new lines.
+     */
+    bool getHandleNewLineChars() const { return bHandleNewLineChars; }
 
 protected:
     /**
@@ -114,6 +156,13 @@ protected:
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() override;
 
+    /**
+     * Called after some child node was attached to this node.
+     *
+     * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
+     */
+    virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
+
 private:
     /** Color of the text in the RGBA format. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
@@ -122,8 +171,17 @@ private:
      * Vertical space between horizontal lines of text, in range [0.0F; +inf]
      * proportional to the height of the text.
      */
-    float lineSpacing = 0.25F; // NOLINT
+    float lineSpacing = 0.1F; // NOLINT
+
+    /** Height of the text in range [0.0; 1.0] relative to screen height. */
+    float textHeight = 0.035F; // NOLINT
 
     /** Text to display. */
     std::string sText = "text";
+
+    /** `true` to automatically transfer text to a new line if it does not fit in a single line. */
+    bool bIsWordWrapEnabled = false;
+
+    /** `true` to allow `\n` characters in the text to create new lines. */
+    bool bHandleNewLineChars = true;
 };
