@@ -144,6 +144,16 @@ void TextEditUiNode::onKeyboardInputTextCharacterWhileFocused(const std::string&
             std::format("node \"{}\" expected to have a cursor offset already prepared", getNodeName()));
     }
 
+    if (optionalSelection.has_value()) {
+        // Delete selected text.
+        auto sText = std::string(getText());
+        sText.erase(optionalSelection->first, optionalSelection->second - optionalSelection->first);
+        setText(sText);
+
+        optionalCursorOffset = optionalSelection->first;
+        optionalSelection = {};
+    }
+
     auto sText = std::string(getText());
     sText.insert(*optionalCursorOffset, sTextCharacter);
     setText(sText);
