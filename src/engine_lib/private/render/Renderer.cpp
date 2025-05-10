@@ -145,12 +145,12 @@ void Renderer::drawNextFrame() {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        pUiManager->renderUi(0);
+        pUiManager->drawUi(0);
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
         glClear(GL_COLOR_BUFFER_BIT);
 
-        pUiManager->renderUi(pMainFramebuffer->getFramebufferId());
+        pUiManager->drawUi(pMainFramebuffer->getFramebufferId());
 
         drawGammaCorrectionScreenQuad(0, pMainFramebuffer->getColorTextureId());
     }
