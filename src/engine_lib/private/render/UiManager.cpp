@@ -573,6 +573,8 @@ void UiManager::drawUi(unsigned int iDrawFramebufferId) {
 }
 
 void UiManager::drawRectNodes(size_t iLayer) {
+    PROFILE_FUNC;
+
     std::scoped_lock guard(mtxData.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vRectNodes;
@@ -655,6 +657,8 @@ void UiManager::drawRectNodes(size_t iLayer) {
 }
 
 void UiManager::drawTextNodes(size_t iLayer) {
+    PROFILE_FUNC;
+
     auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);
 
@@ -688,12 +692,20 @@ void UiManager::drawTextNodes(size_t iLayer) {
         pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
         glActiveTexture(GL_TEXTURE0); // glyph's bitmap
 
+        // Prepare info to later draw cursors for text edit UI nodes.
         struct CursorDrawInfo {
             glm::vec2 screenPos = glm::vec2(0.0F, 0.0F);
             float height = 0.0F;
         };
-
         std::vector<CursorDrawInfo> vCursorScreenPosToDraw;
+
+        // Prepare info to later draw text selection.
+        struct TextSelectionDrawInfo {
+            std::vector<std::pair<glm::vec2, glm::vec2>> vLineStartEndScreenPos;
+            float textHeightInPixels;
+            glm::vec4 color;
+        };
+        std::vector<TextSelectionDrawInfo> vTextSelectionToDraw;
 
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
             for (const auto& pTextNode : nodes) {
@@ -710,15 +722,21 @@ void UiManager::drawTextNodes(size_t iLayer) {
                 const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
                 const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
 
-                // Check cursor.
+                // Check cursor and selection.
                 std::optional<size_t> optionalCursorOffset;
+                std::optional<std::pair<size_t, size_t>> optionalSelection;
+                glm::vec4 selectionColor;
                 if (auto pTextEdit = dynamic_cast<TextEditUiNode*>(pTextNode)) {
                     if (pTextEdit->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
                                                                // (it will wait on our mutex)
                         vInputNodesRendered.push_back(pTextNode);
                     }
                     optionalCursorOffset = pTextEdit->optionalCursorOffset;
+                    optionalSelection = pTextEdit->optionalSelection;
+                    selectionColor = pTextEdit->getTextSelectionColor();
                 }
+                bool bSelectionStartPosFound = false;
+                std::vector<std::pair<glm::vec2, glm::vec2>> vSelectionLinesToDraw;
 
                 // Set color.
                 pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
@@ -730,8 +748,9 @@ void UiManager::drawTextNodes(size_t iLayer) {
                 for (size_t iCharIndex = 0; iCharIndex < sText.size(); iCharIndex++) {
                     const char& character = sText[iCharIndex];
 
-                    // Handle new line.
-                    if (character == '\n' && pTextNode->getHandleNewLineChars()) {
+                    // Prepare a handy lambda.
+                    const auto switchToNewLine = [&]() {
+                        // Check cursor.
                         if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
                             vCursorScreenPosToDraw.push_back(
                                 CursorDrawInfo{
@@ -739,25 +758,32 @@ void UiManager::drawTextNodes(size_t iLayer) {
                                     .height = FontManager::getFontHeightToLoad() * scale});
                         }
 
+                        // Check selection.
+                        if (optionalSelection.has_value() && bSelectionStartPosFound) {
+                            vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+
+                            if (optionalSelection->second == iCharIndex) {
+                                bSelectionStartPosFound = false;
+                            } else {
+                                vSelectionLinesToDraw.push_back(
+                                    {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                            }
+                        }
+
                         // Switch to a new line.
                         screenY -= textHeightInPixels + lineSpacingInPixels;
                         screenX = leftBottomTextPos.x * iWindowWidth;
+
+                        if (optionalSelection.has_value() && bSelectionStartPosFound) {
+                            vSelectionLinesToDraw.push_back(
+                                {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                        }
+                    };
+
+                    // Handle new line.
+                    if (character == '\n' && pTextNode->getHandleNewLineChars()) {
+                        switchToNewLine();
                         continue; // don't render \n
-                    }
-
-                    // Handle word wrap.
-                    // TODO: do per-character wrap for now, rework later
-                    if (screenX >= screenMaxXForWordWrap && pTextNode->getIsWordWrapEnabled()) {
-                        // Switch to a new line.
-                        screenY -= textHeightInPixels + lineSpacingInPixels;
-                        screenX = leftBottomTextPos.x * iWindowWidth;
-                    }
-
-                    if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
-                        vCursorScreenPosToDraw.push_back(
-                            CursorDrawInfo{
-                                .screenPos = glm::vec2(screenX, screenY),
-                                .height = FontManager::getFontHeightToLoad() * scale});
                     }
 
                     // Get glyph.
@@ -768,6 +794,37 @@ void UiManager::drawTextNodes(size_t iLayer) {
                         charIt = placeHolderGlythIt;
                     }
                     const auto& glyph = charIt->second;
+
+                    const float distanceToNextGlyph =
+                        (glyph.advance >> 6) * // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
+                        scale;
+
+                    // Handle word wrap.
+                    // TODO: do per-character wrap for now, rework later
+                    if (pTextNode->getIsWordWrapEnabled() &&
+                        (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
+                        switchToNewLine();
+                    } else {
+                        // Check cursor.
+                        if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
+                            vCursorScreenPosToDraw.push_back(
+                                CursorDrawInfo{
+                                    .screenPos = glm::vec2(screenX, screenY),
+                                    .height = FontManager::getFontHeightToLoad() * scale});
+                        }
+
+                        // Check selection.
+                        if (optionalSelection.has_value()) {
+                            if (!bSelectionStartPosFound && optionalSelection->first == iCharIndex) {
+                                bSelectionStartPosFound = true;
+                                vSelectionLinesToDraw.push_back(
+                                    {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                            } else if (bSelectionStartPosFound && optionalSelection->second == iCharIndex) {
+                                vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+                                bSelectionStartPosFound = false;
+                            }
+                        }
+                    }
 
                     float xpos = screenX + glyph.bearing.x * scale;
                     float ypos = screenY - (glyph.size.y - glyph.bearing.y) * scale;
@@ -800,17 +857,28 @@ void UiManager::drawTextNodes(size_t iLayer) {
                         glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
                     }
 
-                    // Advance current pos to the next glyph (note that advance is number of 1/64 pixels).
-                    screenX +=
-                        (glyph.advance >> 6) * // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
-                        scale;
+                    // Switch to next glyph.
+                    screenX += distanceToNextGlyph;
                 }
 
+                // Check cursor.
                 if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size()) {
                     vCursorScreenPosToDraw.push_back(
                         CursorDrawInfo{
                             .screenPos = glm::vec2(screenX, screenY),
                             .height = FontManager::getFontHeightToLoad() * scale});
+                }
+
+                // Check selection.
+                if (optionalSelection.has_value()) {
+                    if (bSelectionStartPosFound && optionalSelection->second >= sText.size()) {
+                        vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+                    }
+                    vTextSelectionToDraw.push_back(
+                        TextSelectionDrawInfo{
+                            .vLineStartEndScreenPos = std::move(vSelectionLinesToDraw),
+                            .textHeightInPixels = textHeightInPixels,
+                            .color = selectionColor});
                 }
             }
         }
@@ -854,6 +922,51 @@ void UiManager::drawTextNodes(size_t iLayer) {
 
                 // Render quad.
                 glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+            }
+        }
+
+        if (!vTextSelectionToDraw.empty()) {
+            // Draw selections.
+
+            // Set shader program.
+            auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+            if (pShaderProgram == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+            }
+            glUseProgram(pShaderProgram->getShaderProgramId());
+
+            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+            // Set shader parameters.
+            pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+            for (auto& selectionInfo : vTextSelectionToDraw) {
+                pShaderProgram->setVector4ToShader("color", selectionInfo.color);
+
+                for (auto& [startPos, endPos] : selectionInfo.vLineStartEndScreenPos) {
+                    const auto width = endPos.x - startPos.x;
+                    const auto height = selectionInfo.textHeightInPixels;
+
+                    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+                        glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
+                        glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F),
+                        glm::vec4(startPos.x, startPos.y, 0.0F, 1.0F),
+
+                        glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
+                        glm::vec4(startPos.x + width, startPos.y + height, 1.0F, 0.0F),
+                        glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F)};
+
+                    // Copy new vertex data to VBO.
+                    glBindBuffer(
+                        GL_ARRAY_BUFFER,
+                        mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+                    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                    // Render quad.
+                    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                }
             }
         }
 

@@ -55,11 +55,25 @@ public:
     void setIsReadOnly(bool bIsReadOnly);
 
     /**
+     * Sets color used for regions of selected text.
+     *
+     * @param textSelectionColor RGBA color.
+     */
+    void setTextSelectionColor(const glm::vec4& textSelectionColor);
+
+    /**
      * Tells if editing text from the user input is not possible.
      *
      * @return Read only state.
      */
     bool getIsReadOnly() const { return bIsReadOnly; }
+
+    /**
+     * Returns color used for regions of selected text.
+     *
+     * @return RGBA color.
+     */
+    glm::vec4 getTextSelectionColor() const { return textSelectionColor; }
 
 protected:
     /** Called after this object was finished deserializing from file. */
@@ -107,8 +121,21 @@ protected:
     virtual void onLostFocus() override;
 
 private:
+    /**
+     * Converts current position of the mouse cursor to offset (in characters) in the text.
+     *
+     * @return Offset in range [0; textSize].
+     */
+    size_t convertMouseCursorPosToTextOffset();
+
     /** Empty if text edit is read only or not focused, otherwise value in range [0; textSize]. */
     std::optional<size_t> optionalCursorOffset;
+
+    /** Empty if no selected, otherwise pair of "start offset" and "end offset" in range [0; textSize]. */
+    std::optional<std::pair<size_t, size_t>> optionalSelection;
+
+    /** Color of the selected region of the text. */
+    glm::vec4 textSelectionColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.25F); // NOLINT
 
     /** `true` if editing text from the user input is not possible. */
     bool bIsReadOnly = false;
