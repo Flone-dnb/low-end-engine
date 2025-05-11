@@ -7,7 +7,7 @@
 #include "game/node/CameraNode.h"
 #include "game/node/MeshNode.h"
 #include "render/shader/LightSourceShaderArray.h"
-#include "render/font/FontManager.h"
+#include "render/FontManager.h"
 #include "misc/ProjectPaths.h"
 #include "render/LightSourceManager.h"
 #include "render/UiManager.h"

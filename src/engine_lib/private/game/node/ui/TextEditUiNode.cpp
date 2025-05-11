@@ -4,7 +4,7 @@
 #include "game/GameInstance.h"
 #include "game/Window.h"
 #include "render/UiManager.h"
-#include "render/font/FontManager.h"
+#include "render/FontManager.h"
 
 // External.
 #include "nameof.hpp"

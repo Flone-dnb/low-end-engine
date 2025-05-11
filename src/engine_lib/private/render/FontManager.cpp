@@ -1,4 +1,4 @@
-#include "render/font/FontManager.h"
+#include "render/FontManager.h"
 
 // Standard.
 #include <format>
@@ -47,10 +47,11 @@ void FontManager::loadFont(const std::filesystem::path& pathToFont) {
     FT_Face pFace = nullptr;
     iErrorCode = FT_New_Face(pLibrary, pathToFont.string().c_str(), 0, &pFace);
     if (iErrorCode != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "failed to create face from the font \"{}\", error: {}",
-            pathToFont.filename().string(),
-            iErrorCode));
+        Error::showErrorAndThrowException(
+            std::format(
+                "failed to create face from the font \"{}\", error: {}",
+                pathToFont.filename().string(),
+                iErrorCode));
     }
 
     // Select font size.

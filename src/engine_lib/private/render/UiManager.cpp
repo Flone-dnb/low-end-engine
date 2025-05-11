@@ -11,7 +11,7 @@
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
 #include "misc/Error.h"
-#include "render/font/FontManager.h"
+#include "render/FontManager.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "render/wrapper/Texture.h"
 #include "game/Window.h"

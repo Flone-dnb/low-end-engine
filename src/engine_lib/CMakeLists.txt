@@ -62,8 +62,8 @@ set(PROJECT_SOURCES
     private/render/UiManager.cpp
     private/render/UiManager.h
     public/render/ShaderAlignmentConstants.hpp
-    private/render/font/FontManager.cpp
-    private/render/font/FontManager.h
+    private/render/FontManager.cpp
+    public/render/FontManager.h
     public/render/PostProcessManager.h
     public/render/UiLayer.hpp
     private/render/PostProcessManager.cpp
