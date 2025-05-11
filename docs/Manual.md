@@ -692,6 +692,18 @@ if (optionalError.has_value()){
 
 As it was shown `InputManager` can be acquired using `GameInstance::getInputManager()`, so both game instance and nodes (using `getGameInstance()->getInputManager()`) can work with the input manager.
 
+## Custom font
+
+In order to set a custom font you need to have a .ttf file to load. To load the font file you need to do the following at the start of your game:
+
+```Cpp
+void MyGameInstance::onGameStarted() {
+    getRenderer()->getFontManager().setPathToFontToLoad("somepath/font.ttf");
+
+    // ... create world, nodes, etc. ...
+}
+```
+
 ## Using profiler
 
 The engine uses [tracy profiler](https://github.com/wolfpld/tracy), by default it's enabled in non-release builds.

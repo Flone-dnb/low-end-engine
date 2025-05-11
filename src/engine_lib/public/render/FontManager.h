@@ -34,6 +34,11 @@ public:
 
     ~FontManager();
 
+    FontManager(const FontManager&) = delete;
+    FontManager& operator=(const FontManager&) = delete;
+    FontManager(FontManager&&) noexcept = delete;
+    FontManager& operator=(FontManager&&) noexcept = delete;
+
     /**
      * Font height (relative to screen height, width is determines automatically) in range [0.0F; 1.0F] to
      * load.
@@ -42,20 +47,12 @@ public:
      */
     static constexpr float getFontHeightToLoad() { return fontHeightToLoad; }
 
-    FontManager(const FontManager&) = delete;
-    FontManager& operator=(const FontManager&) = delete;
-    FontManager(FontManager&&) noexcept = delete;
-    FontManager& operator=(FontManager&&) noexcept = delete;
-
     /**
-     * Creates a new font manager.
+     * Sets path to a .ttf font to load and use instead of the default one.
      *
-     * @param pRenderer  Renderer.
-     * @param pathToFont Path to a .ttf font to use.
-     *
-     * @return Created manager.
+     * @param pathToFont Path to a .ttf font file.
      */
-    static std::unique_ptr<FontManager> create(Renderer* pRenderer, const std::filesystem::path& pathToFont);
+    void setPathToFontToLoad(const std::filesystem::path& pathToFont);
 
     /**
      * Returns pairs of "character code" - "loaded glyph".
@@ -67,6 +64,16 @@ public:
     }
 
 private:
+    /**
+     * Creates a new font manager.
+     *
+     * @param pRenderer  Renderer.
+     * @param pathToFont Path to a .ttf font to use.
+     *
+     * @return Created manager.
+     */
+    static std::unique_ptr<FontManager> create(Renderer* pRenderer, const std::filesystem::path& pathToFont);
+
     /**
      * Used internally, see @ref create.
      *

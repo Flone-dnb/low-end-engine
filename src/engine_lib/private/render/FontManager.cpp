@@ -18,6 +18,8 @@
 
 FontManager::~FontManager() {}
 
+void FontManager::setPathToFontToLoad(const std::filesystem::path& pathToFont) { loadFont(pathToFont); }
+
 std::unique_ptr<FontManager>
 FontManager::create(Renderer* pRenderer, const std::filesystem::path& pathToFont) {
     auto pFont = std::unique_ptr<FontManager>(new FontManager(pRenderer));
