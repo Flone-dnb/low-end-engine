@@ -656,7 +656,7 @@ void UiManager::drawRectNodes(size_t iLayer) {
     glDisable(GL_BLEND);
 }
 
-void UiManager::drawTextNodes(size_t iLayer) {
+void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
     PROFILE_FUNC;
 
     auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
@@ -707,21 +707,19 @@ void UiManager::drawTextNodes(size_t iLayer) {
         };
         std::vector<TextSelectionDrawInfo> vTextSelectionToDraw;
 
+        // Prepare info to later draw scroll bars.
+        struct ScrollBarDrawInfo {
+            glm::vec2 posInPixels = glm::vec2(0.0F, 0.0F);
+            float widthInPixels = 0.0F;
+            float heightInPixels = 0.0F;
+            float verticalPos = 0.0F;  // in [0.0; 1.0]
+            float verticalSize = 0.0F; // in [0.0; 1.0]
+            glm::vec4 color;
+        };
+        std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
+
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
             for (const auto& pTextNode : nodes) {
-                // Prepare some variables.
-                const auto sText = pTextNode->getText();
-                const auto leftBottomTextPos = pTextNode->getPosition();
-                const auto screenMaxXForWordWrap =
-                    (leftBottomTextPos.x + pTextNode->getSize().x) * iWindowWidth;
-
-                float screenX = leftBottomTextPos.x * iWindowWidth;
-                float screenY = (1.0F - leftBottomTextPos.y) * iWindowHeight;
-                const auto scale = pTextNode->getTextHeight() / FontManager::getFontHeightToLoad();
-
-                const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
-                const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
-
                 // Check cursor and selection.
                 std::optional<size_t> optionalCursorOffset;
                 std::optional<std::pair<size_t, size_t>> optionalSelection;
@@ -738,6 +736,26 @@ void UiManager::drawTextNodes(size_t iLayer) {
                 bool bSelectionStartPosFound = false;
                 std::vector<std::pair<glm::vec2, glm::vec2>> vSelectionLinesToDraw;
 
+                // Prepare some variables for rendering.
+                const auto sText = pTextNode->getText();
+                const auto leftBottomTextPos = pTextNode->getPosition();
+                const auto screenMaxXForWordWrap =
+                    (leftBottomTextPos.x + pTextNode->getSize().x) * iWindowWidth;
+
+                float screenX = leftBottomTextPos.x * iWindowWidth;
+                float screenY = (1.0F - leftBottomTextPos.y) * iWindowHeight;
+                const auto screenYEnd = screenY - pTextNode->getSize().y * iWindowHeight;
+                const auto scale = pTextNode->getTextHeight() / FontManager::getFontHeightToLoad();
+
+                const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
+                const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
+
+                // Check scroll bar.
+                size_t iLinesToSkip = 0;
+                if (pTextNode->getIsScrollBarEnabled()) {
+                    iLinesToSkip = pTextNode->getCurrentScrollOffset();
+                }
+
                 // Set color.
                 pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
 
@@ -745,7 +763,11 @@ void UiManager::drawTextNodes(size_t iLayer) {
                 screenY -= textHeightInPixels;
 
                 // Render each character.
-                for (size_t iCharIndex = 0; iCharIndex < sText.size(); iCharIndex++) {
+                size_t iLineIndex = 0;
+                size_t iRenderedCharCount = 0;
+                size_t iCharIndex = 0;
+                bool bReachedEndOfUiNode = false;
+                for (; iCharIndex < sText.size(); iCharIndex++) {
                     const char& character = sText[iCharIndex];
 
                     // Prepare a handy lambda.
@@ -771,18 +793,29 @@ void UiManager::drawTextNodes(size_t iLayer) {
                         }
 
                         // Switch to a new line.
-                        screenY -= textHeightInPixels + lineSpacingInPixels;
+                        if (iLineIndex >= iLinesToSkip) {
+                            screenY -= textHeightInPixels + lineSpacingInPixels;
+                        }
                         screenX = leftBottomTextPos.x * iWindowWidth;
 
                         if (optionalSelection.has_value() && bSelectionStartPosFound) {
                             vSelectionLinesToDraw.push_back(
                                 {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
                         }
+
+                        if (screenY < screenYEnd) {
+                            bReachedEndOfUiNode = true;
+                        }
+
+                        iLineIndex += 1;
                     };
 
                     // Handle new line.
                     if (character == '\n' && pTextNode->getHandleNewLineChars()) {
                         switchToNewLine();
+                        if (bReachedEndOfUiNode) {
+                            break;
+                        }
                         continue; // don't render \n
                     }
 
@@ -804,7 +837,10 @@ void UiManager::drawTextNodes(size_t iLayer) {
                     if (pTextNode->getIsWordWrapEnabled() &&
                         (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
                         switchToNewLine();
-                    } else {
+                        if (bReachedEndOfUiNode) {
+                            break;
+                        }
+                    } else if (iLineIndex >= iLinesToSkip) {
                         // Check cursor.
                         if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
                             vCursorScreenPosToDraw.push_back(
@@ -815,46 +851,62 @@ void UiManager::drawTextNodes(size_t iLayer) {
 
                         // Check selection.
                         if (optionalSelection.has_value()) {
-                            if (!bSelectionStartPosFound && optionalSelection->first == iCharIndex) {
-                                bSelectionStartPosFound = true;
-                                vSelectionLinesToDraw.push_back(
-                                    {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                            if (!bSelectionStartPosFound) {
+                                if (optionalSelection->first == iCharIndex) {
+                                    bSelectionStartPosFound = true;
+                                    vSelectionLinesToDraw.push_back(
+                                        {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                                } else if (
+                                    iLineIndex == iLinesToSkip && optionalSelection->first <= iCharIndex) {
+                                    // Selection start was above (we skipped that line due to scroll).
+                                    bSelectionStartPosFound = true;
+                                    vSelectionLinesToDraw.push_back(
+                                        {glm::vec2(leftBottomTextPos.x * iWindowWidth, screenY),
+                                         glm::vec2(leftBottomTextPos.x * iWindowWidth, screenY)});
+                                }
                             } else if (bSelectionStartPosFound && optionalSelection->second == iCharIndex) {
-                                vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+                                if (iLineIndex >= iLinesToSkip) {
+                                    vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+                                } else {
+                                    vSelectionLinesToDraw.pop_back();
+                                }
                                 bSelectionStartPosFound = false;
                             }
                         }
                     }
 
-                    float xpos = screenX + glyph.bearing.x * scale;
-                    float ypos = screenY - (glyph.size.y - glyph.bearing.y) * scale;
+                    if (iLineIndex >= iLinesToSkip) {
+                        float xpos = screenX + glyph.bearing.x * scale;
+                        float ypos = screenY - (glyph.size.y - glyph.bearing.y) * scale;
 
-                    float width = static_cast<float>(glyph.size.x) * scale;
-                    float height = static_cast<float>(glyph.size.y) * scale;
+                        float width = static_cast<float>(glyph.size.x) * scale;
+                        float height = static_cast<float>(glyph.size.y) * scale;
 
-                    // Space character has 0 width so don't submit any rendering.
-                    if (glyph.size.x != 0) {
-                        // Update VBO.
-                        const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                            glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
-                            glm::vec4(xpos + width, ypos, 1.0F, 1.0F),
-                            glm::vec4(xpos, ypos, 0.0F, 1.0F),
+                        // Space character has 0 width so don't submit any rendering.
+                        if (glyph.size.x != 0) {
+                            // Update VBO.
+                            const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+                                glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
+                                glm::vec4(xpos + width, ypos, 1.0F, 1.0F),
+                                glm::vec4(xpos, ypos, 0.0F, 1.0F),
 
-                            glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
-                            glm::vec4(xpos + width, ypos + height, 1.0F, 0.0F),
-                            glm::vec4(xpos + width, ypos, 1.0F, 1.0F)};
+                                glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
+                                glm::vec4(xpos + width, ypos + height, 1.0F, 0.0F),
+                                glm::vec4(xpos + width, ypos, 1.0F, 1.0F)};
 
-                        glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
+                            glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
 
-                        // Copy new vertex data to VBO.
-                        glBindBuffer(
-                            GL_ARRAY_BUFFER,
-                            mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                        glBindBuffer(GL_ARRAY_BUFFER, 0);
+                            // Copy new vertex data to VBO.
+                            glBindBuffer(
+                                GL_ARRAY_BUFFER,
+                                mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+                            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+                            glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-                        // Render quad.
-                        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                            // Render quad.
+                            glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                            iRenderedCharCount += 1;
+                        }
                     }
 
                     // Switch to next glyph.
@@ -862,7 +914,8 @@ void UiManager::drawTextNodes(size_t iLayer) {
                 }
 
                 // Check cursor.
-                if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size()) {
+                if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size() &&
+                    screenX < screenMaxXForWordWrap && screenY > screenYEnd && iRenderedCharCount != 0) {
                     vCursorScreenPosToDraw.push_back(
                         CursorDrawInfo{
                             .screenPos = glm::vec2(screenX, screenY),
@@ -879,6 +932,38 @@ void UiManager::drawTextNodes(size_t iLayer) {
                             .vLineStartEndScreenPos = std::move(vSelectionLinesToDraw),
                             .textHeightInPixels = textHeightInPixels,
                             .color = selectionColor});
+                }
+
+                // Check scroll bar.
+                constexpr float scrollBarWidthRelative = 0.025F; // relative to width of the UI node
+                if (pTextNode->getIsScrollBarEnabled() && iCharIndex + 1 < pTextNode->getText().size()) {
+                    iLinesToSkip = pTextNode->iCurrentScrollOffset;
+
+                    const float widthInPixels =
+                        scrollBarWidthRelative * pTextNode->getSize().x * iWindowWidth;
+                    const auto iAverageLineCountDisplayed =
+                        static_cast<size_t>(pTextNode->getSize().y * iWindowHeight / textHeightInPixels);
+
+                    const float verticalSize = std::min(
+                        1.0F,
+                        static_cast<float>(iAverageLineCountDisplayed) /
+                            static_cast<float>(pTextNode->iNewLineCharCountInText));
+
+                    const float verticalPos = std::min(
+                        1.0F,
+                        static_cast<float>(pTextNode->iCurrentScrollOffset) /
+                            static_cast<float>(pTextNode->iNewLineCharCountInText));
+
+                    vScrollBarToDraw.push_back(
+                        ScrollBarDrawInfo{
+                            .posInPixels = glm::vec2(
+                                screenMaxXForWordWrap - widthInPixels, leftBottomTextPos.y * iWindowHeight),
+                            .widthInPixels = widthInPixels,
+                            .heightInPixels = pTextNode->getSize().y * iWindowHeight,
+                            .verticalPos = verticalPos,
+                            .verticalSize = verticalSize,
+                            .color = pTextNode->getScrollBarColor(),
+                        });
                 }
             }
         }
@@ -967,6 +1052,52 @@ void UiManager::drawTextNodes(size_t iLayer) {
                     // Render quad.
                     glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
                 }
+            }
+        }
+
+        if (!vScrollBarToDraw.empty()) {
+            // Draw scroll bars.
+
+            // Set shader program.
+            auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+            if (pShaderProgram == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+            }
+            glUseProgram(pShaderProgram->getShaderProgramId());
+
+            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+            // Set shader parameters.
+            pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+            for (auto& scrollBarInfo : vScrollBarToDraw) {
+                pShaderProgram->setVector4ToShader("color", scrollBarInfo.color);
+
+                auto startPos = scrollBarInfo.posInPixels;
+                startPos.y -= scrollBarInfo.heightInPixels * scrollBarInfo.verticalPos;
+                startPos.y += (1.0F - scrollBarInfo.verticalSize) * scrollBarInfo.heightInPixels;
+
+                const auto width = scrollBarInfo.widthInPixels;
+                const auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;
+
+                const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+                    glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
+                    glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F),
+                    glm::vec4(startPos.x, startPos.y, 0.0F, 1.0F),
+
+                    glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
+                    glm::vec4(startPos.x + width, startPos.y + height, 1.0F, 0.0F),
+                    glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F)};
+
+                // Copy new vertex data to VBO.
+                glBindBuffer(
+                    GL_ARRAY_BUFFER, mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                // Render quad.
+                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
             }
         }
 

@@ -9,7 +9,7 @@
 
 /** Single-line or multi-line text editing. */
 class TextEditUiNode : public TextUiNode {
-    // Manager queries cursor pos.
+    // Renderer uses cursor pos and selection.
     friend class UiManager;
 
 public:
@@ -124,7 +124,7 @@ private:
     /**
      * Converts current position of the mouse cursor to offset (in characters) in the text.
      *
-     * @return Offset in range [0; textSize].
+     * @return Offset in text in range [0; textSize].
      */
     size_t convertMouseCursorPosToTextOffset();
 
@@ -135,7 +135,7 @@ private:
     std::optional<std::pair<size_t, size_t>> optionalSelection;
 
     /** Color of the selected region of the text. */
-    glm::vec4 textSelectionColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.25F); // NOLINT
+    glm::vec4 textSelectionColor = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F); // NOLINT
 
     /** `true` if editing text from the user input is not possible. */
     bool bIsReadOnly = false;

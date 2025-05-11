@@ -9,6 +9,9 @@
 
 /** Single-line or a multi-line text rendering. */
 class TextUiNode : public UiNode {
+    // Renderer uses scroll offset and text properties.
+    friend class UiManager;
+
 public:
     TextUiNode();
 
@@ -59,6 +62,13 @@ public:
     void setTextColor(const glm::vec4& color);
 
     /**
+     * Sets color of the scroll bar.
+     *
+     * @param color Color in the RGBA format.
+     */
+    void setScrollBarColor(const glm::vec4& color);
+
+    /**
      * Sets height of the text in range [0.0; 1.0] relative to screen height.
      *
      * @param height Text height.
@@ -87,6 +97,30 @@ public:
     void setHandleNewLineChars(bool bHandleNewLineChars);
 
     /**
+     * Sets whether scroll bar is enabled or not.
+     *
+     * @param bEnable `true` to enable.
+     */
+    void setIsScrollBarEnabled(bool bEnable);
+
+    /**
+     * If scroll is enabled moves scroll to make sure the character with the specified offset is visible.
+     *
+     * @param iTextCharOffset Offset in @ref getText.
+     */
+    void moveScrollToTextCharacter(size_t iTextCharOffset);
+
+    /**
+     * Returns index of a line on which the character with the specified offset will be rendered considering
+     * new line handling and word wrapping.
+     *
+     * @param iTextCharOffset Offset in @ref getText.
+     *
+     * @return Line index.
+     */
+    size_t getLineIndexForTextChar(size_t iTextCharOffset);
+
+    /**
      * Returns displayed text.
      *
      * @return Text.
@@ -94,11 +128,18 @@ public:
     std::string_view getText() const { return sText; }
 
     /**
-     * Returns color of the text in the RGBA format.
+     * Returns color of the text.
      *
-     * @return Color.
+     * @return RGBA color.
      */
     glm::vec4 getTextColor() const { return color; }
+
+    /**
+     * Returns color of the scroll bar.
+     *
+     * @return RGBA color.
+     */
+    glm::vec4 getScrollBarColor() const { return scrollBarColor; }
 
     /**
      * Height of the text in range [0.0; 1.0] relative to screen height.
@@ -128,6 +169,20 @@ public:
      * @return `true` to allow `\n` characters in the text to create new lines.
      */
     bool getHandleNewLineChars() const { return bHandleNewLineChars; }
+
+    /**
+     * Tells if scroll bar is enabled.
+     *
+     * @return `true` if enabled.
+     */
+    bool getIsScrollBarEnabled() const { return bIsScrollBarEnabled; }
+
+    /**
+     * Returns current offset of the scroll bar in lines of text.
+     *
+     * @return Offset.
+     */
+    size_t getCurrentScrollOffset() const { return iCurrentScrollOffset; }
 
 protected:
     /**
@@ -163,9 +218,22 @@ protected:
      */
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
+    /**
+     * Called when the window receives mouse scroll movement while floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iOffset Movement offset.
+     */
+    virtual void onMouseScrollMoveWhileHovered(int iOffset) override;
+
 private:
     /** Color of the text in the RGBA format. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+
+    /** Color of the scroll bar. */
+    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F); // NOLINT
 
     /**
      * Vertical space between horizontal lines of text, in range [0.0F; +inf]
@@ -178,6 +246,15 @@ private:
 
     /** Text to display. */
     std::string sText = "text";
+
+    /** Scroll bar state. */
+    bool bIsScrollBarEnabled = false;
+
+    /** Offset of the scroll bar in lines of text. */
+    size_t iCurrentScrollOffset = 0;
+
+    /** The total number of `\n` chars in @ref sText. */
+    size_t iNewLineCharCountInText = 0;
 
     /** `true` to automatically transfer text to a new line if it does not fit in a single line. */
     bool bIsWordWrapEnabled = false;

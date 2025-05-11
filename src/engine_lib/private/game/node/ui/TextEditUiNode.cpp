@@ -86,11 +86,12 @@ void TextEditUiNode::onMouseClickOnUiNode(
         optionalCursorOffset = convertMouseCursorPosToTextOffset();
         optionalSelection = {};
     } else {
-        const auto textOffset = convertMouseCursorPosToTextOffset();
-        if (optionalCursorOffset.has_value() && textOffset != *optionalCursorOffset) {
+        const auto iCursorOffset = convertMouseCursorPosToTextOffset();
+        if (optionalCursorOffset.has_value() && iCursorOffset != *optionalCursorOffset) {
             optionalSelection = {
-                std::min(textOffset, *optionalCursorOffset), std::max(textOffset, *optionalCursorOffset)};
-            optionalCursorOffset = optionalSelection->second;
+                std::min(iCursorOffset, *optionalCursorOffset),
+                std::max(iCursorOffset, *optionalCursorOffset)};
+            optionalCursorOffset = iCursorOffset;
         }
     }
 }
@@ -205,11 +206,13 @@ size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
     }
 
     glm::vec2 currentPos = glm::vec2(0.0F, 1.0F); // top-left corner of the UI node
-    size_t iOutputOffset = sText.size();          // put after text by default
+    size_t iOutputTextOffset = sText.size();      // put after text by default
 
     // Switch to the first row of text.
     currentPos.y -= textHeight;
 
+    size_t iLinesToSkip = getCurrentScrollOffset();
+    size_t iLineIndex = 0;
     for (size_t iCharIndex = 0; iCharIndex < sText.size(); iCharIndex++) {
         const char& character = sText[iCharIndex];
 
@@ -218,12 +221,16 @@ size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
             if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
                 cursorPos.x >= currentPos.x) {
                 // The user clicked after the text is ended on this line.
-                iOutputOffset = iCharIndex;
+                iOutputTextOffset = iCharIndex;
                 break;
             }
 
             currentPos.x = 0.0F;
-            currentPos.y -= textHeight + lineSpacing;
+            if (iLineIndex >= iLinesToSkip) {
+                currentPos.y -= textHeight + lineSpacing;
+            }
+
+            iLineIndex += 1;
             continue;
         }
 
@@ -245,24 +252,30 @@ size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
             if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
                 cursorPos.x >= currentPos.x) {
                 // The user clicked after the text is ended on this line.
-                iOutputOffset = iCharIndex;
+                iOutputTextOffset = iCharIndex;
                 break;
             }
 
             // Switch to a new line.
             currentPos.x = 0.0F;
-            currentPos.y -= textHeight + lineSpacing;
+            if (iLineIndex >= iLinesToSkip) {
+                currentPos.y -= textHeight + lineSpacing;
+            }
+
+            iLineIndex += 1;
         }
 
-        if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
-            cursorPos.x >= currentPos.x && cursorPos.x <= currentPos.x + glyphWidth) {
-            iOutputOffset = iCharIndex;
-            break;
+        if (iLineIndex >= iLinesToSkip) {
+            if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
+                cursorPos.x >= currentPos.x && cursorPos.x <= currentPos.x + glyphWidth) {
+                iOutputTextOffset = iCharIndex;
+                break;
+            }
         }
 
         // Switch to next glyph.
         currentPos.x += distanceToNextGlyph;
     }
 
-    return iOutputOffset;
+    return iOutputTextOffset;
 }

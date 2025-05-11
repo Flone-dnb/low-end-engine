@@ -4,6 +4,8 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "render/UiManager.h"
+#include "render/font/FontManager.h"
+#include "game/Window.h"
 
 // External.
 #include "nameof.hpp"
@@ -31,6 +33,15 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
             },
         .getter = [](Serializable* pThis) -> glm::vec4 {
             return reinterpret_cast<TextUiNode*>(pThis)->getTextColor();
+        }};
+
+    variables.vec4s[NAMEOF_MEMBER(&TextUiNode::scrollBarColor).data()] = ReflectedVariableInfo<glm::vec4>{
+        .setter =
+            [](Serializable* pThis, const glm::vec4& newValue) {
+                reinterpret_cast<TextUiNode*>(pThis)->setScrollBarColor(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec4 {
+            return reinterpret_cast<TextUiNode*>(pThis)->getScrollBarColor();
         }};
 
     variables.floats[NAMEOF_MEMBER(&TextUiNode::lineSpacing).data()] = ReflectedVariableInfo<float>{
@@ -78,6 +89,15 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
             return reinterpret_cast<TextUiNode*>(pThis)->getHandleNewLineChars();
         }};
 
+    variables.bools[NAMEOF_MEMBER(&TextUiNode::bIsScrollBarEnabled).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<TextUiNode*>(pThis)->setIsScrollBarEnabled(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<TextUiNode*>(pThis)->getIsScrollBarEnabled();
+        }};
+
     return TypeReflectionInfo(
         UiNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(TextUiNode).data(),
@@ -85,9 +105,20 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-void TextUiNode::setText(const std::string& sText) { this->sText = sText; }
+void TextUiNode::setText(const std::string& sText) {
+    this->sText = sText;
+
+    iNewLineCharCountInText = 0;
+    for (size_t i = 0; i < sText.size(); i++) {
+        if (sText[i] == '\n') {
+            iNewLineCharCountInText += 1;
+        }
+    }
+}
 
 void TextUiNode::setTextColor(const glm::vec4& color) { this->color = color; }
+
+void TextUiNode::setScrollBarColor(const glm::vec4& color) { scrollBarColor = color; }
 
 void TextUiNode::setTextHeight(float height) { this->textHeight = height; }
 
@@ -97,6 +128,97 @@ void TextUiNode::setIsWordWrapEnabled(bool bIsEnabled) { bIsWordWrapEnabled = bI
 
 void TextUiNode::setHandleNewLineChars(bool bHandleNewLineChars) {
     this->bHandleNewLineChars = bHandleNewLineChars;
+}
+
+void TextUiNode::setIsScrollBarEnabled(bool bEnable) {
+    bIsScrollBarEnabled = bEnable;
+    iCurrentScrollOffset = 0;
+}
+
+void TextUiNode::moveScrollToTextCharacter(size_t iTextCharOffset) {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called while spawned");
+    }
+
+    if (!bIsScrollBarEnabled) [[unlikely]] {
+        Error::showErrorAndThrowException("this function expects scroll bar to be enabled");
+    }
+
+    if (!bIsWordWrapEnabled && !bHandleNewLineChars) {
+        iCurrentScrollOffset = 0;
+        return;
+    }
+
+    iCurrentScrollOffset = getLineIndexForTextChar(iTextCharOffset);
+}
+
+size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called while spawned");
+    }
+
+    if (!bIsScrollBarEnabled) [[unlikely]] {
+        Error::showErrorAndThrowException("this function expects scroll bar to be enabled");
+    }
+
+    if (!bIsWordWrapEnabled && !bHandleNewLineChars) {
+        return 0;
+    }
+
+    // Get font glyphs.
+    auto& mtxLoadedGlyphs = getGameInstanceWhileSpawned()->getRenderer()->getFontManager().getLoadedGlyphs();
+    std::scoped_lock guard(mtxLoadedGlyphs.first);
+
+    // Prepare a placeholder glyph for unknown glyphs.
+    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find('?');
+    if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
+        Error::showErrorAndThrowException("can't find a glyph for `?`");
+    }
+
+    // Prepare some variables.
+    const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
+    const auto textScaleFullscreen = getTextHeight() / FontManager::getFontHeightToLoad();
+    const auto sizeInPixels = glm::vec2(getSize().x * iWindowWidth, getSize().y * iWindowHeight);
+
+    float localX = 0.0F;
+    size_t iLineIndex = 0;
+
+    for (size_t i = 0; i < sText.size(); i++) {
+        if (iTextCharOffset == i) {
+            break;
+        }
+
+        const char& character = sText[i];
+
+        // Handle new line.
+        if (character == '\n' && bHandleNewLineChars) {
+            localX = 0.0F;
+            iLineIndex += 1;
+            continue;
+        }
+
+        // Get glyph.
+        auto charIt = mtxLoadedGlyphs.second.find(character);
+        if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
+            charIt = placeHolderGlythIt;
+        }
+        const auto& glyph = charIt->second;
+
+        const float distanceToNextGlyph =
+            (glyph.advance >> 6) / // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
+            sizeInPixels.x * textScaleFullscreen;
+        const float glyphWidth = std::max(
+            static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);
+
+        if (bIsWordWrapEnabled && (localX + distanceToNextGlyph > 1.0F)) {
+            localX = 0.0F;
+            iLineIndex += 1;
+        }
+
+        localX += glyphWidth;
+    }
+
+    return iLineIndex;
 }
 
 void TextUiNode::onSpawning() {
@@ -132,5 +254,23 @@ void TextUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     if (!mtxChildNodes.second.empty()) {
         Error::showErrorAndThrowException(
             std::format("text ui nodes can't have child nodes (text node \"{}\")", getNodeName()));
+    }
+}
+
+void TextUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
+    UiNode::onMouseScrollMoveWhileHovered(iOffset);
+
+    if (!bIsScrollBarEnabled) {
+        return;
+    }
+
+    if (iOffset < 0) {
+        iCurrentScrollOffset += std::abs(iOffset);
+    } else if (iCurrentScrollOffset > 0) {
+        if (iOffset > iCurrentScrollOffset) {
+            iCurrentScrollOffset = 0;
+        } else {
+            iCurrentScrollOffset -= iOffset;
+        }
     }
 }
