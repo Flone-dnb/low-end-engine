@@ -19,16 +19,16 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Profiler
 - [X] Post-processing effects
 - [X] GUI
-- [ ] Skeletal animations
-- [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
-- [ ] Dynamic shadows
-- [ ] Instancing
 - [ ] Simple editor
-- [ ] Audio engine (using [SoLoud](https://github.com/jarikomppa/soloud))
+- [ ] Audio engine (using [SFML](https://github.com/SFML/SFML))
     - [ ] 2D audio
     - [ ] 3D audio
     - [ ] Audio streaming
     - [ ] Sound effects
+- [ ] Dynamic shadows
+- [ ] Skeletal animations
+- [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
+- [ ] Instancing
 - [ ] AI and pathfinding
 - [ ] Particle effects
 
