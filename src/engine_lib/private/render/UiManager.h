@@ -251,6 +251,17 @@ private:
      */
     void changeFocusedNode(UiNode* pNode);
 
+    /**
+     * Draws an quad in screen (window) coordinates.
+     *
+     * @remark Assumes that @ref mtxData is locked.
+     *
+     * @param screenPos     Position of the top-left corner of the quad.
+     * @param screenSize    Size of the quad.
+     * @param iScreenHeight Height of the screen.
+     */
+    void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
+
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;
 

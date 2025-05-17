@@ -8,6 +8,8 @@ uniform sampler2D colorTexture;
 
 out vec4 outColor;
 
+layout(early_fragment_tests) in;
+
 /// Rendering screen quad.
 void main() {
     outColor = color;

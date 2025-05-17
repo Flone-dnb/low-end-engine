@@ -122,11 +122,13 @@ protected:
 
 private:
     /**
-     * Converts current position of the mouse cursor to offset (in characters) in the text.
+     * Converts the specified position on the screen to offset (in characters) in the text.
+     *
+     * @param screenPos Position on screen in range [0; iWindowWidth][0; iWindowHeight].
      *
      * @return Offset in text in range [0; textSize].
      */
-    size_t convertMouseCursorPosToTextOffset();
+    size_t convertScreenPosToTextOffset(const glm::vec2& screenPos);
 
     /** Empty if text edit is read only or not focused, otherwise value in range [0; textSize]. */
     std::optional<size_t> optionalCursorOffset;

@@ -33,6 +33,8 @@ float convertDepthToViewSpaceDistance(vec2 fragmentUv, float depth) {
     return length(viewPos.xyz);
 }
 
+layout(early_fragment_tests) in;
+
 /// Rendering full screen quad.
 void main() {
     color = vec4(texture(renderedColorTexture, fragmentUv).rgb, 1.0F);

@@ -148,16 +148,15 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         }
 
         const auto layoutOldSize = getSize();
-        // because pivot is left-bottom but we need to start from top-left corner of the layout
-        glm::vec2 childPosTopLeft = glm::vec2(getPosition().x, getPosition().y + layoutOldSize.y);
+        glm::vec2 currentChildPos = getPosition();
 
         // Consider padding.
         if (bIsHorizontal) {
-            childPosTopLeft.y -= padding * layoutOldSize.y;
+            currentChildPos.y += padding * layoutOldSize.y;
         } else {
-            childPosTopLeft.x += padding * layoutOldSize.x;
+            currentChildPos.x += padding * layoutOldSize.x;
         }
-        const auto areaForChildNodes = glm::vec2(layoutOldSize - 2.0F * (padding * layoutOldSize));
+        const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * (padding * layoutOldSize));
 
         // Add spacers to total portion sum.
         const auto spacerPortion = expandPortionSum * childNodeSpacing;
@@ -191,25 +190,25 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             }
             case (ChildNodeExpandRule::EXPAND_ALONG_MAIN_AXIS): {
                 if (bIsHorizontal) {
-                    childNewSize = glm::vec2(expandFactor * areaForChildNodes.x, childOldSize.y);
+                    childNewSize = glm::vec2(expandFactor * sizeForChildNodes.x, childOldSize.y);
                 } else {
-                    childNewSize = glm::vec2(childOldSize.x, expandFactor * areaForChildNodes.y);
+                    childNewSize = glm::vec2(childOldSize.x, expandFactor * sizeForChildNodes.y);
                 }
                 break;
             }
             case (ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS): {
                 if (bIsHorizontal) {
-                    childNewSize = glm::vec2(childOldSize.x, expandFactor * areaForChildNodes.y);
+                    childNewSize = glm::vec2(childOldSize.x, expandFactor * sizeForChildNodes.y);
                 } else {
-                    childNewSize = glm::vec2(expandFactor * areaForChildNodes.x, childOldSize.y);
+                    childNewSize = glm::vec2(expandFactor * sizeForChildNodes.x, childOldSize.y);
                 }
                 break;
             }
             case (ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS): {
                 if (bIsHorizontal) {
-                    childNewSize = glm::vec2(expandFactor * areaForChildNodes.x, areaForChildNodes.y);
+                    childNewSize = glm::vec2(expandFactor * sizeForChildNodes.x, sizeForChildNodes.y);
                 } else {
-                    childNewSize = glm::vec2(areaForChildNodes.x, expandFactor * areaForChildNodes.y);
+                    childNewSize = glm::vec2(sizeForChildNodes.x, expandFactor * sizeForChildNodes.y);
                 }
                 break;
             }
@@ -221,17 +220,15 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             }
 
             pUiChild->setSize(childNewSize);
-
-            // Set position for pivot (left-bottom).
-            pUiChild->setPosition(glm::vec2(childPosTopLeft.x, childPosTopLeft.y - childNewSize.y));
+            pUiChild->setPosition(currentChildPos);
 
             if (bIsHorizontal) {
-                const auto lastNodeSize = childNewSize.x + spacerActualPortion * areaForChildNodes.x;
-                childPosTopLeft.x += lastNodeSize;
+                const auto lastNodeSize = childNewSize.x + spacerActualPortion * sizeForChildNodes.x;
+                currentChildPos.x += lastNodeSize;
                 layoutNewSizeOnMainAxis += lastNodeSize;
             } else {
-                const auto lastNodeSize = childNewSize.y + spacerActualPortion * areaForChildNodes.y;
-                childPosTopLeft.y -= lastNodeSize;
+                const auto lastNodeSize = childNewSize.y + spacerActualPortion * sizeForChildNodes.y;
+                currentChildPos.y += lastNodeSize;
                 layoutNewSizeOnMainAxis += lastNodeSize;
             }
         }
@@ -239,9 +236,9 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         if (!mtxChildNodes.second.empty()) {
             // Remove last spacer.
             if (bIsHorizontal) {
-                layoutNewSizeOnMainAxis -= spacerActualPortion * areaForChildNodes.x;
+                layoutNewSizeOnMainAxis -= spacerActualPortion * sizeForChildNodes.x;
             } else {
-                layoutNewSizeOnMainAxis -= spacerActualPortion * areaForChildNodes.y;
+                layoutNewSizeOnMainAxis -= spacerActualPortion * sizeForChildNodes.y;
             }
         }
 

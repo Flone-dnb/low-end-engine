@@ -100,7 +100,7 @@ public:
     void setFocused();
 
     /**
-     * Returns position on the screen in range [0.0; 1.0].
+     * Returns position of the top-left corner of the UI node in range [0.0; 1.0] relative to screen size.
      *
      * @return Position.
      */

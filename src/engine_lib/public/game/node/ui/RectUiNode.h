@@ -141,7 +141,7 @@ private:
     float padding = 0.0F;
 
     /** Fill color. */
-    glm::vec4 color = glm::vec4(0.1F, 0.1F, 0.1F, 1.0F); // NOLINT
+    glm::vec4 color = glm::vec4(0.3F, 0.3F, 0.3F, 1.0F); // NOLINT
 
     /** Empty if not used, otherwise path to the texture (relative the `res` directory) to load. */
     std::string sPathToTextureRelativeRes;

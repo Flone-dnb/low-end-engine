@@ -372,23 +372,23 @@ void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bo
 
     const glm::vec2 cursorPos = glm::vec2(
         static_cast<float>(iCursorX) / static_cast<float>(iWidth),
-        1.0F - static_cast<float>(iCursorY) / static_cast<float>(iHeight)); // flip Y
+        static_cast<float>(iCursorY) / static_cast<float>(iHeight));
 
     if (!mtxData.second.modalInputReceivingNodes.empty()) {
         for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
-            const auto leftBottomPos = pNode->getPosition();
+            const auto pos = pNode->getPosition();
             const auto size = pNode->getSize();
 
-            if (leftBottomPos.y > cursorPos.y) {
+            if (cursorPos.y < pos.y) {
                 continue;
             }
-            if (leftBottomPos.x > cursorPos.x) {
+            if (cursorPos.x < pos.x) {
                 continue;
             }
-            if (leftBottomPos.y + size.y < cursorPos.y) {
+            if (cursorPos.y > pos.y + size.y) {
                 continue;
             }
-            if (leftBottomPos.x + size.x < cursorPos.x) {
+            if (cursorPos.x > pos.x + size.x) {
                 continue;
             }
 
@@ -405,19 +405,19 @@ void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bo
         bool bFoundNode = false;
 
         for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
-            const auto leftBottomPos = pNode->getPosition();
+            const auto pos = pNode->getPosition();
             const auto size = pNode->getSize();
 
-            if (leftBottomPos.y > cursorPos.y) {
+            if (cursorPos.y < pos.y) {
                 continue;
             }
-            if (leftBottomPos.x > cursorPos.x) {
+            if (cursorPos.x < pos.x) {
                 continue;
             }
-            if (leftBottomPos.y + size.y < cursorPos.y) {
+            if (cursorPos.y > pos.y + size.y) {
                 continue;
             }
-            if (leftBottomPos.x + size.x < cursorPos.x) {
+            if (cursorPos.x > pos.x + size.x) {
                 continue;
             }
 
@@ -441,25 +441,25 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
 
     const glm::vec2 cursorPos = glm::vec2(
         static_cast<float>(iCursorX) / static_cast<float>(iWidth),
-        1.0F - static_cast<float>(iCursorY) / static_cast<float>(iHeight)); // flip Y
+        static_cast<float>(iCursorY) / static_cast<float>(iHeight));
 
     bool bFoundNode = false;
 
     if (!mtxData.second.modalInputReceivingNodes.empty()) {
         for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
-            const auto leftBottomPos = pNode->getPosition();
+            const auto pos = pNode->getPosition();
             const auto size = pNode->getSize();
 
-            if (leftBottomPos.y > cursorPos.y) {
+            if (cursorPos.y < pos.y) {
                 continue;
             }
-            if (leftBottomPos.x > cursorPos.x) {
+            if (cursorPos.x < pos.x) {
                 continue;
             }
-            if (leftBottomPos.y + size.y < cursorPos.y) {
+            if (cursorPos.y > pos.y + size.y) {
                 continue;
             }
-            if (leftBottomPos.x + size.x < cursorPos.x) {
+            if (cursorPos.x > pos.x + size.x) {
                 continue;
             }
 
@@ -477,19 +477,19 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
         // Check rendered input nodes in reverse order (from front layer to back layer).
         for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
             for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
-                const auto leftBottomPos = pNode->getPosition();
+                const auto pos = pNode->getPosition();
                 const auto size = pNode->getSize();
 
-                if (leftBottomPos.y > cursorPos.y) {
+                if (cursorPos.y < pos.y) {
                     continue;
                 }
-                if (leftBottomPos.x > cursorPos.x) {
+                if (cursorPos.x < pos.x) {
                     continue;
                 }
-                if (leftBottomPos.y + size.y < cursorPos.y) {
+                if (cursorPos.y > pos.y + size.y) {
                     continue;
                 }
-                if (leftBottomPos.x + size.x < cursorPos.x) {
+                if (cursorPos.x > pos.x + size.x) {
                     continue;
                 }
 
@@ -537,7 +537,7 @@ bool UiManager::hasModalUiNodeTree() {
 UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
-
+    // uiProjMatrix[1][1] *= -1; // flip OpenGL's bottom-left viewport to the usual top-left.
     mtxData.second.pScreenQuadGeometry = GpuResourceManager::createQuad(true);
 
     // Load shader.
@@ -629,24 +629,7 @@ void UiManager::drawRectNodes(size_t iLayer) {
                 pos = glm::vec2(pos.x * iWindowWidth, pos.y * iWindowHeight);
                 size = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
 
-                // Update VBO.
-                const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                    glm::vec4(pos.x, pos.y + size.y, 0.0F, 0.0F),
-                    glm::vec4(pos.x + size.x, pos.y, 1.0F, 1.0F),
-                    glm::vec4(pos.x, pos.y, 0.0F, 1.0F),
-
-                    glm::vec4(pos.x, pos.y + size.y, 0.0F, 0.0F),
-                    glm::vec4(pos.x + size.x, pos.y + size.y, 1.0F, 0.0F),
-                    glm::vec4(pos.x + size.x, pos.y, 1.0F, 1.0F)};
-
-                // Copy new vertex data to VBO.
-                glBindBuffer(
-                    GL_ARRAY_BUFFER, mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                // Render quad.
-                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                drawQuad(pos, size, iWindowHeight);
             }
         }
 
@@ -738,13 +721,12 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                 // Prepare some variables for rendering.
                 const auto sText = pTextNode->getText();
-                const auto leftBottomTextPos = pTextNode->getPosition();
-                const auto screenMaxXForWordWrap =
-                    (leftBottomTextPos.x + pTextNode->getSize().x) * iWindowWidth;
+                const auto textPos = pTextNode->getPosition();
+                const auto screenMaxXForWordWrap = (textPos.x + pTextNode->getSize().x) * iWindowWidth;
 
-                float screenX = leftBottomTextPos.x * iWindowWidth;
-                float screenY = (1.0F - leftBottomTextPos.y) * iWindowHeight;
-                const auto screenYEnd = screenY - pTextNode->getSize().y * iWindowHeight;
+                float screenX = textPos.x * iWindowWidth;
+                float screenY = textPos.y * iWindowHeight;
+                const auto screenYEnd = screenY + pTextNode->getSize().y * iWindowHeight;
                 const auto scale = pTextNode->getTextHeight() / FontManager::getFontHeightToLoad();
 
                 const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
@@ -760,7 +742,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
 
                 // Switch to the first row of text.
-                screenY -= textHeightInPixels;
+                screenY += textHeightInPixels;
 
                 // Render each character.
                 size_t iLineIndex = 0;
@@ -794,16 +776,16 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                         // Switch to a new line.
                         if (iLineIndex >= iLinesToSkip) {
-                            screenY -= textHeightInPixels + lineSpacingInPixels;
+                            screenY += textHeightInPixels + lineSpacingInPixels;
                         }
-                        screenX = leftBottomTextPos.x * iWindowWidth;
+                        screenX = textPos.x * iWindowWidth;
 
                         if (optionalSelection.has_value() && bSelectionStartPosFound) {
                             vSelectionLinesToDraw.push_back(
                                 {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
                         }
 
-                        if (screenY < screenYEnd) {
+                        if (screenY > screenYEnd) {
                             bReachedEndOfUiNode = true;
                         }
 
@@ -861,8 +843,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                                     // Selection start was above (we skipped that line due to scroll).
                                     bSelectionStartPosFound = true;
                                     vSelectionLinesToDraw.push_back(
-                                        {glm::vec2(leftBottomTextPos.x * iWindowWidth, screenY),
-                                         glm::vec2(leftBottomTextPos.x * iWindowWidth, screenY)});
+                                        {glm::vec2(textPos.x * iWindowWidth, screenY),
+                                         glm::vec2(textPos.x * iWindowWidth, screenY)});
                                 }
                             } else if (bSelectionStartPosFound && optionalSelection->second == iCharIndex) {
                                 if (iLineIndex >= iLinesToSkip) {
@@ -877,34 +859,15 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                     if (iLineIndex >= iLinesToSkip) {
                         float xpos = screenX + glyph.bearing.x * scale;
-                        float ypos = screenY - (glyph.size.y - glyph.bearing.y) * scale;
+                        float ypos = screenY - glyph.bearing.y * scale;
 
                         float width = static_cast<float>(glyph.size.x) * scale;
                         float height = static_cast<float>(glyph.size.y) * scale;
 
                         // Space character has 0 width so don't submit any rendering.
                         if (glyph.size.x != 0) {
-                            // Update VBO.
-                            const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                                glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
-                                glm::vec4(xpos + width, ypos, 1.0F, 1.0F),
-                                glm::vec4(xpos, ypos, 0.0F, 1.0F),
-
-                                glm::vec4(xpos, ypos + height, 0.0F, 0.0F),
-                                glm::vec4(xpos + width, ypos + height, 1.0F, 0.0F),
-                                glm::vec4(xpos + width, ypos, 1.0F, 1.0F)};
-
                             glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-
-                            // Copy new vertex data to VBO.
-                            glBindBuffer(
-                                GL_ARRAY_BUFFER,
-                                mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                            glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                            // Render quad.
-                            glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                            drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
                             iRenderedCharCount += 1;
                         }
                     }
@@ -915,7 +878,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                 // Check cursor.
                 if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size() &&
-                    screenX < screenMaxXForWordWrap && screenY > screenYEnd && iRenderedCharCount != 0) {
+                    screenX < screenMaxXForWordWrap && screenY < screenYEnd && iRenderedCharCount != 0) {
                     vCursorScreenPosToDraw.push_back(
                         CursorDrawInfo{
                             .screenPos = glm::vec2(screenX, screenY),
@@ -936,9 +899,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                 // Check scroll bar.
                 constexpr float scrollBarWidthRelative = 0.025F; // relative to width of the UI node
-                if (pTextNode->getIsScrollBarEnabled() && iCharIndex + 1 < pTextNode->getText().size()) {
-                    iLinesToSkip = pTextNode->iCurrentScrollOffset;
-
+                if (pTextNode->getIsScrollBarEnabled()) {
                     const float widthInPixels =
                         scrollBarWidthRelative * pTextNode->getSize().x * iWindowWidth;
                     const auto iAverageLineCountDisplayed =
@@ -952,12 +913,12 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     const float verticalPos = std::min(
                         1.0F,
                         static_cast<float>(pTextNode->iCurrentScrollOffset) /
-                            static_cast<float>(pTextNode->iNewLineCharCountInText));
+                            static_cast<float>(std::max(pTextNode->iNewLineCharCountInText, 1ULL)));
 
                     vScrollBarToDraw.push_back(
                         ScrollBarDrawInfo{
-                            .posInPixels = glm::vec2(
-                                screenMaxXForWordWrap - widthInPixels, leftBottomTextPos.y * iWindowHeight),
+                            .posInPixels =
+                                glm::vec2(screenMaxXForWordWrap - widthInPixels, textPos.y * iWindowHeight),
                             .widthInPixels = widthInPixels,
                             .heightInPixels = pTextNode->getSize().y * iWindowHeight,
                             .verticalPos = verticalPos,
@@ -986,27 +947,12 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
             pShaderProgram->setBoolToShader("bIsUsingTexture", false);
 
             for (const auto& cursorInfo : vCursorScreenPosToDraw) {
-                const auto screenPos = cursorInfo.screenPos;
                 const float cursorWidth = 2.0F; // NOLINT
                 const float cursorHeight = cursorInfo.height * iWindowHeight;
+                const auto screenPos = glm::vec2(
+                    cursorInfo.screenPos.x, cursorInfo.screenPos.y - cursorHeight); // to draw from top
 
-                const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                    glm::vec4(screenPos.x, screenPos.y + cursorHeight, 0.0F, 0.0F),
-                    glm::vec4(screenPos.x + cursorWidth, screenPos.y, 1.0F, 1.0F),
-                    glm::vec4(screenPos.x, screenPos.y, 0.0F, 1.0F),
-
-                    glm::vec4(screenPos.x, screenPos.y + cursorHeight, 0.0F, 0.0F),
-                    glm::vec4(screenPos.x + cursorWidth, screenPos.y + cursorHeight, 1.0F, 0.0F),
-                    glm::vec4(screenPos.x + cursorWidth, screenPos.y, 1.0F, 1.0F)};
-
-                // Copy new vertex data to VBO.
-                glBindBuffer(
-                    GL_ARRAY_BUFFER, mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                // Render quad.
-                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                drawQuad(screenPos, glm::vec2(cursorWidth, cursorHeight), iWindowHeight);
             }
         }
 
@@ -1032,25 +978,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 for (auto& [startPos, endPos] : selectionInfo.vLineStartEndScreenPos) {
                     const auto width = endPos.x - startPos.x;
                     const auto height = selectionInfo.textHeightInPixels;
+                    const auto pos = glm::vec2(startPos.x, startPos.y - height); // to draw from top
 
-                    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                        glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
-                        glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F),
-                        glm::vec4(startPos.x, startPos.y, 0.0F, 1.0F),
-
-                        glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
-                        glm::vec4(startPos.x + width, startPos.y + height, 1.0F, 0.0F),
-                        glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F)};
-
-                    // Copy new vertex data to VBO.
-                    glBindBuffer(
-                        GL_ARRAY_BUFFER,
-                        mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                    // Render quad.
-                    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                    drawQuad(pos, glm::vec2(width, height), iWindowHeight);
                 }
             }
         }
@@ -1074,30 +1004,17 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
             for (auto& scrollBarInfo : vScrollBarToDraw) {
                 pShaderProgram->setVector4ToShader("color", scrollBarInfo.color);
 
-                auto startPos = scrollBarInfo.posInPixels;
-                startPos.y -= scrollBarInfo.heightInPixels * scrollBarInfo.verticalPos;
-                startPos.y += (1.0F - scrollBarInfo.verticalSize) * scrollBarInfo.heightInPixels;
-
                 const auto width = scrollBarInfo.widthInPixels;
-                const auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;
+                auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;
+                auto pos = scrollBarInfo.posInPixels;
+                pos.y += scrollBarInfo.verticalPos * scrollBarInfo.heightInPixels;
 
-                const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                    glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
-                    glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F),
-                    glm::vec4(startPos.x, startPos.y, 0.0F, 1.0F),
+                // TODO: scroll bar goes under the UI node sometimes when near end of the text
+                if (scrollBarInfo.verticalPos + scrollBarInfo.verticalSize > 1.0F) {
+                    height = (1.0F - scrollBarInfo.verticalPos) * scrollBarInfo.heightInPixels;
+                }
 
-                    glm::vec4(startPos.x, startPos.y + height, 0.0F, 0.0F),
-                    glm::vec4(startPos.x + width, startPos.y + height, 1.0F, 0.0F),
-                    glm::vec4(startPos.x + width, startPos.y, 1.0F, 1.0F)};
-
-                // Copy new vertex data to VBO.
-                glBindBuffer(
-                    GL_ARRAY_BUFFER, mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                // Render quad.
-                glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                drawQuad(pos, glm::vec2(width, height), iWindowHeight);
             }
         }
 
@@ -1123,6 +1040,31 @@ void UiManager::changeFocusedNode(UiNode* pNode) {
     if (mtxData.second.pFocusedNode != nullptr) {
         mtxData.second.pFocusedNode->onGainedFocus();
     }
+}
+
+void UiManager::drawQuad(
+    const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const {
+    // Flip Y from our top-left origin to OpenGL's bottom-left origin.
+    const float posY = static_cast<float>(iScreenHeight) - screenPos.y;
+
+    // Update vertices.
+    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
+
+        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+    };
+
+    // Copy new vertex data to VBO.
+    glBindBuffer(GL_ARRAY_BUFFER, mtxData.second.pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Render quad.
+    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
 }
 
 UiManager::~UiManager() {

@@ -82,11 +82,14 @@ void TextEditUiNode::onMouseClickOnUiNode(
         return;
     }
 
+    const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
+    const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
+
     if (bIsPressedDown) {
-        optionalCursorOffset = convertMouseCursorPosToTextOffset();
+        optionalCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
         optionalSelection = {};
     } else {
-        const auto iCursorOffset = convertMouseCursorPosToTextOffset();
+        const auto iCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
         if (optionalCursorOffset.has_value() && iCursorOffset != *optionalCursorOffset) {
             optionalSelection = {
                 std::min(iCursorOffset, *optionalCursorOffset),
@@ -134,6 +137,48 @@ void TextEditUiNode::onKeyboardInputWhileFocused(
         optionalCursorOffset = std::min(*optionalCursorOffset + 1, getText().size());
     } else if (button == KeyboardButton::LEFT && (*optionalCursorOffset) > 0) {
         (*optionalCursorOffset) -= 1;
+    } else if (
+        (button == KeyboardButton::UP || button == KeyboardButton::DOWN) &&
+        optionalCursorOffset.has_value() && *optionalCursorOffset > 0) {
+        // TODO: using a very simple (and inaccurate) approach.
+        const auto sText = getText();
+        bool bFoundLineStart = false;
+        size_t iCharCountFromLineStart = 0;
+        size_t iCurrentCharIndex = 0;
+        for (iCurrentCharIndex = *optionalCursorOffset; iCurrentCharIndex > 0; iCurrentCharIndex--) {
+            if (sText[iCurrentCharIndex] == '\n') {
+                bFoundLineStart = true;
+                break;
+            }
+
+            iCharCountFromLineStart += 1;
+        }
+        if (iCurrentCharIndex == 0) {
+            bFoundLineStart = true;
+        }
+
+        if (bFoundLineStart) {
+            if (button == KeyboardButton::UP && iCurrentCharIndex > 0) {
+                iCurrentCharIndex -= 1;
+                for (; iCurrentCharIndex > 0; iCurrentCharIndex--) {
+                    if (sText[iCurrentCharIndex] == '\n') {
+                        *optionalCursorOffset = iCurrentCharIndex + iCharCountFromLineStart;
+                        break;
+                    }
+                }
+                if (iCurrentCharIndex == 0) {
+                    *optionalCursorOffset = iCharCountFromLineStart;
+                }
+            } else {
+                for (iCurrentCharIndex = *optionalCursorOffset; iCurrentCharIndex < sText.size();
+                     iCurrentCharIndex++) {
+                    if (sText[iCurrentCharIndex] == '\n') {
+                        *optionalCursorOffset = iCurrentCharIndex + 1 + iCharCountFromLineStart;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -174,19 +219,16 @@ void TextEditUiNode::onLostFocus() {
     optionalCursorOffset = {};
 }
 
-size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
+size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) {
     const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
-    const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
 
-    const auto mouseCursorPos = glm::vec2(
-        static_cast<float>(iCursorX) / static_cast<float>(iWindowWidth),
-        1.0F - static_cast<float>(iCursorY) / static_cast<float>(iWindowHeight)); // flip Y
-
-    const auto leftBottomPos = getPosition();
     const auto size = getSize();
 
-    const auto cursorPos = glm::vec2(
-        (mouseCursorPos.x - leftBottomPos.x) / size.x, (mouseCursorPos.y - leftBottomPos.y) / size.y);
+    const auto targetPos = glm::vec2(
+        static_cast<float>(screenPos.x) / static_cast<float>(iWindowWidth),
+        static_cast<float>(screenPos.y) / static_cast<float>(iWindowHeight));
+
+    const auto textCursorPos = (targetPos - getPosition()) / size;
 
     // Determine after which character to put a cursor.
     const auto textScaleFullscreen = getTextHeight() / FontManager::getFontHeightToLoad();
@@ -205,11 +247,11 @@ size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
         Error::showErrorAndThrowException("can't find a glyph for `?`");
     }
 
-    glm::vec2 currentPos = glm::vec2(0.0F, 1.0F); // top-left corner of the UI node
-    size_t iOutputTextOffset = sText.size();      // put after text by default
+    glm::vec2 localCurrentPos = glm::vec2(0.0F, 0.0F); // in range [0.0; 1.0]
+    size_t iOutputTextOffset = sText.size();           // put cursor after text by default
 
     // Switch to the first row of text.
-    currentPos.y -= textHeight;
+    localCurrentPos.y += textHeight;
 
     size_t iLinesToSkip = getCurrentScrollOffset();
     size_t iLineIndex = 0;
@@ -218,16 +260,16 @@ size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
 
         // Handle new line.
         if (character == '\n' && getHandleNewLineChars()) {
-            if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
-                cursorPos.x >= currentPos.x) {
+            if (textCursorPos.y >= localCurrentPos.y - (textHeight + lineSpacing) &&
+                textCursorPos.y <= localCurrentPos.y && textCursorPos.x >= localCurrentPos.x) {
                 // The user clicked after the text is ended on this line.
                 iOutputTextOffset = iCharIndex;
                 break;
             }
 
-            currentPos.x = 0.0F;
+            localCurrentPos.x = 0.0F;
             if (iLineIndex >= iLinesToSkip) {
-                currentPos.y -= textHeight + lineSpacing;
+                localCurrentPos.y += textHeight + lineSpacing;
             }
 
             iLineIndex += 1;
@@ -248,33 +290,34 @@ size_t TextEditUiNode::convertMouseCursorPosToTextOffset() {
             static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);
 
         // Handle word wrap.
-        if (getIsWordWrapEnabled() && (currentPos.x + distanceToNextGlyph > 1.0F)) {
-            if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
-                cursorPos.x >= currentPos.x) {
+        if (getIsWordWrapEnabled() && (localCurrentPos.x + distanceToNextGlyph > 1.0F)) {
+            if (textCursorPos.y >= localCurrentPos.y - (textHeight + lineSpacing) &&
+                textCursorPos.y <= localCurrentPos.y && textCursorPos.x >= localCurrentPos.x) {
                 // The user clicked after the text is ended on this line.
                 iOutputTextOffset = iCharIndex;
                 break;
             }
 
             // Switch to a new line.
-            currentPos.x = 0.0F;
+            localCurrentPos.x = 0.0F;
             if (iLineIndex >= iLinesToSkip) {
-                currentPos.y -= textHeight + lineSpacing;
+                localCurrentPos.y += textHeight + lineSpacing;
             }
 
             iLineIndex += 1;
         }
 
         if (iLineIndex >= iLinesToSkip) {
-            if (cursorPos.y >= currentPos.y && cursorPos.y <= currentPos.y + textHeight + lineSpacing &&
-                cursorPos.x >= currentPos.x && cursorPos.x <= currentPos.x + glyphWidth) {
+            if (textCursorPos.y >= localCurrentPos.y - (textHeight + lineSpacing) &&
+                textCursorPos.y <= localCurrentPos.y && textCursorPos.x >= localCurrentPos.x &&
+                textCursorPos.x <= localCurrentPos.x + glyphWidth) {
                 iOutputTextOffset = iCharIndex;
                 break;
             }
         }
 
         // Switch to next glyph.
-        currentPos.x += distanceToNextGlyph;
+        localCurrentPos.x += distanceToNextGlyph;
     }
 
     return iOutputTextOffset;

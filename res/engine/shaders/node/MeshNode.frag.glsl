@@ -12,6 +12,8 @@ layout(location = 0) uniform sampler2D diffuseTexture;
 
 out vec4 color;
 
+layout(early_fragment_tests) in;
+
 /// Entry point.
 void main() {
     // Normals may be unnormalized after the rasterization (when they are interpolated).

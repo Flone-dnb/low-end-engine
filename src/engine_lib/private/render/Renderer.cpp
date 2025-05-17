@@ -39,7 +39,10 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
 
     // Enable back face culling.
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT); // front because we use DirectX/Vulkan conversion for everything
+    glCullFace(GL_BACK);
+
+    // Use DirectX/Vulkan winding order.
+    glFrontFace(GL_CW);
 
     // Setup clear values.
     glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
