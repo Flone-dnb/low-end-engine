@@ -4,7 +4,7 @@ This is a cross-platform 3D game engine that targets low-end handheld ARM64 Linu
 
 This engine is most suited for small non open world 3D games with low-poly-ish graphics. This engine is small (fast to learn) and intuitive to use.
 
-> Running games made with this engine on `libmali` drivers (which your handheld's OS might use) may cause issues and crashes (for example loading a texture may cause black screen and/or out of memory error) instead prefer to use `panfrost` drivers if your OS provides them. Most of the testing is done on Rocknix which provides an option to change used driver in the setting.
+> Running games made with this engine on `libmali` drivers (which your handheld's OS might use) may cause issues and crashes (for example loading a texture may cause black screen and/or out of memory error) instead prefer to use `panfrost` drivers if your OS provides them. Most of the testing is done on Rocknix which provides an option to change used driver in the settings.
 
 # Roadmap
 
