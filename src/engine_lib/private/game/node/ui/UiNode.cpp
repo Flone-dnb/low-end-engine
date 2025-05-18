@@ -191,6 +191,9 @@ void UiNode::onChangedReceivingInputWhileSpawned(bool bEnabledNow) {
 void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     Node::onAfterAttachedToNewParent(bThisNodeBeingAttached);
 
+    // Reset clip that maybe was used by the previous parent.
+    clipY = glm::vec2(0.0F, 1.0F); // NOLINT
+
     if (!isSpawned()) {
         return;
     }

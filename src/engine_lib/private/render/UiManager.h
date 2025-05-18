@@ -20,6 +20,7 @@ class ShaderProgram;
 class UiNode;
 class TextUiNode;
 class RectUiNode;
+class LayoutUiNode;
 
 /** Keeps track of spawned UI nodes and handles UI rendering. */
 class UiManager {
@@ -163,13 +164,16 @@ public:
 private:
     /** Groups mutex-guarded data. */
     struct Data {
-        /** Groups various types of spawned and visible UI nodes to render. */
-        struct SpawnedVisibleUiNodes {
+        /** Groups various types of spawned and visible UI nodes to render per layer. */
+        struct SpawnedVisibleLayerUiNodes {
             /** Node depth - text nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<TextUiNode*>>> vTextNodes;
 
             /** Node depth - rect nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<RectUiNode*>>> vRectNodes;
+
+            /** Layout nodes from @ref receivingInputUiNodes that need their scroll bar to be rendered. */
+            std::unordered_set<LayoutUiNode*> layoutNodesWithScrollBars;
 
             /** UI nodes that receive input. */
             std::unordered_set<UiNode*> receivingInputUiNodes;
@@ -187,7 +191,7 @@ private:
              */
             size_t getTotalNodeCount() const {
                 return vTextNodes.size() + vRectNodes.size() + receivingInputUiNodes.size() +
-                       receivingInputUiNodesRenderedLastFrame.size();
+                       receivingInputUiNodesRenderedLastFrame.size() + layoutNodesWithScrollBars.size();
             }
         };
 
@@ -209,7 +213,7 @@ private:
          * @remark It's safe to store raw pointers here because node will notify this manager when
          * the node is becoming invisible or despawning.
          */
-        std::array<SpawnedVisibleUiNodes, static_cast<size_t>(UiLayer::COUNT)> vSpawnedVisibleNodes;
+        std::array<SpawnedVisibleLayerUiNodes, static_cast<size_t>(UiLayer::COUNT)> vSpawnedVisibleNodes;
 
         /** Shader program used for rendering text. */
         std::shared_ptr<ShaderProgram> pTextShaderProgram;
@@ -219,6 +223,27 @@ private:
 
         /** Quad used for rendering some nodes. */
         std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
+    };
+
+    /** Groups data used to draw a scroll bar. */
+    struct ScrollBarDrawInfo {
+        /** Position in pixels. */
+        glm::vec2 posInPixels = glm::vec2(0.0F, 0.0F);
+
+        /** Width in pixels. */
+        float widthInPixels = 0.0F;
+
+        /** Height in pixels. */
+        float heightInPixels = 0.0F;
+
+        /** Start offset (from the top) of scroll bar in range [0.0; 1.0] relative to @ref heightInPixels. */
+        float verticalPos = 0.0F;
+
+        /** Size of the scroll bar in range [0.0; 1.0] relative to @ref heightInPixels. */
+        float verticalSize = 0.0F;
+
+        /** Color of the scroll bar. */
+        glm::vec4 color = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F); // NOLINT
     };
 
     /**
@@ -243,6 +268,24 @@ private:
     void drawTextNodes(size_t iLayer);
 
     /**
+     * Renders scroll bars for layout UI nodes.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawLayoutScrollBars(size_t iLayer);
+
+    /**
+     * Renders scroll bars.
+     *
+     * @warning Expects that @ref mtxData is locked.
+     *
+     * @param vScrollBarsToDraw Scroll bars to render.
+     * @param iWindowHeight     Height of the window.
+     */
+    void drawScrollBarsDataLocked(
+        const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw, unsigned int iWindowHeight);
+
+    /**
      * Changes node that has focus.
      *
      * @remark Triggers UiNode focus related functions.
@@ -258,9 +301,15 @@ private:
      *
      * @param screenPos     Position of the top-left corner of the quad.
      * @param screenSize    Size of the quad.
+     * @param yClip         Start Y and end Y in range [0.0; 1.0] relative to size of the quad to cut
+     * (to not render).
      * @param iScreenHeight Height of the screen.
      */
-    void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
+    void drawQuad(
+        const glm::vec2& screenPos,
+        const glm::vec2& screenSize,
+        unsigned int iScreenHeight,
+        const glm::vec2& yClip = glm::vec2(0.0F, 1.0F)) const;
 
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;
@@ -270,4 +319,7 @@ private:
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
+
+    /** Width of the scroll bar relative to the width of the UI node. */
+    static constexpr float scrollBarWidthRelativeNode = 0.025F;
 };

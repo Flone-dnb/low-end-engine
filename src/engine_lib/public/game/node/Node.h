@@ -466,6 +466,8 @@ protected:
     /**
      * Called after some child node was attached to this node.
      *
+     * @remark Called after @ref onAfterAttachedToNewParent is called on child nodes.
+     *
      * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
      */
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) {}
@@ -1047,7 +1049,7 @@ inline NodeType* Node::addChildNode(
     pNode->mtxParentNode.second = this;
     mtxChildNodes.second.push_back(std::move(pNodeToAttachToThis));
 
-    // Notify the child node (here, SpatialNode will save a pointer to the first SpatialNode in the parent
+    // First notify the children (here, SpatialNode will save a pointer to the first SpatialNode in the parent
     // chain and will use it in `setWorld...` operations).
     pNode->notifyAboutAttachedToNewParent(true);
 
@@ -1068,7 +1070,7 @@ inline NodeType* Node::addChildNode(
         pNode->despawn();
     }
 
-    // Notify self.
+    // After children were notified - notify the parent.
     onAfterNewDirectChildAttached(pNode);
 
     return pNode;

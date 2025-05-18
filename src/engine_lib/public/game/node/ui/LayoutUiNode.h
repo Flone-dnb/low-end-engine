@@ -94,6 +94,20 @@ public:
     void setPadding(float padding);
 
     /**
+     * Sets whether scroll bar is enabled or not.
+     *
+     * @param bEnable `true` to enable.
+     */
+    void setIsScrollBarEnabled(bool bEnable);
+
+    /**
+     * Sets color of the scroll bar.
+     *
+     * @param color Color in the RGBA format.
+     */
+    void setScrollBarColor(const glm::vec4& color);
+
+    /**
      * Returns layout rule for child nodes.
      *
      * @return `true` for horizontal, `false` for vertical.
@@ -121,7 +135,27 @@ public:
      */
     ChildNodeExpandRule getChildNodeExpandRule() const { return childExpandRule; }
 
+    /**
+     * Tells if scroll bar is enabled.
+     *
+     * @return `true` if enabled.
+     */
+    bool getIsScrollBarEnabled() const { return bIsScrollBarEnabled; }
+
+    /**
+     * Returns color of the scroll bar.
+     *
+     * @return RGBA color.
+     */
+    glm::vec4 getScrollBarColor() const { return scrollBarColor; }
+
 protected:
+    /** Called after this object was finished deserializing from file. */
+    virtual void onAfterDeserialized() override;
+
+    /** Called after node's visibility was changed. */
+    virtual void onVisibilityChanged() override;
+
     /**
      * Called after @ref onSpawning when this node and all of node's child nodes (at the moment
      * of spawning) were spawned.
@@ -176,12 +210,34 @@ protected:
      */
     virtual void onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIndexTo) override;
 
+    /**
+     * Called when the window receives mouse scroll movement while floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iOffset Movement offset.
+     */
+    virtual void onMouseScrollMoveWhileHovered(int iOffset) override;
+
 private:
     /** Recalculates position and size for direct child nodes. */
     void recalculatePosAndSizeForDirectChildNodes();
 
     /** First (most closer to this node) layout node in the parent chain. */
     std::pair<std::recursive_mutex, LayoutUiNode*> mtxLayoutParent;
+
+    /** Color of the scroll bar. */
+    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F); // NOLINT
+
+    /** Offset of the scroll bar in lines of text. */
+    size_t iCurrentScrollOffset = 0;
+
+    /**
+     * Total height of the layout including all child nodes, height is relative to the size of the layout
+     * but can be bigger than 1.0.
+     */
+    float totalScrollHeight = 0.0F;
 
     /** Expand rule for child nodes. */
     ChildNodeExpandRule childExpandRule = ChildNodeExpandRule::DONT_EXPAND;
@@ -197,4 +253,10 @@ private:
 
     /** Used to avoid recursion. */
     bool bIsCurrentlyUpdatingChildNodes = false;
+
+    /** Scroll bar state. */
+    bool bIsScrollBarEnabled = false;
+
+    /** Scroll step in range [0.0; 1.0] where 1.0 means full size of the layout. */
+    static constexpr float scrollBarStepLocal = 0.15F;
 };

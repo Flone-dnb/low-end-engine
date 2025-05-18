@@ -8,6 +8,7 @@
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/RectUiNode.h"
+#include "game/node/ui/LayoutUiNode.h"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
 #include "misc/Error.h"
@@ -193,7 +194,7 @@ void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
 
 #if defined(WIN32) && defined(DEBUG)
     static_assert(
-        sizeof(Data::SpawnedVisibleUiNodes) == 136, "add new variables here"); // NOLINT: current size
+        sizeof(Data::SpawnedVisibleLayerUiNodes) == 200, "add new variables here"); // NOLINT: current size
 #endif
 }
 
@@ -299,8 +300,8 @@ void UiManager::setFocusedNode(UiNode* pFocusedNode) {
 
 void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput) {
     std::scoped_lock guard(mtxData.first);
-    auto& nodes =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].receivingInputUiNodes;
+    auto& layerNodes = mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())];
+    auto& nodes = layerNodes.receivingInputUiNodes;
 
     if (bEnabledInput) {
         if (!nodes.insert(pNode).second) [[unlikely]] {
@@ -309,6 +310,15 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
                     "spawned node \"{}\" enabled input but it already exists in UI manager's array of nodes "
                     "that receive input",
                     pNode->getNodeName()));
+        }
+        if (auto pLayoutNode = dynamic_cast<LayoutUiNode*>(pNode)) {
+            if (!layerNodes.layoutNodesWithScrollBars.insert(pLayoutNode).second) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "spawned layout node \"{}\" enabled input but it already exists in UI manager's "
+                        "array of nodes that receive input",
+                        pNode->getNodeName()));
+            }
         }
     } else {
         const auto it = nodes.find(pNode);
@@ -319,6 +329,18 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
                     pNode->getNodeName()));
         }
         nodes.erase(it);
+
+        if (auto pLayoutNode = dynamic_cast<LayoutUiNode*>(pNode)) {
+            const auto layoutIt = layerNodes.layoutNodesWithScrollBars.find(pLayoutNode);
+            if (layoutIt == layerNodes.layoutNodesWithScrollBars.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format(
+                        "unable to find spawned layout \"{}\" to remove from the array of nodes that receive "
+                        "input",
+                        pNode->getNodeName()));
+            }
+            layerNodes.layoutNodesWithScrollBars.erase(layoutIt);
+        }
 
         // Remove from rendered last frame in order to avoid triggering input on node after it was despawned.
         auto& vInputNodesRenderedLastFrame =
@@ -566,6 +588,7 @@ void UiManager::drawUi(unsigned int iDrawFramebufferId) {
     for (size_t i = 0; i < mtxData.second.vSpawnedVisibleNodes.size(); i++) {
         drawRectNodes(i);
         drawTextNodes(i);
+        drawLayoutScrollBars(i);
     }
     glEnable(GL_DEPTH_TEST);
 
@@ -616,6 +639,9 @@ void UiManager::drawRectNodes(size_t iLayer) {
                 auto pos = pRectNode->getPosition();
                 auto size = pRectNode->getSize();
 
+                pos.y += size.y * pRectNode->clipY.x;
+                size.y = size.y * (pRectNode->clipY.y - pRectNode->clipY.x);
+
                 // Set shader parameters.
                 pShaderProgram->setVector4ToShader("color", pRectNode->getColor());
                 if (pRectNode->pTexture != nullptr) {
@@ -629,7 +655,7 @@ void UiManager::drawRectNodes(size_t iLayer) {
                 pos = glm::vec2(pos.x * iWindowWidth, pos.y * iWindowHeight);
                 size = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
 
-                drawQuad(pos, size, iWindowHeight);
+                drawQuad(pos, size, iWindowHeight, pRectNode->clipY);
             }
         }
 
@@ -691,14 +717,6 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
         std::vector<TextSelectionDrawInfo> vTextSelectionToDraw;
 
         // Prepare info to later draw scroll bars.
-        struct ScrollBarDrawInfo {
-            glm::vec2 posInPixels = glm::vec2(0.0F, 0.0F);
-            float widthInPixels = 0.0F;
-            float heightInPixels = 0.0F;
-            float verticalPos = 0.0F;  // in [0.0; 1.0]
-            float verticalSize = 0.0F; // in [0.0; 1.0]
-            glm::vec4 color;
-        };
         std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
 
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
@@ -898,10 +916,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 }
 
                 // Check scroll bar.
-                constexpr float scrollBarWidthRelative = 0.025F; // relative to width of the UI node
                 if (pTextNode->getIsScrollBarEnabled()) {
                     const float widthInPixels =
-                        scrollBarWidthRelative * pTextNode->getSize().x * iWindowWidth;
+                        scrollBarWidthRelativeNode * pTextNode->getSize().x * iWindowWidth;
                     const auto iAverageLineCountDisplayed =
                         static_cast<size_t>(pTextNode->getSize().y * iWindowHeight / textHeightInPixels);
 
@@ -986,42 +1003,104 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
         }
 
         if (!vScrollBarToDraw.empty()) {
-            // Draw scroll bars.
-
-            // Set shader program.
-            auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
-            if (pShaderProgram == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-            }
-            glUseProgram(pShaderProgram->getShaderProgramId());
-
-            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-            // Set shader parameters.
-            pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
-
-            for (auto& scrollBarInfo : vScrollBarToDraw) {
-                pShaderProgram->setVector4ToShader("color", scrollBarInfo.color);
-
-                const auto width = scrollBarInfo.widthInPixels;
-                auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;
-                auto pos = scrollBarInfo.posInPixels;
-                pos.y += scrollBarInfo.verticalPos * scrollBarInfo.heightInPixels;
-
-                // TODO: scroll bar goes under the UI node sometimes when near end of the text
-                if (scrollBarInfo.verticalPos + scrollBarInfo.verticalSize > 1.0F) {
-                    height = (1.0F - scrollBarInfo.verticalPos) * scrollBarInfo.heightInPixels;
-                }
-
-                drawQuad(pos, glm::vec2(width, height), iWindowHeight);
-            }
+            drawScrollBarsDataLocked(vScrollBarToDraw, iWindowHeight);
         }
 
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glDisable(GL_BLEND);
+}
+
+void UiManager::drawLayoutScrollBars(size_t iLayer) {
+    std::scoped_lock guard(mtxData.first);
+    auto& layerNodes = mtxData.second.vSpawnedVisibleNodes[iLayer];
+    if (layerNodes.layoutNodesWithScrollBars.empty()) {
+        return;
+    }
+
+    const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+        auto& renderedNodes = layerNodes.receivingInputUiNodesRenderedLastFrame;
+
+        std::vector<ScrollBarDrawInfo> vScrollBarsToDraw;
+        vScrollBarsToDraw.reserve(layerNodes.layoutNodesWithScrollBars.size());
+
+        for (const auto& pLayoutNode : layerNodes.layoutNodesWithScrollBars) {
+            renderedNodes.push_back(pLayoutNode);
+
+            const auto nodePos = pLayoutNode->getPosition();
+            const auto nodeSize = pLayoutNode->getSize();
+
+            const float widthInPixels = scrollBarWidthRelativeNode * nodeSize.x * iWindowWidth;
+            const auto posInPixels =
+                glm::vec2((nodePos.x + nodeSize.x) * iWindowWidth - widthInPixels, nodePos.y * iWindowHeight);
+
+            float verticalSize = 1.0F / pLayoutNode->totalScrollHeight;
+            if (pLayoutNode->totalScrollHeight < 1.0F) {
+                verticalSize = 1.0F;
+            }
+            const float verticalPos = std::min(
+                1.0F,
+                (static_cast<float>(pLayoutNode->iCurrentScrollOffset) * LayoutUiNode::scrollBarStepLocal) /
+                    pLayoutNode->totalScrollHeight);
+
+            vScrollBarsToDraw.push_back(
+                ScrollBarDrawInfo{
+                    .posInPixels = posInPixels,
+                    .widthInPixels = widthInPixels,
+                    .heightInPixels = pLayoutNode->getSize().y * iWindowHeight,
+                    .verticalPos = verticalPos,
+                    .verticalSize = verticalSize,
+                    .color = pLayoutNode->getScrollBarColor(),
+                });
+        }
+
+        drawScrollBarsDataLocked(vScrollBarsToDraw, iWindowHeight);
+
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glDisable(GL_BLEND);
+}
+
+void UiManager::drawScrollBarsDataLocked(
+    const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw, unsigned int iWindowHeight) {
+    if (vScrollBarsToDraw.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("expected at least 1 scroll bar to be specified");
+    }
+
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+    }
+    glUseProgram(pShaderProgram->getShaderProgramId());
+
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+    // Set shader parameters.
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+    for (auto& scrollBarInfo : vScrollBarsToDraw) {
+        pShaderProgram->setVector4ToShader("color", scrollBarInfo.color);
+
+        const auto width = scrollBarInfo.widthInPixels;
+        auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;
+        auto pos = scrollBarInfo.posInPixels;
+        pos.y += scrollBarInfo.verticalPos * scrollBarInfo.heightInPixels;
+
+        // TODO: scroll bar goes under the UI node sometimes when near end of the text
+        if (scrollBarInfo.verticalPos + scrollBarInfo.verticalSize > 1.0F) {
+            height = (1.0F - scrollBarInfo.verticalPos) * scrollBarInfo.heightInPixels;
+        }
+
+        drawQuad(pos, glm::vec2(width, height), iWindowHeight);
+    }
 }
 
 void UiManager::changeFocusedNode(UiNode* pNode) {
@@ -1043,19 +1122,22 @@ void UiManager::changeFocusedNode(UiNode* pNode) {
 }
 
 void UiManager::drawQuad(
-    const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const {
+    const glm::vec2& screenPos,
+    const glm::vec2& screenSize,
+    unsigned int iScreenHeight,
+    const glm::vec2& yClip) const {
     // Flip Y from our top-left origin to OpenGL's bottom-left origin.
     const float posY = static_cast<float>(iScreenHeight) - screenPos.y;
 
     // Update vertices.
     const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
-        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
+        glm::vec4(screenPos.x, posY, 0.0F, yClip.x),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, yClip.y),
+        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, yClip.y),
 
-        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+        glm::vec4(screenPos.x, posY, 0.0F, yClip.x),
+        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, yClip.x),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, yClip.y),
     };
 
     // Copy new vertex data to VBO.
