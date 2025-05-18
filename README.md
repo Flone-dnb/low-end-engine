@@ -46,6 +46,7 @@ Generated documentation will be located at `docs/gen/html`, open the `index.html
 
 Prerequisites:
 
+- Compiler that supports C++20
 - [CMake](https://cmake.org/download/)
 - [Doxygen](https://doxygen.nl/download.html)
 - [LLVM](https://github.com/llvm/llvm-project/releases/latest)
