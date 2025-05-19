@@ -138,6 +138,8 @@ set(PROJECT_SOURCES
     public/game/node/ui/ButtonUiNode.h
     private/game/node/ui/LayoutUiNode.cpp
     public/game/node/ui/LayoutUiNode.h
+    private/game/node/ui/SliderUiNode.cpp
+    public/game/node/ui/SliderUiNode.h
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

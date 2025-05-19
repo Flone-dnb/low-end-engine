@@ -21,6 +21,7 @@ class UiNode;
 class TextUiNode;
 class RectUiNode;
 class LayoutUiNode;
+class SliderUiNode;
 
 /** Keeps track of spawned UI nodes and handles UI rendering. */
 class UiManager {
@@ -53,6 +54,13 @@ public:
     void onNodeSpawning(RectUiNode* pNode);
 
     /**
+     * Called by UI nodes after they are spawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeSpawning(SliderUiNode* pNode);
+
+    /**
      * Called by spawned UI nodes after they changed their visibility.
      *
      * @param pNode UI node.
@@ -67,6 +75,13 @@ public:
     void onSpawnedNodeChangedVisibility(RectUiNode* pNode);
 
     /**
+     * Called by spawned UI nodes after they changed their visibility.
+     *
+     * @param pNode UI node.
+     */
+    void onSpawnedNodeChangedVisibility(SliderUiNode* pNode);
+
+    /**
      * Called by UI nodes before they are despawned.
      *
      * @param pNode UI node.
@@ -79,6 +94,13 @@ public:
      * @param pNode UI node.
      */
     void onNodeDespawning(RectUiNode* pNode);
+
+    /**
+     * Called by UI nodes before they are despawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeDespawning(SliderUiNode* pNode);
 
     /**
      * Called by UI nodes after their depth (in the node tree) was changed.
@@ -166,11 +188,25 @@ private:
     struct Data {
         /** Groups various types of spawned and visible UI nodes to render per layer. */
         struct SpawnedVisibleLayerUiNodes {
+            /**
+             * Returns total number of nodes considered.
+             *
+             * @return Node count.
+             */
+            size_t getTotalNodeCount() const {
+                return vTextNodes.size() + vRectNodes.size() + vSliderNodes.size() +
+                       receivingInputUiNodes.size() + receivingInputUiNodesRenderedLastFrame.size() +
+                       layoutNodesWithScrollBars.size();
+            }
+
             /** Node depth - text nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<TextUiNode*>>> vTextNodes;
 
             /** Node depth - rect nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<RectUiNode*>>> vRectNodes;
+
+            /** Node depth - slider nodes on this depth. */
+            std::vector<std::pair<size_t, std::unordered_set<SliderUiNode*>>> vSliderNodes;
 
             /** Layout nodes from @ref receivingInputUiNodes that need their scroll bar to be rendered. */
             std::unordered_set<LayoutUiNode*> layoutNodesWithScrollBars;
@@ -183,16 +219,6 @@ private:
              * last frame.
              */
             std::vector<UiNode*> receivingInputUiNodesRenderedLastFrame;
-
-            /**
-             * Returns total number of nodes considered.
-             *
-             * @return Node count.
-             */
-            size_t getTotalNodeCount() const {
-                return vTextNodes.size() + vRectNodes.size() + receivingInputUiNodes.size() +
-                       receivingInputUiNodesRenderedLastFrame.size() + layoutNodesWithScrollBars.size();
-            }
         };
 
         /** UI node that currently has the focus. */
@@ -254,6 +280,13 @@ private:
     UiManager(Renderer* pRenderer);
 
     /**
+     * Renders the UI text nodes on the current framebuffer.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawTextNodes(size_t iLayer);
+
+    /**
      * Renders the UI rect nodes on the current framebuffer.
      *
      * @param iLayer UI layer to render to.
@@ -261,11 +294,11 @@ private:
     void drawRectNodes(size_t iLayer);
 
     /**
-     * Renders the UI text nodes on the current framebuffer.
+     * Renders the UI slider nodes on the current framebuffer.
      *
      * @param iLayer UI layer to render to.
      */
-    void drawTextNodes(size_t iLayer);
+    void drawSliderNodes(size_t iLayer);
 
     /**
      * Renders scroll bars for layout UI nodes.

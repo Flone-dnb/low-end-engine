@@ -17,6 +17,7 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/ButtonUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
+#include "game/node/ui/SliderUiNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -38,6 +39,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(LayoutUiNode::getTypeGuidStatic(), LayoutUiNode::getReflectionInfo());
     registerType(ButtonUiNode::getTypeGuidStatic(), ButtonUiNode::getReflectionInfo());
     registerType(TextEditUiNode::getTypeGuidStatic(), TextEditUiNode::getReflectionInfo());
+    registerType(SliderUiNode::getTypeGuidStatic(), SliderUiNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

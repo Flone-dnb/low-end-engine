@@ -8,6 +8,7 @@
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/RectUiNode.h"
+#include "game/node/ui/SliderUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
@@ -109,6 +110,18 @@ void UiManager::onNodeSpawning(RectUiNode* pNode) {
     ADD_NODE_TO_RENDERING(RectUiNode);
 }
 
+void UiManager::onNodeSpawning(SliderUiNode* pNode) {
+    std::scoped_lock guard(mtxData.first);
+    auto& data = mtxData.second;
+    auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
+
+    if (!pNode->isVisible()) {
+        return;
+    }
+
+    ADD_NODE_TO_RENDERING(SliderUiNode);
+}
+
 void UiManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
@@ -130,6 +143,18 @@ void UiManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
         ADD_NODE_TO_RENDERING(RectUiNode);
     } else {
         REMOVE_NODE_FROM_RENDERING(RectUiNode);
+    }
+}
+
+void UiManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
+    std::scoped_lock guard(mtxData.first);
+    auto& vNodesByDepth =
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
+
+    if (pNode->isVisible()) {
+        ADD_NODE_TO_RENDERING(SliderUiNode);
+    } else {
+        REMOVE_NODE_FROM_RENDERING(SliderUiNode);
     }
 }
 
@@ -163,6 +188,18 @@ void UiManager::onNodeDespawning(RectUiNode* pNode) {
     // don't unload rect shader program because it's also used for drawing cursors
 }
 
+void UiManager::onNodeDespawning(SliderUiNode* pNode) {
+    std::scoped_lock guard(mtxData.first);
+    auto& vNodesByDepth =
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
+
+    if (!pNode->isVisible()) {
+        return;
+    }
+
+    REMOVE_NODE_FROM_RENDERING(SliderUiNode);
+}
+
 void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
     std::scoped_lock guard(mtxData.first);
 
@@ -188,13 +225,22 @@ void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
         {
             ADD_NODE_TO_RENDERING(RectUiNode);
         }
+    } else if (auto pNode = dynamic_cast<SliderUiNode*>(pTargetNode)) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
+        {
+            REMOVE_NODE_FROM_RENDERING(SliderUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(SliderUiNode);
+        }
     } else [[unlikely]] {
         Error::showErrorAndThrowException("unhandled case");
     }
 
 #if defined(WIN32) && defined(DEBUG)
     static_assert(
-        sizeof(Data::SpawnedVisibleLayerUiNodes) == 200, "add new variables here"); // NOLINT: current size
+        sizeof(Data::SpawnedVisibleLayerUiNodes) == 224, "add new variables here"); // NOLINT: current size
 #endif
 }
 
@@ -588,6 +634,7 @@ void UiManager::drawUi(unsigned int iDrawFramebufferId) {
     for (size_t i = 0; i < mtxData.second.vSpawnedVisibleNodes.size(); i++) {
         drawRectNodes(i);
         drawTextNodes(i);
+        drawSliderNodes(i);
         drawLayoutScrollBars(i);
     }
     glEnable(GL_DEPTH_TEST);
@@ -656,6 +703,83 @@ void UiManager::drawRectNodes(size_t iLayer) {
                 size = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
 
                 drawQuad(pos, size, iWindowHeight, pRectNode->clipY);
+            }
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindVertexArray(0);
+    }
+    glDisable(GL_BLEND);
+}
+
+void UiManager::drawSliderNodes(size_t iLayer) {
+    PROFILE_FUNC;
+
+    std::scoped_lock guard(mtxData.first);
+
+    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vSliderNodes;
+    if (vNodesByDepth.empty()) {
+        return;
+    }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+
+        // Set shader program.
+        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+        if (pShaderProgram == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+        }
+        glUseProgram(pShaderProgram->getShaderProgramId());
+
+        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+        pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+        constexpr float sliderHeightToWidthRatio = 0.5F; // NOLINT
+        constexpr float sliderHandleWidth = 0.1F; // NOLINT: in range [0.0; 1.0] relative to slider width
+
+        for (const auto& [iDepth, nodes] : vNodesByDepth) {
+            for (const auto& pSliderNode : nodes) {
+                // Update input-related things.
+                if (pSliderNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                             // (it will wait on our mutex)
+                    vInputNodesRendered.push_back(pSliderNode);
+                }
+                if (!pSliderNode->bIsHoveredCurrFrame && pSliderNode->bIsHoveredPrevFrame) {
+                    pSliderNode->onMouseLeft();
+                }
+                pSliderNode->bIsHoveredPrevFrame = pSliderNode->bIsHoveredCurrFrame;
+                pSliderNode->bIsHoveredCurrFrame = false;
+
+                const auto pos = pSliderNode->getPosition();
+                const auto size = pSliderNode->getSize();
+                const auto handlePos = pSliderNode->getHandlePosition();
+
+                // Draw slider base.
+                pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderColor());
+                const auto baseHeight = size.y * sliderHeightToWidthRatio;
+                drawQuad(
+                    glm::vec2(
+                        pos.x * iWindowWidth,
+                        (pos.y + size.y / 2.0F - baseHeight / 2.0F) * iWindowHeight), // NOLINT
+                    glm::vec2(size.x * iWindowWidth, baseHeight * iWindowHeight),
+                    iWindowHeight);
+
+                // Draw slider handle.
+                pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderHandleColor());
+                const auto handleWidth = size.x * sliderHandleWidth;
+                const auto handleCenterPos = glm::vec2(pos.x + handlePos * size.x, pos.y);
+                drawQuad(
+                    glm::vec2(
+                        (handleCenterPos.x - handleWidth / 2.0F) * iWindowWidth, // NOLINT
+                        handleCenterPos.y * iWindowHeight),
+                    glm::vec2(handleWidth * iWindowWidth, size.y * iWindowHeight),
+                    iWindowHeight);
             }
         }
 
