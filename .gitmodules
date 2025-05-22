@@ -37,3 +37,6 @@
 [submodule "ext/fpng"]
 	path = ext/fpng
 	url = https://github.com/richgel999/fpng.git
+[submodule "ext/SFML"]
+	path = ext/SFML
+	url = https://github.com/SFML/SFML.git

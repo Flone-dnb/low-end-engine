@@ -9,6 +9,7 @@
 #include "misc/Profiler.hpp"
 #include "render/UiManager.h"
 #include "game/Window.h"
+#include "sound/SoundManager.h"
 
 // External.
 #if defined(ENGINE_PROFILER_ENABLED)
@@ -26,6 +27,7 @@ GameManager::GameManager(
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pCameraManager = std::make_unique<CameraManager>(pRenderer.get());
+    pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
 
     ReflectedTypeDatabase::registerEngineTypes();
 }
@@ -247,6 +249,8 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         }
         mtxWorldData.second.pWorld->tickTickableNodes(timeSincePrevCallInSec);
     }
+
+    pSoundManager->onBeforeNewFrame(pCameraManager.get());
 }
 
 void GameManager::onKeyboardInput(
@@ -656,3 +660,5 @@ CameraManager* GameManager::getCameraManager() const { return pCameraManager.get
 Renderer* GameManager::getRenderer() const { return pRenderer.get(); }
 
 GameInstance* GameManager::getGameInstance() const { return pGameInstance.get(); }
+
+SoundManager& GameManager::getSoundManager() const { return *pSoundManager; }

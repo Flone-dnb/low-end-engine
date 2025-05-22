@@ -21,6 +21,7 @@ class GameInstance;
 class World;
 class Node;
 class CameraManager;
+class SoundManager;
 
 /**
  * Controls main game objects: game instance, input manager, renderer,
@@ -152,6 +153,13 @@ public:
      * @return Always valid pointer to the game instance.
      */
     GameInstance* getGameInstance() const;
+
+    /**
+     * Returns sound manager.
+     *
+     * @return Sound manager.
+     */
+    SoundManager& getSoundManager() const;
 
 private:
     /** Groups data used during world creation. */
@@ -369,6 +377,9 @@ private:
 
     /** Determines which camera is used as in-game eyes. */
     std::unique_ptr<CameraManager> pCameraManager;
+
+    /** Manages sound and sound effects. */
+    std::unique_ptr<SoundManager> pSoundManager;
 
     /** Game world, stores world's node tree. */
     std::pair<std::recursive_mutex, WorldData> mtxWorldData;

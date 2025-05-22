@@ -79,6 +79,9 @@ set(PROJECT_SOURCES
     private/misc/ThreadPool.cpp
     private/misc/ThreadPool.h
     public/misc/Profiler.hpp
+    public/sound/SoundChannel.hpp
+    public/sound/SoundManager.h
+    private/sound/SoundManager.cpp
     public/game/geometry/shapes/Frustum.h
     private/game/geometry/shapes/Frustum.cpp
     public/game/geometry/shapes/AABB.h
@@ -120,6 +123,10 @@ set(PROJECT_SOURCES
     private/game/node/CameraNode.cpp
     public/game/node/MeshNode.h
     private/game/node/MeshNode.cpp
+    public/game/node/Sound2dNode.h
+    private/game/node/Sound2dNode.cpp
+    public/game/node/Sound3dNode.h
+    private/game/node/Sound3dNode.cpp
     public/game/node/light/DirectionalLightNode.h
     private/game/node/light/DirectionalLightNode.cpp
     public/game/node/light/SpotlightNode.h
@@ -284,6 +291,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/fpng/src/
 target_link_libraries(${PROJECT_NAME} PUBLIC fpng)
 set_target_properties(fpng PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 add_dependencies(${PROJECT_NAME} fpng)
+
+# Add SFML.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"SFML\"...")
+set(SFML_BUILD_WINDOW OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_GRAPHICS OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_NETWORK OFF CACHE BOOL "" FORCE)
+set(SFML_STATIC_LIBRARIES ON CACHE BOOL "" FORCE)
+add_subdirectory(${RELATIVE_EXT_PATH}/SFML ${DEPENDENCY_BUILD_DIR_NAME}/SFML SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC sfml-audio)
+set_target_properties(sfml-audio PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${PROJECT_NAME} sfml-audio)
 
 if (NOT IS_RELEASE_BUILD)
     # Add tracy.

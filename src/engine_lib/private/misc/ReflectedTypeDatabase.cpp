@@ -6,6 +6,8 @@
 // Custom.
 #include "misc/Error.h"
 #include "game/node/Node.h"
+#include "game/node/Sound2dNode.h"
+#include "game/node/Sound3dNode.h"
 #include "game/node/SpatialNode.h"
 #include "game/node/MeshNode.h"
 #include "game/node/light/DirectionalLightNode.h"
@@ -24,7 +26,9 @@ std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::refle
 void ReflectedTypeDatabase::registerEngineTypes() {
     // General.
     registerType(Node::getTypeGuidStatic(), Node::getReflectionInfo());
+    registerType(Sound2dNode::getTypeGuidStatic(), Sound2dNode::getReflectionInfo());
     registerType(SpatialNode::getTypeGuidStatic(), SpatialNode::getReflectionInfo());
+    registerType(Sound3dNode::getTypeGuidStatic(), Sound3dNode::getReflectionInfo());
     registerType(MeshNode::getTypeGuidStatic(), MeshNode::getReflectionInfo());
 
     // Light.

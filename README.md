@@ -14,20 +14,15 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Type reflection
 - [X] Forward renderer using OpenGL ES 3.1
 - [X] Dynamic light sources
-- [X] Texture import
 - [X] GLTF/GLB import
 - [X] Profiler
 - [X] Post-processing effects
 - [X] GUI
-- [ ] Simple editor
-- [ ] Audio engine (using [SFML](https://github.com/SFML/SFML))
-    - [ ] 2D audio
-    - [ ] 3D audio
-    - [ ] Audio streaming
-    - [ ] Sound effects
-- [ ] Dynamic shadows
+- [X] Audio (using [SFML](https://github.com/SFML/SFML))
 - [ ] Skeletal animations
 - [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
+- [ ] Dynamic shadows
+- [ ] Simple editor
 - [ ] Instancing
 - [ ] AI and pathfinding
 - [ ] Particle effects
