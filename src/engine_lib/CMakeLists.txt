@@ -285,8 +285,14 @@ add_dependencies(${PROJECT_NAME} tinygltf)
 message(STATUS "${PROJECT_NAME}: adding external dependency \"fpng\"...")
 add_library(fpng
     ${RELATIVE_EXT_PATH}/fpng/src/fpng.cpp
+    ${RELATIVE_EXT_PATH}/fpng/src/lodepng.cpp
+    ${RELATIVE_EXT_PATH}/fpng/src/pvpngreader.cpp
     ${RELATIVE_EXT_PATH}/fpng/src/fpng.h
 )
+if (NOT MSVC)
+    target_compile_options(fpng PRIVATE -msse4.1 -mpclmul)
+    target_compile_definitions(fpng PRIVATE FPNG_NO_SSE=0)
+endif()
 target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/fpng/src/)
 target_link_libraries(${PROJECT_NAME} PUBLIC fpng)
 set_target_properties(fpng PROPERTIES FOLDER ${EXTERNAL_FOLDER})

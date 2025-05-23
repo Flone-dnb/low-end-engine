@@ -267,7 +267,7 @@ void TextUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     if (iOffset < 0) {
         iCurrentScrollOffset += std::abs(iOffset);
     } else if (iCurrentScrollOffset > 0) {
-        if (iOffset > iCurrentScrollOffset) {
+        if (static_cast<size_t>(iOffset) > iCurrentScrollOffset) {
             iCurrentScrollOffset = 0;
         } else {
             iCurrentScrollOffset -= iOffset;

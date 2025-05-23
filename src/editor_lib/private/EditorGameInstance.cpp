@@ -99,40 +99,34 @@ void EditorGameInstance::registerEditorInputEvents() {
     // Register action events.
     {
         // Close editor.
-        showErrorIfNotEmpty(
-            getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::CLOSE_EDITOR),
-                {KeyboardButton::ESCAPE, GamepadButton::BACK}));
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::CLOSE_EDITOR),
+            {KeyboardButton::ESCAPE, GamepadButton::BACK}));
 
         // Capture mouse.
-        showErrorIfNotEmpty(
-            getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR),
-                {MouseButton::RIGHT}));
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR),
+            {MouseButton::RIGHT}));
 
         // Increase camera movement speed.
-        showErrorIfNotEmpty(
-            getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED),
-                {KeyboardButton::LEFT_SHIFT}));
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED),
+            {KeyboardButton::LEFT_SHIFT}));
 
         // Decrease camera movement speed.
-        showErrorIfNotEmpty(
-            getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED),
-                {KeyboardButton::LEFT_CONTROL}));
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED),
+            {KeyboardButton::LEFT_CONTROL}));
 
         // Increase camera rotation speed.
-        showErrorIfNotEmpty(
-            getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_ROTATION_SPEED),
-                {GamepadButton::RIGHT_SHOULDER}));
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_ROTATION_SPEED),
+            {GamepadButton::RIGHT_SHOULDER}));
 
         // Decrease camera rotation speed.
-        showErrorIfNotEmpty(
-            getInputManager()->addActionEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_ROTATION_SPEED),
-                {GamepadButton::LEFT_SHOULDER}));
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_ROTATION_SPEED),
+            {GamepadButton::LEFT_SHOULDER}));
     }
 
     // Bind to action events.
@@ -165,53 +159,46 @@ void EditorGameInstance::registerEditorInputEvents() {
     // Register axis events.
     {
         // Move forward.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD),
-                {{KeyboardButton::W, KeyboardButton::S}},
-                {}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD),
+            {{KeyboardButton::W, KeyboardButton::S}},
+            {}));
 
         // Move right.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT),
-                {{KeyboardButton::D, KeyboardButton::A}},
-                {}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT),
+            {{KeyboardButton::D, KeyboardButton::A}},
+            {}));
 
         // Gamepad move forward.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD),
-                {},
-                {GamepadAxis::LEFT_STICK_Y}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD),
+            {},
+            {GamepadAxis::LEFT_STICK_Y}));
 
         // Gamepad move right.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT),
-                {},
-                {GamepadAxis::LEFT_STICK_X}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT),
+            {},
+            {GamepadAxis::LEFT_STICK_X}));
 
         // Move up.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP),
-                {{KeyboardButton::E, KeyboardButton::Q}},
-                {}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP),
+            {{KeyboardButton::E, KeyboardButton::Q}},
+            {}));
 
         // Gamepad look right.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT),
-                {},
-                {GamepadAxis::RIGHT_STICK_X}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT),
+            {},
+            {GamepadAxis::RIGHT_STICK_X}));
 
         // Gamepad look up.
-        showErrorIfNotEmpty(
-            getInputManager()->addAxisEvent(
-                static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP),
-                {},
-                {GamepadAxis::RIGHT_STICK_Y}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP),
+            {},
+            {GamepadAxis::RIGHT_STICK_Y}));
     }
 }
 
@@ -243,16 +230,14 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
 
         auto pSun = createEditorNode<DirectionalLightNode>();
         pSun->setLightIntensity(0.5F); // NOLINT
-        pSun->setRelativeRotation(
-            MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F)))); // NOLINT
+        pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+            glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSun));
 
         auto pSpotlight = createEditorNode<SpotlightNode>();
         pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F)); // NOLINT
-        pSpotlight->setRelativeRotation(
-            MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
+        pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+            glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
         getWorldRootNode()->addChildNode(std::move(pSpotlight));
 
         auto pPointLight = createEditorNode<PointLightNode>();
@@ -273,10 +258,9 @@ EditorCameraNode* EditorGameInstance::getEditorCameraNode() {
     // Cast to editor camera.
     const auto pEditorCameraNode = dynamic_cast<EditorCameraNode*>(mtxActiveCamera.second);
     if (pEditorCameraNode == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "expected the active camera to be an editor camera (node \"{}\")",
-                mtxActiveCamera.second->getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "expected the active camera to be an editor camera (node \"{}\")",
+            mtxActiveCamera.second->getNodeName()));
     }
 
     return pEditorCameraNode;

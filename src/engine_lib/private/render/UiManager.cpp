@@ -65,11 +65,10 @@
         }                                                                                                    \
     }                                                                                                        \
     if (!optionalArrayIndex.has_value()) [[unlikely]] {                                                      \
-        Error::showErrorAndThrowException(                                                                   \
-            std::format(                                                                                     \
-                "unable to find the node \"{}\" with depth {} to remove from rendering",                     \
-                pNode->getNodeName(),                                                                        \
-                iNodeDepth));                                                                                \
+        Error::showErrorAndThrowException(std::format(                                                       \
+            "unable to find the node \"{}\" with depth {} to remove from rendering",                         \
+            pNode->getNodeName(),                                                                            \
+            iNodeDepth));                                                                                    \
     }                                                                                                        \
     const auto iArrayIndex = *optionalArrayIndex;                                                            \
                                                                                                              \
@@ -210,30 +209,18 @@ void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
     if (auto pNode = dynamic_cast<TextUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
-        {
-            REMOVE_NODE_FROM_RENDERING(TextUiNode);
-        }
-        {
-            ADD_NODE_TO_RENDERING(TextUiNode);
-        }
+        { REMOVE_NODE_FROM_RENDERING(TextUiNode); }
+        { ADD_NODE_TO_RENDERING(TextUiNode); }
     } else if (auto pNode = dynamic_cast<RectUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
-        {
-            REMOVE_NODE_FROM_RENDERING(RectUiNode);
-        }
-        {
-            ADD_NODE_TO_RENDERING(RectUiNode);
-        }
+        { REMOVE_NODE_FROM_RENDERING(RectUiNode); }
+        { ADD_NODE_TO_RENDERING(RectUiNode); }
     } else if (auto pNode = dynamic_cast<SliderUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
-        {
-            REMOVE_NODE_FROM_RENDERING(SliderUiNode);
-        }
-        {
-            ADD_NODE_TO_RENDERING(SliderUiNode);
-        }
+        { REMOVE_NODE_FROM_RENDERING(SliderUiNode); }
+        { ADD_NODE_TO_RENDERING(SliderUiNode); }
     } else [[unlikely]] {
         Error::showErrorAndThrowException("unhandled case");
     }
@@ -301,10 +288,9 @@ void UiManager::setModalNode(UiNode* pNewModalNode) {
         }
 
         if (!bFound) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "unable to find node \"{}\" to be spawned, visible and receiving input to make modal",
-                    pNode->getNodeName()));
+            Error::showErrorAndThrowException(std::format(
+                "unable to find node \"{}\" to be spawned, visible and receiving input to make modal",
+                pNode->getNodeName()));
         }
     }
 
@@ -335,10 +321,9 @@ void UiManager::setFocusedNode(UiNode* pFocusedNode) {
     }
 
     if (!bFound) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "unable to find node \"{}\" to be spawned, visible and receiving input to make focused",
-                pFocusedNode->getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "unable to find node \"{}\" to be spawned, visible and receiving input to make focused",
+            pFocusedNode->getNodeName()));
     }
 
     changeFocusedNode(pFocusedNode);
@@ -351,39 +336,35 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
 
     if (bEnabledInput) {
         if (!nodes.insert(pNode).second) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "spawned node \"{}\" enabled input but it already exists in UI manager's array of nodes "
-                    "that receive input",
-                    pNode->getNodeName()));
+            Error::showErrorAndThrowException(std::format(
+                "spawned node \"{}\" enabled input but it already exists in UI manager's array of nodes "
+                "that receive input",
+                pNode->getNodeName()));
         }
         if (auto pLayoutNode = dynamic_cast<LayoutUiNode*>(pNode)) {
             if (!layerNodes.layoutNodesWithScrollBars.insert(pLayoutNode).second) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "spawned layout node \"{}\" enabled input but it already exists in UI manager's "
-                        "array of nodes that receive input",
-                        pNode->getNodeName()));
+                Error::showErrorAndThrowException(std::format(
+                    "spawned layout node \"{}\" enabled input but it already exists in UI manager's "
+                    "array of nodes that receive input",
+                    pNode->getNodeName()));
             }
         }
     } else {
         const auto it = nodes.find(pNode);
         if (it == nodes.end()) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "unable to find spawned node \"{}\" to remove from the array of nodes that receive input",
-                    pNode->getNodeName()));
+            Error::showErrorAndThrowException(std::format(
+                "unable to find spawned node \"{}\" to remove from the array of nodes that receive input",
+                pNode->getNodeName()));
         }
         nodes.erase(it);
 
         if (auto pLayoutNode = dynamic_cast<LayoutUiNode*>(pNode)) {
             const auto layoutIt = layerNodes.layoutNodesWithScrollBars.find(pLayoutNode);
             if (layoutIt == layerNodes.layoutNodesWithScrollBars.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unable to find spawned layout \"{}\" to remove from the array of nodes that receive "
-                        "input",
-                        pNode->getNodeName()));
+                Error::showErrorAndThrowException(std::format(
+                    "unable to find spawned layout \"{}\" to remove from the array of nodes that receive "
+                    "input",
+                    pNode->getNodeName()));
             }
             layerNodes.layoutNodesWithScrollBars.erase(layoutIt);
         }
@@ -898,10 +879,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     const auto switchToNewLine = [&]() {
                         // Check cursor.
                         if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
-                            vCursorScreenPosToDraw.push_back(
-                                CursorDrawInfo{
-                                    .screenPos = glm::vec2(screenX, screenY),
-                                    .height = FontManager::getFontHeightToLoad() * scale});
+                            vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                                .screenPos = glm::vec2(screenX, screenY),
+                                .height = FontManager::getFontHeightToLoad() * scale});
                         }
 
                         // Check selection.
@@ -967,10 +947,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     } else if (iLineIndex >= iLinesToSkip) {
                         // Check cursor.
                         if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
-                            vCursorScreenPosToDraw.push_back(
-                                CursorDrawInfo{
-                                    .screenPos = glm::vec2(screenX, screenY),
-                                    .height = FontManager::getFontHeightToLoad() * scale});
+                            vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                                .screenPos = glm::vec2(screenX, screenY),
+                                .height = FontManager::getFontHeightToLoad() * scale});
                         }
 
                         // Check selection.
@@ -1021,10 +1000,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 // Check cursor.
                 if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size() &&
                     screenX < screenMaxXForWordWrap && screenY < screenYEnd && iRenderedCharCount != 0) {
-                    vCursorScreenPosToDraw.push_back(
-                        CursorDrawInfo{
-                            .screenPos = glm::vec2(screenX, screenY),
-                            .height = FontManager::getFontHeightToLoad() * scale});
+                    vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                        .screenPos = glm::vec2(screenX, screenY),
+                        .height = FontManager::getFontHeightToLoad() * scale});
                 }
 
                 // Check selection.
@@ -1032,11 +1010,10 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     if (bSelectionStartPosFound && optionalSelection->second >= sText.size()) {
                         vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
                     }
-                    vTextSelectionToDraw.push_back(
-                        TextSelectionDrawInfo{
-                            .vLineStartEndScreenPos = std::move(vSelectionLinesToDraw),
-                            .textHeightInPixels = textHeightInPixels,
-                            .color = selectionColor});
+                    vTextSelectionToDraw.push_back(TextSelectionDrawInfo{
+                        .vLineStartEndScreenPos = std::move(vSelectionLinesToDraw),
+                        .textHeightInPixels = textHeightInPixels,
+                        .color = selectionColor});
                 }
 
                 // Check scroll bar.
@@ -1054,18 +1031,18 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     const float verticalPos = std::min(
                         1.0F,
                         static_cast<float>(pTextNode->iCurrentScrollOffset) /
-                            static_cast<float>(std::max(pTextNode->iNewLineCharCountInText, 1ULL)));
+                            static_cast<float>(
+                                std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
 
-                    vScrollBarToDraw.push_back(
-                        ScrollBarDrawInfo{
-                            .posInPixels =
-                                glm::vec2(screenMaxXForWordWrap - widthInPixels, textPos.y * iWindowHeight),
-                            .widthInPixels = widthInPixels,
-                            .heightInPixels = pTextNode->getSize().y * iWindowHeight,
-                            .verticalPos = verticalPos,
-                            .verticalSize = verticalSize,
-                            .color = pTextNode->getScrollBarColor(),
-                        });
+                    vScrollBarToDraw.push_back(ScrollBarDrawInfo{
+                        .posInPixels =
+                            glm::vec2(screenMaxXForWordWrap - widthInPixels, textPos.y * iWindowHeight),
+                        .widthInPixels = widthInPixels,
+                        .heightInPixels = pTextNode->getSize().y * iWindowHeight,
+                        .verticalPos = verticalPos,
+                        .verticalSize = verticalSize,
+                        .color = pTextNode->getScrollBarColor(),
+                    });
                 }
             }
         }
@@ -1172,15 +1149,14 @@ void UiManager::drawLayoutScrollBars(size_t iLayer) {
                 (static_cast<float>(pLayoutNode->iCurrentScrollOffset) * LayoutUiNode::scrollBarStepLocal) /
                     pLayoutNode->totalScrollHeight);
 
-            vScrollBarsToDraw.push_back(
-                ScrollBarDrawInfo{
-                    .posInPixels = posInPixels,
-                    .widthInPixels = widthInPixels,
-                    .heightInPixels = pLayoutNode->getSize().y * iWindowHeight,
-                    .verticalPos = verticalPos,
-                    .verticalSize = verticalSize,
-                    .color = pLayoutNode->getScrollBarColor(),
-                });
+            vScrollBarsToDraw.push_back(ScrollBarDrawInfo{
+                .posInPixels = posInPixels,
+                .widthInPixels = widthInPixels,
+                .heightInPixels = pLayoutNode->getSize().y * iWindowHeight,
+                .verticalPos = verticalPos,
+                .verticalSize = verticalSize,
+                .color = pLayoutNode->getScrollBarColor(),
+            });
         }
 
         drawScrollBarsDataLocked(vScrollBarsToDraw, iWindowHeight);
@@ -1297,9 +1273,7 @@ UiManager::~UiManager() {
         iNodeCount += nodes.getTotalNodeCount();
     }
     if (iNodeCount != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "UI manager is being destroyed but there are still {} spawned and visible nodes",
-                iNodeCount));
+        Error::showErrorAndThrowException(std::format(
+            "UI manager is being destroyed but there are still {} spawned and visible nodes", iNodeCount));
     }
 }
