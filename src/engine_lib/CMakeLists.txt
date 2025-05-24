@@ -186,7 +186,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC private)
 # Debug helper.
 if (NOT IS_RELEASE_BUILD AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/debug.cmake")
     message(STATUS "Disabling optimizations because the file \"debug.cmake\" exists.")
-    target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -O0)
+    endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------

@@ -32,7 +32,11 @@ In case you want to debug a specific target's code (your game's code for example
 
 ```Cpp
 if (NOT IS_RELEASE_BUILD)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -O0)
+    endif()
 endif()
 ```
 
