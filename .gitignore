@@ -6,3 +6,4 @@ out
 CMakeSettings.json
 *.autosave
 .cache
+src/*/debug.cmake
