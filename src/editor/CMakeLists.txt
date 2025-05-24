@@ -55,13 +55,9 @@ if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
     enable_address_sanitizer()
 endif()
 
-# Enable Clang-tidy in `Release` builds.
+# Enable Clang-tidy and Doxygen in `Release` builds.
 if (IS_RELEASE_BUILD AND NOT DISABLE_DEV_STUFF)
     enable_clang_tidy(${CMAKE_CURRENT_LIST_DIR}/../../.clang-tidy)
-endif()
-
-# Enable doxygen.
-if (NOT IS_RELEASE_BUILD)
     enable_doxygen(${CMAKE_CURRENT_SOURCE_DIR}/../../docs)
 endif()
 

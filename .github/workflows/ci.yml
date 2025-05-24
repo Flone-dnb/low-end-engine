@@ -22,6 +22,9 @@ jobs:
         echo "Installed doxygen of version $(doxygen -v)."
     - name: Create build directory
       run: mkdir build
+    - name: Run doxygen
+      run: doxygen
+      working-directory: docs
     - name: Build (release)
       run: |
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
