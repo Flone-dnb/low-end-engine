@@ -7,6 +7,7 @@
 #include <format>
 #include <filesystem>
 #include <fstream>
+#include <vector>
 #include <unordered_map>
 #include <string_view>
 
@@ -59,11 +60,10 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             const auto sClassDefinitionText = std::format("class {} : public ", sClassName);
             const auto iClassNamePos = sCode.find(sClassDefinitionText);
             if (iClassNamePos == std::string::npos) [[unlikely]] {
-                logLine(
-                    std::format(
-                        "in the file \"{}\" expected to find a class with the name \"{}\"",
-                        pathToHeaderFile.filename().string(),
-                        sClassName));
+                logLine(std::format(
+                    "in the file \"{}\" expected to find a class with the name \"{}\"",
+                    pathToHeaderFile.filename().string(),
+                    sClassName));
                 return 1;
             }
 
@@ -76,10 +76,9 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             }
         }
         if (sParentClassName.empty()) [[unlikely]] {
-            logLine(
-                std::format(
-                    "unable to parse parent class name in the file \"{}\"",
-                    pathToHeaderFile.filename().string()));
+            logLine(std::format(
+                "unable to parse parent class name in the file \"{}\"",
+                pathToHeaderFile.filename().string()));
             return 1;
         }
 
@@ -95,10 +94,9 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             // Go back until '('.
             const auto iNameEndPos = sCode.rfind('(', iOverridePos);
             if (iNameEndPos == std::string::npos) [[unlikely]] {
-                logLine(
-                    std::format(
-                        "expected to find `(` before `override` keyword in file \"{}\"",
-                        pathToHeaderFile.filename().string()));
+                logLine(std::format(
+                    "expected to find `(` before `override` keyword in file \"{}\"",
+                    pathToHeaderFile.filename().string()));
                 return 1;
             }
 
@@ -119,10 +117,9 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
                 continue;
             }
             if (iNameStartPos == 0) [[unlikely]] {
-                logLine(
-                    std::format(
-                        "expected to find ` ` (space) before override function name in file \"{}\"",
-                        pathToHeaderFile.filename().string()));
+                logLine(std::format(
+                    "expected to find ` ` (space) before override function name in file \"{}\"",
+                    pathToHeaderFile.filename().string()));
                 return 1;
             }
 
@@ -144,9 +141,8 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
         return 1;
     }
     if (!bFoundGetTypeGuidOverride) [[unlikely]] {
-        logLine(
-            std::format(
-                "you need to override the function \"{}\" in \"{}\"", sGetTypeNameFunction, sClassName));
+        logLine(std::format(
+            "you need to override the function \"{}\" in \"{}\"", sGetTypeNameFunction, sClassName));
         return 1;
     }
 
@@ -174,22 +170,20 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             const auto sOverrideFuncText = std::format("{}::{}(", sClassName, sOverrideFunctionName);
             const auto iOverridePos = sCode.find(sOverrideFuncText);
             if (iOverridePos == std::string::npos) [[unlikely]] {
-                logLine(
-                    std::format(
-                        "unable to find \"{}\" in the file \"{}\"",
-                        sOverrideFuncText,
-                        pathToCppFile.filename().string()));
+                logLine(std::format(
+                    "unable to find \"{}\" in the file \"{}\"",
+                    sOverrideFuncText,
+                    pathToCppFile.filename().string()));
                 return 1;
             }
 
             // Find `{` after the function name.
             const auto iImplStartPos = sCode.find('{', iOverridePos + sOverrideFuncText.size());
             if (iImplStartPos == std::string::npos) [[unlikely]] {
-                logLine(
-                    std::format(
-                        "unable to find \"{{\" somewhere after \"{}\" in the file \"{}\"",
-                        sOverrideFuncText,
-                        pathToCppFile.filename().string()));
+                logLine(std::format(
+                    "unable to find \"{{\" somewhere after \"{}\" in the file \"{}\"",
+                    sOverrideFuncText,
+                    pathToCppFile.filename().string()));
                 return 1;
             }
 
@@ -213,14 +207,13 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
                 }
             }
             if (!bFoundSuperCall) [[unlikely]] {
-                logLine(
-                    std::format(
-                        "file \"{}\", function \"{}\": expected to find a call to the parent's "
-                        "implementation "
-                        "like so: \"{}\"",
-                        pathToCppFile.filename().string(),
-                        sOverrideFunctionName,
-                        sSuperCallText));
+                logLine(std::format(
+                    "file \"{}\", function \"{}\": expected to find a call to the parent's "
+                    "implementation "
+                    "like so: \"{}\"",
+                    pathToCppFile.filename().string(),
+                    sOverrideFunctionName,
+                    sSuperCallText));
                 return 1;
             }
         }
@@ -236,10 +229,8 @@ int checkFiles(
     for (const auto& pathToCppFile : vPathsToCppFiles) {
         const auto headerIt = headerFileStemToPath.find(pathToCppFile.stem().string());
         if (headerIt == headerFileStemToPath.end()) [[unlikely]] {
-            logLine(
-                std::format(
-                    "unable to find a header file for the .cpp file \"{}\"",
-                    pathToCppFile.filename().string()));
+            logLine(std::format(
+                "unable to find a header file for the .cpp file \"{}\"", pathToCppFile.filename().string()));
             return 1;
         }
 
@@ -310,9 +301,8 @@ int main(int argc, char* argv[]) {
             } else if (fileExtension == ".cpp") {
                 vCppFilePaths.push_back(entry.path());
             } else [[unlikely]] {
-                logLine(
-                    std::format(
-                        "unexpected file extension for file \"{}\"", entry.path().filename().string()));
+                logLine(std::format(
+                    "unexpected file extension for file \"{}\"", entry.path().filename().string()));
                 return 1;
             }
         }

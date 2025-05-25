@@ -25,20 +25,6 @@ function(enable_more_warnings)
     endif()
 endfunction()
 
-# Enable Doxygen to be run before building your target.
-function(enable_doxygen DOCS_DIRECTORY)
-    find_package(Doxygen REQUIRED)
-    set(DOXYGEN_TARGET_NAME ${PROJECT_NAME}_doxygen)
-    add_custom_target(${DOXYGEN_TARGET_NAME}
-        COMMAND doxygen
-        WORKING_DIRECTORY ${DOCS_DIRECTORY}
-        COMMENT "${PROJECT_NAME}: generating documentation using Doxygen..."
-        VERBATIM)
-    set_target_properties(${DOXYGEN_TARGET_NAME} PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-    add_dependencies(${PROJECT_NAME} ${DOXYGEN_TARGET_NAME})
-    message(STATUS "${PROJECT_NAME}: doxygen is enabled.")
-endfunction()
-
 # Enables clang-tidy.
 function(enable_clang_tidy CLANG_TIDY_CONFIG_PATH)
     find_program (CLANG_TIDY NAMES "clang-tidy" REQUIRED)
