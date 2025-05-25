@@ -824,6 +824,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
         // Prepare info to later draw scroll bars.
         std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
 
+        enum class SelectionDrawState { LOOKING_FOR_START, LOOKING_FOR_END, FINISHED };
+
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
             for (const auto& pTextNode : nodes) {
                 // Check cursor and selection.
@@ -839,8 +841,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     optionalSelection = pTextEdit->optionalSelection;
                     selectionColor = pTextEdit->getTextSelectionColor();
                 }
-                bool bSelectionStartPosFound = false;
                 std::vector<std::pair<glm::vec2, glm::vec2>> vSelectionLinesToDraw;
+                SelectionDrawState selectionDrawState = SelectionDrawState::LOOKING_FOR_START;
 
                 // Prepare some variables for rendering.
                 const auto sText = pTextNode->getText();
@@ -885,14 +887,17 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         }
 
                         // Check selection.
-                        if (optionalSelection.has_value() && bSelectionStartPosFound) {
+                        bool bStartNewSelectionRegionOnNewLine = false;
+                        if (optionalSelection.has_value() &&
+                            selectionDrawState == SelectionDrawState::LOOKING_FOR_END) {
                             vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
 
                             if (optionalSelection->second == iCharIndex) {
-                                bSelectionStartPosFound = false;
+                                selectionDrawState = SelectionDrawState::FINISHED;
                             } else {
                                 vSelectionLinesToDraw.push_back(
                                     {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                                bStartNewSelectionRegionOnNewLine = true;
                             }
                         }
 
@@ -902,7 +907,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         }
                         screenX = textPos.x * iWindowWidth;
 
-                        if (optionalSelection.has_value() && bSelectionStartPosFound) {
+                        if (bStartNewSelectionRegionOnNewLine) {
                             vSelectionLinesToDraw.push_back(
                                 {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
                         }
@@ -953,27 +958,30 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         }
 
                         // Check selection.
-                        if (optionalSelection.has_value()) {
-                            if (!bSelectionStartPosFound) {
+                        if (optionalSelection.has_value() &&
+                            selectionDrawState != SelectionDrawState::FINISHED) {
+                            if (selectionDrawState == SelectionDrawState::LOOKING_FOR_START) {
                                 if (optionalSelection->first == iCharIndex) {
-                                    bSelectionStartPosFound = true;
+                                    selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
                                     vSelectionLinesToDraw.push_back(
                                         {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
                                 } else if (
                                     iLineIndex == iLinesToSkip && optionalSelection->first <= iCharIndex) {
                                     // Selection start was above (we skipped that line due to scroll).
-                                    bSelectionStartPosFound = true;
+                                    selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
                                     vSelectionLinesToDraw.push_back(
                                         {glm::vec2(textPos.x * iWindowWidth, screenY),
                                          glm::vec2(textPos.x * iWindowWidth, screenY)});
                                 }
-                            } else if (bSelectionStartPosFound && optionalSelection->second == iCharIndex) {
+                            } else if (
+                                selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
+                                optionalSelection->second == iCharIndex) {
                                 if (iLineIndex >= iLinesToSkip) {
                                     vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
                                 } else {
                                     vSelectionLinesToDraw.pop_back();
                                 }
-                                bSelectionStartPosFound = false;
+                                selectionDrawState = SelectionDrawState::FINISHED;
                             }
                         }
                     }
@@ -1006,8 +1014,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 }
 
                 // Check selection.
-                if (optionalSelection.has_value()) {
-                    if (bSelectionStartPosFound && optionalSelection->second >= sText.size()) {
+                if (optionalSelection.has_value() && !vSelectionLinesToDraw.empty()) {
+                    if (selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
+                        optionalSelection->second >= sText.size()) {
                         vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
                     }
                     vTextSelectionToDraw.push_back(TextSelectionDrawInfo{

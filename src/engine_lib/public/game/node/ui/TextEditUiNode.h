@@ -120,6 +120,27 @@ protected:
     /** Called after the node lost keyboard/gamepad focus. */
     virtual void onLostFocus() override;
 
+    /**
+     * Called when the mouse cursor stopped floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     */
+    virtual void onMouseLeft() override;
+
+    /**
+     * Called when the window received mouse movement.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param xOffset  Mouse X movement delta in pixels (plus if moved to the right,
+     * minus if moved to the left).
+     * @param yOffset  Mouse Y movement delta in pixels (plus if moved up,
+     * minus if moved down).
+     */
+    virtual void onMouseMove(double xOffset, double yOffset) override;
+
 private:
     /**
      * Converts the specified position on the screen to offset (in characters) in the text.
@@ -129,6 +150,9 @@ private:
      * @return Offset in text in range [0; textSize].
      */
     size_t convertScreenPosToTextOffset(const glm::vec2& screenPos);
+
+    /** Called in cases when we should consider the current mouse position as text selection end. */
+    void endTextSelection();
 
     /** Empty if text edit is read only or not focused, otherwise value in range [0; textSize]. */
     std::optional<size_t> optionalCursorOffset;
@@ -141,4 +165,7 @@ private:
 
     /** `true` if editing text from the user input is not possible. */
     bool bIsReadOnly = false;
+
+    /** `true` if LMB was pressed on some text and was not released yet. */
+    bool bIsTextSelectionStarted = false;
 };

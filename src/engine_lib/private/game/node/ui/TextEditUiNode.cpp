@@ -82,20 +82,62 @@ void TextEditUiNode::onMouseClickOnUiNode(
         return;
     }
 
-    const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
-    const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
-
     if (bIsPressedDown) {
+        const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
+        const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
+
         optionalCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
         optionalSelection = {};
+
+        bIsTextSelectionStarted = true;
     } else {
+        endTextSelection();
+    }
+}
+
+void TextEditUiNode::onMouseLeft() {
+    TextUiNode::onMouseLeft();
+
+    bIsTextSelectionStarted = false;
+}
+
+void TextEditUiNode::onMouseMove(double xOffset, double yOffset) {
+    TextUiNode::onMouseMove(xOffset, yOffset);
+
+    if (bIsTextSelectionStarted) {
+        // Don't end selection but create a temporary selection to display.
+        const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
+        const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
+        const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
+
+        const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
+        const auto pos = getPosition();
+        if ((mouseCursorPos.x / iWindowWidth < pos.x) || (mouseCursorPos.y / iWindowHeight < pos.y)) {
+            // The cursor just stopped hovering other this node.
+            bIsTextSelectionStarted = false;
+            return;
+        }
+
         const auto iCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
         if (optionalCursorOffset.has_value() && iCursorOffset != *optionalCursorOffset) {
             optionalSelection = {
                 std::min(iCursorOffset, *optionalCursorOffset),
                 std::max(iCursorOffset, *optionalCursorOffset)};
-            optionalCursorOffset = iCursorOffset;
         }
+    }
+}
+
+void TextEditUiNode::endTextSelection() {
+    const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
+    const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
+
+    bIsTextSelectionStarted = false;
+
+    const auto iCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
+    if (optionalCursorOffset.has_value() && iCursorOffset != *optionalCursorOffset) {
+        optionalSelection = {
+            std::min(iCursorOffset, *optionalCursorOffset), std::max(iCursorOffset, *optionalCursorOffset)};
+        optionalCursorOffset = iCursorOffset;
     }
 }
 
@@ -217,6 +259,7 @@ void TextEditUiNode::onLostFocus() {
     TextUiNode::onLostFocus();
 
     optionalCursorOffset = {};
+    bIsTextSelectionStarted = false;
 }
 
 size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) {
