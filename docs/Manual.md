@@ -28,10 +28,12 @@ Note for Windows users:
 
 By default we recommend you to use "RelWithDebInfo" build mode instead of the "Debug" build mode in order to improve performance of deserialization and level loading so that there's less time to wait until your game/level is loaded during development. When releasing your game you will use the usual "Release" build mode.
 
-In case you want to debug a specific target's code (your game's code for example) you need to disable optimizations for that specific target like so:
+In case you want to debug a specific target's code (your game's code for example) you need to disable optimizations for that specific target but since you often don't want to commit such changes to your version control you can add the following to your game's `CMakeLists.txt` file:
 
 ```Cpp
-if (NOT IS_RELEASE_BUILD)
+# Debug helper.
+if (NOT IS_RELEASE_BUILD AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/debug.cmake")
+    message(STATUS "Disabling optimizations because the file \"debug.cmake\" exists.")
     if (MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE -Od)
     else()
@@ -39,6 +41,8 @@ if (NOT IS_RELEASE_BUILD)
     endif()
 endif()
 ```
+
+the paths `src/*/debug.cmake` are already in our gitignore.
 
 ## Which header files to include and which not to include
 
