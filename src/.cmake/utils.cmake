@@ -8,6 +8,9 @@ function(enable_address_sanitizer)
     target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
     target_link_libraries(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer)
     target_link_libraries(${PROJECT_NAME} PRIVATE -fsanitize=address)
+    if (CMAKE_COMPILER_IS_GNUCC)
+        target_compile_options(${PROJECT_NAME} PRIVATE -static-libasan)
+    endif()
 endfunction()
 
 # Enable more warnings and warnings as errors.
