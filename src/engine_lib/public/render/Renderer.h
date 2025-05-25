@@ -145,6 +145,12 @@ private:
      */
     Renderer(Window* pWindow, SDL_GLContext pCreatedContext);
 
+    /** Called by window after its size changed. */
+    void onWindowSizeChanged();
+
+    /** (Re)creates framebuffers used by the renderer. */
+    void recreateFramebuffers();
+
     /** Called by window that owns this renderer to draw a new frame. */
     void drawNextFrame();
 

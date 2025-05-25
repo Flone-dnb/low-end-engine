@@ -31,7 +31,7 @@ PostProcessManager::PostProcessManager(
         "engine/shaders/postprocessing/PostProcessing.frag.glsl",
         ShaderProgramUsage::OTHER);
 
-    pFramebuffer = GpuResourceManager::createFramebuffer(iWidth, iHeight, GL_RGB8, 0);
+    recreateFramebuffer(iWidth, iHeight);
 }
 
 void PostProcessManager::drawPostProcessing(
@@ -73,4 +73,8 @@ void PostProcessManager::drawPostProcessing(
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glEnable(GL_DEPTH_TEST);
+}
+
+void PostProcessManager::recreateFramebuffer(unsigned int iWidth, unsigned int iHeight) {
+    pFramebuffer = GpuResourceManager::createFramebuffer(iWidth, iHeight, GL_RGB8, 0);
 }

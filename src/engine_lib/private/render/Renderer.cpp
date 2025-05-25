@@ -80,13 +80,6 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 
     pFullscreenQuad = GpuResourceManager::createQuad(false);
 
-    const auto windowSize = pWindow->getWindowSize();
-
-#if !defined(ENGINE_UI_ONLY)
-    pPostProcessManager = std::unique_ptr<PostProcessManager>(
-        new PostProcessManager(pShaderManager.get(), windowSize.first, windowSize.second));
-#endif
-
     // Initialize fences.
     for (auto& fence : frameSync.vFences) {
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
@@ -105,6 +98,23 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
             ShaderProgramUsage::OTHER);
     }
 
+    recreateFramebuffers();
+}
+
+void Renderer::recreateFramebuffers() {
+    // Set viewport.
+    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
+    GL_CHECK_ERROR(glViewport(0, 0, static_cast<int>(iWindowWidth), static_cast<int>(iWindowHeight)));
+
+#if !defined(ENGINE_UI_ONLY)
+    if (pPostProcessManager == nullptr) {
+        pPostProcessManager = std::unique_ptr<PostProcessManager>(
+            new PostProcessManager(pShaderManager.get(), iWindowWidth, iWindowHeight));
+    } else {
+        pPostProcessManager->recreateFramebuffer(iWindowWidth, iWindowHeight);
+    }
+#endif
+
     // Main framebuffer.
     auto bCreateMainFramebuffer = true;
     auto iDepthFormat = GL_DEPTH_COMPONENT24;
@@ -114,9 +124,13 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 #endif
     if (bCreateMainFramebuffer) {
         pMainFramebuffer =
-            GpuResourceManager::createFramebuffer(windowSize.first, windowSize.second, GL_RGB8, iDepthFormat);
+            GpuResourceManager::createFramebuffer(iWindowWidth, iWindowHeight, GL_RGB8, iDepthFormat);
     }
+
+    pUiManager->onWindowSizeChanged();
 }
+
+void Renderer::onWindowSizeChanged() { recreateFramebuffers(); }
 
 void Renderer::drawNextFrame() {
     PROFILE_FUNC

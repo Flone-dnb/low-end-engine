@@ -114,6 +114,14 @@ private:
         const Framebuffer& readFramebuffer,
         CameraProperties* pCameraProperties);
 
+    /**
+     * (Re)creates post-processing framebuffer.
+     *
+     * @param iWidth  Width of the post-processing framebuffer.
+     * @param iHeight Height of the post-processing framebuffer.
+     */
+    void recreateFramebuffer(unsigned int iWidth, unsigned int iHeight);
+
     /** Shader program used for rendering fullscreen quad. */
     std::shared_ptr<ShaderProgram> pShaderProgram;
 

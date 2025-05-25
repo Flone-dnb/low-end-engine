@@ -279,6 +279,9 @@ private:
      */
     UiManager(Renderer* pRenderer);
 
+    /** Called after the window size changed. */
+    void onWindowSizeChanged();
+
     /**
      * Renders the UI text nodes on the current framebuffer.
      *

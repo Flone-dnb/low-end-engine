@@ -7,16 +7,27 @@
 #include <Windows.h>
 #endif
 
-std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWindowName, bool bIsHidden) {
+std::variant<std::unique_ptr<Window>, Error>
+Window::create(std::string_view sWindowName, bool bIsFullscreen, bool bIsHidden) {
     InitManager::init();
 
     // Get display resolution.
     SDL_DisplayMode mode;
     SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
 
+    int iWindowWidth = mode.w;
+    int iWindowHeight = mode.h;
+
     // Prepare flags.
-    auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP |
-                       SDL_WINDOW_MAXIMIZED | SDL_WINDOW_ALLOW_HIGHDPI;
+    auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
+    if (bIsFullscreen) {
+        windowFlags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED;
+    } else {
+        windowFlags |= SDL_WINDOW_RESIZABLE;
+
+        iWindowWidth /= 2;
+        iWindowHeight /= 2;
+    }
     if (bIsHidden) {
         windowFlags |= SDL_WINDOW_HIDDEN;
     }
@@ -26,7 +37,12 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(std::string_view sWi
 
     // Create SDL window.
     const auto pSdlWindow = SDL_CreateWindow(
-        sWindowName.data(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mode.w, mode.h, windowFlags);
+        sWindowName.data(),
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        iWindowWidth,
+        iWindowHeight,
+        windowFlags);
     if (pSdlWindow == nullptr) [[unlikely]] {
         return Error(SDL_GetError());
     }
@@ -113,6 +129,19 @@ bool Window::processWindowEvent(const SDL_Event& event) {
             pGameManager->onWindowFocusChanged(true);
         } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
             pGameManager->onWindowFocusChanged(false);
+        } else if (
+            event.window.event == SDL_WINDOWEVENT_RESIZED ||
+            event.window.event == SDL_WINDOWEVENT_MAXIMIZED ||
+            event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+            // Save new size.
+            int iWidth = 0;
+            int iHeight = 0;
+            SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
+            windowSize.first = iWidth;
+            windowSize.second = iHeight;
+
+            // Notify renderer.
+            pGameManager->pRenderer->onWindowSizeChanged();
         }
         break;
     }

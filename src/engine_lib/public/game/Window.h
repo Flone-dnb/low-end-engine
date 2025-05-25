@@ -28,13 +28,15 @@ public:
     /**
      * Creates a new window.
      *
-     * @param sWindowName Name of the window.
-     * @param bIsHidden   Specify `true` to create an invisible window (generally used in automated testing).
+     * @param sWindowName   Name of the window.
+     * @param bIsFullscreen Specify `false` to create a non-fullscreen window.
+     * @param bIsHidden     Specify `true` to create an invisible window (generally used in automated
+     * testing).
      *
      * @return Error if something went wrong, otherwise created window.
      */
     static std::variant<std::unique_ptr<Window>, Error>
-    create(std::string_view sWindowName, bool bIsHidden = false);
+    create(std::string_view sWindowName, bool bIsFullscreen = true, bool bIsHidden = false);
 
     /**
      * Whether the cursor is visible or not (locked in this window).

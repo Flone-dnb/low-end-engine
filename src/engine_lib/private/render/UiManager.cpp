@@ -586,7 +586,6 @@ bool UiManager::hasModalUiNodeTree() {
 UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
-    // uiProjMatrix[1][1] *= -1; // flip OpenGL's bottom-left viewport to the usual top-left.
     mtxData.second.pScreenQuadGeometry = GpuResourceManager::createQuad(true);
 
     // Load shader.
@@ -594,6 +593,11 @@ UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
         "engine/shaders/ui/UiScreenQuad.vert.glsl",
         "engine/shaders/ui/RectUiNode.frag.glsl",
         ShaderProgramUsage::OTHER);
+}
+
+void UiManager::onWindowSizeChanged() {
+    const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
+    uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
 }
 
 void UiManager::drawUi(unsigned int iDrawFramebufferId) {
