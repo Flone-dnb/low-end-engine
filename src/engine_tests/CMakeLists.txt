@@ -50,6 +50,13 @@ message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_S
 # Add includes.
 target_include_directories(${PROJECT_NAME} PUBLIC src)
 
+# Disable optimizations for tests.
+if (MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -O0)
+endif()
+
 create_symlink_to_res()
 
 # -------------------------------------------------------------------------------------------------

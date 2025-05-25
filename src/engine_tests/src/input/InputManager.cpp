@@ -4,6 +4,22 @@
 // External.
 #include "catch2/catch_test_macros.hpp"
 
+// Because order of elements in the arrays may differ we use this function.
+void compareActionEventButtons(
+    const std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>& vItem1,
+    const std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>& vItem2) {
+    for (size_t i = 0; i < vItem1.size(); i++) {
+        bool bFound = false;
+        for (size_t j = 0; j < vItem2.size(); j++) {
+            if (vItem2[j] == vItem1[i]) {
+                bFound = true;
+                break;
+            }
+        }
+        REQUIRE(bFound);
+    }
+}
+
 TEST_CASE("add action") {
     // Prepare trigger buttons and action events.
     const unsigned int iActionEvent1Id = 0;
@@ -36,9 +52,9 @@ TEST_CASE("add action") {
     REQUIRE(!vEvent3Keys.empty());
 
     // Compare keys.
-    REQUIRE(vEvent1Keys == vActionEvent1Buttons);
-    REQUIRE(vEvent2Keys == vActionEvent2Buttons);
-    REQUIRE(vEvent3Keys == vActionEvent3Buttons);
+    compareActionEventButtons(vEvent1Keys, vActionEvent1Buttons);
+    compareActionEventButtons(vEvent2Keys, vActionEvent2Buttons);
+    compareActionEventButtons(vEvent3Keys, vActionEvent3Buttons);
 }
 
 TEST_CASE("remove action") {
@@ -73,8 +89,8 @@ TEST_CASE("remove action") {
     const auto vEvent3Keys = manager.getActionEventButtons(iActionEvent3Id);
     REQUIRE(!vEvent2Keys.empty());
     REQUIRE(!vEvent3Keys.empty());
-    REQUIRE(vEvent2Keys == vActionEvent2Buttons);
-    REQUIRE(vEvent3Keys == vActionEvent3Buttons);
+    compareActionEventButtons(vEvent2Keys, vActionEvent2Buttons);
+    compareActionEventButtons(vEvent3Keys, vActionEvent3Buttons);
 }
 
 TEST_CASE("fail to add an action event with already used ID") {
@@ -395,7 +411,7 @@ TEST_CASE("test saving and loading") {
 
         vReadAction = manager.getActionEventButtons(iAction2Id);
         REQUIRE(!vReadAction.empty());
-        REQUIRE(vReadAction == vExpectedAction2Keys);
+        compareActionEventButtons(vReadAction, vExpectedAction2Keys);
 
         const auto [vKeyboardTriggers, vGamepadTriggers] = manager.getAxisEventTriggers(iAxis1Id);
         REQUIRE(!vKeyboardTriggers.empty());
