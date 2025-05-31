@@ -39,19 +39,17 @@ std::optional<Error> Serializable::serialize(
     constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
     const auto iFilePathLength = pathToFile.string().length();
     if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
-        Logger::get().warn(
-            std::format(
-                "file path length {} is close to the platform limit of {} characters (path: {})",
-                iFilePathLength,
-                iMaxPathLimit,
-                pathToFile.string()));
+        Logger::get().warn(std::format(
+            "file path length {} is close to the platform limit of {} characters (path: {})",
+            iFilePathLength,
+            iMaxPathLimit,
+            pathToFile.string()));
     } else if (iFilePathLength >= iMaxPathLimit) {
-        return Error(
-            std::format(
-                "file path length {} exceeds the platform limit of {} characters (path: {})",
-                iFilePathLength,
-                iMaxPathLimit,
-                pathToFile.string()));
+        return Error(std::format(
+            "file path length {} exceeds the platform limit of {} characters (path: {})",
+            iFilePathLength,
+            iMaxPathLimit,
+            pathToFile.string()));
     }
 #endif
 
@@ -81,15 +79,14 @@ std::optional<Error> Serializable::serialize(
             if (!std::filesystem::exists(pathToOriginal)) [[unlikely]] {
                 GCC_PUSH_DIAGNOSTIC_DISABLE_DANGLING_REF
                 const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(getTypeGuid());
-                return Error(
-                    std::format(
-                        "object of type \"{}\" has the path it was deserialized from ({}, ID {}) but "
-                        "this "
-                        "file \"{}\" does not exist",
-                        typeInfo.sTypeName,
-                        sPathDeserializedFromRelativeRes,
-                        sObjectIdInDeserializedFile,
-                        pathToOriginal.string()));
+                return Error(std::format(
+                    "object of type \"{}\" has the path it was deserialized from ({}, ID {}) but "
+                    "this "
+                    "file \"{}\" does not exist",
+                    typeInfo.sTypeName,
+                    sPathDeserializedFromRelativeRes,
+                    sObjectIdInDeserializedFile,
+                    pathToOriginal.string()));
                 GCC_DIAGNOSTIC_POP
             }
 
@@ -134,10 +131,8 @@ std::optional<Error> Serializable::serialize(
     // Save TOML data to file.
     std::ofstream file(pathToFile, std::ios::binary);
     if (!file.is_open()) [[unlikely]] {
-        return Error(
-            std::format(
-                "failed to open the file \"{}\" (maybe because it's marked as read-only)",
-                pathToFile.string()));
+        return Error(std::format(
+            "failed to open the file \"{}\" (maybe because it's marked as read-only)", pathToFile.string()));
     }
     file << toml::format(tomlData);
     file.close();
@@ -172,10 +167,9 @@ std::optional<Error> Serializable::serializeMultiple(
         }
 
         if (objectData.sObjectUniqueId.find('.') != std::string::npos) [[unlikely]] {
-            return Error(
-                std::format(
-                    "the specified object ID \"{}\" is not allowed to have dots in it",
-                    objectData.sObjectUniqueId));
+            return Error(std::format(
+                "the specified object ID \"{}\" is not allowed to have dots in it",
+                objectData.sObjectUniqueId));
         }
         for (const auto& compareObject : vObjects) {
             if (objectData.pObject != compareObject.pObject &&
@@ -215,19 +209,17 @@ std::optional<Error> Serializable::serializeMultiple(
     constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
     const auto iFilePathLength = pathToFile.string().length();
     if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
-        Logger::get().warn(
-            std::format(
-                "file path length {} is close to the platform limit of {} characters (path: {})",
-                iFilePathLength,
-                iMaxPathLimit,
-                pathToFile.string()));
+        Logger::get().warn(std::format(
+            "file path length {} is close to the platform limit of {} characters (path: {})",
+            iFilePathLength,
+            iMaxPathLimit,
+            pathToFile.string()));
     } else if (iFilePathLength >= iMaxPathLimit) {
-        return Error(
-            std::format(
-                "file path length {} exceeds the platform limit of {} characters (path: {})",
-                iFilePathLength,
-                iMaxPathLimit,
-                pathToFile.string()));
+        return Error(std::format(
+            "file path length {} exceeds the platform limit of {} characters (path: {})",
+            iFilePathLength,
+            iMaxPathLimit,
+            pathToFile.string()));
     }
 #endif
 
@@ -250,10 +242,8 @@ std::optional<Error> Serializable::serializeMultiple(
     // Save TOML data to file.
     std::ofstream file(pathToFile, std::ios::binary);
     if (!file.is_open()) [[unlikely]] {
-        return Error(
-            std::format(
-                "failed to open the file \"{}\" (maybe because it's marked as read-only)",
-                pathToFile.string()));
+        return Error(std::format(
+            "failed to open the file \"{}\" (maybe because it's marked as read-only)", pathToFile.string()));
     }
     file << toml::format(tomlData);
     file.close();
@@ -458,6 +448,8 @@ std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
 
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+#elif defined(DEBUG)
+        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
 #endif
     }
 

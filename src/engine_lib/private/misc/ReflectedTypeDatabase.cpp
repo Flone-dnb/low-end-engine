@@ -50,11 +50,10 @@ void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeRefle
     // Make sure the GUID is not used.
     const auto typeIt = reflectedTypes.find(sTypeGuid);
     if (typeIt != reflectedTypes.end() && typeIt->second.sTypeName != typeInfo.sTypeName) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "GUID of the type \"{}\" is already used by a type named \"{}\", pick some GUID for the type",
-                typeInfo.sTypeName,
-                typeIt->second.sTypeName));
+        Error::showErrorAndThrowException(std::format(
+            "GUID of the type \"{}\" is already used by a type named \"{}\", pick some GUID for the type",
+            typeInfo.sTypeName,
+            typeIt->second.sTypeName));
     }
 
     // Make sure the GUID does not have dots in it (just in case because our serialization does not expect
@@ -71,11 +70,10 @@ void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeRefle
 const TypeReflectionInfo& ReflectedTypeDatabase::getTypeInfo(const std::string& sTypeGuid) {
     const auto typeIt = reflectedTypes.find(sTypeGuid);
     if (typeIt == reflectedTypes.end()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "unable to find a type with GUID \"{}\" in the reflected type database (is it not registered "
-                "yet?)",
-                sTypeGuid));
+        Error::showErrorAndThrowException(std::format(
+            "unable to find a type with GUID \"{}\" in the reflected type database (is it not registered "
+            "yet?)",
+            sTypeGuid));
     }
 
     return typeIt->second;
@@ -87,11 +85,10 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
 #define ADD_VARIABLES_OF_TYPE(type)                                                                          \
     for (const auto& [sVariableName, value] : type) {                                                        \
         if (!names.insert(sVariableName).second) [[unlikely]] {                                              \
-            Error::showErrorAndThrowException(                                                               \
-                std::format(                                                                                 \
-                    "found 2 reflected variables with the same name \"{}\" - reflected variable names must " \
-                    "be unique",                                                                             \
-                    sVariableName));                                                                         \
+            Error::showErrorAndThrowException(std::format(                                                   \
+                "found 2 reflected variables with the same name \"{}\" - reflected variable names must "     \
+                "be unique",                                                                                 \
+                sVariableName));                                                                             \
         }                                                                                                    \
     }
 
@@ -111,6 +108,8 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
     ADD_VARIABLES_OF_TYPE(meshGeometries);
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+#elif defined(DEBUG)
+    static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
 #endif
 
     return names;
@@ -133,14 +132,13 @@ TypeReflectionInfo::TypeReflectionInfo(
         for (const auto& sVariableName : myVariableNames) {
             const auto nameIt = inheritedVariableNames.find(sVariableName);
             if (nameIt != inheritedVariableNames.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "reflected variable \"{}\" of type \"{}\" has a non-unique name, the name \"{}\" is "
-                        "already used on a reflected variable in one of the parents of \"{}\"",
-                        sVariableName,
-                        sTypeName,
-                        sVariableName,
-                        sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "reflected variable \"{}\" of type \"{}\" has a non-unique name, the name \"{}\" is "
+                    "already used on a reflected variable in one of the parents of \"{}\"",
+                    sVariableName,
+                    sTypeName,
+                    sVariableName,
+                    sTypeName));
             }
         }
 
@@ -148,11 +146,10 @@ TypeReflectionInfo::TypeReflectionInfo(
 #define ADD_PARENT_VARIABLES(type)                                                                           \
     for (const auto& [sVariableName, value] : parentTypeInfo.reflectedVariables.type) {                      \
         if (!reflectedVariables.type.insert({sVariableName, value}).second) [[unlikely]] {                   \
-            Error::showErrorAndThrowException(                                                               \
-                std::format(                                                                                 \
-                    "type \"{}\" variable \"{}\": variable name is already used by some parent type",        \
-                    sTypeName,                                                                               \
-                    sVariableName));                                                                         \
+            Error::showErrorAndThrowException(std::format(                                                   \
+                "type \"{}\" variable \"{}\": variable name is already used by some parent type",            \
+                sTypeName,                                                                                   \
+                sVariableName));                                                                             \
         }                                                                                                    \
     }
 
@@ -172,6 +169,8 @@ TypeReflectionInfo::TypeReflectionInfo(
         ADD_PARENT_VARIABLES(meshGeometries);
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+#elif defined(DEBUG)
+        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
 #endif
     }
 
@@ -200,5 +199,7 @@ TypeReflectionInfo::TypeReflectionInfo(
     VARIABLE_TYPE_TO_MAP(meshGeometries, ReflectedVariableType::MESH_GEOMETRY);
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+#elif defined(DEBUG)
+    static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
 #endif
 }

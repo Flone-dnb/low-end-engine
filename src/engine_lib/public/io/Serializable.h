@@ -329,9 +329,8 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserialize(
     try {
         tomlData = toml::parse(pathToFile);
     } catch (std::exception& exception) {
-        return Error(
-            std::format(
-                "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
+        return Error(std::format(
+            "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
     }
 
     // Get TOML as table.
@@ -401,13 +400,12 @@ Serializable::deserialize(const std::filesystem::path& pathToFile) {
         return Error(std::format("nothing was deserialized from file \"{}\"", pathToFile.string()));
     }
     if (vDeserializedObjects.size() > 1) [[unlikely]] {
-        return Error(
-            std::format(
-                "deserialized {} objects while expected only 1, this function assumes that there's only 1 "
-                "object to deserialize, otherwise use another `deserialize` function and specify an object "
-                "ID to deserialize (file \"{}\")",
-                vDeserializedObjects.size(),
-                pathToFile.string()));
+        return Error(std::format(
+            "deserialized {} objects while expected only 1, this function assumes that there's only 1 "
+            "object to deserialize, otherwise use another `deserialize` function and specify an object "
+            "ID to deserialize (file \"{}\")",
+            vDeserializedObjects.size(),
+            pathToFile.string()));
     }
 
     return std::move(vDeserializedObjects[0].pObject);
@@ -430,9 +428,8 @@ Serializable::deserializeMultiple(std::filesystem::path pathToFile) {
     try {
         tomlData = toml::parse(pathToFile);
     } catch (std::exception& exception) {
-        return Error(
-            std::format(
-                "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
+        return Error(std::format(
+            "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
     }
 
     // Get TOML as table.
@@ -508,15 +505,13 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
             auto tomlArray = value.as_array();
 
             if (tomlArray.size() != 2) [[unlikely]] {
-                return Error(
-                    std::format(
-                        "found array key \"{}\" with unexpected size", sTomlKeyPathToOriginalRelativeToRes));
+                return Error(std::format(
+                    "found array key \"{}\" with unexpected size", sTomlKeyPathToOriginalRelativeToRes));
             }
             if (!tomlArray[0].is_string() || !tomlArray[1].is_string()) [[unlikely]] {
-                return Error(
-                    std::format(
-                        "found array key \"{}\" has unexpected element type",
-                        sTomlKeyPathToOriginalRelativeToRes));
+                return Error(std::format(
+                    "found array key \"{}\" has unexpected element type",
+                    sTomlKeyPathToOriginalRelativeToRes));
             }
 
             originalObjectPathAndId = {tomlArray[0].as_string(), tomlArray[1].as_string()};
@@ -569,12 +564,11 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         // Find type.
         const auto varIt = typeInfo.variableNameToType.find(sFieldName.data());
         if (varIt == typeInfo.variableNameToType.end()) [[unlikely]] {
-            Logger::get().warn(
-                std::format(
-                    "field name \"{}\" exists in the specified toml value but does not exist in the actual "
-                    "object (if you removed/renamed this reflected field from your type - ignore this "
-                    "warning)",
-                    sFieldName));
+            Logger::get().warn(std::format(
+                "field name \"{}\" exists in the specified toml value but does not exist in the actual "
+                "object (if you removed/renamed this reflected field from your type - ignore this "
+                "warning)",
+                sFieldName));
             continue;
         }
         const auto variableType = varIt->second;
@@ -583,21 +577,19 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         switch (variableType) {
         case (ReflectedVariableType::BOOL): {
             if (!pFieldTomlValue->is_boolean()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             // Set value.
             const auto variableInfoIt = typeInfo.reflectedVariables.bools.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.bools.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             variableInfoIt->second.setter(pDeserializedObject.get(), pFieldTomlValue->as_boolean());
 
@@ -605,21 +597,19 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::INT): {
             if (!pFieldTomlValue->is_integer()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             // Set value.
             const auto variableInfoIt = typeInfo.reflectedVariables.ints.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.ints.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             variableInfoIt->second.setter(
                 pDeserializedObject.get(), static_cast<int>(pFieldTomlValue->as_integer()));
@@ -628,11 +618,10 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::UNSIGNED_INT): {
             if (!pFieldTomlValue->is_integer()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const long long& iTomlValue = pFieldTomlValue->as_integer();
@@ -644,11 +633,10 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
             // Set value.
             const auto variableInfoIt = typeInfo.reflectedVariables.unsignedInts.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.unsignedInts.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             variableInfoIt->second.setter(pDeserializedObject.get(), iValue);
 
@@ -656,21 +644,19 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::LONG_LONG): {
             if (!pFieldTomlValue->is_integer()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             // Set value.
             const auto variableInfoIt = typeInfo.reflectedVariables.longLongs.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.longLongs.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             variableInfoIt->second.setter(pDeserializedObject.get(), pFieldTomlValue->as_integer());
 
@@ -679,53 +665,48 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         case (ReflectedVariableType::UNSIGNED_LONG_LONG): {
             // Stored as a string because toml11 uses `long long` for integers.
             if (!pFieldTomlValue->is_string()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.unsignedLongLongs.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.unsignedLongLongs.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             try {
                 unsigned long long iValue = std::stoull(pFieldTomlValue->as_string());
                 variableInfoIt->second.setter(pDeserializedObject.get(), iValue);
             } catch (std::exception& exception) {
-                return Error(
-                    std::format(
-                        "failed to convert string to unsigned long long for field \"{}\" on type \"{}\", "
-                        "error: {}",
-                        sFieldName,
-                        typeInfo.sTypeName,
-                        exception.what()));
+                return Error(std::format(
+                    "failed to convert string to unsigned long long for field \"{}\" on type \"{}\", "
+                    "error: {}",
+                    sFieldName,
+                    typeInfo.sTypeName,
+                    exception.what()));
             }
 
             break;
         }
         case (ReflectedVariableType::FLOAT): {
             if (!pFieldTomlValue->is_floating()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.floats.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.floats.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             variableInfoIt->second.setter(
@@ -735,20 +716,18 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::STRING): {
             if (!pFieldTomlValue->is_string()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.strings.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.strings.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             variableInfoIt->second.setter(pDeserializedObject.get(), pFieldTomlValue->as_string());
 
@@ -756,38 +735,34 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::VEC2): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.vec2s.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.vec2s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             auto tomlArray = pFieldTomlValue->as_array();
             if (tomlArray.size() != 2) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected size of the array on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected size of the array on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             glm::vec2 result = glm::vec2(0.0F, 0.0F);
 
             if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected element type of the array on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected element type of the array on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             result.x = static_cast<float>(tomlArray[0].as_floating());
@@ -799,39 +774,35 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::VEC3): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.vec3s.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.vec3s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             auto tomlArray = pFieldTomlValue->as_array();
             if (tomlArray.size() != 3) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected size of the array on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected size of the array on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             glm::vec3 result = glm::vec3(0.0F, 0.0F, 0.0F);
 
             if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating() || !tomlArray[2].is_floating())
                 [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected element type of the array on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected element type of the array on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             result.x = static_cast<float>(tomlArray[0].as_floating());
@@ -844,39 +815,35 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::VEC4): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.vec4s.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.vec4s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             auto tomlArray = pFieldTomlValue->as_array();
             if (tomlArray.size() != 4) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected size of the array on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected size of the array on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
             glm::vec4 result = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
 
             if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating() || !tomlArray[2].is_floating() ||
                 !tomlArray[3].is_floating()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected element type of the array on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected element type of the array on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             result.x = static_cast<float>(tomlArray[0].as_floating());
@@ -890,31 +857,28 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::VECTOR_INT): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.vectorInts.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.vectorInts.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             auto& tomlArray = pFieldTomlValue->as_array();
             std::vector<int> vArray(tomlArray.size(), 0);
             for (size_t i = 0; i < tomlArray.size(); i++) {
                 if (!tomlArray[i].is_integer()) [[unlikely]] {
-                    Error::showErrorAndThrowException(
-                        std::format(
-                            "found unexpected element type in TOML data on variable \"{}\" from \"{}\"",
-                            sFieldName,
-                            typeInfo.sTypeName));
+                    Error::showErrorAndThrowException(std::format(
+                        "found unexpected element type in TOML data on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
                 }
                 vArray[i] = static_cast<int>(tomlArray[i].as_integer());
             }
@@ -925,31 +889,28 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::VECTOR_STRING): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.vectorStrings.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.vectorStrings.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             auto& tomlArray = pFieldTomlValue->as_array();
             std::vector<std::string> vArray(tomlArray.size());
             for (size_t i = 0; i < tomlArray.size(); i++) {
                 if (!tomlArray[i].is_string()) [[unlikely]] {
-                    Error::showErrorAndThrowException(
-                        std::format(
-                            "found unexpected element type in TOML data on variable \"{}\" from \"{}\"",
-                            sFieldName,
-                            typeInfo.sTypeName));
+                    Error::showErrorAndThrowException(std::format(
+                        "found unexpected element type in TOML data on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
                 }
                 vArray[i] = tomlArray[i].as_string();
             }
@@ -960,29 +921,24 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         case (ReflectedVariableType::VECTOR_VEC3): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "variable \"{}\" from \"{}\" has unexpected type in the TOML data",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             const auto variableInfoIt = typeInfo.reflectedVariables.vectorVec3s.find(sFieldName.data());
             if (variableInfoIt == typeInfo.reflectedVariables.vectorVec3s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "found mismatch between internal structured on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
             }
 
             auto tomlArray = pFieldTomlValue->as_array();
             if (tomlArray.size() % 3 != 0) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format(
-                        "unexpected array size on variable \"{}\" from \"{}\"",
-                        sFieldName,
-                        typeInfo.sTypeName));
+                Error::showErrorAndThrowException(std::format(
+                    "unexpected array size on variable \"{}\" from \"{}\"", sFieldName, typeInfo.sTypeName));
             }
 
             const auto iFinalArraySize = tomlArray.size() / 3;
@@ -992,11 +948,10 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                 if (!tomlArray[iTomlArrayIndex].is_floating() ||
                     !tomlArray[iTomlArrayIndex + 1].is_floating() ||
                     !tomlArray[iTomlArrayIndex + 2].is_floating()) [[unlikely]] {
-                    Error::showErrorAndThrowException(
-                        std::format(
-                            "unexpected element type in array on variable \"{}\" from \"{}\"",
-                            sFieldName,
-                            typeInfo.sTypeName));
+                    Error::showErrorAndThrowException(std::format(
+                        "unexpected element type in array on variable \"{}\" from \"{}\"",
+                        sFieldName,
+                        typeInfo.sTypeName));
                 }
                 vResultingArray[i].x = static_cast<float>(tomlArray[iTomlArrayIndex].as_floating());
                 vResultingArray[i].y = static_cast<float>(tomlArray[iTomlArrayIndex + 1].as_floating());
@@ -1016,6 +971,8 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+#elif defined(DEBUG)
+        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
 #endif
     }
 
@@ -1073,12 +1030,11 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         const auto pathToOriginalFile =
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sRelativePath;
         if (!std::filesystem::exists(pathToOriginalFile)) [[unlikely]] {
-            return Error(
-                std::format(
-                    "failed to save the relative path to the `res` directory for the file at \"{}\", "
-                    "reason: constructed path \"{}\" does not exist",
-                    pathToFile.string(),
-                    pathToOriginalFile.string()));
+            return Error(std::format(
+                "failed to save the relative path to the `res` directory for the file at \"{}\", "
+                "reason: constructed path \"{}\" does not exist",
+                pathToFile.string(),
+                pathToOriginalFile.string()));
         }
 
         // Save deserialization path.

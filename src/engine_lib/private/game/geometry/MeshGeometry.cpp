@@ -59,7 +59,7 @@ void MeshGeometry::serialize(const std::filesystem::path& pathToFile) const {
     file.write(reinterpret_cast<const char*>(vNormalData.data()), vNormalData.size());
     file.write(reinterpret_cast<const char*>(vUvData.data()), vUvData.size());
 
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
     static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
 #endif
 }
@@ -126,12 +126,11 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
     iReadByteCount += vUvData.size() * sizeof(vUvData[0]);
 
     if (iReadByteCount != iFileSizeInBytes) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "read byte count vs file size mismatch {} != {}, file \"{}\"",
-                iReadByteCount,
-                iFileSizeInBytes,
-                pathToFile.string()));
+        Error::showErrorAndThrowException(std::format(
+            "read byte count vs file size mismatch {} != {}, file \"{}\"",
+            iReadByteCount,
+            iFileSizeInBytes,
+            pathToFile.string()));
     }
 
     std::vector<MeshVertex> vVertices(iVertexCount);
@@ -141,7 +140,7 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
         vVertices[i].uv = vUvData[i];
     }
 
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
     static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
 #endif
 
@@ -218,7 +217,7 @@ bool MeshGeometry::operator==(const MeshGeometry& other) const {
         return false;
     }
 
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
     static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
 #endif
 
