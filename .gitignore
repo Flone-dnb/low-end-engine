@@ -7,3 +7,5 @@ CMakeSettings.json
 *.autosave
 .cache
 src/*/debug.cmake
+.ccls-cache
+compile_commands.json
