@@ -28,19 +28,6 @@ function(enable_more_warnings)
     endif()
 endfunction()
 
-# Enables clang-tidy.
-function(enable_clang_tidy CLANG_TIDY_CONFIG_PATH)
-    find_program (CLANG_TIDY NAMES "clang-tidy" REQUIRED)
-    set(RUN_CLANG_TIDY
-        "${CLANG_TIDY}"
-        "--config-file=${CLANG_TIDY_CONFIG_PATH}")
-    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${RUN_CLANG_TIDY}")
-    if(MSVC)
-        target_compile_options(${PROJECT_NAME} PUBLIC -EHsc) # needed for clang-tidy when running MSVC to enable exceptions
-    endif()
-    message(STATUS "${PROJECT_NAME}: Clang-tidy is enabled.")
-endfunction()
-
 # Adds a program as a post build step to check that all Node derived types in override functions are "calling super"
 # (base class implementation of the function being overridden). So that the programmer does not need to remember that.
 function(add_node_super_call_checker GLOBAL_PATH_TO_NODES_PRIVATE GLOBAL_PATH_TO_NODES_PUBLIC)

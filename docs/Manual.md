@@ -62,15 +62,11 @@ The engine uses GLM (a well known math library, hosted at https://github.com/g-t
 
 You should always prefer to include `math/GLMath.hpp` instead of the original GLM headers and only if this header does not have needed functionality you can include original GLM headers afterwards.
 
-## Automatic code formatters and static analyzers
+## Code formatting
 
-The engine uses `clang-format` and `clang-tidy` a classic pair of tools that you will commonly find in C++ projects. If you don't know what they do it's a good time to read about them on the Internet.
-
-The engine does not require you to use them but their usage is highly recommended.
+The engine uses `clang-format` for formatting the code.
 
 `clang-format` can be used in your IDE to automatically format your code (for example) each time you press Ctrl+S. If you want to make sure that your IDE is using our `.clang-format` config you can do the following check: in your source code create 2 or more consecutive empty lines, since our `.clang-format` config contains a rule `MaxEmptyLinesToKeep: 1` after you format the file only 1 empty line should remain. The action with which you format your source code depends on your IDE settings that you might want to configure, generally IDEs have a shortcut to "format" your source code but some have option to automatically use "format" action when you are saving your file.
-
-`clang-tidy` has a lot of checks enabled and is generally not that fast as you might expect, because of this we have `clang-tidy` enabled only in release builds to speed up build times for non-release dev builds. Because of this it's highly recommended to regularly (say once or twice a week) build your project in release mode to check for `clang-tidy` warnings/errors.
 
 ## Node system
 
