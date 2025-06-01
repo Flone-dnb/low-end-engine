@@ -50,10 +50,15 @@ public:
      * Starts the window message queue, rendering and game logic.
      *
      * @remark This function will return control after the window was closed.
+     *
+     * @param bRenderOnlyAfterInput Specify `true` to render a new frame only after the user input
+     * was received. In this case ticking functions are not called every game tick but called after input or
+     * if some small interval of time has passed. This mode can be useful in some UI only applications.
+     * Specify `false` to render a new frame every game tick.
      */
     template <typename MyGameInstance>
         requires std::derived_from<MyGameInstance, GameInstance>
-    void processEvents();
+    void processEvents(bool bRenderOnlyAfterInput = false);
 
     /** Closes this window causing game instance, renderer, audio engine and etc. to be destroyed. */
     void close();
@@ -198,7 +203,7 @@ private:
 
 template <typename MyGameInstance>
     requires std::derived_from<MyGameInstance, GameInstance>
-inline void Window::processEvents() {
+inline void Window::processEvents(bool bRenderOnlyAfterInput) {
     // Look for already connected gamepad.
     pConnectedGamepad = findConnectedGamepad();
 
@@ -219,12 +224,15 @@ inline void Window::processEvents() {
         pGameManager->onGamepadConnected(pControllerName != nullptr ? pControllerName : "");
     }
 
-    // Save reference to the renderer.
     const auto pRenderer = pGameManager->getRenderer();
 
     // Used for tick.
     unsigned long long iCurrentTimeCounter = SDL_GetPerformanceCounter();
     unsigned long long iPrevTimeCounter = 0;
+
+    // Some variables in case we need to only render after input.
+    float timeSinceLastTickSec = 0.0F;
+    constexpr float forceTickIntervalSec = 0.25F;
 
     // Run game loop.
     bQuitRequested = false;
@@ -233,22 +241,36 @@ inline void Window::processEvents() {
 
         // Process available window events.
         SDL_Event event;
+        bool bHaveEventsToProcess = false;
         while (SDL_PollEvent(&event) != 0) {
+            bHaveEventsToProcess = true;
             const auto bReceivedQuitEvent = processWindowEvent(event);
 
             // Use `OR` instead of assignment because the user can call `Window::close`.
             bQuitRequested |= bReceivedQuitEvent;
         }
 
-        // Tick.
+        // Calculate delta time.
         iPrevTimeCounter = iCurrentTimeCounter;
         iCurrentTimeCounter = SDL_GetPerformanceCounter();
-        const auto deltaTimeInMs = (iCurrentTimeCounter - iPrevTimeCounter) * 1000 / // NOLINT
+        const auto deltaTimeInMs = (iCurrentTimeCounter - iPrevTimeCounter) * 1000 /
                                    static_cast<double>(SDL_GetPerformanceFrequency());
-        pGameManager->onBeforeNewFrame(static_cast<float>(deltaTimeInMs * 0.001)); // NOLINT
+        const auto deltaTimeInSec = static_cast<float>(deltaTimeInMs * 0.001);
+        timeSinceLastTickSec += deltaTimeInSec;
 
-        // Draw.
-        pRenderer->drawNextFrame();
+        if (!bRenderOnlyAfterInput || bHaveEventsToProcess || timeSinceLastTickSec >= forceTickIntervalSec) {
+            // Process game tick.
+            pGameManager->onBeforeNewFrame(deltaTimeInSec);
+            timeSinceLastTickSec = 0.0F;
+
+            // Draw frame.
+            pRenderer->drawNextFrame();
+        }
+
+        if (bRenderOnlyAfterInput) {
+            // Wait for next input.
+            std::this_thread::sleep_for(std::chrono::milliseconds(15));
+        }
     }
 
     // Notify game manager about window closed.

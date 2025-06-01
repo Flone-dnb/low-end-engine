@@ -68,6 +68,13 @@ The engine uses `clang-format` for formatting the code.
 
 `clang-format` can be used in your IDE to automatically format your code (for example) each time you press Ctrl+S. If you want to make sure that your IDE is using our `.clang-format` config you can do the following check: in your source code create 2 or more consecutive empty lines, since our `.clang-format` config contains a rule `MaxEmptyLinesToKeep: 1` after you format the file only 1 empty line should remain. The action with which you format your source code depends on your IDE settings that you might want to configure, generally IDEs have a shortcut to "format" your source code but some have option to automatically use "format" action when you are saving your file.
 
+## GUI applications
+
+In case you would want to create GUI-only applications (not games) using this engine there are some special settings that you might find useful:
+
+1. ENGINE_UI_ONLY cmake option - when enabled the engine only focuses on rendering UI elements and does not create resources used to render 3D geometry or process physics, this can reduce RAM usage for simple GUI applications. In order to enable this option for your project (instead of passing -DENGINE_UI_ONLY=ON every time) create a new file `engine_settings.cmake` next to the top-level `CMakeLists.txt` file of the engine and add there something like `set(ENGINE_UI_ONLY ON)`.
+2. Render only after user input - when running your application's window using `Window::processEvents` specify `true` to make sure new frames are rendered only after the user input was received or if some period of time has passed, this can reduce CPU usage.
+
 ## Node system
 
 Have you used Godot game engine? If the answer is "yes" you're in luck, this engine uses a similar node system for game entities. We have a base class `Node` and derived nodes like `SpatialNode`, `MeshNode` and etc.
