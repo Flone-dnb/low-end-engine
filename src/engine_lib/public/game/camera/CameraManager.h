@@ -13,14 +13,7 @@ class CameraManager {
     friend class CameraNode;
 
 public:
-    CameraManager() = delete;
-
-    /**
-     * Creates a new manager.
-     *
-     * @param pRenderer Used renderer.
-     */
-    CameraManager(Renderer* pRenderer);
+    CameraManager() = default;
 
     /**
      * Makes a camera node to be the primary camera.
@@ -64,7 +57,4 @@ private:
      * it will notify this manager to clear this pointer.
      */
     std::pair<std::recursive_mutex, CameraNode*> mtxActiveCamera;
-
-    /** Used renderer. */
-    Renderer* const pRenderer = nullptr;
 };

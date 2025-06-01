@@ -74,9 +74,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager(this));
     pUiManager = std::unique_ptr<UiManager>(new UiManager(this));
     pTextureManager = std::unique_ptr<TextureManager>(new TextureManager());
-    pFontManager = FontManager::create(
-        this,
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
+    pFontManager = FontManager::create(this);
 
     pFullscreenQuad = GpuResourceManager::createQuad(false);
 

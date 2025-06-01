@@ -4,12 +4,22 @@
 #include <mutex>
 #include <filesystem>
 #include <memory>
+#include <vector>
 
 // Custom.
 #include "math/GLMath.hpp"
 
 class Texture;
 class Renderer;
+
+/** Groups information about a font to load. */
+struct FontLoadInfo {
+    /** Path to a .ttf file to load. */
+    std::filesystem::path pathToFont;
+
+    /** Pairs of "start index" - "end index" (inclusive) of characters to load. */
+    std::vector<std::pair<unsigned long, unsigned long>> charCodesToLoad;
+};
 
 /** Simplifies loading .ttf files from disk to the GPU memory. */
 class FontManager {
@@ -48,11 +58,18 @@ public:
     static constexpr float getFontHeightToLoad() { return fontHeightToLoad; }
 
     /**
-     * Sets path to a .ttf font to load and use instead of the default one.
+     * Returns code of a glyph that should be displayed when found a character without a loaded glyph.
      *
-     * @param pathToFont Path to a .ttf font file.
+     * @return Glyph code.
      */
-    void setPathToFontToLoad(const std::filesystem::path& pathToFont);
+    static constexpr unsigned long getGlyphCodeForUnknownChar() { return iUnknownCharGlyphCode; }
+
+    /**
+     * Loads glyphs from the specified font to be used (clears previously loaded glyphs).
+     *
+     * @param vFontsToLoad Fonts to load (at least 1 must be specified).
+     */
+    void loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad);
 
     /**
      * Returns pairs of "character code" - "loaded glyph".
@@ -68,11 +85,10 @@ private:
      * Creates a new font manager.
      *
      * @param pRenderer  Renderer.
-     * @param pathToFont Path to a .ttf font to use.
      *
      * @return Created manager.
      */
-    static std::unique_ptr<FontManager> create(Renderer* pRenderer, const std::filesystem::path& pathToFont);
+    static std::unique_ptr<FontManager> create(Renderer* pRenderer);
 
     /**
      * Used internally, see @ref create.
@@ -80,13 +96,6 @@ private:
      * @param pRenderer Renderer.
      */
     FontManager(Renderer* pRenderer);
-
-    /**
-     * Loads glyphs from the specified font to be used (clears previously loaded glyphs).
-     *
-     * @param pathToFont Path to .ttf file.
-     */
-    void loadFont(const std::filesystem::path& pathToFont);
 
     /** Pairs of "character code" - "loaded glyph". */
     std::pair<std::mutex, std::unordered_map<unsigned long, CharacterGlyph>> mtxLoadedGlyphs;
@@ -102,4 +111,10 @@ private:
      * big text will be blurry, if it will be too big small text will look bad.
      */
     static constexpr float fontHeightToLoad = 0.12F;
+
+    /**
+     * Code of a glyph that we will load (if not loaded) from the default font to display when found a
+     * character without a loaded glyph.
+     * */
+    static constexpr unsigned long iUnknownCharGlyphCode = 63; // NOLINT: question mark
 };

@@ -9,6 +9,7 @@
 
 // External.
 #include "nameof.hpp"
+#include "utf/utf.hpp"
 
 namespace {
     constexpr std::string_view sTypeGuid = "e9153575-0825-4934-b8a0-666f2eaa9fe9";
@@ -65,10 +66,10 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
     variables.strings[NAMEOF_MEMBER(&TextUiNode::sText).data()] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {
-                reinterpret_cast<TextUiNode*>(pThis)->setText(sNewValue);
+                reinterpret_cast<TextUiNode*>(pThis)->setText(utf::as_u16(sNewValue));
             },
         .getter = [](Serializable* pThis) -> std::string {
-            return reinterpret_cast<TextUiNode*>(pThis)->getText().data();
+            return utf::as_str8(reinterpret_cast<TextUiNode*>(pThis)->getText());
         }};
 
     variables.bools[NAMEOF_MEMBER(&TextUiNode::bIsWordWrapEnabled).data()] = ReflectedVariableInfo<bool>{
@@ -105,7 +106,7 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-void TextUiNode::setText(const std::string& sText) {
+void TextUiNode::setText(const std::u16string& sText) {
     this->sText = sText;
 
     iNewLineCharCountInText = 0;
@@ -169,10 +170,10 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
     auto& mtxLoadedGlyphs = getGameInstanceWhileSpawned()->getRenderer()->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxLoadedGlyphs.first);
 
-    // Prepare a placeholder glyph for unknown glyphs.
-    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find('?');
+    // Prepare a placeholder glyph for unknown characters.
+    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find(FontManager::getGlyphCodeForUnknownChar());
     if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-        Error::showErrorAndThrowException("can't find a glyph for `?`");
+        Error::showErrorAndThrowException("can't find a placeholder glyph for unknown character");
     }
 
     // Prepare some variables.
@@ -188,7 +189,7 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
             break;
         }
 
-        const char& character = sText[i];
+        const auto& character = sText[i];
 
         // Handle new line.
         if (character == '\n' && bHandleNewLineChars) {

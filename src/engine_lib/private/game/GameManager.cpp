@@ -16,6 +16,10 @@
 #include "tracy/public/common/TracySystem.hpp"
 #endif
 
+GameManager::WorldCreationTask::~WorldCreationTask() {}
+GameManager::WorldCreationTask::LoadNodeTreeTask::~LoadNodeTreeTask() {}
+GameManager::WorldData::~WorldData() {}
+
 GameManager::GameManager(
     Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance)
     : pWindow(pWindow) {
@@ -26,7 +30,7 @@ GameManager::GameManager(
 
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
-    pCameraManager = std::make_unique<CameraManager>(pRenderer.get());
+    pCameraManager = std::make_unique<CameraManager>();
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
 
     ReflectedTypeDatabase::registerEngineTypes();
@@ -49,9 +53,8 @@ void GameManager::destroyCurrentWorld() {
 
 void GameManager::destroy() {
     // Log destruction so that it will be slightly easier to read logs.
-    Logger::get().info(
-        "\n\n\n-------------------- starting game manager destruction... "
-        "--------------------\n\n");
+    Logger::get().info("\n\n\n-------------------- starting game manager destruction... "
+                       "--------------------\n\n");
     Logger::get().flushToDisk();
 
     // Destroy world before game instance, so that no node will reference game instance.
@@ -87,33 +90,36 @@ GameManager::~GameManager() {
 
 void GameManager::createWorld(const std::function<void()>& onCreated) {
     std::scoped_lock guard(mtxWorldData.first);
+    auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
-    if (mtxWorldData.second.pendingWorldCreationTask.has_value()) [[unlikely]] {
+    if (pOptionalTask != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             "world is already being created/loaded, wait until the world is loaded");
     }
 
     // Create new world on the next tick because we might be currently iterating over "tickable" nodes
     // or nodes that receiving input so avoid modifying those arrays in this case.
-    mtxWorldData.second.pendingWorldCreationTask =
-        WorldCreationTask{.onCreated = onCreated, .optionalNodeTreeLoadTask = {}};
+    pOptionalTask = std::unique_ptr<WorldCreationTask>(new WorldCreationTask());
+    pOptionalTask->onCreated = onCreated;
 }
 
 void GameManager::loadNodeTreeAsWorld(
     const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded) {
     std::scoped_lock guard(mtxWorldData.first);
+    auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
-    if (mtxWorldData.second.pendingWorldCreationTask.has_value()) [[unlikely]] {
+    if (pOptionalTask != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             "world is already being created/loaded, wait until the world is loaded");
     }
 
     // Create new world on the next tick because we might be currently iterating over "tickable" nodes
     // or nodes that receiving input so avoid modifying those arrays in this case.
-    mtxWorldData.second.pendingWorldCreationTask = WorldCreationTask{
-        .onCreated = onLoaded,
-        .optionalNodeTreeLoadTask = WorldCreationTask::LoadNodeTreeTask{
-            .pathToNodeTreeToLoad = pathToNodeTreeFile, .pLoadedNodeTreeRoot = nullptr}};
+    pOptionalTask = std::unique_ptr<WorldCreationTask>(new WorldCreationTask());
+    pOptionalTask->onCreated = onLoaded;
+    pOptionalTask->pOptionalNodeTreeLoadTask =
+        std::unique_ptr<WorldCreationTask::LoadNodeTreeTask>(new WorldCreationTask::LoadNodeTreeTask());
+    pOptionalTask->pOptionalNodeTreeLoadTask->pathToNodeTreeToLoad = pathToNodeTreeFile;
 }
 
 void GameManager::addTaskToThreadPool(const std::function<void()>& task) {
@@ -183,27 +189,27 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
         std::scoped_lock guard(mtxWorldData.first);
 
-        auto& worldCreationTask = mtxWorldData.second.pendingWorldCreationTask;
+        auto& pWorldCreationTask = mtxWorldData.second.pPendingWorldCreationTask;
 
         // Create a new world if needed.
-        if (worldCreationTask.has_value()) {
-            if (!worldCreationTask->optionalNodeTreeLoadTask.has_value()) {
+        if (pWorldCreationTask != nullptr) {
+            if (pWorldCreationTask->pOptionalNodeTreeLoadTask == nullptr) {
                 destroyCurrentWorld();
                 mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
 
                 // Clear task before calling the callback because inside of the callback the user might
                 // queue new world creation.
-                auto callback = std::move(worldCreationTask->onCreated);
-                worldCreationTask = {};
+                auto callback = std::move(pWorldCreationTask->onCreated);
+                pWorldCreationTask.reset();
                 callback();
             } else {
-                if (!worldCreationTask->optionalNodeTreeLoadTask->bIsAsyncTaskStarted) {
-                    worldCreationTask->optionalNodeTreeLoadTask->bIsAsyncTaskStarted = true;
+                if (!pWorldCreationTask->pOptionalNodeTreeLoadTask->bIsAsyncTaskStarted) {
+                    pWorldCreationTask->pOptionalNodeTreeLoadTask->bIsAsyncTaskStarted = true;
 
                     addTaskToThreadPool(
                         [this,
-                         pathToNodeTree = mtxWorldData.second.pendingWorldCreationTask
-                                              ->optionalNodeTreeLoadTask->pathToNodeTreeToLoad]() {
+                         pathToNodeTree = mtxWorldData.second.pPendingWorldCreationTask
+                                              ->pOptionalNodeTreeLoadTask->pathToNodeTreeToLoad]() {
                             // Deserialize node tree.
                             auto result = Node::deserializeNodeTree(pathToNodeTree);
                             if (std::holds_alternative<Error>(result)) [[unlikely]] {
@@ -216,18 +222,18 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
                             std::scoped_lock guard(mtxWorldData.first);
 
                             // Create new world on the next tick in the main thread.
-                            mtxWorldData.second.pendingWorldCreationTask->optionalNodeTreeLoadTask
+                            mtxWorldData.second.pPendingWorldCreationTask->pOptionalNodeTreeLoadTask
                                 ->pLoadedNodeTreeRoot = std::move(pRootNode);
                         });
-                } else if (worldCreationTask->optionalNodeTreeLoadTask->pLoadedNodeTreeRoot != nullptr) {
+                } else if (pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot != nullptr) {
                     // Loaded.
                     destroyCurrentWorld();
                     mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(
-                        this, std::move(worldCreationTask->optionalNodeTreeLoadTask->pLoadedNodeTreeRoot)));
+                        this, std::move(pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot)));
 
                     // Same thing, clear task before callback.
-                    auto callback = std::move(worldCreationTask->onCreated);
-                    worldCreationTask = {};
+                    auto callback = std::move(pWorldCreationTask->onCreated);
+                    pWorldCreationTask.reset();
                     callback();
                 }
             }
@@ -415,25 +421,22 @@ void GameManager::triggerActionEvents(
         // We should have found a trigger button.
         if (!bFoundKey) [[unlikely]] {
             if (std::holds_alternative<KeyboardButton>(button)) {
-                Logger::get().error(
-                    std::format(
-                        "could not find the keyboard button `{}` in trigger buttons for action event with ID "
-                        "{}",
-                        getKeyboardButtonName(std::get<KeyboardButton>(button)),
-                        iActionId));
+                Logger::get().error(std::format(
+                    "could not find the keyboard button `{}` in trigger buttons for action event with ID "
+                    "{}",
+                    getKeyboardButtonName(std::get<KeyboardButton>(button)),
+                    iActionId));
             } else if (std::holds_alternative<KeyboardButton>(button)) {
-                Logger::get().error(
-                    std::format(
-                        "could not find the mouse button `{}` in trigger buttons for action event with ID {}",
-                        static_cast<int>(std::get<MouseButton>(button)),
-                        iActionId));
+                Logger::get().error(std::format(
+                    "could not find the mouse button `{}` in trigger buttons for action event with ID {}",
+                    static_cast<int>(std::get<MouseButton>(button)),
+                    iActionId));
             } else if (std::holds_alternative<GamepadButton>(button)) {
-                Logger::get().error(
-                    std::format(
-                        "could not find the gamepad button `{}` in trigger buttons for action event with ID "
-                        "{}",
-                        static_cast<int>(std::get<GamepadButton>(button)),
-                        iActionId));
+                Logger::get().error(std::format(
+                    "could not find the gamepad button `{}` in trigger buttons for action event with ID "
+                    "{}",
+                    static_cast<int>(std::get<GamepadButton>(button)),
+                    iActionId));
             } else [[unlikely]] {
                 Error::showErrorAndThrowException("unhandled case");
             }
@@ -525,11 +528,10 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
 
         // Log an error if the key is not found.
         if (!bFound) [[unlikely]] {
-            Logger::get().error(
-                std::format(
-                    "could not find key `{}` in key states for axis event with ID {}",
-                    getKeyboardButtonName(button),
-                    iAxisEventId));
+            Logger::get().error(std::format(
+                "could not find key `{}` in key states for axis event with ID {}",
+                getKeyboardButtonName(button),
+                iAxisEventId));
             continue;
         }
 
@@ -612,11 +614,10 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 
         // Log an error if the key is not found.
         if (!bFound) [[unlikely]] {
-            Logger::get().error(
-                std::format(
-                    "could not find gamepad axis `{}` in axis states for axis event with ID {}",
-                    getGamepadAxisName(gamepadAxis),
-                    iAxisEventId));
+            Logger::get().error(std::format(
+                "could not find gamepad axis `{}` in axis states for axis event with ID {}",
+                getGamepadAxisName(gamepadAxis),
+                iAxisEventId));
             continue;
         }
 

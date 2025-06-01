@@ -8,6 +8,7 @@
 
 // External.
 #include "nameof.hpp"
+#include "utf/utf.hpp"
 
 namespace {
     constexpr std::string_view sTypeGuid = "69581f29-3b7c-4bcf-9fa3-62c428083f6e";
@@ -155,21 +156,21 @@ void TextEditUiNode::onKeyboardInputWhileFocused(
     }
 
     if (button == KeyboardButton::ENTER) {
-        auto sText = std::string(getText());
-        sText.insert(*optionalCursorOffset, "\n");
+        auto sText = std::u16string(getText());
+        sText.insert(*optionalCursorOffset, u"\n");
         setText(sText);
 
         (*optionalCursorOffset) += 1;
     } else if (button == KeyboardButton::BACKSPACE) {
         if (optionalSelection.has_value()) {
-            auto sText = std::string(getText());
+            auto sText = std::u16string(getText());
             sText.erase(optionalSelection->first, optionalSelection->second - optionalSelection->first);
             setText(sText);
 
             optionalCursorOffset = optionalSelection->first;
             optionalSelection = {};
         } else if ((*optionalCursorOffset) > 0) {
-            auto sText = std::string(getText());
+            auto sText = std::u16string(getText());
             sText.erase(*optionalCursorOffset - 1, 1);
             setText(sText);
 
@@ -234,7 +235,7 @@ void TextEditUiNode::onKeyboardInputTextCharacterWhileFocused(const std::string&
 
     if (optionalSelection.has_value()) {
         // Delete selected text.
-        auto sText = std::string(getText());
+        auto sText = std::u16string(getText());
         sText.erase(optionalSelection->first, optionalSelection->second - optionalSelection->first);
         setText(sText);
 
@@ -242,8 +243,8 @@ void TextEditUiNode::onKeyboardInputTextCharacterWhileFocused(const std::string&
         optionalSelection = {};
     }
 
-    auto sText = std::string(getText());
-    sText.insert(*optionalCursorOffset, sTextCharacter);
+    auto sText = std::u16string(getText());
+    sText.insert(*optionalCursorOffset, utf::as_u16(sTextCharacter));
     setText(sText);
 
     (*optionalCursorOffset) += 1;
@@ -284,10 +285,10 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
     auto& mtxLoadedGlyphs = getGameInstanceWhileSpawned()->getRenderer()->getFontManager().getLoadedGlyphs();
     std::scoped_lock guard(mtxLoadedGlyphs.first);
 
-    // Prepare a placeholder glyph for unknown glyphs.
-    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find('?');
+    // Prepare a placeholder glyph for unknown characters.
+    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find(FontManager::getGlyphCodeForUnknownChar());
     if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-        Error::showErrorAndThrowException("can't find a glyph for `?`");
+        Error::showErrorAndThrowException("can't find a placeholder glyph for unknown character");
     }
 
     glm::vec2 localCurrentPos = glm::vec2(0.0F, 0.0F); // in range [0.0; 1.0]
@@ -299,7 +300,7 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
     size_t iLinesToSkip = getCurrentScrollOffset();
     size_t iLineIndex = 0;
     for (size_t iCharIndex = 0; iCharIndex < sText.size(); iCharIndex++) {
-        const char& character = sText[iCharIndex];
+        const auto& character = sText[iCharIndex];
 
         // Handle new line.
         if (character == '\n' && getHandleNewLineChars()) {

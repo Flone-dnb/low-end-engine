@@ -209,18 +209,30 @@ void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
     if (auto pNode = dynamic_cast<TextUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
-        { REMOVE_NODE_FROM_RENDERING(TextUiNode); }
-        { ADD_NODE_TO_RENDERING(TextUiNode); }
+        {
+            REMOVE_NODE_FROM_RENDERING(TextUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(TextUiNode);
+        }
     } else if (auto pNode = dynamic_cast<RectUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
-        { REMOVE_NODE_FROM_RENDERING(RectUiNode); }
-        { ADD_NODE_TO_RENDERING(RectUiNode); }
+        {
+            REMOVE_NODE_FROM_RENDERING(RectUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(RectUiNode);
+        }
     } else if (auto pNode = dynamic_cast<SliderUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
-        { REMOVE_NODE_FROM_RENDERING(SliderUiNode); }
-        { ADD_NODE_TO_RENDERING(SliderUiNode); }
+        {
+            REMOVE_NODE_FROM_RENDERING(SliderUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(SliderUiNode);
+        }
     } else [[unlikely]] {
         Error::showErrorAndThrowException("unhandled case");
     }
@@ -787,10 +799,10 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
-    // Prepare a placeholder glyph for unknown glyphs.
-    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find('?');
+    // Prepare a placeholder glyph for unknown character.
+    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find(FontManager::getGlyphCodeForUnknownChar());
     if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-        Error::showErrorAndThrowException("can't find a glyph for `?`");
+        Error::showErrorAndThrowException("can't find a placeholder glyph for unknown character");
     }
 
     glEnable(GL_BLEND);
@@ -879,7 +891,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 size_t iCharIndex = 0;
                 bool bReachedEndOfUiNode = false;
                 for (; iCharIndex < sText.size(); iCharIndex++) {
-                    const char& character = sText[iCharIndex];
+                    const auto& character = sText[iCharIndex];
 
                     // Prepare a handy lambda.
                     const auto switchToNewLine = [&]() {

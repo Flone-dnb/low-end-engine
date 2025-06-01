@@ -106,13 +106,12 @@ TextureManager::~TextureManager() {
                 resourceInfo.iActiveTextureHandleCount);
         }
 
-        Error::showErrorAndThrowException(
-            std::format(
-                "texture manager is being destroyed but there are still {} texture(s) "
-                "loaded in the memory:\n"
-                "{}",
-                mtxLoadedTextures.second.size(),
-                sLoadedTextures));
+        Error::showErrorAndThrowException(std::format(
+            "texture manager is being destroyed but there are still {} texture(s) "
+            "loaded in the memory:\n"
+            "{}",
+            mtxLoadedTextures.second.size(),
+            sLoadedTextures));
     }
 }
 
@@ -151,31 +150,29 @@ TextureManager::getTexture(const std::string& sPathToTextureRelativeRes, Texture
     return createNewHandleForLoadedTexture(sPathToTextureRelativeRes, usage);
 }
 
-void TextureManager::releaseTextureIfNotUsed(const std::string& sPathToResourceRelativeRes) {
+void TextureManager::releaseTextureIfNotUsed(const std::string& sPathToTextureRelativeRes) {
     std::scoped_lock guard(mtxLoadedTextures.first);
 
     // Make sure a resource by this path is actually loaded.
-    const auto it = mtxLoadedTextures.second.find(sPathToResourceRelativeRes);
+    const auto it = mtxLoadedTextures.second.find(sPathToTextureRelativeRes);
     if (it == mtxLoadedTextures.second.end()) [[unlikely]] {
         // This should not happen, something is wrong.
-        Logger::get().error(
-            std::format(
-                "a texture handle just notified the texture manager about "
-                "no longer referencing a texture resource at \"{}\" "
-                "but the manager does not store resources from this path",
-                sPathToResourceRelativeRes));
+        Logger::get().error(std::format(
+            "a texture handle just notified the texture manager about "
+            "no longer referencing a texture resource at \"{}\" "
+            "but the manager does not store resources from this path",
+            sPathToTextureRelativeRes));
         return;
     }
 
     // Self check: make sure the handle counter is not zero.
     if (it->second.iActiveTextureHandleCount == 0) [[unlikely]] {
-        Logger::get().error(
-            std::format(
-                "a texture handle just notified the texture manager "
-                "about no longer referencing a texture resource at \"{}\", "
-                "the manager has such a resource entry but the current "
-                "handle counter is zero",
-                sPathToResourceRelativeRes));
+        Logger::get().error(std::format(
+            "a texture handle just notified the texture manager "
+            "about no longer referencing a texture resource at \"{}\", "
+            "the manager has such a resource entry but the current "
+            "handle counter is zero",
+            sPathToTextureRelativeRes));
         return;
     }
 
@@ -194,22 +191,20 @@ std::unique_ptr<TextureHandle> TextureManager::createNewHandleForLoadedTexture(
     const auto texIt = mtxLoadedTextures.second.find(sPathToTextureRelativeRes);
     if (texIt == mtxLoadedTextures.second.end()) [[unlikely]] {
         // This should not happen.
-        Error::showErrorAndThrowException(
-            std::format(
-                "requested to create a new texture handle for not loaded path \"{}\" "
-                "(this is a bug, report to developers)",
-                sPathToTextureRelativeRes));
+        Error::showErrorAndThrowException(std::format(
+            "requested to create a new texture handle for not loaded path \"{}\" "
+            "(this is a bug, report to developers)",
+            sPathToTextureRelativeRes));
     }
 
     // Make sure the usage is the same.
     if (usage != texIt->second.usage) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "texture usage mismatch: when the texture \"{}\" was first requested its usage was {} now "
-                "another handle is requested for this texture but the usage is now {}",
-                texIt->first,
-                NAMEOF_ENUM(texIt->second.usage),
-                NAMEOF_ENUM(usage)));
+        Error::showErrorAndThrowException(std::format(
+            "texture usage mismatch: when the texture \"{}\" was first requested its usage was {} now "
+            "another handle is requested for this texture but the usage is now {}",
+            texIt->first,
+            NAMEOF_ENUM(texIt->second.usage),
+            NAMEOF_ENUM(usage)));
     }
 
     // Increment texture handle count.
@@ -217,12 +212,11 @@ std::unique_ptr<TextureHandle> TextureManager::createNewHandleForLoadedTexture(
 
     // Self check: make sure handle counter will not hit type limit.
     if (texIt->second.iActiveTextureHandleCount == ULLONG_MAX) [[unlikely]] {
-        Logger::get().warn(
-            std::format(
-                "texture handle counter for resource \"{}\" just hit type limit "
-                "with value: {}, new texture handle for this resource will make the counter invalid",
-                sPathToTextureRelativeRes,
-                texIt->second.iActiveTextureHandleCount));
+        Logger::get().warn(std::format(
+            "texture handle counter for resource \"{}\" just hit type limit "
+            "with value: {}, new texture handle for this resource will make the counter invalid",
+            sPathToTextureRelativeRes,
+            texIt->second.iActiveTextureHandleCount));
     }
 
     return std::unique_ptr<TextureHandle>(
@@ -264,17 +258,15 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
         fpng::fpng_decode_file(sPathToTexture.c_str(), vPixels, iWidth, iHeight, iChannelCount, 4);
     if (iImageLoadResult != fpng::FPNG_DECODE_SUCCESS) [[unlikely]] {
         if (iImageLoadResult == fpng::FPNG_DECODE_NOT_FPNG) {
-            return Error(
-                std::format(
-                    "failed to load the image \"{}\" because it was not imported using the engine's texture "
-                    "importer",
-                    sPathToTexture));
+            return Error(std::format(
+                "failed to load the image \"{}\" because it was not imported using the engine's texture "
+                "importer",
+                sPathToTexture));
         }
-        return Error(
-            std::format(
-                "an error occurred while loading the image \"{}\", error code: {}",
-                sPathToTexture,
-                iImageLoadResult));
+        return Error(std::format(
+            "an error occurred while loading the image \"{}\", error code: {}",
+            sPathToTexture,
+            iImageLoadResult));
     }
 
     // Create a new texture object.

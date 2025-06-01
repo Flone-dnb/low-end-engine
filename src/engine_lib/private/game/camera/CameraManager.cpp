@@ -8,8 +8,6 @@
 #include "game/node/CameraNode.h"
 #include "misc/Error.h"
 
-CameraManager::CameraManager(Renderer* pRenderer) : pRenderer(pRenderer) {}
-
 void CameraManager::setActiveCamera(CameraNode* pCameraNode) {
     if (pCameraNode == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("`nullptr` is not a valid camera");
@@ -20,10 +18,9 @@ void CameraManager::setActiveCamera(CameraNode* pCameraNode) {
     // Make sure this node is spawned.
     std::scoped_lock nodeSpawnGuard(pCameraNode->getSpawnDespawnMutex());
     if (!pCameraNode->isSpawned()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "camera node \"{}\" needs to be spawned in order to make it the active camera",
-                pCameraNode->getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "camera node \"{}\" needs to be spawned in order to make it the active camera",
+            pCameraNode->getNodeName()));
     }
 
     // don't unlock the node mutex yet
@@ -49,21 +46,19 @@ void CameraManager::onCameraNodeDespawning(CameraNode* pCameraNode) {
 
     // Make sure there's an active camera.
     if (mtxActiveCamera.second == nullptr) [[unlikely]] {
-        Logger::get().error(
-            std::format(
-                "the camera node \"{}\" notified the camera manager about it being despawned because "
-                "it thinks that it's the active camera but the camera manager has no active camera node",
-                pCameraNode->getNodeName()));
+        Logger::get().error(std::format(
+            "the camera node \"{}\" notified the camera manager about it being despawned because "
+            "it thinks that it's the active camera but the camera manager has no active camera node",
+            pCameraNode->getNodeName()));
         return;
     }
 
     // See if this camera is indeed used as the active one.
     if (mtxActiveCamera.second != pCameraNode) [[unlikely]] {
-        Logger::get().error(
-            std::format(
-                "the camera node \"{}\" notified the camera manager about it being despawned because "
-                "it thinks that it's the active camera but it's not the active camera node",
-                pCameraNode->getNodeName()));
+        Logger::get().error(std::format(
+            "the camera node \"{}\" notified the camera manager about it being despawned because "
+            "it thinks that it's the active camera but it's not the active camera node",
+            pCameraNode->getNodeName()));
         return;
     }
 

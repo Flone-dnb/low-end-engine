@@ -166,6 +166,8 @@ private:
     struct WorldCreationTask {
         /** Info about a task to load node tree as world. */
         struct LoadNodeTreeTask {
+            ~LoadNodeTreeTask();
+
             /** Path to the file that stores the node tree to load. */
             std::filesystem::path pathToNodeTreeToLoad;
 
@@ -179,23 +181,27 @@ private:
             bool bIsAsyncTaskStarted = false;
         };
 
+        ~WorldCreationTask();
+
         /** Callback to call after the world is created or loaded. */
         std::function<void()> onCreated;
 
-        /** If empty then create an empty world (only root node), otherwise load the node tree. */
-        std::optional<LoadNodeTreeTask> optionalNodeTreeLoadTask;
+        /** If nullptr then create an empty world (only root node), otherwise load the node tree. */
+        std::unique_ptr<LoadNodeTreeTask> pOptionalNodeTreeLoadTask;
     };
 
     /** Groups world-related data. */
     struct WorldData {
+        ~WorldData();
+
         /**
-         * Not empty if we need to create/load a new world.
+         * Not nullptr if we need to create/load a new world.
          *
          * @remark We don't create/load worlds right away but instead create/load them on the next tick
          * because when a world creation task is received we might be iterating over "tickable" nodes
          * or nodes that receive input so we avoid modifying those arrays in that case.
          */
-        std::optional<WorldCreationTask> pendingWorldCreationTask;
+        std::unique_ptr<WorldCreationTask> pPendingWorldCreationTask;
 
         /** Current world. */
         std::unique_ptr<World> pWorld;

@@ -13,15 +13,22 @@
 #include "game/node/light/PointLightNode.h"
 #include "game/node/ui/TextUiNode.h"
 #include "misc/EditorNodeCreationHelpers.hpp"
+#include "render/FontManager.h"
 
 // External.
 #include "hwinfo/hwinfo.h"
+#include "utf/utf.hpp"
 
 const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"; }
 
 EditorGameInstance::EditorGameInstance(Window* pWindow) : GameInstance(pWindow) {}
 
 void EditorGameInstance::onGameStarted() {
+    getRenderer()->getFontManager().loadGlyphs({FontLoadInfo{
+        .pathToFont = ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" /
+                      "RedHatDisplay-Light.ttf",
+        .charCodesToLoad = {{32, 126}}}}); // NOLINT: ASCII range
+
     registerEditorInputEvents();
 
     // Create world.
@@ -81,7 +88,7 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
             getRenderer()->getFpsLimit());
 
         // Done.
-        pStatsTextNode->setText(sStatsText);
+        pStatsTextNode->setText(utf::as_u16(sStatsText));
         timeBeforeStatsUpdate = 1.0F;
     }
 }

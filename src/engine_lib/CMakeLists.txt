@@ -319,6 +319,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC sfml-audio)
 set_target_properties(sfml-audio PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 add_dependencies(${PROJECT_NAME} sfml-audio)
 
+# Add utfconv.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"utfconv\"...")
+add_subdirectory(${RELATIVE_EXT_PATH}/utfconv ${DEPENDENCY_BUILD_DIR_NAME}/utfconv SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC utfconv)
+set_target_properties(utfconv PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${PROJECT_NAME} utfconv)
+
 if (NOT IS_RELEASE_BUILD)
     # Add tracy.
     message(STATUS "${PROJECT_NAME}: adding external dependency \"tracy\"...")

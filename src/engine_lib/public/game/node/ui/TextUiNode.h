@@ -52,7 +52,7 @@ public:
      *
      * @param sText Text.
      */
-    void setText(const std::string& sText);
+    void setText(const std::u16string& sText);
 
     /**
      * Sets color of the text.
@@ -125,7 +125,7 @@ public:
      *
      * @return Text.
      */
-    std::string_view getText() const { return sText; }
+    std::u16string_view getText() const { return sText; }
 
     /**
      * Returns color of the text.
@@ -245,7 +245,7 @@ private:
     float textHeight = 0.035F; // NOLINT
 
     /** Text to display. */
-    std::string sText = "text";
+    std::u16string sText = u"text";
 
     /** Scroll bar state. */
     bool bIsScrollBarEnabled = false;

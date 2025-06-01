@@ -186,6 +186,8 @@ public:
 private:
     /** Groups mutex-guarded data. */
     struct Data {
+        Data() = default;
+
         /** Groups various types of spawned and visible UI nodes to render per layer. */
         struct SpawnedVisibleLayerUiNodes {
             /**

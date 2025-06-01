@@ -40,3 +40,6 @@
 [submodule "ext/SFML"]
 	path = ext/SFML
 	url = https://github.com/SFML/SFML.git
+[submodule "ext/utfconv"]
+	path = ext/utfconv
+	url = https://github.com/mbits-libs/utfconv

@@ -18,17 +18,15 @@ SoundManager::~SoundManager() {
 
     for (const auto& nodes : mtxSpawnedNodes.second.vSound2dNodesByChannel) {
         if (!nodes.empty()) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "sound manager is being destroyed but there are still {} sound node(s)", nodes.size()));
+            Error::showErrorAndThrowException(std::format(
+                "sound manager is being destroyed but there are still {} sound node(s)", nodes.size()));
         }
     }
 
     for (const auto& nodes : mtxSpawnedNodes.second.vSound3dNodesByChannel) {
         if (!nodes.empty()) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "sound manager is being destroyed but there are still {} sound node(s)", nodes.size()));
+            Error::showErrorAndThrowException(std::format(
+                "sound manager is being destroyed but there are still {} sound node(s)", nodes.size()));
         }
     }
 }
@@ -47,7 +45,7 @@ void SoundManager::onBeforeNewFrame(CameraManager* pCameraManager) {
 
     const auto pos = mtxActiveCamera.second->getWorldLocation();
     const auto forward = mtxActiveCamera.second->getWorldForwardDirection();
-    const auto up = mtxActiveCamera.second->getWorldUpDirection();
+    const auto up = mtxActiveCamera.second->getWorldUpDirection(); // NOLINT
 
     sf::Listener::setPosition({pos.x, pos.y, pos.z});
     sf::Listener::setDirection({forward.x, forward.y, forward.z});
@@ -71,9 +69,8 @@ void SoundManager::onSoundNodeSpawned(Sound2dNode* pNode) {
     if (!mtxSpawnedNodes.second.vSound2dNodesByChannel[static_cast<size_t>(*optionalSoundChannel)]
              .insert(pNode)
              .second) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "sound node \"{}\" is already registered in the sound manager", pNode->getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "sound node \"{}\" is already registered in the sound manager", pNode->getNodeName()));
     }
 }
 
@@ -117,9 +114,8 @@ void SoundManager::onSoundNodeSpawned(Sound3dNode* pNode) {
     if (!mtxSpawnedNodes.second.vSound3dNodesByChannel[static_cast<size_t>(*optionalSoundChannel)]
              .insert(pNode)
              .second) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "sound node \"{}\" is already registered in the sound manager", pNode->getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "sound node \"{}\" is already registered in the sound manager", pNode->getNodeName()));
     }
 }
 
