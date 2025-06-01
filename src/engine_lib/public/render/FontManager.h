@@ -50,14 +50,6 @@ public:
     FontManager& operator=(FontManager&&) noexcept = delete;
 
     /**
-     * Font height (relative to screen height, width is determines automatically) in range [0.0F; 1.0F] to
-     * load.
-     *
-     * @return Font height.
-     */
-    static constexpr float getFontHeightToLoad() { return fontHeightToLoad; }
-
-    /**
      * Returns code of a glyph that should be displayed when found a character without a loaded glyph.
      *
      * @return Glyph code.
@@ -68,8 +60,20 @@ public:
      * Loads glyphs from the specified font to be used (clears previously loaded glyphs).
      *
      * @param vFontsToLoad Fonts to load (at least 1 must be specified).
+     * @param fontHeightToLoad Font height (relative to screen height, width is determines automatically) in
+     * range [0.0F; 1.0F] to load. This value will be used as the base size but most likely will be scaled
+     * when drawing text nodes according to the size of each text node. This value must be equal to an average
+     * size of the text, if it's too small big text will be blurry, if it will be too big small text will look
+     * bad.
      */
-    void loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad);
+    void loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad, float fontHeightToLoad = 0.1F);
+
+    /**
+     * Last specified font height to load from @ref loadGlyphs.
+     *
+     * @return Font height.
+     */
+    float getFontHeightToLoad() const { return fontHeightToLoad; }
 
     /**
      * Returns pairs of "character code" - "loaded glyph".
@@ -103,14 +107,8 @@ private:
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
 
-    /**
-     * Font height (relative to screen height, width is determines automatically) in range [0.0F; 1.0F] to
-     * load. We will scale this value when drawing text nodes.
-     *
-     * @remark This value must be equal to an average size of the text, if it's too small
-     * big text will be blurry, if it will be too big small text will look bad.
-     */
-    static constexpr float fontHeightToLoad = 0.12F;
+    /** Last specified font height to load from @ref loadGlyphs. */
+    float fontHeightToLoad = 0.0F;
 
     /**
      * Code of a glyph that we will load (if not loaded) from the default font to display when found a

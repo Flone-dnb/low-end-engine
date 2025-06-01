@@ -25,10 +25,13 @@ std::unique_ptr<FontManager> FontManager::create(Renderer* pRenderer) {
 
 FontManager::FontManager(Renderer* pRenderer) : pRenderer(pRenderer) {}
 
-void FontManager::loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad) {
+void FontManager::loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad, float fontHeightToLoad) {
     if (vFontsToLoad.empty()) [[unlikely]] {
         Error::showErrorAndThrowException("at least 1 font must be specified");
     }
+
+    fontHeightToLoad = std::clamp(fontHeightToLoad, 0.0F, 1.0F);
+    this->fontHeightToLoad = fontHeightToLoad;
 
     std::scoped_lock guard(mtxLoadedGlyphs.first);
     mtxLoadedGlyphs.second.clear();

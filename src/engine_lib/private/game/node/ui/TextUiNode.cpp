@@ -167,7 +167,8 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
     }
 
     // Get font glyphs.
-    auto& mtxLoadedGlyphs = getGameInstanceWhileSpawned()->getRenderer()->getFontManager().getLoadedGlyphs();
+    auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
+    auto& mtxLoadedGlyphs = fontManager.getLoadedGlyphs();
     std::scoped_lock guard(mtxLoadedGlyphs.first);
 
     // Prepare a placeholder glyph for unknown characters.
@@ -178,7 +179,7 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
 
     // Prepare some variables.
     const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
-    const auto textScaleFullscreen = getTextHeight() / FontManager::getFontHeightToLoad();
+    const auto textScaleFullscreen = getTextHeight() / fontManager.getFontHeightToLoad();
     const auto sizeInPixels = glm::vec2(getSize().x * iWindowWidth, getSize().y * iWindowHeight);
 
     float localX = 0.0F;

@@ -789,7 +789,8 @@ void UiManager::drawSliderNodes(size_t iLayer) {
 void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
     PROFILE_FUNC;
 
-    auto& mtxLoadedGlyphs = pRenderer->getFontManager().getLoadedGlyphs();
+    auto& fontManager = pRenderer->getFontManager();
+    auto& mtxLoadedGlyphs = fontManager.getLoadedGlyphs();
     std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextNodes;
@@ -868,9 +869,9 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 float screenX = textPos.x * iWindowWidth;
                 float screenY = textPos.y * iWindowHeight;
                 const auto screenYEnd = screenY + pTextNode->getSize().y * iWindowHeight;
-                const auto scale = pTextNode->getTextHeight() / FontManager::getFontHeightToLoad();
+                const auto scale = pTextNode->getTextHeight() / fontManager.getFontHeightToLoad();
 
-                const float textHeightInPixels = iWindowHeight * FontManager::getFontHeightToLoad() * scale;
+                const float textHeightInPixels = iWindowHeight * fontManager.getFontHeightToLoad() * scale;
                 const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
 
                 // Check scroll bar.
@@ -899,7 +900,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
                             vCursorScreenPosToDraw.push_back(CursorDrawInfo{
                                 .screenPos = glm::vec2(screenX, screenY),
-                                .height = FontManager::getFontHeightToLoad() * scale});
+                                .height = fontManager.getFontHeightToLoad() * scale});
                         }
 
                         // Check selection.
@@ -970,7 +971,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
                             vCursorScreenPosToDraw.push_back(CursorDrawInfo{
                                 .screenPos = glm::vec2(screenX, screenY),
-                                .height = FontManager::getFontHeightToLoad() * scale});
+                                .height = fontManager.getFontHeightToLoad() * scale});
                         }
 
                         // Check selection.
@@ -1026,7 +1027,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     screenX < screenMaxXForWordWrap && screenY < screenYEnd && iRenderedCharCount != 0) {
                     vCursorScreenPosToDraw.push_back(CursorDrawInfo{
                         .screenPos = glm::vec2(screenX, screenY),
-                        .height = FontManager::getFontHeightToLoad() * scale});
+                        .height = fontManager.getFontHeightToLoad() * scale});
                 }
 
                 // Check selection.

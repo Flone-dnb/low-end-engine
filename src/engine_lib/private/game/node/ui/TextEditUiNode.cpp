@@ -274,15 +274,17 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
 
     const auto textCursorPos = (targetPos - getPosition()) / size;
 
+    auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
+
     // Determine after which character to put a cursor.
-    const auto textScaleFullscreen = getTextHeight() / FontManager::getFontHeightToLoad();
-    const auto textHeightOnFullscreen = FontManager::getFontHeightToLoad() * textScaleFullscreen;
+    const auto textScaleFullscreen = getTextHeight() / fontManager.getFontHeightToLoad();
+    const auto textHeightOnFullscreen = fontManager.getFontHeightToLoad() * textScaleFullscreen;
     const auto textHeight = textHeightOnFullscreen / size.y;
     const auto lineSpacing = getTextLineSpacing() * textHeight;
     const auto sizeInPixels = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
     const auto sText = getText();
 
-    auto& mtxLoadedGlyphs = getGameInstanceWhileSpawned()->getRenderer()->getFontManager().getLoadedGlyphs();
+    auto& mtxLoadedGlyphs = fontManager.getLoadedGlyphs();
     std::scoped_lock guard(mtxLoadedGlyphs.first);
 
     // Prepare a placeholder glyph for unknown characters.
