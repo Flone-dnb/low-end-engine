@@ -44,7 +44,7 @@ void FontManager::loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad) {
     // Make sure glyph for unknown char will be loaded.
     bool bUnknownCharGlyphWillBeLoaded = false;
     for (const auto& fontInfo : vFontsToLoad) {
-        for (const auto [iStart, iEnd] : fontInfo.charCodesToLoad) {
+        for (const auto& [iStart, iEnd] : fontInfo.charCodesToLoad) {
             if (iUnknownCharGlyphCode >= iStart && iUnknownCharGlyphCode <= iEnd) {
                 bUnknownCharGlyphWillBeLoaded = true;
                 break;

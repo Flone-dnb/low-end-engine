@@ -29,17 +29,17 @@ TEST_CASE("serialize and deserialize layout UI node with child nodes (child node
 
                     const auto pText3 = pLayout->addChildNode(std::make_unique<TextUiNode>());
 
-                    pText1->setText("text1");
-                    pText2->setText("text2");
-                    pText3->setText("text3");
-                    pChildText->setText("child text");
+                    pText1->setText(u"text1");
+                    pText2->setText(u"text2");
+                    pText3->setText(u"text3");
+                    pChildText->setText(u"child text");
 
                     const auto mtxChildNodes = pLayout->getChildNodes();
                     REQUIRE(mtxChildNodes.second.size() == 4);
-                    REQUIRE(dynamic_cast<TextUiNode*>(mtxChildNodes.second[0])->getText() == "text1");
-                    REQUIRE(dynamic_cast<TextUiNode*>(mtxChildNodes.second[1])->getText() == "text2");
+                    REQUIRE(dynamic_cast<TextUiNode*>(mtxChildNodes.second[0])->getText() == u"text1");
+                    REQUIRE(dynamic_cast<TextUiNode*>(mtxChildNodes.second[1])->getText() == u"text2");
                     REQUIRE(dynamic_cast<LayoutUiNode*>(mtxChildNodes.second[2]) != nullptr);
-                    REQUIRE(dynamic_cast<TextUiNode*>(mtxChildNodes.second[3])->getText() == "text3");
+                    REQUIRE(dynamic_cast<TextUiNode*>(mtxChildNodes.second[3])->getText() == u"text3");
 
                     // Serialize.
                     auto optionalError = pLayout->serializeNodeTree(pathToFile, false);
@@ -77,16 +77,16 @@ TEST_CASE("serialize and deserialize layout UI node with child nodes (child node
                 REQUIRE(pText3 != nullptr);
                 REQUIRE(pChildLayout != nullptr);
 
-                REQUIRE(pText1->getText() == "text1");
-                REQUIRE(pText2->getText() == "text2");
-                REQUIRE(pText3->getText() == "text3");
+                REQUIRE(pText1->getText() == u"text1");
+                REQUIRE(pText2->getText() == u"text2");
+                REQUIRE(pText3->getText() == u"text3");
 
                 const auto mtxChildLayoutNodes = pChildLayout->getChildNodes();
                 REQUIRE(mtxChildLayoutNodes.second.size() == 1);
 
                 const auto pChildText = dynamic_cast<TextUiNode*>(mtxChildLayoutNodes.second[0]);
                 REQUIRE(pChildText != nullptr);
-                REQUIRE(pChildText->getText() == "child text");
+                REQUIRE(pChildText->getText() == u"child text");
 
                 getWindow()->close();
             });
