@@ -12,11 +12,9 @@ First of all, read the repository's `README.md` file, specifically the `Prerequi
 
 The engine relies on CMake as its build system. CMake is a very common build system for C++ projects so generally most of the developers should be familiar with it. If you don't know what CMake is or haven't used it before it's about the time to learn the basics of CMake right now. Your project will be represented as several CMake targets: one target for standalone game, one target for tests, one target for editor and etc. So you will work on `CMakeLists.txt` files as with usual C++!
 
-## Project generator
+## Project manager
 
-Currently we don't have a proper project generator but it's planned. Once the project generator will be implemented this section will be updated.
-
-Right now you can clone the repository and don't forget to update submodules. Once you have a project with `CMakeLists.txt` file in the root directory you can open it in your IDE. For example Qt Creator or Visual Studio allow opening `CMakeLists.txt` files as C++ projects, other IDEs also might have this functionality.
+See our project manager: https://github.com/Flone-dnb/low-end-engine-project-manager
 
 Note for Visual Studio users:
 > If you use Visual Studio the proper way to work on `CMakeLists.txt` files as C++ projects is to open up Visual Studio without any code then press `File` -> `Open` -> `Cmake` and select the `CMakeLists.txt` file in the root directory (may be changed in the new VS versions). Then a tab called `CMake Overview Pages` should be opened in which you might want to click `Open CMake Settings Editor` and inside of that change `Build root` to just `${projectDir}\build\` to store built data inside of the `build` directory (because by default Visual Studio stores build in an unusual path `out/<build mode>/`). When you open `CMakeLists.txt` in Visual Studio near the green button to run your project you might see a text `Select Startup Item...`, you should press a litte arrow near this text to expand a list of available targets to use. Then select a target that you want to build/use and that's it, you are ready to work on the project.
