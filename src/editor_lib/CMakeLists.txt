@@ -69,9 +69,13 @@ endif()
 # -------------------------------------------------------------------------------------------------
 
 # Add engine library.
-set(ENGINE_TARGET engine_lib)
-message(STATUS "${PROJECT_NAME}: started adding ${ENGINE_TARGET}...\n----------------------------------------------\n")
-add_subdirectory(../${ENGINE_TARGET} ${DEPENDENCY_BUILD_DIR_NAME}/${ENGINE_TARGET})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${ENGINE_TARGET})
-add_dependencies(${PROJECT_NAME} ${ENGINE_TARGET})
-message(STATUS "\n\n----------------------------------------------\n${PROJECT_NAME}: finished adding ${ENGINE_TARGET}")
+set(ENGINE_LIB_TARGET engine_lib)
+if (NOT TARGET ${ENGINE_LIB_TARGET}) # define target only if not defined yet
+    message(STATUS "${PROJECT_NAME}: started adding ${ENGINE_LIB_TARGET}...\n----------------------------------------------\n")
+    add_subdirectory(../${ENGINE_LIB_TARGET} ${DEPENDENCY_BUILD_DIR_NAME}/${ENGINE_LIB_TARGET})
+    message(STATUS "\n\n----------------------------------------------\n${PROJECT_NAME}: finished adding ${ENGINE_LIB_TARGET}")
+else()
+    message(STATUS "${PROJECT_NAME}: ${ENGINE_LIB_TARGET} already defined, just using it without redefining")
+endif()
+target_link_libraries(${PROJECT_NAME} PUBLIC ${ENGINE_LIB_TARGET})
+add_dependencies(${PROJECT_NAME} ${ENGINE_LIB_TARGET})

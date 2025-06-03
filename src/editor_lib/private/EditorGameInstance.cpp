@@ -1,19 +1,23 @@
 #include "EditorGameInstance.h"
 
 // Custom.
-#include "input/InputManager.h"
 #include "game/Window.h"
-#include "input/EditorInputEventIds.hpp"
 #include "game/camera/CameraManager.h"
-#include "node/EditorCameraNode.h"
 #include "game/node/MeshNode.h"
-#include "math/MathHelpers.hpp"
 #include "game/node/light/DirectionalLightNode.h"
-#include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
+#include "game/node/light/SpotlightNode.h"
 #include "game/node/ui/TextUiNode.h"
+#include "input/EditorInputEventIds.hpp"
+#include "input/InputManager.h"
+#include "math/MathHelpers.hpp"
 #include "misc/EditorNodeCreationHelpers.hpp"
+#include "node/EditorCameraNode.h"
 #include "render/FontManager.h"
+
+#if defined(GAME_LIB_INCLUDED)
+#include "MyGameInstance.h"
+#endif
 
 // External.
 #include "hwinfo/hwinfo.h"
@@ -24,6 +28,10 @@ const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"
 EditorGameInstance::EditorGameInstance(Window* pWindow) : GameInstance(pWindow) {}
 
 void EditorGameInstance::onGameStarted() {
+#if defined(GAME_LIB_INCLUDED)
+    MyGameInstance::registerGameTypes();
+#endif
+
     getRenderer()->getFontManager().loadGlyphs({FontLoadInfo{
         .pathToFont = ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" /
                       "RedHatDisplay-Light.ttf",

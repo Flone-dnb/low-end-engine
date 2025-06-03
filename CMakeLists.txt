@@ -28,17 +28,26 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-# Add executable targets.
 message(STATUS "Adding executable targets...")
 
+set(TESTS_TARGET_DIR_NAME engine_tests)
+if (GAME_PROJECT_NAME) # <- comes from engine_settings.cmake
+    # Game directories should have been generated using our project manager.
+    set(TESTS_TARGET_DIR_NAME ${GAME_PROJECT_NAME}_tests)
+
+    # Add game target.
+    set(GAME_TARGET_DIR_NAME ${GAME_PROJECT_NAME})
+    message(STATUS "Adding target ${GAME_TARGET_DIR_NAME}...")
+    add_subdirectory(src/${GAME_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${GAME_TARGET_DIR_NAME})
+endif()
+
 # Add editor target.
-set(EDITOR_DIRECTORY editor)
-message(STATUS "Adding target ${EDITOR_DIRECTORY}...")
-add_subdirectory(src/${EDITOR_DIRECTORY} ${BUILD_DIRECTORY_NAME}/${EDITOR_DIRECTORY})
+set(EDITOR_TARGET_DIR_NAME editor)
+message(STATUS "Adding target ${EDITOR_TARGET_DIR_NAME}...")
+add_subdirectory(src/${EDITOR_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${EDITOR_TARGET_DIR_NAME})
 
 # Add tests target.
 if (NOT DISABLE_DEV_STUFF)
-    set(ENGINE_TESTS_DIRECTORY engine_tests)
-    message(STATUS "Adding target ${ENGINE_TESTS_DIRECTORY}...")
-    add_subdirectory(src/${ENGINE_TESTS_DIRECTORY} ${BUILD_DIRECTORY_NAME}/${ENGINE_TESTS_DIRECTORY})
+    message(STATUS "Adding target ${TESTS_TARGET_DIR_NAME}...")
+    add_subdirectory(src/${TESTS_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${TESTS_TARGET_DIR_NAME})
 endif()
