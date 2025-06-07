@@ -29,14 +29,16 @@ public:
      * Creates a new window.
      *
      * @param sWindowName   Name of the window.
-     * @param bIsFullscreen Specify `false` to create a non-fullscreen window.
+     * @param windowSize    Specify {0, 0} to create a fullscreen window.
      * @param bIsHidden     Specify `true` to create an invisible window (generally used in automated
      * testing).
      *
      * @return Error if something went wrong, otherwise created window.
      */
-    static std::variant<std::unique_ptr<Window>, Error>
-    create(std::string_view sWindowName, bool bIsFullscreen = true, bool bIsHidden = false);
+    static std::variant<std::unique_ptr<Window>, Error> create(
+        std::string_view sWindowName,
+        const std::pair<unsigned int, unsigned int>& windowSize = {0, 0},
+        bool bIsHidden = false);
 
     /**
      * Whether the cursor is visible or not (locked in this window).
@@ -62,6 +64,13 @@ public:
 
     /** Closes this window causing game instance, renderer, audio engine and etc. to be destroyed. */
     void close();
+
+    /**
+     * Sets a new size of the window.
+     *
+     * @param size Width and height in pixels.
+     */
+    void setWindowSize(const std::pair<unsigned int, unsigned int>& size);
 
     /**
      * Returns size of the window in pixels.
@@ -154,8 +163,9 @@ private:
      * Initializes the window.
      *
      * @param pCreatedWindow Created SDL window.
+     * @param bIsFullscreen  `true` if the window is created as a fullscreen window.
      */
-    Window(SDL_Window* pCreatedWindow);
+    Window(SDL_Window* pCreatedWindow, bool bIsFullscreen);
 
     /**
      * Looks for a connected gamepad and return it if found.
@@ -196,6 +206,9 @@ private:
 
     /** Used in the window message loop. */
     bool bQuitRequested = false;
+
+    /** `true` if this window was created as a fullscreen window. */
+    const bool bIsCreatedAsFullscreenWindow = true;
 
     /** Index of a display (monitor) we use for rendering. */
     static constexpr int iUsedDisplayIndex = 0;

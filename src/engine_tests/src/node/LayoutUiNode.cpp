@@ -93,7 +93,7 @@ TEST_CASE("serialize and deserialize layout UI node with child nodes (child node
         }
     };
 
-    auto result = Window::create("", true, true);
+    auto result = Window::create("", {0, 0}, true);
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();

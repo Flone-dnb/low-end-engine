@@ -7,8 +7,8 @@
 #include <Windows.h>
 #endif
 
-std::variant<std::unique_ptr<Window>, Error>
-Window::create(std::string_view sWindowName, bool bIsFullscreen, bool bIsHidden) {
+std::variant<std::unique_ptr<Window>, Error> Window::create(
+    std::string_view sWindowName, const std::pair<unsigned int, unsigned int>& windowSize, bool bIsHidden) {
     InitManager::init();
 
     // Get display resolution.
@@ -17,6 +17,13 @@ Window::create(std::string_view sWindowName, bool bIsFullscreen, bool bIsHidden)
 
     int iWindowWidth = mode.w;
     int iWindowHeight = mode.h;
+
+    bool bIsFullscreen = true;
+    if (windowSize.first != 0 && windowSize.second != 0) {
+        iWindowWidth = windowSize.first;
+        iWindowHeight = windowSize.second;
+        bIsFullscreen = false;
+    }
 
     // Prepare flags.
     auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
@@ -47,12 +54,12 @@ Window::create(std::string_view sWindowName, bool bIsFullscreen, bool bIsHidden)
         return Error(SDL_GetError());
     }
 
-    auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow));
+    auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow, bIsFullscreen));
 
     // Log resulting window size.
-    const auto windowSize = pWindow->getWindowSize();
+    const auto createdWindowSize = pWindow->getWindowSize();
     Logger::get().info(
-        std::format("created a new window of size {}x{}", windowSize.first, windowSize.second));
+        std::format("created a new window of size {}x{}", createdWindowSize.first, createdWindowSize.second));
 
     return pWindow;
 }
@@ -181,6 +188,22 @@ SDL_GameController* Window::findConnectedGamepad() {
     return nullptr;
 }
 
+void Window::setWindowSize(const std::pair<unsigned int, unsigned int>& size) {
+    if (bIsCreatedAsFullscreenWindow) [[unlikely]] {
+        // TODO: implement window recreation and notify renderer
+        Error::showErrorAndThrowException("changing size of a fullscreen window is not implemented");
+    }
+
+    windowSize = size;
+
+    SDL_SetWindowSize(pSdlWindow, size.first, size.second);
+
+    if (pGameManager != nullptr) {
+        // Notify renderer.
+        pGameManager->pRenderer->onWindowSizeChanged();
+    }
+}
+
 std::pair<unsigned int, unsigned int> Window::getWindowSize() const { return windowSize; }
 
 std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
@@ -222,7 +245,7 @@ void Window::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool 
     pGameManager->onMouseInput(button, modifiers, bIsPressedDown);
 }
 
-Window::Window(SDL_Window* pCreatedWindow) {
+Window::Window(SDL_Window* pCreatedWindow, bool bIsFullscreen) : bIsCreatedAsFullscreenWindow(bIsFullscreen) {
     pSdlWindow = pCreatedWindow;
 
     // Save ID of this thread (should be main thread).

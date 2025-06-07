@@ -24,7 +24,7 @@ TEST_CASE("despawn invisible mesh node") {
         virtual ~TestGameInstance() override {}
     };
 
-    auto result = Window::create("", true, true);
+    auto result = Window::create("", {0, 0}, true);
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -66,7 +66,7 @@ TEST_CASE("serialize node tree with 2 mesh nodes") {
         virtual ~TestGameInstance() override {}
     };
 
-    auto result = Window::create("", true, true);
+    auto result = Window::create("", {0, 0}, true);
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
