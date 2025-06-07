@@ -10,6 +10,7 @@
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
 #include "misc/ProjectPaths.h"
+#include "misc/Profiler.hpp"
 
 // External.
 #include "glad/glad.h"
@@ -88,6 +89,8 @@ void FontManager::loadFont(const std::filesystem::path& pathToFont, float fontHe
 }
 
 void FontManager::cacheGlyphs(const std::pair<unsigned long, unsigned long>& characterCodeRange) {
+    PROFILE_FUNC;
+
     if (characterCodeRange.first > characterCodeRange.second ||
         characterCodeRange.second < characterCodeRange.first) [[unlikely]] {
         Error::showErrorAndThrowException(
@@ -178,6 +181,8 @@ void FontManager::onWindowSizeChanged() {
 }
 
 const FontManager::CharacterGlyph& FontGlyphsGuard::getGlyph(unsigned long iCharacterCode) {
+    PROFILE_FUNC;
+
     // mutex is already locked
 
     // Find in cache.
