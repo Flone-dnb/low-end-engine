@@ -289,6 +289,9 @@ int main(int argc, char* argv[]) {
             if (!entry.is_regular_file()) {
                 continue;
             }
+            if (!entry.path().has_extension()) {
+                continue;
+            }
 
             const auto fileExtension = entry.path().extension();
             if (fileExtension == ".h" || fileExtension == ".hpp") {
