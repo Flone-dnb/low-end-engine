@@ -51,7 +51,12 @@ public:
     /**
      * Loads glyphs from the specified font to be used (clears previously loaded glyphs).
      *
-     * @param pathToFont Font to load.
+     * @param pathToFont       Font to load.
+     * @param fontHeightToLoad Font height (relative to screen height, width is determines automatically) in
+     * range [0.0F; 1.0F] to load. This value will be used as the base size but most likely will be scaled
+     * when drawing text nodes according to the size of each text node. This value must be equal to an average
+     * size of the text, if it's too small big text will be blurry, if it will be too big small text will look
+     * bad.
      */
     void loadFont(const std::filesystem::path& pathToFont, float fontHeightToLoad = 0.1F);
 
@@ -70,7 +75,7 @@ public:
     FontGlyphsGuard getGlyphs();
 
     /**
-     * Last specified font height to load from @ref loadGlyphs.
+     * Last specified font height to load from @ref loadFont.
      *
      * @return Font height.
      */
