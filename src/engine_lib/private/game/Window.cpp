@@ -31,9 +31,6 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(
         windowFlags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED;
     } else {
         windowFlags |= SDL_WINDOW_RESIZABLE;
-
-        iWindowWidth /= 2;
-        iWindowHeight /= 2;
     }
     if (bIsHidden) {
         windowFlags |= SDL_WINDOW_HIDDEN;
