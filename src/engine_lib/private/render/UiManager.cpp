@@ -790,8 +790,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
     PROFILE_FUNC;
 
     auto& fontManager = pRenderer->getFontManager();
-    auto& mtxLoadedGlyphs = fontManager.getLoadedGlyphs();
-    std::scoped_lock guard(mtxData.first, mtxLoadedGlyphs.first);
+    auto glyphGuard = fontManager.getGlyphs();
+    std::scoped_lock guard(mtxData.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextNodes;
     if (vNodesByDepth.empty()) {
@@ -799,12 +799,6 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
     }
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
-
-    // Prepare a placeholder glyph for unknown character.
-    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find(FontManager::getGlyphCodeForUnknownChar());
-    if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-        Error::showErrorAndThrowException("can't find a placeholder glyph for unknown character");
-    }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -945,14 +939,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         continue; // don't render \n
                     }
 
-                    // Get glyph.
-                    auto charIt = mtxLoadedGlyphs.second.find(character);
-                    if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-                        // No glyph found for this character, use ? instead.
-                        // DON'T log a warning - you will slow everything down due to log flushing.
-                        charIt = placeHolderGlythIt;
-                    }
-                    const auto& glyph = charIt->second;
+                    const auto& glyph = glyphGuard.getGlyph(character);
 
                     const float distanceToNextGlyph =
                         (glyph.advance >> 6) * // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)

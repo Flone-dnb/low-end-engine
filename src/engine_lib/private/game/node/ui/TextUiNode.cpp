@@ -2,10 +2,10 @@
 
 // Custom.
 #include "game/GameInstance.h"
+#include "game/Window.h"
+#include "render/FontManager.h"
 #include "render/Renderer.h"
 #include "render/UiManager.h"
-#include "render/FontManager.h"
-#include "game/Window.h"
 
 // External.
 #include "nameof.hpp"
@@ -168,14 +168,7 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
 
     // Get font glyphs.
     auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
-    auto& mtxLoadedGlyphs = fontManager.getLoadedGlyphs();
-    std::scoped_lock guard(mtxLoadedGlyphs.first);
-
-    // Prepare a placeholder glyph for unknown characters.
-    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find(FontManager::getGlyphCodeForUnknownChar());
-    if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-        Error::showErrorAndThrowException("can't find a placeholder glyph for unknown character");
-    }
+    auto glyphGuard = fontManager.getGlyphs();
 
     // Prepare some variables.
     const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
@@ -199,12 +192,7 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
             continue;
         }
 
-        // Get glyph.
-        auto charIt = mtxLoadedGlyphs.second.find(character);
-        if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-            charIt = placeHolderGlythIt;
-        }
-        const auto& glyph = charIt->second;
+        const auto& glyph = glyphGuard.getGlyph(character);
 
         const float distanceToNextGlyph =
             (glyph.advance >> 6) / // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
@@ -226,8 +214,17 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
 void TextUiNode::onSpawning() {
     UiNode::onSpawning();
 
+    const auto pRenderer = getGameInstanceWhileSpawned()->getRenderer();
+    auto& fontManager = pRenderer->getFontManager();
+
+    // Cache used glyphs.
+    for (size_t i = 0; i < sText.size(); i++) {
+        const auto& character = sText[i];
+        fontManager.cacheGlyphs({character, character});
+    }
+
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
+    auto& uiManager = pRenderer->getUiManager();
     uiManager.onNodeSpawning(this);
 }
 

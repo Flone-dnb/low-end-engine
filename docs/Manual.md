@@ -454,19 +454,14 @@ void MyGameInstance::onGameStarted() {
 }
 ```
 
-## Text and fonts
+## Loading font
 
-By default there are no glyphs (font characters) loaded so by default you can't display text in your UI.
-
-In order to load some glyphs you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:
+In order to load a font you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:
 
 ```Cpp
 void MyGameInstance::onGameStarted() {
-    // Note that you can load glyphs from multiple fonts.
-    getRenderer()->getFontManager().loadGlyphs({FontLoadInfo{
-        .pathToFont = ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" /
-                      "RedHatDisplay-Light.ttf",
-        .charCodesToLoad = {{32, 126}}}}); // ASCII characters range
+    getRenderer()->getFontManager().loadFont(
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
 
     // ... create world, nodes, etc. ...
 }

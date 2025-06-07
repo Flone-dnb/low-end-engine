@@ -126,6 +126,7 @@ void Renderer::recreateFramebuffers() {
     }
 
     pUiManager->onWindowSizeChanged();
+    pFontManager->onWindowSizeChanged();
 }
 
 void Renderer::onWindowSizeChanged() { recreateFramebuffers(); }
@@ -375,6 +376,7 @@ Renderer::~Renderer() {
     pGammaCorrectionShaderProgram = nullptr;
     pUiManager =
         nullptr; // UI manager uses some shaders programs while alive so destroy it before shader manager
+    pFontManager = nullptr;
 
     for (auto& fence : frameSync.vFences) {
         glDeleteSync(fence);

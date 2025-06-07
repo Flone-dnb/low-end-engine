@@ -284,14 +284,7 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
     const auto sizeInPixels = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
     const auto sText = getText();
 
-    auto& mtxLoadedGlyphs = fontManager.getLoadedGlyphs();
-    std::scoped_lock guard(mtxLoadedGlyphs.first);
-
-    // Prepare a placeholder glyph for unknown characters.
-    const auto placeHolderGlythIt = mtxLoadedGlyphs.second.find(FontManager::getGlyphCodeForUnknownChar());
-    if (placeHolderGlythIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-        Error::showErrorAndThrowException("can't find a placeholder glyph for unknown character");
-    }
+    auto glyphGuard = fontManager.getGlyphs();
 
     glm::vec2 localCurrentPos = glm::vec2(0.0F, 0.0F); // in range [0.0; 1.0]
     size_t iOutputTextOffset = sText.size();           // put cursor after text by default
@@ -322,12 +315,7 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
             continue;
         }
 
-        // Get glyph.
-        auto charIt = mtxLoadedGlyphs.second.find(character);
-        if (charIt == mtxLoadedGlyphs.second.end()) [[unlikely]] {
-            charIt = placeHolderGlythIt;
-        }
-        const auto& glyph = charIt->second;
+        const auto& glyph = glyphGuard.getGlyph(character);
 
         const float distanceToNextGlyph =
             (glyph.advance >> 6) / // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)

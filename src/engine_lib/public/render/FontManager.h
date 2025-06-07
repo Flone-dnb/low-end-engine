@@ -12,19 +12,18 @@
 class Texture;
 class Renderer;
 
-/** Groups information about a font to load. */
-struct FontLoadInfo {
-    /** Path to a .ttf file to load. */
-    std::filesystem::path pathToFont;
+typedef struct FT_LibraryRec_* FT_Library;
+typedef struct FT_FaceRec_* FT_Face;
 
-    /** Pairs of "start index" - "end index" (inclusive) of characters to load. */
-    std::vector<std::pair<unsigned long, unsigned long>> charCodesToLoad;
-};
+class FontGlyphsGuard;
 
 /** Simplifies loading .ttf files from disk to the GPU memory. */
 class FontManager {
     // Only renderer is expected to create objects if this type.
     friend class Renderer;
+
+    // Loads new glyphs on demand.
+    friend class FontGlyphsGuard;
 
 public:
     /** Groups information about a loaded character glyph. */
@@ -50,23 +49,25 @@ public:
     FontManager& operator=(FontManager&&) noexcept = delete;
 
     /**
-     * Returns code of a glyph that should be displayed when found a character without a loaded glyph.
-     *
-     * @return Glyph code.
-     */
-    static constexpr unsigned long getGlyphCodeForUnknownChar() { return iUnknownCharGlyphCode; }
-
-    /**
      * Loads glyphs from the specified font to be used (clears previously loaded glyphs).
      *
-     * @param vFontsToLoad Fonts to load (at least 1 must be specified).
-     * @param fontHeightToLoad Font height (relative to screen height, width is determines automatically) in
-     * range [0.0F; 1.0F] to load. This value will be used as the base size but most likely will be scaled
-     * when drawing text nodes according to the size of each text node. This value must be equal to an average
-     * size of the text, if it's too small big text will be blurry, if it will be too big small text will look
-     * bad.
+     * @param pathToFont Font to load.
      */
-    void loadGlyphs(std::vector<FontLoadInfo> vFontsToLoad, float fontHeightToLoad = 0.1F);
+    void loadFont(const std::filesystem::path& pathToFont, float fontHeightToLoad = 0.1F);
+
+    /**
+     * Ensures the specified range of characters are loaded in the memory (does nothing if already loaded).
+     *
+     * @param characterCodeRange Pair of "index start" - "index end" (inclusive) to cache.
+     */
+    void cacheGlyphs(const std::pair<unsigned long, unsigned long>& characterCodeRange);
+
+    /**
+     * Returns an object that allows quering glyph information.
+     *
+     * @return RAII-style object.
+     */
+    FontGlyphsGuard getGlyphs();
 
     /**
      * Last specified font height to load from @ref loadGlyphs.
@@ -74,15 +75,6 @@ public:
      * @return Font height.
      */
     float getFontHeightToLoad() const { return fontHeightToLoad; }
-
-    /**
-     * Returns pairs of "character code" - "loaded glyph".
-     *
-     * @return Loaded glyphs.
-     */
-    std::pair<std::mutex, std::unordered_map<unsigned long, CharacterGlyph>>& getLoadedGlyphs() {
-        return mtxLoadedGlyphs;
-    }
 
 private:
     /**
@@ -101,18 +93,62 @@ private:
      */
     FontManager(Renderer* pRenderer);
 
+    /** Called after window size changed. */
+    void onWindowSizeChanged();
+
+    /** Sets font size for glyphs that will be loaded. */
+    void updateSizeForNextGlyphs();
+
     /** Pairs of "character code" - "loaded glyph". */
-    std::pair<std::mutex, std::unordered_map<unsigned long, CharacterGlyph>> mtxLoadedGlyphs;
+    std::pair<std::recursive_mutex, std::unordered_map<unsigned long, CharacterGlyph>> mtxLoadedGlyphs;
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
 
-    /** Last specified font height to load from @ref loadGlyphs. */
+    /** Last specified font height to load from @ref loadFont. */
     float fontHeightToLoad = 0.0F;
 
+    /** FreeType library. */
+    FT_Library pFtLibrary = nullptr;
+
+    /** Currently loaded font face. */
+    FT_Face pFtFace = nullptr;
+
+    /** Currently used font. */
+    std::filesystem::path pathToFont;
+};
+
+/** RAII-style type that allows quering glyphs textures. */
+class FontGlyphsGuard {
+    // Only font manager is allowed to create objects of this type.
+    friend class FontManager;
+
+public:
+    FontGlyphsGuard() = delete;
+    FontGlyphsGuard(const FontGlyphsGuard&) = delete;
+    FontGlyphsGuard& operator=(const FontGlyphsGuard&) = delete;
+    FontGlyphsGuard(FontGlyphsGuard&&) = delete;
+    FontGlyphsGuard& operator=(FontGlyphsGuard&&) = delete;
+
+    ~FontGlyphsGuard() { pManager->mtxLoadedGlyphs.first.unlock(); }
+
     /**
-     * Code of a glyph that we will load (if not loaded) from the default font to display when found a
-     * character without a loaded glyph.
-     * */
-    static constexpr unsigned long iUnknownCharGlyphCode = 63; // NOLINT: question mark
+     * Loads a glyph with the specified character code or just returns it if it was previously requested.
+     *
+     * @param iCharacterCode Index of the char to load.
+     *
+     * @return Loaded glyph.
+     */
+    const FontManager::CharacterGlyph& getGlyph(unsigned long iCharacterCode);
+
+private:
+    /**
+     * Creates a new object.
+     *
+     * @param pManager Font manager.
+     */
+    FontGlyphsGuard(FontManager* pManager) : pManager(pManager) { pManager->mtxLoadedGlyphs.first.lock(); }
+
+    /** Font manager. */
+    FontManager* const pManager = nullptr;
 };

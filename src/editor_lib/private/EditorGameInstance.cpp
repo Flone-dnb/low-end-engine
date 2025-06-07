@@ -32,10 +32,8 @@ void EditorGameInstance::onGameStarted() {
     MyGameInstance::registerGameTypes();
 #endif
 
-    getRenderer()->getFontManager().loadGlyphs({FontLoadInfo{
-        .pathToFont = ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" /
-                      "RedHatDisplay-Light.ttf",
-        .charCodesToLoad = {{32, 126}}}}); // NOLINT: ASCII range
+    getRenderer()->getFontManager().loadFont(
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
 
     registerEditorInputEvents();
 
