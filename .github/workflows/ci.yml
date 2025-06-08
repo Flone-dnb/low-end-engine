@@ -35,15 +35,13 @@ jobs:
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DENGINE_UI_ONLY=ON ..
         cmake --build . --config Release
       working-directory: build
-    - name: Create directory for testing project manager
-      run: mkdir _proj_manager_test
     - name: Compile a new project with engine
       run: |
         git clone https://github.com/Flone-dnb/low-end-engine-project-manager
-        cd low-end-engine-project-manager
-        python project_manager.py --new test_proj
-        cd test_proj
+        rename low-end-engine-project-manager man
+        cd man
+        python project_manager.py --new proj
+        cd proj
         mkdir build
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --config Release --target test_proj
-      working-directory: _proj_manager_test
+        cmake --build . --config Release --target proj
