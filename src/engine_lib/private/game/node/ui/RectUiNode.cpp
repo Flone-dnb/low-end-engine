@@ -147,6 +147,12 @@ void RectUiNode::onAfterSizeChanged() {
     updateChildNodePosAndSize();
 }
 
+void RectUiNode::onAfterPositionChanged() {
+    UiNode::onAfterPositionChanged();
+
+    updateChildNodePosAndSize();
+}
+
 void RectUiNode::updateChildNodePosAndSize() {
     const auto mtxChildNodes = getChildNodes();
     std::scoped_lock guard(*mtxChildNodes.first);

@@ -81,6 +81,12 @@ LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     setIsReceivingInput(bIsScrollBarEnabled);
 }
 
+void LayoutUiNode::onAfterPositionChanged() {
+    UiNode::onAfterPositionChanged();
+
+    recalculatePosAndSizeForDirectChildNodes();
+}
+
 void LayoutUiNode::onAfterSizeChanged() {
     UiNode::onAfterSizeChanged();
 
@@ -216,11 +222,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         glm::vec2 currentChildPos = getPosition();
 
         // Consider padding.
-        if (bIsHorizontal) {
-            currentChildPos.y += padding * layoutOldSize.y;
-        } else {
-            currentChildPos.x += padding * layoutOldSize.x;
-        }
+        currentChildPos += padding * layoutOldSize;
         const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * (padding * layoutOldSize));
 
         // Check scroll bar.
@@ -371,23 +373,12 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
 
         totalScrollHeight /= layoutOldSize.y;
 
-        if (!bIsScrollBarEnabled) {
-            // Expand our size if needed to fit all child nodes (but don't shrink if can shrink).
-            if (bIsHorizontal && layoutNewSizeOnMainAxis > layoutOldSize.x) {
-                // Self check:
-                if (childExpandRule != ChildNodeExpandRule::DONT_EXPAND) [[unlikely]] {
-                    Error::showErrorAndThrowException(
-                        std::format("unexpected for node \"{}\" to expand", getNodeName()));
-                }
-
+        if (!mtxChildNodes.second.empty() && !bIsScrollBarEnabled &&
+            childExpandRule == ChildNodeExpandRule::DONT_EXPAND) {
+            // Expand layout size if needed to fit all child nodes (but don't shrink if can shrink).
+            if (bIsHorizontal) {
                 setSize(glm::vec2(layoutNewSizeOnMainAxis, layoutOldSize.y));
-            } else if (!bIsHorizontal && layoutNewSizeOnMainAxis > layoutOldSize.y) {
-                // Self check:
-                if (childExpandRule != ChildNodeExpandRule::DONT_EXPAND) [[unlikely]] {
-                    Error::showErrorAndThrowException(
-                        std::format("unexpected for node \"{}\" to expand", getNodeName()));
-                }
-
+            } else if (!bIsHorizontal) {
                 setSize(glm::vec2(layoutOldSize.x, layoutNewSizeOnMainAxis));
             }
         }

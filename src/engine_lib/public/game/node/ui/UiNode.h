@@ -264,6 +264,9 @@ protected:
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() {}
 
+    /** Called after position of this UI node was changed. */
+    virtual void onAfterPositionChanged() {}
+
     /** Called after size of this UI node was changed. */
     virtual void onAfterSizeChanged() {}
 

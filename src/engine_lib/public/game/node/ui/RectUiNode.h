@@ -127,6 +127,9 @@ protected:
      */
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
+    /** Called after position of this UI node was changed. */
+    virtual void onAfterPositionChanged() override;
+
     /** Called after size of this UI node was changed. */
     virtual void onAfterSizeChanged() override;
 
