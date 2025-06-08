@@ -38,7 +38,7 @@ jobs:
     - name: Compile a new project with engine
       run: |
         git clone https://github.com/Flone-dnb/low-end-engine-project-manager
-        rename low-end-engine-project-manager man
+        ren low-end-engine-project-manager man
         cd man
         python project_manager.py --new proj
         cd proj
