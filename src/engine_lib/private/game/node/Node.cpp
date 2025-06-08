@@ -63,10 +63,8 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
         const auto pathToExternalNodeTree =
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / it->second;
         if (!std::filesystem::exists(pathToExternalNodeTree)) [[unlikely]] {
-            return Error(
-                std::format(
-                    "file storing external node tree \"{}\" does not exist",
-                    pathToExternalNodeTree.string()));
+            return Error(std::format(
+                "file storing external node tree \"{}\" does not exist", pathToExternalNodeTree.string()));
         }
 
         // Deserialize external node tree.
@@ -119,53 +117,48 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
             if (!optionalRootNodeIndex.has_value()) {
                 bIsRootNode = true;
             } else [[unlikely]] {
-                return Error(
-                    std::format(
-                        "found non root node \"{}\" that does not have a parent",
-                        nodeInfo.pObject->getNodeName()));
+                return Error(std::format(
+                    "found non root node \"{}\" that does not have a parent",
+                    nodeInfo.pObject->getNodeName()));
             }
         } else {
             parentInfo = ParentInfo{};
             try {
                 parentInfo->iParentId = std::stoull(parentNodeAttributeIt->second);
             } catch (std::exception& exception) {
-                return Error(
-                    std::format(
-                        "failed to convert attribute \"{}\" with value \"{}\" to integer, error: {}",
-                        sTomlKeyParentNodeId,
-                        parentNodeAttributeIt->second,
-                        exception.what()));
+                return Error(std::format(
+                    "failed to convert attribute \"{}\" with value \"{}\" to integer, error: {}",
+                    sTomlKeyParentNodeId,
+                    parentNodeAttributeIt->second,
+                    exception.what()));
             }
 
             // Check if this parent ID is outside of out array bounds.
             if (parentInfo->iParentId >= vNodes.size()) [[unlikely]] {
-                return Error(
-                    std::format(
-                        "parsed parent node ID is outside of bounds: {} >= {}",
-                        parentInfo->iParentId,
-                        vNodes.size()));
+                return Error(std::format(
+                    "parsed parent node ID is outside of bounds: {} >= {}",
+                    parentInfo->iParentId,
+                    vNodes.size()));
             }
 
             // There's also must be a value about node's index in parent's array of child nodes.
             const auto it = nodeInfo.customAttributes.find(sTomlKeyChildNodeArrayIndex.data());
             if (it == nodeInfo.customAttributes.end()) [[unlikely]] {
-                return Error(
-                    std::format(
-                        "error while deserializing node \"{}\" (ID in the file: {}): found parent index in "
-                        "the file but also expected an index in the parent's array of child node (which was "
-                        "not found)",
-                        nodeInfo.pObject->getNodeName(),
-                        nodeInfo.sObjectUniqueId));
+                return Error(std::format(
+                    "error while deserializing node \"{}\" (ID in the file: {}): found parent index in "
+                    "the file but also expected an index in the parent's array of child node (which was "
+                    "not found)",
+                    nodeInfo.pObject->getNodeName(),
+                    nodeInfo.sObjectUniqueId));
             }
             try {
                 parentInfo->iIndexInChildNodeArray = std::stoull(it->second);
             } catch (std::exception& exception) {
-                return Error(
-                    std::format(
-                        "failed to convert attribute \"{}\" with value \"{}\" to integer, error: {}",
-                        sTomlKeyChildNodeArrayIndex,
-                        it->second,
-                        exception.what()));
+                return Error(std::format(
+                    "failed to convert attribute \"{}\" with value \"{}\" to integer, error: {}",
+                    sTomlKeyChildNodeArrayIndex,
+                    it->second,
+                    exception.what()));
             }
         }
 
@@ -174,11 +167,10 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
         try {
             iNodeId = std::stoull(nodeInfo.sObjectUniqueId);
         } catch (std::exception& exception) {
-            return Error(
-                std::format(
-                    "failed to convert ID \"{}\" to integer, error: {}",
-                    nodeInfo.sObjectUniqueId,
-                    exception.what()));
+            return Error(std::format(
+                "failed to convert ID \"{}\" to integer, error: {}",
+                nodeInfo.sObjectUniqueId,
+                exception.what()));
         }
 
         // Check if this ID is outside of our array bounds.
@@ -251,11 +243,10 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
 std::optional<Error> Node::serializeNodeTree(std::filesystem::path pathToFile, bool bEnableBackup) {
     // Self check: make sure this node is marked to be serialized.
     if (!bSerialize) [[unlikely]] {
-        return Error(
-            std::format(
-                "node \"{}\" is marked to be ignored when serializing as part of a node tree but "
-                "this node was explicitly requested to be serialized as a node tree",
-                sNodeName));
+        return Error(std::format(
+            "node \"{}\" is marked to be ignored when serializing as part of a node tree but "
+            "this node was explicitly requested to be serialized as a node tree",
+            sNodeName));
     }
 
     // Add TOML extension here because other functions will rely on that.
@@ -349,11 +340,10 @@ void Node::unsafeDetachFromParentAndDespawn() {
             }
 
             if (pSelf == nullptr) [[unlikely]] {
-                Logger::get().error(
-                    std::format(
-                        "node \"{}\" has a parent node but parent's children array "
-                        "does not contain this node.",
-                        getNodeName()));
+                Logger::get().error(std::format(
+                    "node \"{}\" has a parent node but parent's children array "
+                    "does not contain this node.",
+                    getNodeName()));
             }
 
             // Notify parent.
@@ -386,11 +376,10 @@ Node::Node(std::string_view sName) : sNodeName(sName) {
     // Increment total node counter.
     const size_t iNodeCount = iTotalAliveNodeCount.fetch_add(1) + 1;
     if (iNodeCount + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
-        Logger::get().warn(
-            std::format(
-                "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
-                "an overflow",
-                iNodeCount + 1));
+        Logger::get().warn(std::format(
+            "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
+            "an overflow",
+            iNodeCount + 1));
     }
 }
 
@@ -407,12 +396,11 @@ void Node::changeChildNodePositionIndex(size_t iIndexFrom, size_t iIndexTo) {
 
         if (iIndexFrom >= mtxChildNodes.second.size() || iIndexTo >= mtxChildNodes.second.size())
             [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "node \"{}\" received invalid index to move the child node (from {} to {})",
-                    sNodeName,
-                    iIndexFrom,
-                    iIndexTo));
+            Error::showErrorAndThrowException(std::format(
+                "node \"{}\" received invalid index to move the child node (from {} to {})",
+                sNodeName,
+                iIndexFrom,
+                iIndexTo));
         }
 
         if (iIndexFrom == iIndexTo) {
@@ -568,17 +556,14 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
 
     // Make sure the node is spawned.
     if (!mtxIsSpawned.second) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "this function should not be called while the node is not spawned (called from node \"{}\")",
-                sNodeName));
+        Error::showErrorAndThrowException(std::format(
+            "this function should not be called while the node is not spawned (called from node \"{}\")",
+            sNodeName));
     }
 
     if (pWorldWeSpawnedIn == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "spawned node \"{}\" attempted to request the game instance but world is nullptr",
-                sNodeName));
+        Error::showErrorAndThrowException(std::format(
+            "spawned node \"{}\" attempted to request the game instance but world is nullptr", sNodeName));
     }
 
     return pWorldWeSpawnedIn->pGameManager->getGameInstance();
@@ -607,10 +592,9 @@ void Node::spawn() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (mtxIsSpawned.second) [[unlikely]] {
-        Logger::get().warn(
-            std::format(
-                "an attempt was made to spawn already spawned node \"{}\", ignoring this operation",
-                getNodeName()));
+        Logger::get().warn(std::format(
+            "an attempt was made to spawn already spawned node \"{}\", ignoring this operation",
+            getNodeName()));
         return;
     }
 
@@ -620,11 +604,10 @@ void Node::spawn() {
     // Get unique ID.
     iNodeId = iAvailableNodeId.fetch_add(1);
     if (iNodeId.value() + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
-        Logger::get().warn(
-            std::format(
-                "\"next available node ID\" is at its maximum value: {}, another spawned node will "
-                "cause an overflow",
-                iNodeId.value() + 1));
+        Logger::get().warn(std::format(
+            "\"next available node ID\" is at its maximum value: {}, another spawned node will "
+            "cause an overflow",
+            iNodeId.value() + 1));
     }
 
     // Mark state.
@@ -650,6 +633,10 @@ void Node::spawn() {
         std::scoped_lock childGuard(mtxChildNodes.first);
 
         for (const auto& pChildNode : mtxChildNodes.second) {
+            if (pChildNode->isSpawned()) {
+                // This node was most likely spawned in `onSpawning` from above.
+                continue;
+            }
             pChildNode->spawn();
         }
     }
@@ -669,10 +656,9 @@ void Node::despawn() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (!mtxIsSpawned.second) [[unlikely]] {
-        Logger::get().warn(
-            std::format(
-                "an attempt was made to despawn already despawned node \"{}\", ignoring this operation",
-                getNodeName()));
+        Logger::get().warn(std::format(
+            "an attempt was made to despawn already despawned node \"{}\", ignoring this operation",
+            getNodeName()));
         return;
     }
 
@@ -757,11 +743,10 @@ World* Node::askParentsAboutWorldPointer() {
     // Ask parent node for the valid world pointer.
     std::scoped_lock parentGuard(mtxParentNode.first);
     if (mtxParentNode.second == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "node \"{}\" can't find a pointer to a valid world instance because "
-                "there is no parent node",
-                getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "node \"{}\" can't find a pointer to a valid world instance because "
+            "there is no parent node",
+            getNodeName()));
     }
 
     return mtxParentNode.second->askParentsAboutWorldPointer();
@@ -812,9 +797,8 @@ Node::getInformationForSerialization(
             }
         }
         if (!optionalIndex.has_value()) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "unable to find child node \"{}\" in parent's array of child nodes", getNodeName()));
+            Error::showErrorAndThrowException(std::format(
+                "unable to find child node \"{}\" in parent's array of child nodes", getNodeName()));
         }
         selfInfo.customAttributes[sTomlKeyChildNodeArrayIndex.data()] = std::to_string(*optionalIndex);
     }
