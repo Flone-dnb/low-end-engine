@@ -213,6 +213,11 @@ std::optional<Error> ConfigManager::saveFile(ConfigCategory category, std::strin
 }
 
 std::optional<Error> ConfigManager::saveFile(std::filesystem::path pathToConfigFile, bool bEnableBackup) {
+    if (tomlData.is_empty()) {
+        Logger::get().warn("requested to save empty TOML data - ignoring save");
+        return {};
+    }
+
     // Check extension.
     if (!pathToConfigFile.string().ends_with(ConfigManager::getConfigFormatExtension())) {
         pathToConfigFile += ConfigManager::getConfigFormatExtension();
