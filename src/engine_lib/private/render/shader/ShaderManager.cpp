@@ -31,11 +31,10 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     auto loader = glsl_include::ShaderLoader("#include");
     auto result = loader.load_shader(pathToShader.string());
     if (std::holds_alternative<glsl_include::Error>(result)) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "failed to parse `#include`s from shader \"{}\", error: {}",
-                pathToShader.string(),
-                std::get<glsl_include::Error>(std::move(result)).message));
+        Error::showErrorAndThrowException(std::format(
+            "failed to parse `#include`s from shader \"{}\", error: {}",
+            pathToShader.string(),
+            std::get<glsl_include::Error>(std::move(result)).message));
     }
     const auto sSourceCode = std::get<std::string>(std::move(result));
 
@@ -46,10 +45,9 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     } else if (pathToShader.string().ends_with(".frag.glsl")) {
         shaderType = GL_FRAGMENT_SHADER;
     } else [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "unable to determine shader type (vertex, fragment, etc) from shader file name, shader: {}",
-                sPathToShaderRelativeRes));
+        Error::showErrorAndThrowException(std::format(
+            "unable to determine shader type (vertex, fragment, etc) from shader file name, shader: {}",
+            sPathToShaderRelativeRes));
     }
 
     const auto iShaderId = glCreateShader(shaderType);
@@ -65,9 +63,8 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     glGetShaderiv(iShaderId, GL_COMPILE_STATUS, &iSuccess);
     if (iSuccess == 0) [[unlikely]] {
         glGetShaderInfoLog(iShaderId, static_cast<int>(infoLog.size()), nullptr, infoLog.data());
-        Error error(
-            std::format(
-                "failed to compile shader from \"{}\", error: {}", sPathToShaderRelativeRes, infoLog.data()));
+        Error::showErrorAndThrowException(std::format(
+            "failed to compile shader from \"{}\", error: {}", sPathToShaderRelativeRes, infoLog.data()));
     }
 
     return std::shared_ptr<Shader>(new Shader(this, sPathToShaderRelativeRes, iShaderId));
@@ -115,10 +112,8 @@ ShaderManager::~ShaderManager() {
 
     const auto iShaderCount = mtxPathsToShaders.second.size();
     if (iShaderCount != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "shader manager is being destroyed but there are still {} shader(s) not deleted",
-                iShaderCount));
+        Error::showErrorAndThrowException(std::format(
+            "shader manager is being destroyed but there are still {} shader(s) not deleted", iShaderCount));
     }
 }
 
