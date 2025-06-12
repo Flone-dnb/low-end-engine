@@ -258,11 +258,18 @@ std::optional<Error> ConfigManager::saveFile(std::filesystem::path pathToConfigF
         }
     }
 
+    std::string sFileContent;
+    try {
+        sFileContent = toml::format(tomlData);
+    } catch (std::exception& exception) {
+        return Error(std::format("failed to serialize TOML data, error: {}", exception.what()));
+    }
+
     std::ofstream outFile(pathToConfigFile, std::ios::binary);
     if (!outFile.is_open()) {
         return Error(std::format("failed to open file {} for writing", pathToConfigFile.string()));
     }
-    outFile << toml::format(tomlData);
+    outFile << sFileContent;
     outFile.close();
 
     if (bEnableBackup) {
