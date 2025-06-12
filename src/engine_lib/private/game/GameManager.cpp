@@ -28,6 +28,10 @@ GameManager::GameManager(
     Logger::get().info("profiler enabled");
 #endif
 
+#if defined(ENGINE_ASAN_ENABLED)
+    Logger::get().info("AddressSanitizer (ASan) is enabled, expect increased RAM usage!");
+#endif
+
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pCameraManager = std::make_unique<CameraManager>();

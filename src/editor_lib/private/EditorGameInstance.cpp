@@ -14,6 +14,7 @@
 #include "misc/EditorNodeCreationHelpers.hpp"
 #include "node/EditorCameraNode.h"
 #include "render/FontManager.h"
+#include "misc/MemoryUsage.hpp"
 
 #if defined(GAME_LIB_INCLUDED)
 #include "MyGameInstance.h"
@@ -73,12 +74,13 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
         // RAM.
         hwinfo::Memory memory;
-        const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;    // NOLINT
-        const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
+        const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;
+        const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024;
         const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
         const auto ratio = static_cast<float>(iRamUsedMb) / static_cast<float>(iRamTotalMb);
+        const auto iAppRamMb = getCurrentRSS() / 1024 / 1024;
 
-        sStatsText += std::format("RAM (MB): {}/{}", iRamUsedMb, iRamTotalMb);
+        sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
         if (ratio >= 0.9F) { // NOLINT
             pStatsTextNode->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
         } else if (ratio >= 0.75F) { // NOLINT

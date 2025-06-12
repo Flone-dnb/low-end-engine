@@ -79,6 +79,7 @@ set(PROJECT_SOURCES
     private/misc/ThreadPool.cpp
     private/misc/ThreadPool.h
     public/misc/Profiler.hpp
+    public/misc/MemoryUsage.hpp
     public/sound/SoundChannel.hpp
     public/sound/SoundManager.h
     private/sound/SoundManager.cpp
