@@ -210,6 +210,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
     {
         // First collect expand portions.
         float expandPortionSum = 0.0F;
+        bool bAtLeastOneChildVisible = false;
         for (const auto& pChildNode : mtxChildNodes.second) {
             // Cast type.
             const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
@@ -220,8 +221,22 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             if (!pUiChild->isVisible() && !pUiChild->getOccupiesSpaceEvenIfInvisible()) {
                 continue;
             }
+            if (!isVisible() && pUiChild->isVisible()) {
+                pUiChild->setIsVisible(false);
+            }
 
+            bAtLeastOneChildVisible = true;
             expandPortionSum += pUiChild->getExpandPortionInLayout();
+        }
+        if (!bAtLeastOneChildVisible) {
+            // Notify parent layout.
+            std::scoped_lock guard(mtxLayoutParent.first);
+            if (mtxLayoutParent.second != nullptr) {
+                mtxLayoutParent.second->recalculatePosAndSizeForDirectChildNodes();
+            }
+
+            bIsCurrentlyUpdatingChildNodes = false;
+            return;
         }
 
         const auto layoutOldSize = getSize();

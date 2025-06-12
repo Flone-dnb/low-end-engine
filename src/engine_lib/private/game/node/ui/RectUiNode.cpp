@@ -177,4 +177,8 @@ void RectUiNode::updateChildNodePosAndSize() {
 
     pUiChild->setPosition(getPosition() + paddingRealSize);
     pUiChild->setSize(size - paddingRealSize * 2.0F); // NOLINT
+
+    if (!isVisible() && pUiChild->isVisible()) {
+        pUiChild->setIsVisible(false);
+    }
 }
