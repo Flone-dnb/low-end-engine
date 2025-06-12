@@ -224,6 +224,9 @@ protected:
     virtual void onMouseScrollMoveWhileHovered(int iOffset) override;
 
 private:
+    /** Called by direct child nodes if the user changed their visibility. */
+    void onDirectChildNodeVisibilityChanged();
+
     /** Recalculates position and size for direct child nodes. */
     void recalculatePosAndSizeForDirectChildNodes();
 

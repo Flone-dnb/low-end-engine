@@ -57,6 +57,16 @@ TypeReflectionInfo UiNode::getReflectionInfo() {
                      const bool& bNewValue) { reinterpret_cast<UiNode*>(pThis)->setIsVisible(bNewValue); },
         .getter = [](Serializable* pThis) -> bool { return reinterpret_cast<UiNode*>(pThis)->isVisible(); }};
 
+    variables.bools[NAMEOF_MEMBER(&UiNode::bOccupiesSpaceEvenIfInvisible).data()] =
+        ReflectedVariableInfo<bool>{
+            .setter =
+                [](Serializable* pThis, const bool& bNewValue) {
+                    reinterpret_cast<UiNode*>(pThis)->setOccupiesSpaceEvenIfInvisible(bNewValue);
+                },
+            .getter = [](Serializable* pThis) -> bool {
+                return reinterpret_cast<UiNode*>(pThis)->getOccupiesSpaceEvenIfInvisible();
+            }};
+
     return TypeReflectionInfo(
         Node::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(UiNode).data(),
@@ -114,7 +124,21 @@ void UiNode::setIsVisible(bool bIsVisible) {
     }
 
     onVisibilityChanged();
+
+    // Notify parent container.
+    {
+        const auto mtxParent = getParentNode();
+        std::scoped_lock guard(*mtxParent.first);
+
+        if (mtxParent.second != nullptr) {
+            if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
+                pLayout->onDirectChildNodeVisibilityChanged();
+            }
+        }
+    }
 }
+
+void UiNode::setOccupiesSpaceEvenIfInvisible(bool bTakeSpace) { bOccupiesSpaceEvenIfInvisible = bTakeSpace; }
 
 void UiNode::setUiLayer(UiLayer layer) {
     if (layer >= UiLayer::COUNT) [[unlikely]] {
@@ -232,4 +256,25 @@ void UiNode::recalculateNodeDepthWhileSpawned() {
     countDepthToRoot(this, iDepth);
 
     iNodeDepth = iDepth;
+}
+
+void UiNode::setAllowRendering(bool bAllowRendering) {
+    if (this->bAllowRendering == bAllowRendering) {
+        return;
+    }
+    this->bAllowRendering = bAllowRendering;
+
+    // Affects all child nodes.
+    {
+        const auto mtxChildNodes = getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
+            if (pUiChild == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected a UI node");
+            }
+            pUiChild->setAllowRendering(bAllowRendering);
+        }
+    }
 }

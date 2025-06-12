@@ -196,6 +196,8 @@ void LayoutUiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     mtxLayoutParent.second = getParentNodeOfType<LayoutUiNode>();
 }
 
+void LayoutUiNode::onDirectChildNodeVisibilityChanged() { recalculatePosAndSizeForDirectChildNodes(); }
+
 void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
     const auto mtxChildNodes = getChildNodes();
     std::scoped_lock childGuard(*mtxChildNodes.first);
@@ -213,6 +215,10 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
             if (pUiChild == nullptr) [[unlikely]] {
                 Error::showErrorAndThrowException("unexpected state");
+            }
+
+            if (!pUiChild->isVisible() && !pUiChild->getOccupiesSpaceEvenIfInvisible()) {
+                continue;
             }
 
             expandPortionSum += pUiChild->getExpandPortionInLayout();
@@ -260,6 +266,10 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
             if (pUiChild == nullptr) [[unlikely]] {
                 Error::showErrorAndThrowException("unexpected state");
+            }
+
+            if (!pUiChild->isVisible() && !pUiChild->getOccupiesSpaceEvenIfInvisible()) {
+                continue;
             }
 
             const auto childOldSize = pUiChild->getSize();
@@ -318,7 +328,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                     yOffsetForScrollToSkip += lastChildSize;
                     if (yOffsetForScrollToSkip < 0.0F) {
                         // Still outside of layout's visible size.
-                        pUiChild->setIsVisible(false);
+                        pUiChild->setAllowRendering(false);
                         continue;
                     }
 
@@ -341,14 +351,14 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                 } else if (yOffsetForScrollToSkip > sizeForChildNodes.y) {
                     // Goes outside of visible size.
                     yOffsetForScrollToSkip += lastChildSize;
-                    pUiChild->setIsVisible(false);
+                    pUiChild->setAllowRendering(false);
                     continue;
                 }
 
                 currentChildPos.y -= pUiChild->clipY.x * childNewSize.y;
             }
 
-            pUiChild->setIsVisible(true);
+            pUiChild->setAllowRendering(true);
             pUiChild->setSize(childNewSize);
             pUiChild->setPosition(currentChildPos);
 

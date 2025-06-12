@@ -10,7 +10,7 @@ class UiNode : public Node {
     // Manager calls input functions.
     friend class UiManager;
 
-    // Control clipping to cut some parts from rendering if the layout has a scroll bar.
+    // Disables rendering of the node if the node is outside of the visible area of layout.
     friend class LayoutUiNode;
 
 public:
@@ -78,6 +78,15 @@ public:
     void setIsVisible(bool bIsVisible);
 
     /**
+     * Generally used when the node is a child node of some container node (for example: layout node), if
+     * `true` then even if the node is invisible it will still take space in the container (there would be an
+     * empty space with the size of the node).
+     *
+     * @param bTakeSpace `true` to enable.
+     */
+    void setOccupiesSpaceEvenIfInvisible(bool bTakeSpace);
+
+    /**
      * Sets UI layer to use.
      *
      * @param layer UI layer.
@@ -137,6 +146,13 @@ public:
      * @return UI layer.
      */
     UiLayer getUiLayer() const { return layer; }
+
+    /**
+     * Returns the current state of @ref setOccupiesSpaceEvenIfInvisible.
+     *
+     * @return State.
+     */
+    bool getOccupiesSpaceEvenIfInvisible() const { return bOccupiesSpaceEvenIfInvisible; }
 
     /**
      * Returns how much nodes from the world's root node to skip to reach this node. Used to determine which
@@ -281,6 +297,14 @@ private:
     /** Recalculates @ref iNodeDepth. Must be called only while spawned. */
     void recalculateNodeDepthWhileSpawned();
 
+    /**
+     * Used internally to change @ref bAllowRendering and affect child nodes and trigger nessessary
+     * callbacks.
+     *
+     * @param bAllowRendering `true` to allow rendering.
+     */
+    void setAllowRendering(bool bAllowRendering);
+
     /** Width and height in range [0.0; 1.0]. */
     glm::vec2 size = glm::vec2(0.2F, 0.2F); // NOLINT
 
@@ -312,8 +336,24 @@ private:
     /** UI layer. */
     UiLayer layer = UiLayer::LAYER1;
 
-    /** Rendered or not. */
+    /** Setting that allows the user to enable/disable rendering of this node. Affects all child nodes. */
     bool bIsVisible = true;
+
+    /**
+     * Has more priority over @ref bIsVisible. Affects all child nodes. Used internally by container nodes
+     * that operate on whether a specific child node should be rendered or not (for example the layout node
+     * might disable rendering if the node is outside of the visible area).
+     *
+     * @remark Use @ref setAllowRendering to change this variable.
+     */
+    bool bAllowRendering = true;
+
+    /**
+     * Generally used when the node is a child node of some container node, if `true` then even if the node
+     * is invisible it will still take space in the container (there would be an empty space with the size of
+     * the node).
+     */
+    bool bOccupiesSpaceEvenIfInvisible = false;
 
     /**
      * If receiving input is enabled, `true` if the mouse cursor is currently floating over this UI node.
