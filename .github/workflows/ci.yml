@@ -43,5 +43,6 @@ jobs:
         python project_manager.py --new proj
         cd proj
         mkdir build
+        cd build
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
         cmake --build . --config Release --target proj
