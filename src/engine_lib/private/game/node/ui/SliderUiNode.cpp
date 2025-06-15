@@ -183,3 +183,18 @@ void SliderUiNode::onMouseLeft() {
 
     bIsMouseCursorDraggingHandle = false;
 }
+
+void SliderUiNode::onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) {
+    UiNode::onGamepadInputWhileFocused(button, bIsPressedDown);
+
+    if (!bIsPressedDown) {
+        return;
+    }
+
+    float step = std::max(sliderStep, 0.05F);
+    if (button == GamepadButton::DPAD_LEFT) {
+        step = -step;
+    }
+
+    handlePosition = std::clamp(snapToNearest(handlePosition + step, step), 0.0F, 1.0F);
+}

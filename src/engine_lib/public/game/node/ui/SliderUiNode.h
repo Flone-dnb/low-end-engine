@@ -176,6 +176,18 @@ protected:
      */
     virtual void onMouseMove(double xOffset, double yOffset) override;
 
+    /**
+     * Called when the window received gamepad input.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * @remark This function will only be called if this UI node has focus.
+     *
+     * @param button         Gamepad button.
+     * @param bIsPressedDown Whether the button was pressed or released.
+     */
+    virtual void onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) override;
+
 private:
     /**
      * Snaps the value to be a multiple of the specified step (i.e. 0.27 with step 0.1 becomes 0.3).

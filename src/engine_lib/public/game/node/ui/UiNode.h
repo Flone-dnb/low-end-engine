@@ -4,6 +4,7 @@
 #include "game/node/Node.h"
 #include "render/UiLayer.hpp"
 #include "input/MouseButton.hpp"
+#include "input/GamepadButton.hpp"
 
 /** Base class for UI nodes. Provides functionality for positioning on the screen. */
 class UiNode : public Node {
@@ -178,6 +179,18 @@ protected:
      */
     virtual void
     onKeyboardInputWhileFocused(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
+
+    /**
+     * Called when the window received gamepad input.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * @remark This function will only be called if this UI node has focus.
+     *
+     * @param button         Gamepad button.
+     * @param bIsPressedDown Whether the button was pressed or released.
+     */
+    virtual void onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) {}
 
     /**
      * Called by game manager when window received an event about text character being inputted.

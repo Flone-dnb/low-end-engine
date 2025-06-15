@@ -290,6 +290,9 @@ void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
         // Trigger action events.
         triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
     }
+
+    // Notify UI.
+    pRenderer->getUiManager().onGamepadInput(button, bIsPressedDown);
 }
 
 void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {

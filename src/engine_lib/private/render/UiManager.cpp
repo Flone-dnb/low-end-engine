@@ -416,6 +416,16 @@ void UiManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers,
     mtxData.second.pFocusedNode->onKeyboardInputWhileFocused(key, modifiers, bIsPressedDown);
 }
 
+void UiManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
+    std::scoped_lock guard(mtxData.first);
+
+    if (mtxData.second.pFocusedNode == nullptr) {
+        return;
+    }
+
+    mtxData.second.pFocusedNode->onGamepadInputWhileFocused(button, bIsPressedDown);
+}
+
 void UiManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
     std::scoped_lock guard(mtxData.first);
 

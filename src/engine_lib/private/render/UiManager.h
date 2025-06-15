@@ -10,6 +10,7 @@
 #include "render/UiLayer.hpp"
 #include "input/KeyboardButton.hpp"
 #include "input/MouseButton.hpp"
+#include "input/GamepadButton.hpp"
 
 // External.
 #include "math/GLMath.hpp"
@@ -144,6 +145,14 @@ public:
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
     void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
+
+    /**
+     * Called by game manager when window received gamepad input.
+     *
+     * @param button         Gamepad button.
+     * @param bIsPressedDown Whether the button was pressed or released.
+     */
+    void onGamepadInput(GamepadButton button, bool bIsPressedDown);
 
     /**
      * Called by game manager when window received an event about text character being inputted.
