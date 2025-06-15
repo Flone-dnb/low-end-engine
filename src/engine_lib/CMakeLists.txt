@@ -199,14 +199,11 @@ endif()
 # -------------------------------------------------------------------------------------------------
 
 # asan
-if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
+if(NOT IS_RELEASE_BUILD AND NOT WIN32)
     enable_address_sanitizer()
 endif()
 
-# node super call checker
-if (NOT DISABLE_DEV_STUFF)
-    add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/game/node ${CMAKE_CURRENT_LIST_DIR}/private/game/node)
-endif()
+add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/game/node ${CMAKE_CURRENT_LIST_DIR}/private/game/node)
 
 # -------------------------------------------------------------------------------------------------
 #                                       DEPENDENCIES

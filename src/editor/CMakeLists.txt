@@ -50,8 +50,8 @@ create_symlink_to_res()
 #                                           TOOLS
 # -------------------------------------------------------------------------------------------------
 
-# Enable Address Sanitizer in `Debug` builds on non-Windows OS.
-if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
+# asan
+if(NOT IS_RELEASE_BUILD AND NOT WIN32)
     enable_address_sanitizer()
 endif()
 

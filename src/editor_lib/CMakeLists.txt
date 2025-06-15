@@ -55,14 +55,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC private)
 # -------------------------------------------------------------------------------------------------
 
 # asan
-if(NOT IS_RELEASE_BUILD AND NOT WIN32 AND NOT DISABLE_DEV_STUFF)
+if(NOT IS_RELEASE_BUILD AND NOT WIN32)
     enable_address_sanitizer()
 endif()
 
-# node super call checker
-if (NOT DISABLE_DEV_STUFF)
-    add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/node ${CMAKE_CURRENT_LIST_DIR}/private/node)
-endif()
+add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/node ${CMAKE_CURRENT_LIST_DIR}/private/node)
 
 # -------------------------------------------------------------------------------------------------
 #                                       DEPENDENCIES
