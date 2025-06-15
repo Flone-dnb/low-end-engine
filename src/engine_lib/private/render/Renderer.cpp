@@ -83,18 +83,10 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
     }
 
-    // Check if window's framebuffer has sRGB format or not.
-    int iIsSrgbFramebuffer = 0;
-    SDL_GL_GetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, &iIsSrgbFramebuffer);
-    bApplyGammaCorrection = !static_cast<bool>(iIsSrgbFramebuffer);
-    Logger::get().info(
-        std::format("is window's framebuffer uses sRGB format: {}", static_cast<bool>(iIsSrgbFramebuffer)));
-    if (bApplyGammaCorrection) {
-        pGammaCorrectionShaderProgram = pShaderManager->getShaderProgram(
-            "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
-            "engine/shaders/postprocessing/GammaCorrection.frag.glsl",
-            ShaderProgramUsage::OTHER);
-    }
+    pGammaCorrectionShaderProgram = pShaderManager->getShaderProgram(
+        "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
+        "engine/shaders/postprocessing/GammaCorrection.frag.glsl",
+        ShaderProgramUsage::OTHER);
 
     recreateFramebuffers();
 }
@@ -114,16 +106,12 @@ void Renderer::recreateFramebuffers() {
 #endif
 
     // Main framebuffer.
-    auto bCreateMainFramebuffer = true;
     auto iDepthFormat = GL_DEPTH_COMPONENT24;
 #if defined(ENGINE_UI_ONLY)
     iDepthFormat = 0;
-    bCreateMainFramebuffer = bApplyGammaCorrection;
 #endif
-    if (bCreateMainFramebuffer) {
-        pMainFramebuffer =
-            GpuResourceManager::createFramebuffer(iWindowWidth, iWindowHeight, GL_RGB8, iDepthFormat);
-    }
+    pMainFramebuffer =
+        GpuResourceManager::createFramebuffer(iWindowWidth, iWindowHeight, GL_RGB8, iDepthFormat);
 
     pUiManager->onWindowSizeChanged();
     pFontManager->onWindowSizeChanged();
@@ -240,17 +228,7 @@ void Renderer::drawNextFrame() {
         // Draw UI on top of post-processing results.
         pUiManager->drawUi(pPostProcessManager->pFramebuffer->getFramebufferId());
 
-        if (bApplyGammaCorrection) {
-            // Render gamma correction fullscreen quad to window's framebuffer.
-            drawGammaCorrectionScreenQuad(0, pPostProcessManager->pFramebuffer->getColorTextureId());
-        } else {
-            // Copy rendered image to window's framebuffer.
-            const auto [iWidth, iHeight] = pWindow->getWindowSize();
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, pPostProcessManager->pFramebuffer->getFramebufferId());
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-            glReadBuffer(GL_COLOR_ATTACHMENT0);
-            glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-        }
+        drawGammaCorrectionScreenQuad(0, pPostProcessManager->pFramebuffer->getColorTextureId());
     }
 #endif
 
@@ -273,6 +251,8 @@ void Renderer::drawGammaCorrectionScreenQuad(unsigned int iDrawFramebufferId, un
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(pGammaCorrectionShaderProgram->getShaderProgramId());
+
+    pGammaCorrectionShaderProgram->setFloatToShader("gamma", gamma);
 
     glDisable(GL_DEPTH_TEST);
     {

@@ -200,7 +200,7 @@ private:
     /** Fullscreen quad for rendering. */
     std::unique_ptr<ScreenQuadGeometry> pFullscreenQuad;
 
-    /** Not `nullptr` if @ref bApplyGammaCorrection is `true`. */
+    /** Shader for gamma correction. */
     std::shared_ptr<ShaderProgram> pGammaCorrectionShaderProgram;
 
     /** Various statistics about rendering. */
@@ -215,6 +215,6 @@ private:
     /** Do not delete (free) this pointer. Always valid pointer. */
     Window* const pWindow = nullptr;
 
-    /** `true` when window's framebuffer does not have sRGB format. */
-    bool bApplyGammaCorrection = false;
+    /** Screen's gamma to undo it during the gamma correction pass. */
+    float gamma = 2.2F;
 };
