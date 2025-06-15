@@ -1,3 +1,5 @@
+#pragma comment( linker, "/subsystem:windows /entry:mainCRTStartup" )
+
 // Standard.
 #include <stdexcept>
 

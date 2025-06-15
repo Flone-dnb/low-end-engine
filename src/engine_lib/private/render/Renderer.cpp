@@ -379,6 +379,13 @@ Renderer::~Renderer() {
         glDeleteSync(fence);
     }
 
+    // Delete framebuffers and stuff before OpenGL context.
+    pPostProcessManager = nullptr;
+    pMainFramebuffer = nullptr;
+    
+    pLightSourceManager = nullptr;
+    pGammaCorrectionShaderProgram = nullptr;
+
     SDL_GL_DeleteContext(pContext);
 }
 
