@@ -173,7 +173,8 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
     // Prepare some variables.
     const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
     const auto textScaleFullscreen = getTextHeight() / fontManager.getFontHeightToLoad();
-    const auto sizeInPixels = glm::vec2(getSize().x * iWindowWidth, getSize().y * iWindowHeight);
+    const auto sizeInPixels = glm::vec2(
+        getSize().x * static_cast<float>(iWindowWidth), getSize().y * static_cast<float>(iWindowHeight));
 
     float localX = 0.0F;
     size_t iLineIndex = 0;
@@ -195,7 +196,7 @@ size_t TextUiNode::getLineIndexForTextChar(size_t iTextCharOffset) {
         const auto& glyph = glyphGuard.getGlyph(character);
 
         const float distanceToNextGlyph =
-            (glyph.advance >> 6) / // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
+            static_cast<float>(glyph.advance >> 6) / // bitshift by 6 to get value in pixels (2^6 = 64)
             sizeInPixels.x * textScaleFullscreen;
         const float glyphWidth = std::max(
             static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);
@@ -264,12 +265,12 @@ void TextUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     }
 
     if (iOffset < 0) {
-        iCurrentScrollOffset += std::abs(iOffset);
+        iCurrentScrollOffset += static_cast<size_t>(std::abs(iOffset));
     } else if (iCurrentScrollOffset > 0) {
         if (static_cast<size_t>(iOffset) > iCurrentScrollOffset) {
             iCurrentScrollOffset = 0;
         } else {
-            iCurrentScrollOffset -= iOffset;
+            iCurrentScrollOffset -= static_cast<size_t>(iOffset);
         }
     }
 }

@@ -1,5 +1,8 @@
 #include "game/node/ui/SliderUiNode.h"
 
+// Standard.
+#include <cmath>
+
 // Custom.
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
@@ -54,6 +57,15 @@ TypeReflectionInfo SliderUiNode::getReflectionInfo() {
             return reinterpret_cast<SliderUiNode*>(pThis)->getHandlePosition();
         }};
 
+    variables.floats[NAMEOF_MEMBER(&SliderUiNode::sliderStep).data()] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<SliderUiNode*>(pThis)->setSliderStep(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<SliderUiNode*>(pThis)->getSliderStep();
+        }};
+
     return TypeReflectionInfo(
         UiNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(SliderUiNode).data(),
@@ -100,6 +112,20 @@ void SliderUiNode::onVisibilityChanged() {
     uiManager.onSpawnedNodeChangedVisibility(this);
 }
 
+float SliderUiNode::snapToNearest(float value, float step) { return std::round(value / step) * step; }
+
+void SliderUiNode::setSliderStep(float stepSize) {
+    sliderStep = stepSize;
+
+    if (sliderStep > 0.0F) {
+        handlePosition = snapToNearest(handlePosition, sliderStep);
+    }
+    handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
+    if (onHandlePositionChanged) {
+        onHandlePositionChanged(handlePosition);
+    }
+}
+
 void SliderUiNode::onMouseClickOnUiNode(
     MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     UiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
@@ -118,8 +144,12 @@ void SliderUiNode::onMouseClickOnUiNode(
     // Move handle according to the cursor.
     const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
     const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
-    handlePosition =
-        ((static_cast<float>(iCursorX) / pWindow->getWindowSize().first) - getPosition().x) / getSize().x;
+    handlePosition = ((static_cast<float>(iCursorX) / static_cast<float>(pWindow->getWindowSize().first)) -
+                      getPosition().x) /
+                     getSize().x;
+    if (sliderStep > 0.0F) {
+        handlePosition = snapToNearest(handlePosition, sliderStep);
+    }
     handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
     if (onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
@@ -136,8 +166,12 @@ void SliderUiNode::onMouseMove(double xOffset, double yOffset) {
     // Move handle according to the cursor.
     const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
     const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
-    handlePosition =
-        ((static_cast<float>(iCursorX) / pWindow->getWindowSize().first) - getPosition().x) / getSize().x;
+    handlePosition = ((static_cast<float>(iCursorX) / static_cast<float>(pWindow->getWindowSize().first)) -
+                      getPosition().x) /
+                     getSize().x;
+    if (sliderStep > 0.0F) {
+        handlePosition = snapToNearest(handlePosition, sliderStep);
+    }
     handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
     if (onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);

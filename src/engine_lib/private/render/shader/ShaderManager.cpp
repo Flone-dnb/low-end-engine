@@ -96,7 +96,7 @@ std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
         glGetProgramiv(iShaderProgramId, GL_INFO_LOG_LENGTH, &iLogLength);
 
         std::vector<char> vInfoLog;
-        vInfoLog.resize(iLogLength);
+        vInfoLog.resize(static_cast<size_t>(iLogLength));
         glGetProgramInfoLog(iShaderProgramId, static_cast<int>(vInfoLog.size()), nullptr, vInfoLog.data());
 
         Error::showErrorAndThrowException(

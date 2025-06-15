@@ -266,7 +266,7 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
         // Calculate delta time.
         iPrevTimeCounter = iCurrentTimeCounter;
         iCurrentTimeCounter = SDL_GetPerformanceCounter();
-        const auto deltaTimeInMs = (iCurrentTimeCounter - iPrevTimeCounter) * 1000 /
+        const auto deltaTimeInMs = static_cast<double>(iCurrentTimeCounter - iPrevTimeCounter) * 1000.0 /
                                    static_cast<double>(SDL_GetPerformanceFrequency());
         const auto deltaTimeInSec = static_cast<float>(deltaTimeInMs * 0.001);
         timeSinceLastTickSec += deltaTimeInSec;

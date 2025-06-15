@@ -55,9 +55,9 @@ void MeshGeometry::serialize(const std::filesystem::path& pathToFile) const {
     file.write(reinterpret_cast<char*>(&iVertexCount), sizeof(iVertexCount));
 
     // Write vertex data.
-    file.write(reinterpret_cast<const char*>(vPositionData.data()), vPositionData.size());
-    file.write(reinterpret_cast<const char*>(vNormalData.data()), vNormalData.size());
-    file.write(reinterpret_cast<const char*>(vUvData.data()), vUvData.size());
+    file.write(reinterpret_cast<const char*>(vPositionData.data()), static_cast<long>(vPositionData.size()));
+    file.write(reinterpret_cast<const char*>(vNormalData.data()), static_cast<long>(vNormalData.size()));
+    file.write(reinterpret_cast<const char*>(vUvData.data()), static_cast<long>(vUvData.size()));
 
 #if defined(DEBUG)
     static_assert(sizeof(MeshGeometry) == 48, "add new variables here"); // NOLINT: current size
@@ -72,7 +72,7 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
 
     // Get file size.
     file.seekg(0, std::ios::end);
-    const size_t iFileSizeInBytes = file.tellg();
+    const size_t iFileSizeInBytes = static_cast<size_t>(file.tellg());
     file.seekg(0);
 
     size_t iReadByteCount = 0;
@@ -90,7 +90,8 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
         Error::showErrorAndThrowException(std::format("unexpected end of file \"{}\"", pathToFile.string()));
     }
     std::vector<MeshGeometry::MeshIndexType> vIndices(iIndexCount);
-    file.read(reinterpret_cast<char*>(vIndices.data()), vIndices.size() * sizeof(vIndices[0]));
+    file.read(
+        reinterpret_cast<char*>(vIndices.data()), static_cast<long>(vIndices.size() * sizeof(vIndices[0])));
     iReadByteCount += vIndices.size() * sizeof(vIndices[0]);
 
     // Read vertex count.
@@ -106,7 +107,9 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
         Error::showErrorAndThrowException(std::format("unexpected end of file \"{}\"", pathToFile.string()));
     }
     std::vector<glm::vec3> vPositionData(iVertexCount);
-    file.read(reinterpret_cast<char*>(vPositionData.data()), vPositionData.size() * sizeof(vPositionData[0]));
+    file.read(
+        reinterpret_cast<char*>(vPositionData.data()),
+        static_cast<long>(vPositionData.size() * sizeof(vPositionData[0])));
     iReadByteCount += vPositionData.size() * sizeof(vPositionData[0]);
 
     // Read normals.
@@ -114,7 +117,9 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
         Error::showErrorAndThrowException(std::format("unexpected end of file \"{}\"", pathToFile.string()));
     }
     std::vector<glm::vec3> vNormalData(iVertexCount);
-    file.read(reinterpret_cast<char*>(vNormalData.data()), vNormalData.size() * sizeof(vNormalData[0]));
+    file.read(
+        reinterpret_cast<char*>(vNormalData.data()),
+        static_cast<long>(vNormalData.size() * sizeof(vNormalData[0])));
     iReadByteCount += vNormalData.size() * sizeof(vNormalData[0]);
 
     // Read UVs.
@@ -122,7 +127,8 @@ MeshGeometry MeshGeometry::deserialize(const std::filesystem::path& pathToFile) 
         Error::showErrorAndThrowException(std::format("unexpected end of file \"{}\"", pathToFile.string()));
     }
     std::vector<glm::vec2> vUvData(iVertexCount);
-    file.read(reinterpret_cast<char*>(vUvData.data()), vUvData.size() * sizeof(vUvData[0]));
+    file.read(
+        reinterpret_cast<char*>(vUvData.data()), static_cast<long>(vUvData.size() * sizeof(vUvData[0])));
     iReadByteCount += vUvData.size() * sizeof(vUvData[0]);
 
     if (iReadByteCount != iFileSizeInBytes) [[unlikely]] {

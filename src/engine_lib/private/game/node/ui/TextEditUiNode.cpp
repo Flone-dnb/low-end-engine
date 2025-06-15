@@ -113,7 +113,8 @@ void TextEditUiNode::onMouseMove(double xOffset, double yOffset) {
 
         const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
         const auto pos = getPosition();
-        if ((mouseCursorPos.x / iWindowWidth < pos.x) || (mouseCursorPos.y / iWindowHeight < pos.y)) {
+        if ((mouseCursorPos.x / static_cast<float>(iWindowWidth) < pos.x) ||
+            (mouseCursorPos.y / static_cast<float>(iWindowHeight) < pos.y)) {
             // The cursor just stopped hovering other this node.
             bIsTextSelectionStarted = false;
             return;
@@ -281,7 +282,8 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
     const auto textHeightOnFullscreen = fontManager.getFontHeightToLoad() * textScaleFullscreen;
     const auto textHeight = textHeightOnFullscreen / size.y;
     const auto lineSpacing = getTextLineSpacing() * textHeight;
-    const auto sizeInPixels = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
+    const auto sizeInPixels =
+        glm::vec2(size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
     const auto sText = getText();
 
     auto glyphGuard = fontManager.getGlyphs();
@@ -318,7 +320,7 @@ size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) 
         const auto& glyph = glyphGuard.getGlyph(character);
 
         const float distanceToNextGlyph =
-            (glyph.advance >> 6) / // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
+            static_cast<float>(glyph.advance >> 6) / // bitshift by 6 to get value in pixels (2^6 = 64)
             sizeInPixels.x * textScaleFullscreen;
         const float glyphWidth = std::max(
             static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);

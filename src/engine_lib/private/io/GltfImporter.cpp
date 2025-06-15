@@ -15,7 +15,11 @@
 
 inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::string& sPathRelativeResToImage) {
     auto optionalError = TextureManager::importTextureFromMemory(
-        sPathRelativeResToImage, image.image, image.width, image.height, image.component);
+        sPathRelativeResToImage,
+        image.image,
+        static_cast<unsigned int>(image.width),
+        static_cast<unsigned int>(image.height),
+        static_cast<unsigned int>(image.component));
     if (optionalError.has_value()) [[unlikely]] {
         Logger::get().error(optionalError->getFullErrorMessage());
         return false;
@@ -25,13 +29,13 @@ inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::stri
 }
 
 inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMesh( // NOLINT: too complex
-        const tinygltf::Model& model,
-        const tinygltf::Mesh& mesh,
-        const std::filesystem::path& pathToOutputFile,
-        const std::string& sPathToOutputDirRelativeRes,
-        const std::function<void(std::string_view)>& onProgress,
-        size_t& iGltfNodeProcessedCount,
-        const size_t iTotalGltfNodesToProcess) {
+    const tinygltf::Model& model,
+    const tinygltf::Mesh& mesh,
+    const std::filesystem::path& pathToOutputFile,
+    const std::string& sPathToOutputDirRelativeRes,
+    const std::function<void(std::string_view)>& onProgress,
+    size_t& iGltfNodeProcessedCount,
+    const size_t iTotalGltfNodesToProcess) {
     // Prepare array to fill.
     std::vector<std::unique_ptr<MeshNode>> vMeshNodes;
 
@@ -57,18 +61,17 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
         {
             // Add indices.
             // Save accessor to mesh indices.
-            const auto& indexAccessor = model.accessors[primitive.indices];
+            const auto& indexAccessor = model.accessors[static_cast<size_t>(primitive.indices)];
 
             // Get index buffer.
-            const auto& indexBufferView = model.bufferViews[indexAccessor.bufferView];
-            const auto& indexBuffer = model.buffers[indexBufferView.buffer];
+            const auto& indexBufferView = model.bufferViews[static_cast<size_t>(indexAccessor.bufferView)];
+            const auto& indexBuffer = model.buffers[static_cast<size_t>(indexBufferView.buffer)];
 
             // Make sure index is stored as scalar.
             if (indexAccessor.type != TINYGLTF_TYPE_SCALAR) [[unlikely]] {
-                return Error(
-                    std::format(
-                        "expected indices of mesh to be stored as `scalar`, actual type: {}",
-                        indexAccessor.type));
+                return Error(std::format(
+                    "expected indices of mesh to be stored as `scalar`, actual type: {}",
+                    indexAccessor.type));
             }
 
             // Prepare variables to read indices.
@@ -90,7 +93,8 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 // Set indices.
                 for (size_t i = 0; i < meshGeometry.getIndices().size(); i++) {
                     // Set value.
-                    meshGeometry.getIndices()[i] = reinterpret_cast<const index_t*>(pCurrentIndex)[0];
+                    meshGeometry.getIndices()[i] = static_cast<MeshGeometry::MeshIndexType>(
+                        reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
 
                     // Switch to the next item.
                     pCurrentIndex += iStride;
@@ -104,17 +108,17 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 // Set indices.
                 for (size_t i = 0; i < meshGeometry.getIndices().size(); i++) {
                     // Set value.
-                    meshGeometry.getIndices()[i] = reinterpret_cast<const index_t*>(pCurrentIndex)[0];
+                    meshGeometry.getIndices()[i] = static_cast<MeshGeometry::MeshIndexType>(
+                        reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
 
                     // Switch to the next item.
                     pCurrentIndex += iStride;
                 }
             } else {
-                return Error(
-                    std::format(
-                        "expected indices mesh component type to be `unsigned int` or `unsigned short`, "
-                        "actual type: {}",
-                        indexAccessor.componentType));
+                return Error(std::format(
+                    "expected indices mesh component type to be `unsigned int` or `unsigned short`, "
+                    "actual type: {}",
+                    indexAccessor.componentType));
             }
         }
 
@@ -127,7 +131,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             const auto iPositionAccessorIndex = it->second;
 
             // Get accessor.
-            const auto& positionAccessor = model.accessors[iPositionAccessorIndex];
+            const auto& positionAccessor = model.accessors[static_cast<size_t>(iPositionAccessorIndex)];
 
             // Allocate vertices.
             meshGeometry.getVertices().resize(positionAccessor.count);
@@ -136,38 +140,36 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
         // Process attributes.
         for (auto& [sAttributeName, iAccessorIndex] : primitive.attributes) {
             // Mark progress.
-            onProgress(
-                std::format(
-                    "processing GLTF node {}/{}, mesh {}/{}: processing attribute \"{}\"",
-                    iGltfNodeProcessedCount,
-                    iTotalGltfNodesToProcess,
-                    iPrimitive,
-                    mesh.primitives.size(),
-                    sAttributeName));
+            onProgress(std::format(
+                "processing GLTF node {}/{}, mesh {}/{}: processing attribute \"{}\"",
+                iGltfNodeProcessedCount,
+                iTotalGltfNodesToProcess,
+                iPrimitive,
+                mesh.primitives.size(),
+                sAttributeName));
 
             // Get attribute accessor.
-            const auto& attributeAccessor = model.accessors[iAccessorIndex];
+            const auto& attributeAccessor = model.accessors[static_cast<size_t>(iAccessorIndex)];
 
             // Get buffer.
-            const auto& attributeBufferView = model.bufferViews[attributeAccessor.bufferView];
-            const auto& attributeBuffer = model.buffers[attributeBufferView.buffer];
+            const auto& attributeBufferView =
+                model.bufferViews[static_cast<size_t>(attributeAccessor.bufferView)];
+            const auto& attributeBuffer = model.buffers[static_cast<size_t>(attributeBufferView.buffer)];
 
             if (sAttributeName == "POSITION") {
                 using position_t = glm::vec3;
 
                 // Make sure position is stored as `vec3`.
                 if (attributeAccessor.type != TINYGLTF_TYPE_VEC3) [[unlikely]] {
-                    return Error(
-                        std::format(
-                            "expected POSITION mesh attribute to be stored as `vec3`, actual type: {}",
-                            attributeAccessor.type));
+                    return Error(std::format(
+                        "expected POSITION mesh attribute to be stored as `vec3`, actual type: {}",
+                        attributeAccessor.type));
                 }
                 // Make sure that component type is `float`.
                 if (attributeAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) [[unlikely]] {
-                    return Error(
-                        std::format(
-                            "expected POSITION mesh attribute component type to be `float`, actual type: {}",
-                            attributeAccessor.componentType));
+                    return Error(std::format(
+                        "expected POSITION mesh attribute component type to be `float`, actual type: {}",
+                        attributeAccessor.componentType));
                 }
 
                 // Prepare variables.
@@ -195,17 +197,15 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
 
                 // Make sure normal is stored as `vec3`.
                 if (attributeAccessor.type != TINYGLTF_TYPE_VEC3) [[unlikely]] {
-                    return Error(
-                        std::format(
-                            "expected NORMAL mesh attribute to be stored as `vec3`, actual type: {}",
-                            attributeAccessor.type));
+                    return Error(std::format(
+                        "expected NORMAL mesh attribute to be stored as `vec3`, actual type: {}",
+                        attributeAccessor.type));
                 }
                 // Make sure that component type is `float`.
                 if (attributeAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) [[unlikely]] {
-                    return Error(
-                        std::format(
-                            "expected NORMAL mesh attribute component type to be `float`, actual type: {}",
-                            attributeAccessor.componentType));
+                    return Error(std::format(
+                        "expected NORMAL mesh attribute component type to be `float`, actual type: {}",
+                        attributeAccessor.componentType));
                 }
 
                 // Prepare variables.
@@ -233,17 +233,15 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
 
                 // Make sure UV is stored as `vec2`.
                 if (attributeAccessor.type != TINYGLTF_TYPE_VEC2) [[unlikely]] {
-                    return Error(
-                        std::format(
-                            "expected TEXCOORD mesh attribute to be stored as `vec2`, actual type: {}",
-                            attributeAccessor.type));
+                    return Error(std::format(
+                        "expected TEXCOORD mesh attribute to be stored as `vec2`, actual type: {}",
+                        attributeAccessor.type));
                 }
                 // Make sure that component type is `float`.
                 if (attributeAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) [[unlikely]] {
-                    return Error(
-                        std::format(
-                            "expected TEXCOORD mesh attribute component type to be `float`, actual type: {}",
-                            attributeAccessor.componentType));
+                    return Error(std::format(
+                        "expected TEXCOORD mesh attribute component type to be `float`, actual type: {}",
+                        attributeAccessor.componentType));
                 }
 
                 // Prepare variables.
@@ -277,7 +275,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
 
         if (primitive.material >= 0) {
             // Process material.
-            auto& material = model.materials[primitive.material];
+            auto& material = model.materials[static_cast<size_t>(primitive.material)];
             auto& meshMaterial = pMeshNode->getMaterial();
 
             // IGNORE TRANSPARENCY in order to avoid accidentally importing transparent meshes (which will
@@ -293,19 +291,18 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             // }
 
             // Process base color.
-            meshMaterial.setDiffuseColor(
-                glm::vec3(
-                    material.pbrMetallicRoughness.baseColorFactor[0],
-                    material.pbrMetallicRoughness.baseColorFactor[1],
-                    material.pbrMetallicRoughness.baseColorFactor[2]));
+            meshMaterial.setDiffuseColor(glm::vec3(
+                material.pbrMetallicRoughness.baseColorFactor[0],
+                material.pbrMetallicRoughness.baseColorFactor[1],
+                material.pbrMetallicRoughness.baseColorFactor[2]));
 
             // Process diffuse texture.
             const auto iDiffuseTextureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
             if (iDiffuseTextureIndex >= 0) {
-                auto& diffuseTexture = model.textures[iDiffuseTextureIndex];
+                auto& diffuseTexture = model.textures[static_cast<size_t>(iDiffuseTextureIndex)];
                 if (diffuseTexture.source >= 0) {
                     // Get image.
-                    auto& diffuseImage = model.images[diffuseTexture.source];
+                    auto& diffuseImage = model.images[static_cast<size_t>(diffuseTexture.source)];
 
                     // Construct path to imported texture directory.
                     const auto pathDiffuseTextureRelativeRes =
@@ -320,19 +317,17 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                             .string();
 
                     // Mark progress.
-                    onProgress(
-                        std::format(
-                            "processing GLTF node {}/{}, mesh {}/{}: importing diffuse texture",
-                            iGltfNodeProcessedCount,
-                            iTotalGltfNodesToProcess,
-                            iPrimitive,
-                            mesh.primitives.size()));
+                    onProgress(std::format(
+                        "processing GLTF node {}/{}, mesh {}/{}: importing diffuse texture",
+                        iGltfNodeProcessedCount,
+                        iTotalGltfNodesToProcess,
+                        iPrimitive,
+                        mesh.primitives.size()));
 
                     // Write image to disk.
                     if (!writeGltfTextureToDisk(diffuseImage, sTexturePathRelativeRes)) [[unlikely]] {
-                        return Error(
-                            std::format(
-                                "failed to write GLTF image to path \"{}\"", sTexturePathRelativeRes));
+                        return Error(std::format(
+                            "failed to write GLTF image to path \"{}\"", sTexturePathRelativeRes));
                     }
 
                     // Specify texture path.
@@ -365,7 +360,7 @@ inline std::optional<Error> processGltfNode(
         // Process mesh.
         auto result = processGltfMesh(
             model,
-            model.meshes[node.mesh],
+            model.meshes[static_cast<size_t>(node.mesh)],
             pathToOutputFile,
             sPathToOutputDirRelativeRes,
             onProgress,
@@ -400,7 +395,7 @@ inline std::optional<Error> processGltfNode(
     for (const auto& iNode : node.children) {
         // Process child node.
         auto optionalError = processGltfNode(
-            model.nodes[iNode],
+            model.nodes[static_cast<size_t>(iNode)],
             model,
             pathToOutputFile,
             sPathToOutputDirRelativeRes,
@@ -425,11 +420,10 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
     // Make sure the file has ".GLTF" or ".GLB" extension.
     if (pathToFile.extension() != ".GLTF" && pathToFile.extension() != ".gltf" &&
         pathToFile.extension() != ".GLB" && pathToFile.extension() != ".glb") [[unlikely]] {
-        return Error(
-            std::format(
-                "only GLTF/GLB file extension is supported for mesh import, the path \"{}\" points to a "
-                "non-GLTF file",
-                pathToFile.string()));
+        return Error(std::format(
+            "only GLTF/GLB file extension is supported for mesh import, the path \"{}\" points to a "
+            "non-GLTF file",
+            pathToFile.string()));
     }
 
     // Make sure the specified path to the file exists.
@@ -443,10 +437,9 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
 
     // Make sure the output directory exists.
     if (!std::filesystem::exists(pathToOutputDirectoryParent)) [[unlikely]] {
-        return Error(
-            std::format(
-                "expected the specified path output directory \"{}\" to exist",
-                pathToOutputDirectoryParent.string()));
+        return Error(std::format(
+            "expected the specified path output directory \"{}\" to exist",
+            pathToOutputDirectoryParent.string()));
     }
 
     // Make sure the specified directory name is not empty.
@@ -458,11 +451,10 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
     // to avoid creating long paths which might be an issue under Windows.
     static constexpr size_t iMaxOutputDirectoryNameLength = 10; // NOLINT
     if (sOutputDirectoryName.size() > iMaxOutputDirectoryNameLength) [[unlikely]] {
-        return Error(
-            std::format(
-                "the specified name \"{}\" is too long (only {} characters allowed)",
-                sOutputDirectoryName,
-                iMaxOutputDirectoryNameLength));
+        return Error(std::format(
+            "the specified name \"{}\" is too long (only {} characters allowed)",
+            sOutputDirectoryName,
+            iMaxOutputDirectoryNameLength));
     }
 
     // Make sure the specified directory name is valid (A-z, 0-9).
@@ -470,11 +462,10 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
         const auto iAsciiCode = static_cast<int>(character);
         if (iAsciiCode < 48 || (iAsciiCode > 57 && iAsciiCode < 65) ||               // NOLINT
             (iAsciiCode > 90 && iAsciiCode < 97) || iAsciiCode > 122) [[unlikely]] { // NOLINT
-            return Error(
-                std::format(
-                    "character \"{}\" in the name \"{}\" is forbidden and cannon be used",
-                    character,
-                    sOutputDirectoryName));
+            return Error(std::format(
+                "character \"{}\" in the name \"{}\" is forbidden and cannon be used",
+                character,
+                sOutputDirectoryName));
         }
     }
 
@@ -483,9 +474,8 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
     const auto pathToOutputFile = pathToOutputDirectoryParent / sOutputDirectoryName /
                                   (sOutputDirectoryName + ConfigManager::getConfigFormatExtension());
     if (std::filesystem::exists(pathToOutputDirectory)) [[unlikely]] {
-        return Error(
-            std::format(
-                "expected the resulting directory \"{}\" to not exist", pathToOutputDirectory.string()));
+        return Error(std::format(
+            "expected the resulting directory \"{}\" to not exist", pathToOutputDirectory.string()));
     }
 
     // Create resulting directory.
@@ -530,7 +520,7 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
     }
 
     // Get default scene.
-    const auto& scene = model.scenes[model.defaultScene];
+    const auto& scene = model.scenes[static_cast<size_t>(model.defaultScene)];
 
     // Create a scene root node to hold all GLTF nodes of the scene.
     auto pSceneRootNode = std::make_unique<Node>("Scene Root");
@@ -545,16 +535,15 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
             return Error(std::format("found a negative node index of {} in default scene", iNode));
         }
         if (iNode >= static_cast<int>(model.nodes.size())) [[unlikely]] {
-            return Error(
-                std::format(
-                    "found an out of bounds node index of {} while model nodes only has {} entries",
-                    iNode,
-                    model.nodes.size()));
+            return Error(std::format(
+                "found an out of bounds node index of {} while model nodes only has {} entries",
+                iNode,
+                model.nodes.size()));
         }
 
         // Process node.
         auto optionalError = processGltfNode(
-            model.nodes[iNode],
+            model.nodes[static_cast<size_t>(iNode)],
             model,
             pathToOutputFile,
             std::format("{}/{}", sPathToOutputDirRelativeRes, sOutputDirectoryName),

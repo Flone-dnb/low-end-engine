@@ -20,20 +20,20 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(
 
     bool bIsFullscreen = true;
     if (windowSize.first != 0 && windowSize.second != 0) {
-        iWindowWidth = windowSize.first;
-        iWindowHeight = windowSize.second;
+        iWindowWidth = static_cast<int>(windowSize.first);
+        iWindowHeight = static_cast<int>(windowSize.second);
         bIsFullscreen = false;
     }
 
     // Prepare flags.
-    auto windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
+    unsigned int iWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
     if (bIsFullscreen) {
-        windowFlags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED;
+        iWindowFlags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED;
     } else {
-        windowFlags |= SDL_WINDOW_RESIZABLE;
+        iWindowFlags |= SDL_WINDOW_RESIZABLE;
     }
     if (bIsHidden) {
-        windowFlags |= SDL_WINDOW_HIDDEN;
+        iWindowFlags |= SDL_WINDOW_HIDDEN;
     }
 
     // We don't need depth buffer for window's framebuffer (we have a depth buffer in our custom framebuffer).
@@ -46,7 +46,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(
         SDL_WINDOWPOS_CENTERED,
         iWindowWidth,
         iWindowHeight,
-        windowFlags);
+        iWindowFlags);
     if (pSdlWindow == nullptr) [[unlikely]] {
         return Error(SDL_GetError());
     }
@@ -141,8 +141,8 @@ bool Window::processWindowEvent(const SDL_Event& event) {
             int iWidth = 0;
             int iHeight = 0;
             SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
-            windowSize.first = iWidth;
-            windowSize.second = iHeight;
+            windowSize.first = static_cast<unsigned int>(iWidth);
+            windowSize.second = static_cast<unsigned int>(iHeight);
 
             // Notify renderer.
             pGameManager->pRenderer->onWindowSizeChanged();
@@ -193,7 +193,7 @@ void Window::setWindowSize(const std::pair<unsigned int, unsigned int>& size) {
 
     windowSize = size;
 
-    SDL_SetWindowSize(pSdlWindow, size.first, size.second);
+    SDL_SetWindowSize(pSdlWindow, static_cast<int>(size.first), static_cast<int>(size.second));
 
     if (pGameManager != nullptr) {
         // Notify renderer.
@@ -226,7 +226,7 @@ unsigned int Window::getScreenRefreshRate() {
     SDL_DisplayMode mode;
     SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
 
-    return mode.refresh_rate;
+    return static_cast<unsigned int>(mode.refresh_rate);
 }
 
 void Window::onKeyboardInput(
@@ -252,8 +252,8 @@ Window::Window(SDL_Window* pCreatedWindow, bool bIsFullscreen) : bIsCreatedAsFul
     int iWidth = 0;
     int iHeight = 0;
     SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
-    windowSize.first = iWidth;
-    windowSize.second = iHeight;
+    windowSize.first = static_cast<unsigned int>(iWidth);
+    windowSize.second = static_cast<unsigned int>(iHeight);
 }
 
 void Window::showErrorIfNotOnMainThread() const {

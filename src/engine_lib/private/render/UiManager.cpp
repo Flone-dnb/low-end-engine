@@ -74,7 +74,7 @@
                                                                                                              \
     vNodesByDepth[iArrayIndex].second.erase(pNode);                                                          \
     if (vNodesByDepth[iArrayIndex].second.empty()) {                                                         \
-        vNodesByDepth.erase(vNodesByDepth.begin() + iArrayIndex);                                            \
+        vNodesByDepth.erase(vNodesByDepth.begin() + static_cast<long>(iArrayIndex));                         \
     }
 
 void UiManager::onNodeSpawning(TextUiNode* pNode) {
@@ -387,7 +387,8 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
                 .receivingInputUiNodesRenderedLastFrame;
         for (size_t i = 0; i < vInputNodesRenderedLastFrame.size(); i++) {
             if (vInputNodesRenderedLastFrame[i] == pNode) {
-                vInputNodesRenderedLastFrame.erase(vInputNodesRenderedLastFrame.begin() + i);
+                vInputNodesRenderedLastFrame.erase(
+                    vInputNodesRenderedLastFrame.begin() + static_cast<long>(i));
                 break;
             }
         }
@@ -696,8 +697,10 @@ void UiManager::drawRectNodes(size_t iLayer) {
                     pShaderProgram->setBoolToShader("bIsUsingTexture", false);
                 }
 
-                pos = glm::vec2(pos.x * iWindowWidth, pos.y * iWindowHeight);
-                size = glm::vec2(size.x * iWindowWidth, size.y * iWindowHeight);
+                pos = glm::vec2(
+                    pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
+                size = glm::vec2(
+                    size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
 
                 drawQuad(pos, size, iWindowHeight, pRectNode->clipY);
             }
@@ -762,9 +765,11 @@ void UiManager::drawSliderNodes(size_t iLayer) {
                 const auto baseHeight = size.y * sliderHeightToWidthRatio;
                 drawQuad(
                     glm::vec2(
-                        pos.x * iWindowWidth,
-                        (pos.y + size.y / 2.0F - baseHeight / 2.0F) * iWindowHeight), // NOLINT
-                    glm::vec2(size.x * iWindowWidth, baseHeight * iWindowHeight),
+                        pos.x * static_cast<float>(iWindowWidth),
+                        (pos.y + size.y / 2.0F - baseHeight / 2.0F) * static_cast<float>(iWindowHeight)),
+                    glm::vec2(
+                        size.x * static_cast<float>(iWindowWidth),
+                        baseHeight * static_cast<float>(iWindowHeight)),
                     iWindowHeight);
 
                 // Draw slider handle.
@@ -773,9 +778,11 @@ void UiManager::drawSliderNodes(size_t iLayer) {
                 const auto handleCenterPos = glm::vec2(pos.x + handlePos * size.x, pos.y);
                 drawQuad(
                     glm::vec2(
-                        (handleCenterPos.x - handleWidth / 2.0F) * iWindowWidth, // NOLINT
-                        handleCenterPos.y * iWindowHeight),
-                    glm::vec2(handleWidth * iWindowWidth, size.y * iWindowHeight),
+                        (handleCenterPos.x - handleWidth / 2.0F) * static_cast<float>(iWindowWidth),
+                        handleCenterPos.y * static_cast<float>(iWindowHeight)),
+                    glm::vec2(
+                        handleWidth * static_cast<float>(iWindowWidth),
+                        size.y * static_cast<float>(iWindowHeight)),
                     iWindowHeight);
             }
         }
@@ -858,14 +865,16 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                 // Prepare some variables for rendering.
                 const auto sText = pTextNode->getText();
                 const auto textPos = pTextNode->getPosition();
-                const auto screenMaxXForWordWrap = (textPos.x + pTextNode->getSize().x) * iWindowWidth;
+                const auto screenMaxXForWordWrap =
+                    (textPos.x + pTextNode->getSize().x) * static_cast<float>(iWindowWidth);
 
-                float screenX = textPos.x * iWindowWidth;
-                float screenY = textPos.y * iWindowHeight;
-                const auto screenYEnd = screenY + pTextNode->getSize().y * iWindowHeight;
+                float screenX = textPos.x * static_cast<float>(iWindowWidth);
+                float screenY = textPos.y * static_cast<float>(iWindowHeight);
+                const auto screenYEnd = screenY + pTextNode->getSize().y * static_cast<float>(iWindowHeight);
                 const auto scale = pTextNode->getTextHeight() / fontManager.getFontHeightToLoad();
 
-                const float textHeightInPixels = iWindowHeight * fontManager.getFontHeightToLoad() * scale;
+                const float textHeightInPixels =
+                    static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
                 const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
 
                 // Check scroll bar.
@@ -916,7 +925,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                         if (iLineIndex >= iLinesToSkip) {
                             screenY += textHeightInPixels + lineSpacingInPixels;
                         }
-                        screenX = textPos.x * iWindowWidth;
+                        screenX = textPos.x * static_cast<float>(iWindowWidth);
 
                         if (bStartNewSelectionRegionOnNewLine) {
                             vSelectionLinesToDraw.push_back(
@@ -942,7 +951,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     const auto& glyph = glyphGuard.getGlyph(character);
 
                     const float distanceToNextGlyph =
-                        (glyph.advance >> 6) * // NOLINT: bitshift by 6 to get value in pixels (2^6 = 64)
+                        static_cast<float>(
+                            glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
                         scale;
 
                     // Handle word wrap.
@@ -974,8 +984,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                                     // Selection start was above (we skipped that line due to scroll).
                                     selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
                                     vSelectionLinesToDraw.push_back(
-                                        {glm::vec2(textPos.x * iWindowWidth, screenY),
-                                         glm::vec2(textPos.x * iWindowWidth, screenY)});
+                                        {glm::vec2(textPos.x * static_cast<float>(iWindowWidth), screenY),
+                                         glm::vec2(textPos.x * static_cast<float>(iWindowWidth), screenY)});
                                 }
                             } else if (
                                 selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
@@ -991,8 +1001,8 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                     }
 
                     if (iLineIndex >= iLinesToSkip) {
-                        float xpos = screenX + glyph.bearing.x * scale;
-                        float ypos = screenY - glyph.bearing.y * scale;
+                        float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
+                        float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
 
                         float width = static_cast<float>(glyph.size.x) * scale;
                         float height = static_cast<float>(glyph.size.y) * scale;
@@ -1031,10 +1041,10 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                 // Check scroll bar.
                 if (pTextNode->getIsScrollBarEnabled()) {
-                    const float widthInPixels =
-                        scrollBarWidthRelativeNode * pTextNode->getSize().x * iWindowWidth;
-                    const auto iAverageLineCountDisplayed =
-                        static_cast<size_t>(pTextNode->getSize().y * iWindowHeight / textHeightInPixels);
+                    const float widthInPixels = scrollBarWidthRelativeNode * pTextNode->getSize().x *
+                                                static_cast<float>(iWindowWidth);
+                    const auto iAverageLineCountDisplayed = static_cast<size_t>(
+                        pTextNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
 
                     const float verticalSize = std::min(
                         1.0F,
@@ -1079,7 +1089,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
 
             for (const auto& cursorInfo : vCursorScreenPosToDraw) {
                 const float cursorWidth = 2.0F; // NOLINT
-                const float cursorHeight = cursorInfo.height * iWindowHeight;
+                const float cursorHeight = cursorInfo.height * static_cast<float>(iWindowHeight);
                 const auto screenPos = glm::vec2(
                     cursorInfo.screenPos.x, cursorInfo.screenPos.y - cursorHeight); // to draw from top
 
@@ -1149,9 +1159,11 @@ void UiManager::drawLayoutScrollBars(size_t iLayer) {
             const auto nodePos = pLayoutNode->getPosition();
             const auto nodeSize = pLayoutNode->getSize();
 
-            const float widthInPixels = scrollBarWidthRelativeNode * nodeSize.x * iWindowWidth;
-            const auto posInPixels =
-                glm::vec2((nodePos.x + nodeSize.x) * iWindowWidth - widthInPixels, nodePos.y * iWindowHeight);
+            const float widthInPixels =
+                scrollBarWidthRelativeNode * nodeSize.x * static_cast<float>(iWindowWidth);
+            const auto posInPixels = glm::vec2(
+                (nodePos.x + nodeSize.x) * static_cast<float>(iWindowWidth) - widthInPixels,
+                nodePos.y * static_cast<float>(iWindowHeight));
 
             float verticalSize = 1.0F / pLayoutNode->totalScrollHeight;
             if (pLayoutNode->totalScrollHeight < 1.0F) {
@@ -1165,7 +1177,7 @@ void UiManager::drawLayoutScrollBars(size_t iLayer) {
             vScrollBarsToDraw.push_back(ScrollBarDrawInfo{
                 .posInPixels = posInPixels,
                 .widthInPixels = widthInPixels,
-                .heightInPixels = pLayoutNode->getSize().y * iWindowHeight,
+                .heightInPixels = pLayoutNode->getSize().y * static_cast<float>(iWindowHeight),
                 .verticalPos = verticalPos,
                 .verticalSize = verticalSize,
                 .color = pLayoutNode->getScrollBarColor(),

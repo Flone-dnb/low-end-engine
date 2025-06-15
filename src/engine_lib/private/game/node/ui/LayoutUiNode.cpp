@@ -107,12 +107,12 @@ void LayoutUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     }
 
     if (iOffset < 0) {
-        iCurrentScrollOffset += std::abs(iOffset);
+        iCurrentScrollOffset += static_cast<size_t>(std::abs(iOffset));
     } else if (iCurrentScrollOffset > 0) {
         if (static_cast<size_t>(iOffset) > iCurrentScrollOffset) {
             iCurrentScrollOffset = 0;
         } else {
-            iCurrentScrollOffset -= iOffset;
+            iCurrentScrollOffset -= static_cast<size_t>(iOffset);
         }
     }
 
@@ -226,7 +226,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             }
 
             bAtLeastOneChildVisible = true;
-            expandPortionSum += pUiChild->getExpandPortionInLayout();
+            expandPortionSum += static_cast<float>(pUiChild->getExpandPortionInLayout());
         }
         if (!bAtLeastOneChildVisible) {
             // Notify parent layout.
@@ -259,14 +259,16 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         }
         float yOffsetForScrollToSkip = 0.0F;
         if (bIsScrollBarEnabled) {
-            yOffsetForScrollToSkip -= (scrollBarStepLocal * layoutOldSize.y) * iCurrentScrollOffset;
+            yOffsetForScrollToSkip -=
+                (scrollBarStepLocal * layoutOldSize.y) * static_cast<float>(iCurrentScrollOffset);
         }
         totalScrollHeight = 0.0F;
 
         // Add spacers to total portion sum.
         const auto spacerPortion = expandPortionSum * childNodeSpacing;
         expandPortionSum +=
-            spacerPortion * (std::max(static_cast<size_t>(1), mtxChildNodes.second.size()) - 1ULL);
+            spacerPortion *
+            static_cast<float>(std::max(static_cast<size_t>(1), mtxChildNodes.second.size()) - 1ULL);
 
         const auto spacerActualPortion = childExpandRule == ChildNodeExpandRule::DONT_EXPAND
                                              ? childNodeSpacing

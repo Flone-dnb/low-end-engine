@@ -73,6 +73,13 @@ public:
     void setHandlePosition(float position, bool bTriggerOnChangedCallback = true);
 
     /**
+     * Sets the size of a single movement in handle position. 0 if can move freely.
+     *
+     * @param stepSize Step size.
+     */
+    void setSliderStep(float stepSize);
+
+    /**
      * Sets a function that will be called after slider's handle position changed.
      *
      * @param onChanged Function to call.
@@ -99,6 +106,13 @@ public:
      * @return Value in range [0.0; 1.0].
      */
     float getHandlePosition() const { return handlePosition; }
+
+    /**
+     * Size of a single movement in handle position. 0 if can move freely.
+     *
+     * @return Step size.
+     */
+    float getSliderStep() const { return sliderStep; }
 
 protected:
     /**
@@ -163,14 +177,27 @@ protected:
     virtual void onMouseMove(double xOffset, double yOffset) override;
 
 private:
+    /**
+     * Snaps the value to be a multiple of the specified step (i.e. 0.27 with step 0.1 becomes 0.3).
+     *
+     * @param value Value to change.
+     * @param step  Step size.
+     *
+     * @return Corrected value.
+     */
+    static float snapToNearest(float value, float step);
+
     /** RGBA color of the base of the slider. */
-    glm::vec4 sliderColor = glm::vec4(0.25F, 0.25F, 0.25F, 1.0F); // NOLINT
+    glm::vec4 sliderColor = glm::vec4(0.25F, 0.25F, 0.25F, 1.0F);
 
     /** RGBA color of the handle for the slider. */
-    glm::vec4 sliderHandleColor = glm::vec4(0.35F, 0.35F, 0.35F, 1.0F); // NOLINT
+    glm::vec4 sliderHandleColor = glm::vec4(0.35F, 0.35F, 0.35F, 1.0F);
 
     /** Position of the slider's handle in range [0.0; 1.0]. */
-    float handlePosition = 0.5F; // NOLINT
+    float handlePosition = 0.5F;
+
+    /** Size of a single movement in handle position. 0 if can move freely. */
+    float sliderStep = 0.05F;
 
     /** Called after slider's handle position changed. */
     std::function<void(float handlePosition)> onHandlePositionChanged;
