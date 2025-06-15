@@ -92,7 +92,7 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     }
     case (SDL_KEYDOWN): {
         onKeyboardInput(
-            static_cast<KeyboardButton>(event.key.keysym.sym),
+            static_cast<KeyboardButton>(event.key.keysym.scancode),
             KeyboardModifiers(event.key.keysym.mod),
             true,
             event.key.repeat != 0);
@@ -100,7 +100,7 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     }
     case (SDL_KEYUP): {
         onKeyboardInput(
-            static_cast<KeyboardButton>(event.key.keysym.sym),
+            static_cast<KeyboardButton>(event.key.keysym.scancode),
             KeyboardModifiers(event.key.keysym.mod),
             false,
             event.key.repeat != 0);

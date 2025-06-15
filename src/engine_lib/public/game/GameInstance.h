@@ -5,6 +5,7 @@
 #include <mutex>
 #include <functional>
 #include <filesystem>
+#include <string>
 
 // Custom.
 #include "input/KeyboardButton.hpp"
@@ -16,6 +17,7 @@ class Renderer;
 class InputManager;
 class Node;
 class CameraManager;
+class RectUiNode;
 
 /**
  * Main game class, exists while the game window is not closed
@@ -308,6 +310,16 @@ protected:
         std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
     getAxisEventBindings();
 
+    /**
+     * Spawns some UI nodes to allow the user to configure the gamma.
+     *
+     * @param onAdjusted    Called after the user finished adjusting the gamma. At this point all UI
+     * nodes that this function spawned are destroyed.
+     * @param sTextOverride Specify non empty string to display instead of the default text.
+     */
+    void showGammaAdjustmentScreen(
+        const std::function<void()>& onAdjusted, const std::u16string& sTextOverride = u"");
+
 private:
     /**
      * Called when a window that owns this game instance receives user
@@ -344,6 +356,9 @@ private:
         std::recursive_mutex,
         std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>
         mtxBindedAxisEvents;
+
+    /** Not `nullptr` if @ref showGammaAdjustmentScreen is currently shown. */
+    RectUiNode* pGammaAdjustmentNode = nullptr;
 
     /** Do not delete. Always valid pointer to the game's window. */
     Window* const pWindow = nullptr;

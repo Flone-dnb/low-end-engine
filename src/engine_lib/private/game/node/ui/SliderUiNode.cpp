@@ -163,6 +163,8 @@ void SliderUiNode::onMouseMove(double xOffset, double yOffset) {
         return;
     }
 
+    const auto posBefore = handlePosition;
+
     // Move handle according to the cursor.
     const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
     const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
@@ -173,7 +175,7 @@ void SliderUiNode::onMouseMove(double xOffset, double yOffset) {
         handlePosition = snapToNearest(handlePosition, sliderStep);
     }
     handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
-    if (onHandlePositionChanged) {
+    if (handlePosition != posBefore && onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
 }

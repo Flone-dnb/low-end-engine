@@ -13,6 +13,7 @@
 #include "render/UiManager.h"
 #include "material/TextureManager.h"
 #include "render/GpuResourceManager.h"
+#include "io/ConfigManager.h"
 
 // External.
 #include "glad/glad.h"
@@ -87,6 +88,22 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
         "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
         "engine/shaders/postprocessing/GammaCorrection.frag.glsl",
         ShaderProgramUsage::OTHER);
+
+    // Read global config.
+    const auto pathToConfig = ProjectPaths::getPathToBaseConfigDirectory() / sGlobalRenderConfigFilename;
+    if (std::filesystem::exists(pathToConfig)) {
+        ConfigManager config;
+        const auto optionalError = config.loadFile(pathToConfig);
+        if (optionalError.has_value()) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "failed to load render config file from \"{}\", error: {}",
+                pathToConfig.string(),
+                optionalError->getInitialMessage()));
+        }
+        gamma = std::clamp(config.getValue("", "gamma", gamma), 1.0F, 2.4F);
+
+        bUserRenderConfigLoaded = true;
+    }
 
     recreateFramebuffers();
 }
@@ -384,9 +401,22 @@ void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
     }
 }
 
-unsigned int Renderer::getFpsLimit() const { return renderStats.fpsLimitInfo.iFpsLimit; }
+void Renderer::setGamma(float value) {
+    gamma = std::clamp(value, 1.0F, 2.4F);
 
-Window* Renderer::getWindow() const { return pWindow; }
+    // Save in the config.
+    const auto pathToConfig = ProjectPaths::getPathToBaseConfigDirectory() / sGlobalRenderConfigFilename;
+    ConfigManager config;
+    config.setValue("", "gamma", gamma);
+
+    const auto optionalError = config.saveFile(pathToConfig, false);
+    if (optionalError.has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to save render config file at \"{}\", error: {}",
+            pathToConfig.string(),
+            optionalError->getInitialMessage()));
+    }
+}
 
 ShaderManager& Renderer::getShaderManager() { return *pShaderManager; }
 

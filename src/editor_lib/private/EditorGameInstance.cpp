@@ -220,7 +220,7 @@ void EditorGameInstance::registerEditorInputEvents() {
 void EditorGameInstance::addEditorNodesToCurrentWorld() {
     // Editor camera.
     const auto pEditorCameraNode = getWorldRootNode()->addChildNode(createEditorNode<EditorCameraNode>());
-    pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F)); // NOLINT
+    pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
     pEditorCameraNode->makeActive();
     if (isGamepadConnected()) {
         pEditorCameraNode->setIgnoreInput(false);
@@ -234,29 +234,28 @@ void EditorGameInstance::addEditorNodesToCurrentWorld() {
     // Stuff for testing.
     {
         auto pFloor = createEditorNode<MeshNode>();
-        pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));           // NOLINT
-        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.22F, 0.0F)); // NOLINT
+        pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
+        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
         getWorldRootNode()->addChildNode(std::move(pFloor));
 
         auto pCube = createEditorNode<MeshNode>();
-        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));            // NOLINT
-        pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.26F, 0.0F)); // NOLINT
+        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
+        pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
         getWorldRootNode()->addChildNode(std::move(pCube));
 
         auto pSun = createEditorNode<DirectionalLightNode>();
-        pSun->setLightIntensity(0.5F); // NOLINT
         pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-            glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F)))); // NOLINT
+            glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
         getWorldRootNode()->addChildNode(std::move(pSun));
 
         auto pSpotlight = createEditorNode<SpotlightNode>();
-        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F)); // NOLINT
+        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
         pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-            glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F)))); // NOLINT
+            glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
         getWorldRootNode()->addChildNode(std::move(pSpotlight));
 
         auto pPointLight = createEditorNode<PointLightNode>();
-        pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F)); // NOLINT
+        pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
         getWorldRootNode()->addChildNode(std::move(pPointLight));
     }
 }

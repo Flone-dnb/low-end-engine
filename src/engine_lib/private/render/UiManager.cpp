@@ -87,14 +87,6 @@ void UiManager::onNodeSpawning(TextUiNode* pNode) {
     }
 
     ADD_NODE_TO_RENDERING(TextUiNode);
-
-    if (mtxData.second.pTextShaderProgram == nullptr) {
-        // Load shader.
-        mtxData.second.pTextShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-            "engine/shaders/ui/UiScreenQuad.vert.glsl",
-            "engine/shaders/ui/TextNode.frag.glsl",
-            ShaderProgramUsage::OTHER);
-    }
 }
 
 void UiManager::onNodeSpawning(RectUiNode* pNode) {
@@ -167,10 +159,6 @@ void UiManager::onNodeDespawning(TextUiNode* pNode) {
     }
 
     REMOVE_NODE_FROM_RENDERING(TextUiNode);
-
-    if (vNodesByDepth.empty()) {
-        mtxData.second.pTextShaderProgram = nullptr;
-    }
 }
 
 void UiManager::onNodeDespawning(RectUiNode* pNode) {
@@ -542,7 +530,8 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
                 pNode->onMouseEntered();
             }
 
-            // mouse move is called by game manager not us
+            // When there's a model UI we must send mouse move (not the game manager).
+            pNode->onMouseMove(static_cast<double>(iXOffset), static_cast<double>(iYOffset));
             break;
         }
     } else {
@@ -611,10 +600,14 @@ UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
     mtxData.second.pScreenQuadGeometry = GpuResourceManager::createQuad(true);
 
-    // Load shader.
+    // Load shaders.
     mtxData.second.pRectAndCursorShaderProgram = pRenderer->getShaderManager().getShaderProgram(
         "engine/shaders/ui/UiScreenQuad.vert.glsl",
         "engine/shaders/ui/RectUiNode.frag.glsl",
+        ShaderProgramUsage::OTHER);
+    mtxData.second.pTextShaderProgram = pRenderer->getShaderManager().getShaderProgram(
+        "engine/shaders/ui/UiScreenQuad.vert.glsl",
+        "engine/shaders/ui/TextNode.frag.glsl",
         ShaderProgramUsage::OTHER);
 }
 
@@ -1288,6 +1281,7 @@ UiManager::~UiManager() {
     std::scoped_lock guard(mtxData.first);
 
     mtxData.second.pRectAndCursorShaderProgram = nullptr;
+    mtxData.second.pTextShaderProgram = nullptr;
 
     if (mtxData.second.pFocusedNode != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(

@@ -90,6 +90,10 @@ public:
     /**
      * Sets UI layer to use.
      *
+     * @warning If used while spawned an error will be shown.
+     *
+     * @remark Also changes UI layer for all child nodes.
+     *
      * @param layer UI layer.
      */
     void setUiLayer(UiLayer layer);
