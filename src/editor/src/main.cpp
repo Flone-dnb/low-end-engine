@@ -1,4 +1,6 @@
-#pragma comment( linker, "/subsystem:windows /entry:mainCRTStartup" )
+#if defined(WIN32)
+#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+#endif
 
 // Standard.
 #include <stdexcept>
