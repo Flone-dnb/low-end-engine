@@ -243,12 +243,7 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
 
     const auto sPathToTexture = pathToTexture.string();
     const auto iGlFormat = GL_RGBA;
-    auto iGlInternalFormat = iGlFormat;
-    if (usage == TextureUsage::DIFFUSE || usage == TextureUsage::UI) {
-        // Specifying `SRGB` so that OpenGL will correct the colors to linear-space
-        // as soon as we use them to avoid applying gamma correction twice.
-        iGlInternalFormat = GL_SRGB8_ALPHA8;
-    }
+    const auto iGlInternalFormat = iGlFormat;
 
     uint32_t iWidth = 0;
     uint32_t iHeight = 0;

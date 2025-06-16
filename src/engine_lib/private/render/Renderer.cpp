@@ -84,27 +84,6 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
     }
 
-    pGammaCorrectionShaderProgram = pShaderManager->getShaderProgram(
-        "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
-        "engine/shaders/postprocessing/GammaCorrection.frag.glsl",
-        ShaderProgramUsage::OTHER);
-
-    // Read global config.
-    const auto pathToConfig = ProjectPaths::getPathToBaseConfigDirectory() / sGlobalRenderConfigFilename;
-    if (std::filesystem::exists(pathToConfig)) {
-        ConfigManager config;
-        const auto optionalError = config.loadFile(pathToConfig);
-        if (optionalError.has_value()) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "failed to load render config file from \"{}\", error: {}",
-                pathToConfig.string(),
-                optionalError->getInitialMessage()));
-        }
-        gamma = std::clamp(config.getValue("", "gamma", gamma), 1.0F, 2.4F);
-
-        bUserRenderConfigLoaded = true;
-    }
-
     recreateFramebuffers();
 }
 
@@ -151,34 +130,25 @@ void Renderer::drawNextFrame() {
     glDeleteSync(frameSync.vFences[frameSync.iCurrentFrameIndex]);
 
     const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
+    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
 
     // Get camera and shader programs.
     auto& mtxShaderPrograms = pShaderManager->getShaderPrograms();
     auto& mtxActiveCamera = pCameraManager->getActiveCamera();
     std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-
 #if defined(ENGINE_UI_ONLY)
-    if (pMainFramebuffer == nullptr) {
-        // Gamme correction is not needed.
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+    glClear(GL_COLOR_BUFFER_BIT);
 
-        pUiManager->drawUi(0);
-    } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        pUiManager->drawUi(pMainFramebuffer->getFramebufferId());
-
-        drawGammaCorrectionScreenQuad(0, pMainFramebuffer->getColorTextureId());
-    }
+    pUiManager->drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
+    copyFramebufferToWindowFramebuffer(pMainFramebuffer->getFramebufferId());
 #else
-    // Set framebuffer.
     glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
     if (mtxActiveCamera.second != nullptr) {
         // Prepare a handy lambda.
@@ -242,10 +212,11 @@ void Renderer::drawNextFrame() {
         pPostProcessManager->drawPostProcessing(
             *pFullscreenQuad, *pMainFramebuffer, mtxActiveCamera.second->getCameraProperties());
 
-        // Draw UI on top of post-processing results.
-        pUiManager->drawUi(pPostProcessManager->pFramebuffer->getFramebufferId());
+        // Draw UI on post-processing framebuffer.
+        pUiManager->drawUiOnFramebuffer(pPostProcessManager->pFramebuffer->getFramebufferId());
 
-        drawGammaCorrectionScreenQuad(0, pPostProcessManager->pFramebuffer->getColorTextureId());
+        copyFramebufferToWindowFramebuffer(
+            pPostProcessManager->pFramebuffer->getFramebufferId(), iWindowWidth, iWindowHeight);
     }
 #endif
 
@@ -264,29 +235,12 @@ void Renderer::drawNextFrame() {
 #endif
 }
 
-void Renderer::drawGammaCorrectionScreenQuad(unsigned int iDrawFramebufferId, unsigned int iReadTextureId) {
-    glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glUseProgram(pGammaCorrectionShaderProgram->getShaderProgramId());
-
-    pGammaCorrectionShaderProgram->setFloatToShader("gamma", gamma);
-
-    glDisable(GL_DEPTH_TEST);
-    {
-        // Bind rendered image.
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, iReadTextureId);
-
-        // Draw.
-        glBindVertexArray(pFullscreenQuad->getVao().getVertexArrayObjectId());
-        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
-
-        // Reset texture slot.
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    glEnable(GL_DEPTH_TEST);
+void Renderer::copyFramebufferToWindowFramebuffer(
+    unsigned int iFramebufferToCopy, unsigned int iWidth, unsigned int iHeight) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, iFramebufferToCopy);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 void Renderer::calculateFrameStatistics() {
@@ -371,7 +325,6 @@ void Renderer::calculateFrameStatistics() {
 
 Renderer::~Renderer() {
     pFullscreenQuad = nullptr;
-    pGammaCorrectionShaderProgram = nullptr;
     pUiManager =
         nullptr; // UI manager uses some shaders programs while alive so destroy it before shader manager
     pFontManager = nullptr;
@@ -385,7 +338,6 @@ Renderer::~Renderer() {
     pMainFramebuffer = nullptr;
 
     pLightSourceManager = nullptr;
-    pGammaCorrectionShaderProgram = nullptr;
 
     SDL_GL_DeleteContext(pContext);
 }
@@ -406,23 +358,6 @@ void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
 #if defined(WIN32)
         data.iMinTimeStampsPerSecond = data.iTimeStampsPerSecond / iNewFpsLimit;
 #endif
-    }
-}
-
-void Renderer::setGamma(float value) {
-    gamma = std::clamp(value, 1.0F, 2.4F);
-
-    // Save in the config.
-    const auto pathToConfig = ProjectPaths::getPathToBaseConfigDirectory() / sGlobalRenderConfigFilename;
-    ConfigManager config;
-    config.setValue("", "gamma", gamma);
-
-    const auto optionalError = config.saveFile(pathToConfig, false);
-    if (optionalError.has_value()) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "failed to save render config file at \"{}\", error: {}",
-            pathToConfig.string(),
-            optionalError->getInitialMessage()));
     }
 }
 

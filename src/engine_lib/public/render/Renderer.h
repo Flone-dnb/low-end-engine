@@ -48,25 +48,11 @@ public:
     void setFpsLimit(unsigned int iNewFpsLimit);
 
     /**
-     * Sets user-adjusted gamma to undo during the gamma correction pass.
-     *
-     * @param value Gamma value.
-     */
-    void setGamma(float value);
-
-    /**
      * Returns the maximum number of FPS that is allowed to be produced in a second.
      *
      * @return 0 if disabled.
      */
     unsigned int getFpsLimit() const { return renderStats.fpsLimitInfo.iFpsLimit; }
-
-    /**
-     * Returns user-adjusted gamma to undo it during the gamma correction pass.
-     *
-     * @return Gamma.
-     */
-    float getGamma() const { return gamma; }
 
     /**
      * Returns game's window.
@@ -76,13 +62,6 @@ public:
      * @return Always valid pointer to the game's window.
      */
     Window* getWindow() const { return pWindow; }
-
-    /**
-     * Tells if a config file with user-specified render settings was loaded or not (not exists).
-     *
-     * @return `true` if exists and was loaded.
-     */
-    bool isUserRenderConfigLoaded() const { return bUserRenderConfigLoaded; }
 
     /**
      * Returns manager used to load and compile shaders.
@@ -183,19 +162,21 @@ private:
     void drawPostProcessingScreenQuad(CameraProperties* pCameraProperties);
 
     /**
-     * Draws a fullscreen quad to do gamma correction.
-     *
-     * @param iDrawFramebufferId Framebuffer to draw to.
-     * @param iReadTextureId     Color texture to read from.
-     */
-    void drawGammaCorrectionScreenQuad(unsigned int iDrawFramebufferId, unsigned int iReadTextureId);
-
-    /**
      * Calculates some frame-related statistics.
      *
      * @remark Must be called after a frame was submitted.
      */
     void calculateFrameStatistics();
+
+    /**
+     * Copies the framebuffer with the specified ID to the window's framebuffer (framebuffer 0).
+     *
+     * @param iFramebufferToCopy ID of the framebuffer to copy.
+     * @param iWidth             Width of the framebuffer to copy.
+     * @param iHeight            Height of the framebuffer to copy.
+     */
+    void copyFramebufferToWindowFramebuffer(
+        unsigned int iFramebufferToCopy, unsigned int iWidth, unsigned int iHeight);
 
     /** Database of all shaders. */
     std::unique_ptr<ShaderManager> pShaderManager;
@@ -221,9 +202,6 @@ private:
     /** Fullscreen quad for rendering. */
     std::unique_ptr<ScreenQuadGeometry> pFullscreenQuad;
 
-    /** Shader for gamma correction. */
-    std::shared_ptr<ShaderProgram> pGammaCorrectionShaderProgram;
-
     /** Various statistics about rendering. */
     RenderStatistics renderStats;
 
@@ -235,13 +213,4 @@ private:
 
     /** Do not delete (free) this pointer. Always valid pointer. */
     Window* const pWindow = nullptr;
-
-    /** User-adjusted gamma to undo it during the gamma correction pass. */
-    float gamma = 2.2F;
-
-    /** `true` if @ref sGlobalRenderConfigFilename exists and parameters from it were loaded. */
-    bool bUserRenderConfigLoaded = false;
-
-    /** Name of a configuration file that stores global user settings (used for all projects/games). */
-    static constexpr std::string_view sGlobalRenderConfigFilename = "global_render_config.toml";
 };

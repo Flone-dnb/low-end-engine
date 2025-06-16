@@ -38,7 +38,7 @@ public:
      *
      * @param iDrawFramebufferId Framebuffer to draw to.
      */
-    void drawUi(unsigned int iDrawFramebufferId);
+    void drawUiOnFramebuffer(unsigned int iDrawFramebufferId);
 
     /**
      * Called by UI nodes after they are spawned.

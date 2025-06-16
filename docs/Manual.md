@@ -456,23 +456,6 @@ void MyGameInstance::onGameStarted() {
 }
 ```
 
-## Gamma correction
-
-Usually games allow the user to adjust the gamma, you can show such gamma adjustment screen using the following code:
-
-```Cpp
-void MyGameInstance::onGameStarted()
-{
-    createWorld([this]() {
-        if (!getRenderer()->isUserRenderConfigLoaded()) {
-            showGammaAdjustmentScreen([this](){
-                // Gamma is adjusted.
-            });
-        }
-    });
-}
-```
-
 ## Loading font
 
 In order to load a font you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:

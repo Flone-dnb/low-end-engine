@@ -616,7 +616,7 @@ void UiManager::onWindowSizeChanged() {
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
 }
 
-void UiManager::drawUi(unsigned int iDrawFramebufferId) {
+void UiManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
     PROFILE_FUNC;
 
     glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
