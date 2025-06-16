@@ -46,3 +46,41 @@ jobs:
         cd build
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
         cmake --build . --config Release --target proj
+  build-linux-clang:
+    name: Build on Linux using Clang
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Pull submodules
+      run: git submodule update --init --recursive
+    - name: Install dependencies
+      run: |
+        sudo apt install -y ninja-build libflac-dev libvorbis-dev
+    - name: Create build directory
+      run: mkdir build
+    - name: Build (release)
+      run: |
+        CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+        cmake --build . --config Release
+      working-directory: build
+  build-linux-gcc:
+    name: Build on Linux using GCC
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Pull submodules
+      run: git submodule update --init --recursive
+    - name: Install dependencies
+      run: |
+        sudo apt install -y ninja-build libflac-dev libvorbis-dev
+    - name: Create build directory
+      run: mkdir build
+    - name: Build (release)
+      run: |
+        CC=gcc CXX=g++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+        cmake --build . --config Release
+      working-directory: build
+
+
