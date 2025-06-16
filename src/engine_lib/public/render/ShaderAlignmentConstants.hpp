@@ -7,14 +7,14 @@
 class ShaderAlignmentConstants {
 public:
     /** Scalars have to be aligned by N (= 4 bytes given 32 bit floats). */
-    static constexpr size_t iScalar = 4; // NOLINT
+    static constexpr unsigned int iScalar = 4; // NOLINT
 
     /** A vec2 must be aligned by 2N (= 8 bytes). */
-    static constexpr size_t iVec2 = 8; // NOLINT
+    static constexpr unsigned int iVec2 = 8; // NOLINT
 
     /** A vec3 or vec4 must be aligned by 4N (= 16 bytes). */
-    static constexpr size_t iVec4 = 16; // NOLINT
+    static constexpr unsigned int iVec4 = 16; // NOLINT
 
     /** A mat4 matrix must have the same alignment as a vec4. */
-    static constexpr size_t iMat4 = iVec4;
+    static constexpr unsigned int iMat4 = iVec4;
 };

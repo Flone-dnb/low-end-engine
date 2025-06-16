@@ -1061,10 +1061,11 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
                                 std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
 
                     vScrollBarToDraw.push_back(ScrollBarDrawInfo{
-                        .posInPixels =
-                            glm::vec2(screenMaxXForWordWrap - widthInPixels, textPos.y * iWindowHeight),
+                        .posInPixels = glm::vec2(
+                            screenMaxXForWordWrap - widthInPixels,
+                            textPos.y * static_cast<float>(iWindowHeight)),
                         .widthInPixels = widthInPixels,
-                        .heightInPixels = pTextNode->getSize().y * iWindowHeight,
+                        .heightInPixels = pTextNode->getSize().y * static_cast<float>(iWindowHeight),
                         .verticalPos = verticalPos,
                         .verticalSize = verticalSize,
                         .color = pTextNode->getScrollBarColor(),

@@ -254,7 +254,8 @@ void Renderer::drawNextFrame() {
 
     // Insert a fence.
     frameSync.vFences[frameSync.iCurrentFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    frameSync.iCurrentFrameIndex = (frameSync.iCurrentFrameIndex + 1) % frameSync.vFences.size();
+    frameSync.iCurrentFrameIndex =
+        static_cast<unsigned int>((frameSync.iCurrentFrameIndex + 1) % frameSync.vFences.size());
 
     calculateFrameStatistics();
 
@@ -382,7 +383,7 @@ Renderer::~Renderer() {
     // Delete framebuffers and stuff before OpenGL context.
     pPostProcessManager = nullptr;
     pMainFramebuffer = nullptr;
-    
+
     pLightSourceManager = nullptr;
     pGammaCorrectionShaderProgram = nullptr;
 
