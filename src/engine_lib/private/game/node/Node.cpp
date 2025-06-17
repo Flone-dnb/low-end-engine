@@ -416,8 +416,9 @@ void Node::changeChildNodePositionIndex(size_t iIndexFrom, size_t iIndexTo) {
 Node* Node::getWorldRootNodeWhileSpawned() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
-    if (pWorldWeSpawnedIn == nullptr) {
-        return nullptr;
+    if (pWorldWeSpawnedIn == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "unable to get world root node for node \"{}\" because the node is not spawned", sNodeName));
     }
 
     return pWorldWeSpawnedIn->getRootNode();
