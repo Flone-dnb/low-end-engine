@@ -40,12 +40,8 @@ void checkLastGlError(const std::source_location location) {
             sErrorMessage = std::to_string(lastError);
             break;
         }
-        Error::showErrorAndThrowException(
-            std::format(
-                "an OpenGL error occurred at {}, line {}, error: {}",
-                filename,
-                location.line(),
-                sErrorMessage));
+        Error::showErrorAndThrowException(std::format(
+            "an OpenGL error occurred at {}, line {}, error: {}", filename, location.line(), sErrorMessage));
     }
 }
 

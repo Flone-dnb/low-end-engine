@@ -197,30 +197,36 @@ void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
     if (auto pNode = dynamic_cast<TextUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+        // clang-format off
         {
             REMOVE_NODE_FROM_RENDERING(TextUiNode);
         }
         {
             ADD_NODE_TO_RENDERING(TextUiNode);
         }
+        // clang-format on
     } else if (auto pNode = dynamic_cast<RectUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
+        // clang-format off
         {
             REMOVE_NODE_FROM_RENDERING(RectUiNode);
         }
         {
             ADD_NODE_TO_RENDERING(RectUiNode);
         }
+        // clang-format on
     } else if (auto pNode = dynamic_cast<SliderUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
+        // clang-format off
         {
             REMOVE_NODE_FROM_RENDERING(SliderUiNode);
         }
         {
             ADD_NODE_TO_RENDERING(SliderUiNode);
         }
+        // clang-format on
     } else [[unlikely]] {
         Error::showErrorAndThrowException("unhandled case");
     }

@@ -3,6 +3,47 @@ name: All
 on: [push, pull_request, pull_request_review]
 
 jobs:
+  clang-format:
+    name: Run clang-format
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Run clang-format
+        run: |
+          choco upgrade llvm
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+          refreshenv
+          echo "Installed $(clang-format --version)."
+          cd .github/scripts/run_clang_format_on_source/
+          go run . ../../../src
+  shader-formatter:
+    name: Run shader-formatter
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Run shader-formatter
+        run: |
+          cd .github/scripts/run_shader_formatter_on_source/
+          go run . ../../../res/engine/shaders
+  doxygen:
+    name: Run doxygen
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          choco install doxygen.install
+          Copy "C:\Program Files\doxygen\bin\doxygen.exe" "C:\ProgramData\Chocolatey\bin\doxygen.exe"
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+          refreshenv
+          echo "Installed doxygen of version $(doxygen -v)."
+      - name: Run shader-formatter
+        run: |
+          cd docs
+          doxygen
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
@@ -13,18 +54,13 @@ jobs:
       run: git submodule update --init --recursive
     - name: Install dependencies
       run: |
-        choco install ninja doxygen.install
-        Copy "C:\Program Files\doxygen\bin\doxygen.exe" "C:\ProgramData\Chocolatey\bin\doxygen.exe"
+        choco install ninja
         Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
         refreshenv
         cmake --version
         clang --version
-        echo "Installed doxygen of version $(doxygen -v)."
     - name: Create build directory
       run: mkdir build
-    - name: Run doxygen
-      run: doxygen
-      working-directory: docs
     - name: Build (release)
       run: |
         cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..

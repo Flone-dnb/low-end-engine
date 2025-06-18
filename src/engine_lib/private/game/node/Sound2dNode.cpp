@@ -120,10 +120,8 @@ void Sound2dNode::setPathToPlayRelativeRes(std::string sPathToFile) {
 void Sound2dNode::setSoundChannel(SoundChannel channel) {
     if (isSpawned()) [[unlikely]] {
         // Sound manager does not expect this.
-        Error::showErrorAndThrowException(
-            std::format(
-                "changing sound channel is not allowed while the node is spawned (node \"{}\")",
-                getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "changing sound channel is not allowed while the node is spawned (node \"{}\")", getNodeName()));
     }
 
     soundChannel = channel;
@@ -188,11 +186,10 @@ void Sound2dNode::playSound() {
         if (!sfmlMusic.openFromFile(
                 ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToFileToPlay))
             [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "node \"{}\" failed to play sound from \"{}\" (is path correct?)",
-                    getNodeName(),
-                    sPathToFileToPlay));
+            Error::showErrorAndThrowException(std::format(
+                "node \"{}\" failed to play sound from \"{}\" (is path correct?)",
+                getNodeName(),
+                sPathToFileToPlay));
         }
         bFileOpened = true;
     }
@@ -226,11 +223,10 @@ float Sound2dNode::getDurationInSeconds() {
         if (!sfmlMusic.openFromFile(
                 ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToFileToPlay))
             [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "node \"{}\" failed to play sound from \"{}\" (is path correct?)",
-                    getNodeName(),
-                    sPathToFileToPlay));
+            Error::showErrorAndThrowException(std::format(
+                "node \"{}\" failed to play sound from \"{}\" (is path correct?)",
+                getNodeName(),
+                sPathToFileToPlay));
         }
         bFileOpened = true;
     }
@@ -247,11 +243,10 @@ void Sound2dNode::onSpawning() {
 
     if (!sfmlMusic.openFromFile(
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToFileToPlay)) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "node \"{}\" failed to play sound from \"{}\" (is path correct?)",
-                getNodeName(),
-                sPathToFileToPlay));
+        Error::showErrorAndThrowException(std::format(
+            "node \"{}\" failed to play sound from \"{}\" (is path correct?)",
+            getNodeName(),
+            sPathToFileToPlay));
     }
     bFileOpened = true;
 

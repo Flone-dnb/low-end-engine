@@ -15,14 +15,13 @@
 
 Logger::~Logger() {
     if (iTotalWarningsProduced.load() > 0 || iTotalErrorsProduced.load() > 0) {
-        pSpdLogger->info(
-            std::format(
-                "\n---------------------------------------------------\n"
-                "Total WARNINGS produced: {}.\n"
-                "Total ERRORS produced: {}."
-                "\n---------------------------------------------------\n",
-                iTotalWarningsProduced.load(),
-                iTotalErrorsProduced.load()));
+        pSpdLogger->info(std::format(
+            "\n---------------------------------------------------\n"
+            "Total WARNINGS produced: {}.\n"
+            "Total ERRORS produced: {}."
+            "\n---------------------------------------------------\n",
+            iTotalWarningsProduced.load(),
+            iTotalErrorsProduced.load()));
     }
 
     // Make sure the log is flushed.
@@ -42,31 +41,28 @@ size_t Logger::getTotalWarningsProduced() { return iTotalWarningsProduced.load()
 size_t Logger::getTotalErrorsProduced() { return iTotalErrorsProduced.load(); }
 
 void Logger::info(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->info(
-        std::format(
-            "[{}, {}] {}",
-            std::filesystem::path(location.file_name()).filename().string(),
-            location.line(),
-            sText));
+    pSpdLogger->info(std::format(
+        "[{}, {}] {}",
+        std::filesystem::path(location.file_name()).filename().string(),
+        location.line(),
+        sText));
 }
 
 void Logger::warn(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->warn(
-        std::format(
-            "[{}:{}] {}",
-            std::filesystem::path(location.file_name()).filename().string(),
-            location.line(),
-            sText));
+    pSpdLogger->warn(std::format(
+        "[{}:{}] {}",
+        std::filesystem::path(location.file_name()).filename().string(),
+        location.line(),
+        sText));
     iTotalWarningsProduced.fetch_add(1);
 }
 
 void Logger::error(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->error(
-        std::format(
-            "[{}:{}] {}",
-            std::filesystem::path(location.file_name()).filename().string(),
-            location.line(),
-            sText));
+    pSpdLogger->error(std::format(
+        "[{}:{}] {}",
+        std::filesystem::path(location.file_name()).filename().string(),
+        location.line(),
+        sText));
     iTotalErrorsProduced.fetch_add(1);
 }
 

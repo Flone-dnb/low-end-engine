@@ -185,7 +185,7 @@ protected:
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {};
+    virtual void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {}
 
     /**
      * Called when the game receives gamepad input.
@@ -193,7 +193,7 @@ protected:
      * @param button         Gamepad button.
      * @param bIsPressedDown Whether the button was pressed or released.
      */
-    virtual void onGamepadInput(GamepadButton button, bool bIsPressedDown) {};
+    virtual void onGamepadInput(GamepadButton button, bool bIsPressedDown) {}
 
     /**
      * Called when the game receives gamepad axis movement.
@@ -201,7 +201,7 @@ protected:
      * @param axis     Gamepad axis that was moved.
      * @param position Axis position in range [-1.0; 1.0].
      */
-    virtual void onGamepadAxisMoved(GamepadAxis axis, float position) {};
+    virtual void onGamepadAxisMoved(GamepadAxis axis, float position) {}
 
     /**
      * Called when the window (that owns this object) receives mouse input.
@@ -210,7 +210,7 @@ protected:
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
      */
-    virtual void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {};
+    virtual void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
 
     /**
      * Called when the window received mouse movement.
@@ -218,7 +218,7 @@ protected:
      * @param iXOffset Mouse X movement delta in pixels.
      * @param iYOffset Mouse Y movement delta in pixels.
      */
-    virtual void onMouseMove(int iXOffset, int iYOffset) {};
+    virtual void onMouseMove(int iXOffset, int iYOffset) {}
 
     /**
      * Called when the window receives mouse scroll movement.
@@ -235,7 +235,7 @@ protected:
     virtual void onGamepadConnected(std::string_view sGamepadName) {}
 
     /** Called after a gamepad controller was disconnected. */
-    virtual void onGamepadDisconnected() {};
+    virtual void onGamepadDisconnected() {}
 
     /**
      * Called when the window focus was changed.

@@ -206,12 +206,11 @@ void MeshNode::onAfterMeshGeometryChanged() {
 
     // For simplicity we don't allow changing geometry while spawned.
     if (isSpawned()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "changing geometry of a spawned node is not allowed, if you need procedural/dynamic geometry "
-                "consider passing some additional data to the vertex shader and changing vertices there "
-                "(node "
-                "\"{}\")",
-                getNodeName()));
+        Error::showErrorAndThrowException(std::format(
+            "changing geometry of a spawned node is not allowed, if you need procedural/dynamic geometry "
+            "consider passing some additional data to the vertex shader and changing vertices there "
+            "(node "
+            "\"{}\")",
+            getNodeName()));
     }
 }

@@ -12,11 +12,10 @@ ShaderProgram::~ShaderProgram() {
         std::scoped_lock guard(mtxMeshNodesUsingThisProgram.first);
         const auto iUsageCount = mtxMeshNodesUsingThisProgram.second.size();
         if (iUsageCount != 0) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "shader program \"{}\" is being destroyed but there are still {} nodes that use it",
-                    sShaderProgramName,
-                    iUsageCount));
+            Error::showErrorAndThrowException(std::format(
+                "shader program \"{}\" is being destroyed but there are still {} nodes that use it",
+                sShaderProgramName,
+                iUsageCount));
         }
     }
 
@@ -74,9 +73,8 @@ ShaderProgram::ShaderProgram(
         // Get location.
         const auto iLocation = glGetUniformBlockIndex(iShaderProgramId, vNameBuffer.data());
         if (iLocation == GL_INVALID_INDEX) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format(
-                    "unable to get location for shader uniform block named \"{}\"", vNameBuffer.data()));
+            Error::showErrorAndThrowException(std::format(
+                "unable to get location for shader uniform block named \"{}\"", vNameBuffer.data()));
         }
 
         // Set binding.

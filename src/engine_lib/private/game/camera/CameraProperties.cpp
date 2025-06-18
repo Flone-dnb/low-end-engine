@@ -46,12 +46,11 @@ void CameraProperties::setFov(unsigned int iVerticalFov) {
 
 void CameraProperties::setNearClipPlaneDistance(float nearClipPlaneDistance) {
     if (nearClipPlaneDistance < CameraProperties::Data::minimumClipPlaneDistance) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "the specified near clip plane distance {} is lower than the minimum allowed clip plane "
-                "distance: {}",
-                nearClipPlaneDistance,
-                CameraProperties::Data::minimumClipPlaneDistance));
+        Error::showErrorAndThrowException(std::format(
+            "the specified near clip plane distance {} is lower than the minimum allowed clip plane "
+            "distance: {}",
+            nearClipPlaneDistance,
+            CameraProperties::Data::minimumClipPlaneDistance));
     }
 
     std::scoped_lock guard(mtxData.first);
@@ -65,12 +64,11 @@ void CameraProperties::setNearClipPlaneDistance(float nearClipPlaneDistance) {
 
 void CameraProperties::setFarClipPlaneDistance(float farClipPlaneDistance) {
     if (farClipPlaneDistance < CameraProperties::Data::minimumClipPlaneDistance) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format(
-                "the specified far clip plane distance {} is lower than the minimum allowed clip plane "
-                "distance: {}",
-                farClipPlaneDistance,
-                CameraProperties::Data::minimumClipPlaneDistance));
+        Error::showErrorAndThrowException(std::format(
+            "the specified far clip plane distance {} is lower than the minimum allowed clip plane "
+            "distance: {}",
+            farClipPlaneDistance,
+            CameraProperties::Data::minimumClipPlaneDistance));
     }
 
     std::scoped_lock guard(mtxData.first);
@@ -247,34 +245,30 @@ void CameraProperties::recalculateFrustum() {
 
     // Update frustum right face.
     frustum.rightFace = Plane(
-        glm::normalize(
-            glm::cross(
-                toFarPlaneRelativeCameraLocation + cameraWorldRight * farClipPlaneHalfWidth,
-                viewData.worldUpDirection)),
+        glm::normalize(glm::cross(
+            toFarPlaneRelativeCameraLocation + cameraWorldRight * farClipPlaneHalfWidth,
+            viewData.worldUpDirection)),
         viewData.worldLocation);
 
     // Update frustum left face.
     frustum.leftFace = Plane(
-        glm::normalize(
-            glm::cross(
-                viewData.worldUpDirection,
-                toFarPlaneRelativeCameraLocation - cameraWorldRight * farClipPlaneHalfWidth)),
+        glm::normalize(glm::cross(
+            viewData.worldUpDirection,
+            toFarPlaneRelativeCameraLocation - cameraWorldRight * farClipPlaneHalfWidth)),
         viewData.worldLocation);
 
     // Update frustum top face.
     frustum.topFace = Plane(
-        glm::normalize(
-            glm::cross(
-                cameraWorldRight,
-                toFarPlaneRelativeCameraLocation + viewData.worldUpDirection * farClipPlaneHalfHeight)),
+        glm::normalize(glm::cross(
+            cameraWorldRight,
+            toFarPlaneRelativeCameraLocation + viewData.worldUpDirection * farClipPlaneHalfHeight)),
         viewData.worldLocation);
 
     // Update frustum bottom face.
     frustum.bottomFace = Plane(
-        glm::normalize(
-            glm::cross(
-                toFarPlaneRelativeCameraLocation - viewData.worldUpDirection * farClipPlaneHalfHeight,
-                cameraWorldRight)),
+        glm::normalize(glm::cross(
+            toFarPlaneRelativeCameraLocation - viewData.worldUpDirection * farClipPlaneHalfHeight,
+            cameraWorldRight)),
         viewData.worldLocation);
 }
 
