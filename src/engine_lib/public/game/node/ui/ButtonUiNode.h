@@ -189,6 +189,8 @@ private:
      * "Shortcut" for loading texture handles.
      *
      * @param sPathToTexture Path to texture to load.
+     *
+     * @return Loaded handle.
      */
     std::unique_ptr<TextureHandle> getTextureHandle(const std::string& sPathToTexture);
 
