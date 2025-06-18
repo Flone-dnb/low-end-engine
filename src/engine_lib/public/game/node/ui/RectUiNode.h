@@ -94,6 +94,9 @@ protected:
     /** Called after color was changed while the node was spawned. */
     virtual void onColorChangedWhileSpawned() {}
 
+    /** Called after texture was changed while the node was spawned. */
+    virtual void onTextureChangedWhileSpawned() {}
+
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
      * that is spawned or set as world's root node to execute custom spawn logic.

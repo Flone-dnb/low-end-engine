@@ -8,6 +8,8 @@
 #include "game/node/ui/RectUiNode.h"
 #include "math/GLMath.hpp"
 
+class TextureHandle;
+
 /** Interactable UI node that reacts to mouse clicks. */
 class ButtonUiNode : public RectUiNode {
 public:
@@ -60,6 +62,20 @@ public:
     void setColorWhilePressed(const glm::vec4& color);
 
     /**
+     * Sets path to texture to display while the mouse cursor is hovering over the node.
+     *
+     * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
+     */
+    void setPathToTextureWhileHovered(std::string sPathToTextureRelativeRes);
+
+    /**
+     * Sets path to texture to display while the node is being pressed.
+     *
+     * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
+     */
+    void setPathToTextureWhilePressed(std::string sPathToTextureRelativeRes);
+
+    /**
      * Sets callback to call after a click on this UI node.
      *
      * @param onClicked Callback.
@@ -80,6 +96,20 @@ public:
      */
     glm::vec4 getColorWhilePressed() const { return colorWhilePressed; }
 
+    /**
+     * Returns path to the texture (relative to the `res` directory) to display while hovered.
+     *
+     * @return Empty if not used.
+     */
+    std::string getPathToTextureWhileHovered() const { return sPathToTextureWhileHovered; }
+
+    /**
+     * Returns path to the texture (relative to the `res` directory) to display while pressed.
+     *
+     * @return Empty if not used.
+     */
+    std::string getPathToTextureWhilePressed() const { return sPathToTextureWhilePressed; }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
@@ -92,6 +122,17 @@ protected:
      * (before executing your logic) to execute parent's logic.
      */
     virtual void onSpawning() override;
+
+    /**
+     * Called before this node is despawned from the world to execute custom despawn logic.
+     *
+     * @remark This node will be marked as despawned after this function is called.
+     * @remark This function is called after all child nodes were despawned.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     */
+    virtual void onDespawning() override;
 
     /**
      * Called when the window receives mouse input while floating over this UI node.
@@ -126,6 +167,9 @@ protected:
     /** Called after color was changed while the node was spawned. */
     virtual void onColorChangedWhileSpawned() override;
 
+    /** Called after texture was changed while the node was spawned. */
+    virtual void onTextureChangedWhileSpawned() override;
+
 private:
     /**
      * Should be used instead of the default setColor function from the parent.
@@ -134,8 +178,31 @@ private:
      */
     void setButtonColor(const glm::vec4& color);
 
+    /**
+     * Should be used instead of the default setTexture function from the parent.
+     *
+     * @param sPathToTexture Texture to display (path relative to the `res` directory).
+     */
+    void setButtonTexture(const std::string& sPathToTexture);
+
+    /**
+     * "Shortcut" for loading texture handles.
+     *
+     * @param sPathToTexture Path to texture to load.
+     */
+    std::unique_ptr<TextureHandle> getTextureHandle(const std::string& sPathToTexture);
+
     /** Callback to call after a click on this UI node. */
     std::function<void()> onClicked;
+
+    /** Handle to @ref sTempPathToDefaultTexture. Used to keep the texture in cache. */
+    std::unique_ptr<TextureHandle> pDefaultTexture;
+
+    /** Handle to @ref sPathToTextureWhileHovered. Used to keep the texture in cache. */
+    std::unique_ptr<TextureHandle> pHoveredTexture;
+
+    /** Handle to @ref sPathToTextureWhilePressed. Used to keep the texture in cache. */
+    std::unique_ptr<TextureHandle> pPressedTexture;
 
     /** Color while mouse cursor is floating over the node. */
     glm::vec4 colorWhileHovered = glm::vec4(0.4F, 0.4F, 0.4F, 1.0F); // NOLINT
@@ -146,9 +213,18 @@ private:
     /** Temporary variable used while being hovered/clicked to restore the original color. */
     glm::vec4 tempDefaultColor = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
 
+    /** Texture to display while mouse cursor is floating over the node. */
+    std::string sPathToTextureWhileHovered;
+
+    /** Texture to display while being clicked. */
+    std::string sPathToTextureWhilePressed;
+
+    /** Temporary variable used while being hovered/clicked to restore the original texture. */
+    std::string sTempPathToDefaultTexture;
+
     /** `true` if the mouse is currently floating over this node. */
     bool bIsCurrentlyHovered = false;
 
-    /** Used to determine if this node is changing color or something outside. */
-    bool bIsChangingColor = false;
+    /** Used to determine if this node is changing color/texture (calling parent function). */
+    bool bIsChangingColorTexture = false;
 };

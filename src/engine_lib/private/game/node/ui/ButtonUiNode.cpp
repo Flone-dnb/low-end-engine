@@ -1,5 +1,10 @@
 #include "game/node/ui/ButtonUiNode.h"
 
+// Custom.
+#include "game/GameInstance.h"
+#include "render/Renderer.h"
+#include "material/TextureManager.h"
+
 // External.
 #include "nameof.hpp"
 
@@ -33,6 +38,26 @@ TypeReflectionInfo ButtonUiNode::getReflectionInfo() {
                 return reinterpret_cast<ButtonUiNode*>(pThis)->getColorWhilePressed();
             }};
 
+    variables.strings[NAMEOF_MEMBER(&ButtonUiNode::sPathToTextureWhileHovered).data()] =
+        ReflectedVariableInfo<std::string>{
+            .setter =
+                [](Serializable* pThis, const std::string& sNewValue) {
+                    reinterpret_cast<ButtonUiNode*>(pThis)->setPathToTextureWhileHovered(sNewValue);
+                },
+            .getter = [](Serializable* pThis) -> std::string {
+                return reinterpret_cast<ButtonUiNode*>(pThis)->getPathToTextureWhileHovered();
+            }};
+
+    variables.strings[NAMEOF_MEMBER(&ButtonUiNode::sPathToTextureWhilePressed).data()] =
+        ReflectedVariableInfo<std::string>{
+            .setter =
+                [](Serializable* pThis, const std::string& sNewValue) {
+                    reinterpret_cast<ButtonUiNode*>(pThis)->setPathToTextureWhilePressed(sNewValue);
+                },
+            .getter = [](Serializable* pThis) -> std::string {
+                return reinterpret_cast<ButtonUiNode*>(pThis)->getPathToTextureWhilePressed();
+            }};
+
     return TypeReflectionInfo(
         RectUiNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(ButtonUiNode).data(),
@@ -50,12 +75,75 @@ void ButtonUiNode::setColorWhileHovered(const glm::vec4& color) { colorWhileHove
 
 void ButtonUiNode::setColorWhilePressed(const glm::vec4& color) { colorWhilePressed = color; }
 
+void ButtonUiNode::setPathToTextureWhileHovered(std::string sPathToTextureRelativeRes) {
+    // Normalize slash.
+    for (size_t i = 0; i < sPathToTextureRelativeRes.size(); i++) {
+        if (sPathToTextureRelativeRes[i] == '\\') {
+            sPathToTextureRelativeRes[i] = '/';
+        }
+    }
+
+    if (sPathToTextureWhileHovered == sPathToTextureRelativeRes) {
+        return;
+    }
+    sPathToTextureWhileHovered = sPathToTextureRelativeRes;
+
+    if (isSpawned()) {
+        if (sPathToTextureWhileHovered.empty()) {
+            pHoveredTexture = nullptr;
+        } else {
+            pHoveredTexture = getTextureHandle(sPathToTextureWhileHovered);
+        }
+    }
+}
+
+void ButtonUiNode::setPathToTextureWhilePressed(std::string sPathToTextureRelativeRes) {
+    // Normalize slash.
+    for (size_t i = 0; i < sPathToTextureRelativeRes.size(); i++) {
+        if (sPathToTextureRelativeRes[i] == '\\') {
+            sPathToTextureRelativeRes[i] = '/';
+        }
+    }
+
+    if (sPathToTextureWhilePressed == sPathToTextureRelativeRes) {
+        return;
+    }
+    sPathToTextureWhilePressed = sPathToTextureRelativeRes;
+
+    if (isSpawned()) {
+        if (sPathToTextureWhilePressed.empty()) {
+            pPressedTexture = nullptr;
+        } else {
+            pPressedTexture = getTextureHandle(sPathToTextureWhilePressed);
+        }
+    }
+}
+
 void ButtonUiNode::setOnClicked(const std::function<void()>& onClicked) { this->onClicked = onClicked; }
 
 void ButtonUiNode::onSpawning() {
     RectUiNode::onSpawning();
 
     tempDefaultColor = getColor();
+    sTempPathToDefaultTexture = getPathToTexture();
+
+    if (!sTempPathToDefaultTexture.empty()) {
+        pDefaultTexture = getTextureHandle(sTempPathToDefaultTexture);
+    }
+    if (!sPathToTextureWhileHovered.empty()) {
+        pHoveredTexture = getTextureHandle(sPathToTextureWhileHovered);
+    }
+    if (!sPathToTextureWhilePressed.empty()) {
+        pPressedTexture = getTextureHandle(sPathToTextureWhilePressed);
+    }
+}
+
+void ButtonUiNode::onDespawning() {
+    RectUiNode::onDespawning();
+
+    pDefaultTexture = nullptr;
+    pHoveredTexture = nullptr;
+    pPressedTexture = nullptr;
 }
 
 void ButtonUiNode::onMouseClickOnUiNode(
@@ -63,8 +151,10 @@ void ButtonUiNode::onMouseClickOnUiNode(
     RectUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
 
     if (bIsPressedDown) {
+        setButtonTexture(sPathToTextureWhilePressed);
         setButtonColor(colorWhilePressed);
     } else {
+        setButtonTexture(bIsCurrentlyHovered ? sPathToTextureWhileHovered : sTempPathToDefaultTexture);
         setButtonColor(bIsCurrentlyHovered ? colorWhileHovered : tempDefaultColor);
         if (onClicked) {
             onClicked();
@@ -77,6 +167,7 @@ void ButtonUiNode::onMouseEntered() {
 
     bIsCurrentlyHovered = true;
 
+    setButtonTexture(sPathToTextureWhileHovered);
     setButtonColor(colorWhileHovered);
 }
 
@@ -85,21 +176,58 @@ void ButtonUiNode::onMouseLeft() {
 
     bIsCurrentlyHovered = false;
 
+    setButtonTexture(sTempPathToDefaultTexture);
     setButtonColor(tempDefaultColor);
 }
 
 void ButtonUiNode::onColorChangedWhileSpawned() {
     RectUiNode::onColorChangedWhileSpawned();
 
-    if (bIsChangingColor) {
+    if (bIsChangingColorTexture) {
         return;
     }
 
     tempDefaultColor = getColor();
 }
 
+void ButtonUiNode::onTextureChangedWhileSpawned() {
+    RectUiNode::onTextureChangedWhileSpawned();
+
+    if (bIsChangingColorTexture) {
+        return;
+    }
+
+    sTempPathToDefaultTexture = getPathToTexture();
+
+    if (isSpawned()) {
+        if (sTempPathToDefaultTexture.empty()) {
+            pDefaultTexture = nullptr;
+        } else {
+            pDefaultTexture = getTextureHandle(sTempPathToDefaultTexture);
+        }
+    }
+}
+
 void ButtonUiNode::setButtonColor(const glm::vec4& color) {
-    bIsChangingColor = true;
+    bIsChangingColorTexture = true;
     setColor(color);
-    bIsChangingColor = false;
+    bIsChangingColorTexture = false;
+}
+
+void ButtonUiNode::setButtonTexture(const std::string& sPathToTexture) {
+    bIsChangingColorTexture = true;
+    setPathToTexture(sPathToTexture);
+    bIsChangingColorTexture = false;
+}
+
+std::unique_ptr<TextureHandle> ButtonUiNode::getTextureHandle(const std::string& sPathToTexture) {
+    auto result = getGameInstanceWhileSpawned()->getRenderer()->getTextureManager().getTexture(
+        sPathToTexture, TextureUsage::UI);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        error.showErrorAndThrowException();
+    }
+
+    return std::get<std::unique_ptr<TextureHandle>>(std::move(result));
 }

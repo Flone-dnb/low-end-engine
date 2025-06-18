@@ -88,6 +88,8 @@ void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
             }
             pTexture = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
         }
+
+        onTextureChangedWhileSpawned();
     }
 }
 
