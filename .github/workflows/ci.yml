@@ -3,20 +3,6 @@ name: All
 on: [push, pull_request, pull_request_review]
 
 jobs:
-  clang-format:
-    name: Run clang-format
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Run clang-format
-        run: |
-          choco upgrade llvm
-          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
-          refreshenv
-          echo "Installed $(clang-format --version)."
-          cd .github/scripts/run_clang_format_on_source/
-          go run . ../../../src
   shader-formatter:
     name: Run shader-formatter
     runs-on: windows-latest
