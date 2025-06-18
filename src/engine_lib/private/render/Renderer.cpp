@@ -142,7 +142,7 @@ void Renderer::drawNextFrame() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     pUiManager->drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
-    copyFramebufferToWindowFramebuffer(pMainFramebuffer->getFramebufferId());
+    copyFramebufferToWindowFramebuffer(pMainFramebuffer->getFramebufferId(), iWindowWidth, iWindowHeight);
 #else
     glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
