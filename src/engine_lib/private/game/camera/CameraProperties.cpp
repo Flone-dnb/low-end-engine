@@ -114,6 +114,11 @@ glm::vec3 CameraProperties::getWorldLocation() {
     return mtxData.second.viewData.worldLocation;
 }
 
+glm::vec3 CameraProperties::getForwardDirection() {
+    std::scoped_lock guard(mtxData.first);
+    return mtxData.second.viewData.targetPointWorldLocation - mtxData.second.viewData.worldLocation;
+}
+
 glm::mat4x4 CameraProperties::getViewMatrix() {
     std::scoped_lock guard(mtxData.first);
 
@@ -138,6 +143,14 @@ glm::mat4x4 CameraProperties::getInverseProjectionMatrix() {
     return mtxData.second.projectionData.invProjectionMatrix;
 }
 
+glm::mat4x4 CameraProperties::getInverseViewMatrix() {
+    std::scoped_lock guard(mtxData.first);
+
+    makeSureProjectionMatrixAndClipPlanesAreUpToDate();
+
+    return mtxData.second.viewData.invViewMatrix;
+}
+
 void CameraProperties::makeSureViewMatrixIsUpToDate() {
     std::scoped_lock guard(mtxData.first);
 
@@ -151,6 +164,7 @@ void CameraProperties::makeSureViewMatrixIsUpToDate() {
     // Calculate view matrix.
     viewData.viewMatrix =
         glm::lookAtLH(viewData.worldLocation, viewData.targetPointWorldLocation, viewData.worldUpDirection);
+    viewData.invViewMatrix = glm::inverse(viewData.viewMatrix);
 
     // Since we finished updating view data - recalculate frustum.
     recalculateFrustum();

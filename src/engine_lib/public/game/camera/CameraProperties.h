@@ -54,6 +54,9 @@ public:
             /** Matrix that transforms positions to view (camera) space. */
             glm::mat4x4 viewMatrix = glm::identity<glm::mat4x4>();
 
+            /** Matrix that transforms positions to world space from view space. */
+            glm::mat4x4 invViewMatrix = glm::identity<glm::mat4x4>();
+
             /** Whether @ref viewMatrix needs to be recalculated or not. */
             bool bViewMatrixNeedsUpdate = true;
 
@@ -209,6 +212,13 @@ public:
     glm::vec3 getWorldLocation();
 
     /**
+     * Returns camera's look direction.
+     *
+     * @return Uniform vector in world space.
+     */
+    glm::vec3 getForwardDirection();
+
+    /**
      * Returns a matrix that transforms positions to view (camera) space.
      *
      * @return View matrix.
@@ -230,6 +240,13 @@ public:
      * @return Inverse of the projection matrix.
      */
     glm::mat4x4 getInverseProjectionMatrix();
+
+    /**
+     * Returns a matrix that transforms positions to world space from view space.
+     *
+     * @return Inverse of the view matrix.
+     */
+    glm::mat4x4 getInverseViewMatrix();
 
     /**
      * Returns camera's frustum for fast read-only access.

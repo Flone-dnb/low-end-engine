@@ -18,10 +18,16 @@ void DistanceFogSettings::setFogRange(const glm::vec2& range) {
 
 void DistanceFogSettings::setColor(const glm::vec3& color) { this->color = color; }
 
+void DistanceFogSettings::setFogHeightOnSky(float fogHeight) { fogHeightOnSky = std::max(0.0F, fogHeight); }
+
 void PostProcessManager::setAmbientLightColor(const glm::vec3& color) { ambientLightColor = color; }
 
 void PostProcessManager::setDistanceFogSettings(const std::optional<DistanceFogSettings>& settings) {
     distanceFogSettings = settings;
+}
+
+void PostProcessManager::setSkySettings(const std::optional<SkySettings>& settings) {
+    skySettings = settings;
 }
 
 PostProcessManager::PostProcessManager(
@@ -55,12 +61,28 @@ void PostProcessManager::drawPostProcessing(
         glBindTexture(GL_TEXTURE_2D, readFramebuffer.getDepthStencilTextureId());
 
         // Set shader parameters.
-        pShaderProgram->setBoolToShader("bIsDistanceFogEnabled", distanceFogSettings.has_value());
-        if (distanceFogSettings.has_value()) {
-            pShaderProgram->setVector3ToShader("distanceFogColor", distanceFogSettings->getColor());
-            pShaderProgram->setVector2ToShader("distanceFogRange", distanceFogSettings->getFogRange());
+        {
+            // Distance fog.
+            pShaderProgram->setBoolToShader("bIsDistanceFogEnabled", distanceFogSettings.has_value());
+            if (distanceFogSettings.has_value()) {
+                pShaderProgram->setVector3ToShader("distanceFogColor", distanceFogSettings->getColor());
+                pShaderProgram->setVector2ToShader("distanceFogRange", distanceFogSettings->getFogRange());
+                pShaderProgram->setFloatToShader("fogHeightOnSky", distanceFogSettings->getFogHeightOnSky());
+            }
+
+            // Procedural sky.
+            pShaderProgram->setBoolToShader("bIsSkyEnabled", skySettings.has_value());
+            if (skySettings.has_value()) {
+                pShaderProgram->setVector3ToShader("skyColorAboveHorizon", skySettings->colorAboveHorizon);
+                pShaderProgram->setVector3ToShader("skyColorOnHorizon", skySettings->colorOnHorizon);
+                pShaderProgram->setVector3ToShader("skyColorBelowHorizon", skySettings->colorBelowHorizon);
+            }
+
+            pShaderProgram->setMatrix4ToShader(
+                "invProjMatrix", pCameraProperties->getInverseProjectionMatrix());
+            pShaderProgram->setMatrix4ToShader("invViewMatrix", pCameraProperties->getInverseViewMatrix());
+            pShaderProgram->setVector3ToShader("cameraDirection", pCameraProperties->getForwardDirection());
         }
-        pShaderProgram->setMatrix4ToShader("invProjMatrix", pCameraProperties->getInverseProjectionMatrix());
 
         // Draw.
         glBindVertexArray(fullscreenQuadGeometry.getVao().getVertexArrayObjectId());

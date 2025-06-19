@@ -536,7 +536,7 @@ void MyGameInstance::onGameStarted() {
 
 ## Post-processing
 
-You can configure post processing parameters such as ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the renderer: `Renderer::getPostProcessManager`.
+You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the renderer: `Renderer::getPostProcessManager`.
 
 ## Game asset file format
 
