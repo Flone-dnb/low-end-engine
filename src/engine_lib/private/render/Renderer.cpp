@@ -137,6 +137,10 @@ void Renderer::drawNextFrame() {
     auto& mtxActiveCamera = pCameraManager->getActiveCamera();
     std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
+    // Set viewport.
+    mtxActiveCamera.second->getCameraProperties()->setRenderTargetProportions(iWindowWidth, iWindowHeight);
+    glViewport(0, 0, static_cast<int>(iWindowWidth), static_cast<int>(iWindowHeight));
+
 #if defined(ENGINE_UI_ONLY)
     glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
     glClear(GL_COLOR_BUFFER_BIT);

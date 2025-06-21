@@ -7,7 +7,7 @@
 #include "misc/Error.h"
 #include "render/wrapper/ShaderProgram.h"
 
-void CameraProperties::setRenderTargetSize(
+void CameraProperties::setRenderTargetProportions(
     unsigned int iRenderTargetWidth, unsigned int iRenderTargetHeight) {
     std::scoped_lock guard(mtxData.first);
 

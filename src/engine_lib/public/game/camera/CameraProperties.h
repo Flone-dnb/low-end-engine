@@ -281,7 +281,7 @@ private:
      * @param iRenderTargetWidth  Width of the buffer we are rendering the image to.
      * @param iRenderTargetHeight Height of the buffer we are rendering the image to.
      */
-    void setRenderTargetSize(unsigned int iRenderTargetWidth, unsigned int iRenderTargetHeight);
+    void setRenderTargetProportions(unsigned int iRenderTargetWidth, unsigned int iRenderTargetHeight);
 
     /**
      * Recalculates camera's view matrix if it needs to be updated.
