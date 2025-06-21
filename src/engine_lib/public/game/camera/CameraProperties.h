@@ -170,6 +170,13 @@ public:
     void setFarClipPlaneDistance(float farClipPlaneDistance);
 
     /**
+     * Sets position of the top-left corner of the viewport rectangle in XY and size in ZW (in range [0; 1]).
+     *
+     * @param viewport Viewport rectangle.
+     */
+    void setViewport(const glm::vec4& viewport);
+
+    /**
      * Returns vertical field of view of the camera.
      *
      * @return Vertical field of view.
@@ -270,6 +277,14 @@ public:
      */
     inline ShaderConstantsSetter& getShaderConstantsSetter() { return shaderConstantsSetter; }
 
+    /**
+     * Returns position of the top-left corner of the viewport rectangle in XY and size in ZW
+     * (in range [0; 1]).
+     *
+     * @return Viewport rectangle.
+     */
+    glm::vec4 getViewport() const { return viewport; }
+
 private:
     /**
      * Sets size of the render target for projection matrix calculations.
@@ -309,6 +324,9 @@ private:
 
     /** To pass values to shaders. */
     ShaderConstantsSetter shaderConstantsSetter;
+
+    /** Position of the top-left corner of the viewport rectangle in XY and size in ZW (in range [0; 1]). */
+    glm::vec4 viewport = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
 
     /** Delta to compare input to zero. */
     static inline constexpr float floatDelta = 0.00001F;

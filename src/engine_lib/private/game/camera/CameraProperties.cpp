@@ -80,6 +80,13 @@ void CameraProperties::setFarClipPlaneDistance(float farClipPlaneDistance) {
     mtxData.second.projectionData.bProjectionMatrixNeedsUpdate = true;
 }
 
+void CameraProperties::setViewport(const glm::vec4& viewport) {
+    this->viewport.x = std::clamp(viewport.x, 0.0F, 1.0F);
+    this->viewport.y = std::clamp(viewport.y, 0.0F, 1.0F);
+    this->viewport.z = std::clamp(viewport.z, 0.0F, 1.0F);
+    this->viewport.w = std::clamp(viewport.w, 0.0F, 1.0F);
+}
+
 unsigned int CameraProperties::getVerticalFov() {
     std::scoped_lock guard(mtxData.first);
 

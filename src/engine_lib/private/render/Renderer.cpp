@@ -54,10 +54,6 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
         Error::showErrorAndThrowException(SDL_GetError());
     }
 
-    // Set viewport.
-    const auto windowSize = pWindow->getWindowSize();
-    GL_CHECK_ERROR(glViewport(0, 0, static_cast<int>(windowSize.first), static_cast<int>(windowSize.second)));
-
     auto pRenderer = std::unique_ptr<Renderer>(new Renderer(pWindow, pContext));
 
     // Set FPS limit.
@@ -88,9 +84,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 }
 
 void Renderer::recreateFramebuffers() {
-    // Set viewport.
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
-    GL_CHECK_ERROR(glViewport(0, 0, static_cast<int>(iWindowWidth), static_cast<int>(iWindowHeight)));
 
 #if !defined(ENGINE_UI_ONLY)
     if (pPostProcessManager == nullptr) {
@@ -137,18 +131,27 @@ void Renderer::drawNextFrame() {
     auto& mtxActiveCamera = pCameraManager->getActiveCamera();
     std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
 
+    const auto pCameraProperties = mtxActiveCamera.second->getCameraProperties();
+
+    // Bind framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+
     // Set viewport.
-    mtxActiveCamera.second->getCameraProperties()->setRenderTargetProportions(iWindowWidth, iWindowHeight);
-    glViewport(0, 0, static_cast<int>(iWindowWidth), static_cast<int>(iWindowHeight));
+    const auto viewportRect = pCameraProperties->getViewport();
+    const auto iViewportWidth = static_cast<unsigned int>(static_cast<float>(iWindowWidth) * viewportRect.z);
+    const auto iViewportHeight =
+        static_cast<unsigned int>(static_cast<float>(iWindowHeight) * viewportRect.w);
+    pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
+    const auto iViewportLeftBottom = static_cast<int>(
+        static_cast<float>(iWindowHeight) * (1.0F - std::min(1.0F, viewportRect.y + viewportRect.w)));
+    glViewport(0, iViewportLeftBottom, iViewportWidth, iViewportHeight);
 
 #if defined(ENGINE_UI_ONLY)
-    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
     glClear(GL_COLOR_BUFFER_BIT);
 
     pUiManager->drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
     copyFramebufferToWindowFramebuffer(pMainFramebuffer->getFramebufferId(), iWindowWidth, iWindowHeight);
 #else
-    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_DEPTH_TEST);
@@ -170,9 +173,7 @@ void Renderer::drawNextFrame() {
                     glUseProgram(pShaderProgram->getShaderProgramId());
 
                     // Set camera uniforms.
-                    mtxActiveCamera.second->getCameraProperties()
-                        ->getShaderConstantsSetter()
-                        .setConstantsToShader(pShaderProgram);
+                    pCameraProperties->getShaderConstantsSetter().setConstantsToShader(pShaderProgram);
 
                     // Set light arrays.
                     pLightSourceManager->setArrayPropertiesToShader(pShaderProgram);
@@ -212,9 +213,12 @@ void Renderer::drawNextFrame() {
         }
         glDisable(GL_BLEND);
 
-        // Do post processing before UI.
-        pPostProcessManager->drawPostProcessing(
-            *pFullscreenQuad, *pMainFramebuffer, mtxActiveCamera.second->getCameraProperties());
+        // Draw post-processing before UI (use window-size viewport to avoid "applying viewport twice").
+        glViewport(0, 0, iWindowWidth, iWindowHeight);
+        {
+            pPostProcessManager->drawPostProcessing(*pFullscreenQuad, *pMainFramebuffer, pCameraProperties);
+        }
+        glViewport(0, iViewportLeftBottom, iViewportWidth, iViewportHeight);
 
         // Draw UI on post-processing framebuffer.
         pUiManager->drawUiOnFramebuffer(pPostProcessManager->pFramebuffer->getFramebufferId());
