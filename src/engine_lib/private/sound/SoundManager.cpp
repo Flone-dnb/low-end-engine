@@ -35,17 +35,18 @@ void SoundManager::setSoundVolume(float volume) {
     sf::Listener::setGlobalVolume(std::clamp(volume, 0.0F, 2.0F) * 100.0F); // NOLINT
 }
 
-void SoundManager::onBeforeNewFrame(CameraManager* pCameraManager) {
-    auto& mtxActiveCamera = pCameraManager->getActiveCamera();
+void SoundManager::onBeforeNewFrame(CameraManager& cameraManager) {
+    auto& mtxActiveCamera = cameraManager.getActiveCamera();
     std::scoped_lock guard(mtxActiveCamera.first);
 
-    if (mtxActiveCamera.second == nullptr) {
+    const auto pCamera = mtxActiveCamera.second.pNode;
+    if (pCamera == nullptr) {
         return;
     }
 
-    const auto pos = mtxActiveCamera.second->getWorldLocation();
-    const auto forward = mtxActiveCamera.second->getWorldForwardDirection();
-    const auto up = mtxActiveCamera.second->getWorldUpDirection(); // NOLINT
+    const auto pos = pCamera->getWorldLocation();
+    const auto forward = pCamera->getWorldForwardDirection();
+    const auto up = pCamera->getWorldUpDirection(); // NOLINT
 
     sf::Listener::setPosition({pos.x, pos.y, pos.z});
     sf::Listener::setDirection({forward.x, forward.y, forward.z});

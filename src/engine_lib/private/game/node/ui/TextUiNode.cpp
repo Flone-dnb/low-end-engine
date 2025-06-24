@@ -5,7 +5,7 @@
 #include "game/Window.h"
 #include "render/FontManager.h"
 #include "render/Renderer.h"
-#include "render/UiManager.h"
+#include "render/UiNodeManager.h"
 
 // External.
 #include "nameof.hpp"
@@ -225,24 +225,21 @@ void TextUiNode::onSpawning() {
     }
 
     // Notify manager.
-    auto& uiManager = pRenderer->getUiManager();
-    uiManager.onNodeSpawning(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeSpawning(this);
 }
 
 void TextUiNode::onDespawning() {
     UiNode::onDespawning();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onNodeDespawning(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeDespawning(this);
 }
 
 void TextUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onSpawnedNodeChangedVisibility(this);
+    getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
 }
 
 void TextUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {

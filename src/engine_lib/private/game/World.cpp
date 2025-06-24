@@ -5,6 +5,11 @@
 #include "io/Logger.h"
 #include "misc/Error.h"
 #include "render/Renderer.h"
+#include "render/UiNodeManager.h"
+#include "game/camera/CameraManager.h"
+#include "game/GameManager.h"
+#include "render/MeshNodeManager.h"
+#include "render/LightSourceManager.h"
 
 World::~World() {
     std::scoped_lock gaurd(mtxRootNode.first);
@@ -18,6 +23,13 @@ World::World(GameManager* pGameManager, std::unique_ptr<Node> pRootNodeToUse) : 
     Logger::get().info(std::format("new world is created"));
     Logger::get().flushToDisk();
 
+    pCameraManager = std::make_unique<CameraManager>(pGameManager);
+    pUiNodeManager = std::unique_ptr<UiNodeManager>(new UiNodeManager(pGameManager->getRenderer()));
+    pMeshNodeManager = std::unique_ptr<MeshNodeManager>(new MeshNodeManager());
+    pLightSourceManager =
+        std::unique_ptr<LightSourceManager>(new LightSourceManager(&pCameraManager->getPostProcessManager()));
+
+    // Spawn root node.
     if (pRootNodeToUse == nullptr) {
         mtxRootNode.second = std::make_unique<Node>("Root Node");
     } else {
@@ -34,9 +46,16 @@ void World::destroyWorld() {
     // Just in case wait for all GPU work to finish.
     Renderer::waitForGpuToFinishWorkUpToThisPoint();
 
+    pGameManager->onBeforeWorldDestroyed(mtxRootNode.second.get());
+
     std::scoped_lock guard(mtxRootNode.first);
     mtxRootNode.second->despawn();
     mtxRootNode.second = nullptr;
+
+    pMeshNodeManager = nullptr;
+    pUiNodeManager = nullptr;
+    pLightSourceManager = nullptr;
+    pCameraManager = nullptr;
 }
 
 ReceivingInputNodesGuard World::getReceivingInputNodes() {
@@ -107,6 +126,14 @@ Node* World::getRootNode() {
     std::scoped_lock guard(mtxRootNode.first);
     return mtxRootNode.second.get();
 }
+
+CameraManager& World::getCameraManager() const { return *pCameraManager; }
+
+UiNodeManager& World::getUiNodeManager() const { return *pUiNodeManager; }
+
+MeshNodeManager& World::getMeshNodeManager() const { return *pMeshNodeManager; }
+
+LightSourceManager& World::getLightSourceManager() const { return *pLightSourceManager; }
 
 size_t World::getTotalSpawnedNodeCount() {
     std::scoped_lock guard(mtxSpawnedNodes.first);

@@ -11,7 +11,7 @@
 /** Screen quad with a custom fragment shader. */
 class RectUiNode : public UiNode {
     // Needs access to texture handle.
-    friend class UiManager;
+    friend class UiNodeManager;
 
 public:
     RectUiNode();

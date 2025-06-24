@@ -12,8 +12,8 @@ TEST_CASE("despawn invisible mesh node") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
-                const auto pSpawnedMeshNode = getWorldRootNode()->addChildNode(std::make_unique<MeshNode>());
+            createWorld([&](Node* pRootNode) {
+                const auto pSpawnedMeshNode = pRootNode->addChildNode(std::make_unique<MeshNode>());
 
                 pSpawnedMeshNode->setIsVisible(false);
                 pSpawnedMeshNode->unsafeDetachFromParentAndDespawn();
@@ -41,7 +41,7 @@ TEST_CASE("serialize node tree with 2 mesh nodes") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 auto pRoot = std::make_unique<MeshNode>();
                 pRoot->addChildNode(std::make_unique<MeshNode>());
 

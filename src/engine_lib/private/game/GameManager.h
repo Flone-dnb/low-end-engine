@@ -15,10 +15,8 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "misc/ThreadPool.h"
+#include "game/World.h"
 
-class Renderer;
-class GameInstance;
-class World;
 class Node;
 class CameraManager;
 class SoundManager;
@@ -33,7 +31,58 @@ class GameManager {
     // Only window is allowed to create a game manager.
     friend class Window;
 
+    // World notifies about worlds being destroyed.
+    friend class World;
+
 public:
+    /** Groups data used during world creation. */
+    struct WorldCreationTask {
+        /** Info about a task to load node tree as world. */
+        struct LoadNodeTreeTask {
+            ~LoadNodeTreeTask();
+
+            /** Path to the file that stores the node tree to load. */
+            std::filesystem::path pathToNodeTreeToLoad;
+
+            /** `nullptr` if the node tree from @ref pathToNodeTreeToLoad is still being deserialized. */
+            std::unique_ptr<Node> pLoadedNodeTreeRoot;
+
+            /**
+             * Tells if we started a thread pool task to deserialize @ref pathToNodeTreeToLoad into @ref
+             * pLoadedNodeTreeRoot.
+             */
+            bool bIsAsyncTaskStarted = false;
+        };
+
+        ~WorldCreationTask();
+
+        /** Callback to call after the world is created or loaded. */
+        std::function<void(Node*)> onCreated;
+
+        /** If nullptr then create an empty world (only root node), otherwise load the node tree. */
+        std::unique_ptr<LoadNodeTreeTask> pOptionalNodeTreeLoadTask;
+
+        /** `true` to destroy all existing worlds before creating a new one. */
+        bool bDestroyOldWorlds = true;
+    };
+
+    /** Groups world-related data. */
+    struct WorldData {
+        ~WorldData();
+
+        /**
+         * Not nullptr if we need to create/load a new world.
+         *
+         * @remark We don't create/load worlds right away but instead create/load them on the next tick
+         * because when a world creation task is received we might be iterating over "tickable" nodes
+         * or nodes that receive input so we avoid modifying those arrays in that case.
+         */
+        std::unique_ptr<WorldCreationTask> pPendingWorldCreationTask;
+
+        /** Currently active worlds. */
+        std::vector<std::unique_ptr<World>> vWorlds;
+    };
+
     GameManager(const GameManager&) = delete;
     GameManager& operator=(const GameManager&) = delete;
 
@@ -44,28 +93,31 @@ public:
      *
      * @remark Replaces the old world (if existed).
      *
-     * @param onCreated Callback function that will be called after the world is
-     * created. Use GameInstance member functions as callback functions for created worlds, because all nodes
-     * and other game objects will be destroyed while the world is changing.
+     * @param onCreated         Callback function that will be called after the world is
+     * created with world's root node passed as the only argument. Use GameInstance member functions as
+     * callback functions for created worlds, because all nodes and other game objects will be destroyed
+     * while the world is changing.
+     * @param bDestroyOldWorlds `true` to destroy all previously existing worlds before creating the new
+     * world.
      */
-    void createWorld(const std::function<void()>& onCreated);
+    void createWorld(const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds = true);
 
     /**
-     * Asynchronously loads and deserializes a node tree as the new world. Node tree's root node will be used
-     * as world's root node.
+     * Asynchronously loads and deserializes a node tree as the new world. Node tree's root node will be
+     * used as world's root node.
      *
-     * @warning Use GameInstance member functions as callback functions for loaded worlds, because all nodes
-     * and other game objects will be destroyed while the world is changing.
+     * @warning Use GameInstance member functions as callback functions for loaded worlds, because all
+     * nodes and other game objects will be destroyed while the world is changing.
      *
      * @remark Replaces the old world (if existed).
      *
      * @param pathToNodeTreeFile Path to the file that contains a node tree to load, the ".toml"
      * extension will be automatically added if not specified.
      * @param onLoaded           Callback function that will be called on the main thread after the world
-     * is loaded.
+     * is loaded with root node passed as the only argument.
      */
     void loadNodeTreeAsWorld(
-        const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded);
+        const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded);
 
     /**
      * Adds a function to be executed asynchronously on the thread pool.
@@ -103,13 +155,6 @@ public:
     size_t getCalledEveryFrameNodeCount();
 
     /**
-     * Returns a pointer to world's root node.
-     *
-     * @return `nullptr` if world is not created or was destroyed, otherwise valid pointer.
-     */
-    Node* getWorldRootNode();
-
-    /**
      * Returns window that owns this object.
      *
      * @warning Do not delete (free) returned pointer.
@@ -126,15 +171,6 @@ public:
      * @return Always valid pointer.
      */
     InputManager* getInputManager();
-
-    /**
-     * Returns camera manager.
-     *
-     * @warning Do not delete (free) returned pointer.
-     *
-     * @return Always valid pointer.
-     */
-    CameraManager* getCameraManager() const;
 
     /**
      * Returns game's renderer.
@@ -161,52 +197,14 @@ public:
      */
     SoundManager& getSoundManager() const;
 
+    /**
+     * Returns info about existing worlds.
+     *
+     * @return Worlds info.
+     */
+    std::pair<std::recursive_mutex, WorldData>& getWorlds() { return mtxWorldData; }
+
 private:
-    /** Groups data used during world creation. */
-    struct WorldCreationTask {
-        /** Info about a task to load node tree as world. */
-        struct LoadNodeTreeTask {
-            ~LoadNodeTreeTask();
-
-            /** Path to the file that stores the node tree to load. */
-            std::filesystem::path pathToNodeTreeToLoad;
-
-            /** `nullptr` if the node tree from @ref pathToNodeTreeToLoad is still being deserialized. */
-            std::unique_ptr<Node> pLoadedNodeTreeRoot;
-
-            /**
-             * Tells if we started a thread pool task to deserialize @ref pathToNodeTreeToLoad into @ref
-             * pLoadedNodeTreeRoot.
-             */
-            bool bIsAsyncTaskStarted = false;
-        };
-
-        ~WorldCreationTask();
-
-        /** Callback to call after the world is created or loaded. */
-        std::function<void()> onCreated;
-
-        /** If nullptr then create an empty world (only root node), otherwise load the node tree. */
-        std::unique_ptr<LoadNodeTreeTask> pOptionalNodeTreeLoadTask;
-    };
-
-    /** Groups world-related data. */
-    struct WorldData {
-        ~WorldData();
-
-        /**
-         * Not nullptr if we need to create/load a new world.
-         *
-         * @remark We don't create/load worlds right away but instead create/load them on the next tick
-         * because when a world creation task is received we might be iterating over "tickable" nodes
-         * or nodes that receive input so we avoid modifying those arrays in that case.
-         */
-        std::unique_ptr<WorldCreationTask> pPendingWorldCreationTask;
-
-        /** Current world. */
-        std::unique_ptr<World> pWorld;
-    };
-
     /**
      * Creates a new game manager.
      *
@@ -230,8 +228,15 @@ private:
     GameManager(
         Window* pWindow, std::unique_ptr<Renderer> pRenderer, std::unique_ptr<GameInstance> pGameInstance);
 
-    /** Destroys @ref mtxWorldData if it exists. */
-    void destroyCurrentWorld();
+    /**
+     * Called before a world is destroyed.
+     *
+     * @param pRootNode Root node of a world about to be destroyed.
+     */
+    void onBeforeWorldDestroyed(Node* pRootNode);
+
+    /** Destroys worlds from @ref mtxWorldData. */
+    void destroyWorlds();
 
     /**
      * Must be called before destructor to destroy the world, all nodes and various systems
@@ -270,7 +275,8 @@ private:
     onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat);
 
     /**
-     * Called when the window (that owns this object) receives an event about text character being inputted.
+     * Called when the window (that owns this object) receives an event about text character being
+     * inputted.
      *
      * @param sTextCharacter Character that was typed.
      */
@@ -380,9 +386,6 @@ private:
 
     /** Created game instance. */
     std::unique_ptr<GameInstance> pGameInstance;
-
-    /** Determines which camera is used as in-game eyes. */
-    std::unique_ptr<CameraManager> pCameraManager;
 
     /** Manages sound and sound effects. */
     std::unique_ptr<SoundManager> pSoundManager;

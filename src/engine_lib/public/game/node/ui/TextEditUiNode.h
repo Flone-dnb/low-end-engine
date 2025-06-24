@@ -10,7 +10,7 @@
 /** Single-line or multi-line text editing. */
 class TextEditUiNode : public TextUiNode {
     // Renderer uses cursor pos and selection.
-    friend class UiManager;
+    friend class UiNodeManager;
 
 public:
     TextEditUiNode();

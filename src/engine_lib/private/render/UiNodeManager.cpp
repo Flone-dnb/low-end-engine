@@ -1,4 +1,4 @@
-#include "render/UiManager.h"
+#include "render/UiNodeManager.h"
 
 // Standard.
 #include <format>
@@ -77,43 +77,43 @@
         vNodesByDepth.erase(vNodesByDepth.begin() + static_cast<long>(iArrayIndex));                         \
     }
 
-void UiManager::onNodeSpawning(TextUiNode* pNode) {
+void UiNodeManager::onNodeSpawning(TextUiNode* pNode) {
+    if (!pNode->isVisible()) {
+        return;
+    }
+
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
     auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
 
+    ADD_NODE_TO_RENDERING(TextUiNode);
+}
+
+void UiNodeManager::onNodeSpawning(RectUiNode* pNode) {
     if (!pNode->isVisible()) {
         return;
     }
 
-    ADD_NODE_TO_RENDERING(TextUiNode);
-}
-
-void UiManager::onNodeSpawning(RectUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
     auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
 
+    ADD_NODE_TO_RENDERING(RectUiNode);
+}
+
+void UiNodeManager::onNodeSpawning(SliderUiNode* pNode) {
     if (!pNode->isVisible()) {
         return;
     }
 
-    ADD_NODE_TO_RENDERING(RectUiNode);
-}
-
-void UiManager::onNodeSpawning(SliderUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
     auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
 
-    if (!pNode->isVisible()) {
-        return;
-    }
-
     ADD_NODE_TO_RENDERING(SliderUiNode);
 }
 
-void UiManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
+void UiNodeManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
@@ -125,7 +125,7 @@ void UiManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
     }
 }
 
-void UiManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
+void UiNodeManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
@@ -137,7 +137,7 @@ void UiManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
     }
 }
 
-void UiManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
+void UiNodeManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
@@ -149,45 +149,45 @@ void UiManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
     }
 }
 
-void UiManager::onNodeDespawning(TextUiNode* pNode) {
+void UiNodeManager::onNodeDespawning(TextUiNode* pNode) {
+    if (!pNode->isVisible()) {
+        return;
+    }
+
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
 
-    if (!pNode->isVisible()) {
-        return;
-    }
-
     REMOVE_NODE_FROM_RENDERING(TextUiNode);
 }
 
-void UiManager::onNodeDespawning(RectUiNode* pNode) {
-    std::scoped_lock guard(mtxData.first);
-    auto& vNodesByDepth =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
-
+void UiNodeManager::onNodeDespawning(RectUiNode* pNode) {
     if (!pNode->isVisible()) {
         return;
     }
+
+    std::scoped_lock guard(mtxData.first);
+    auto& vNodesByDepth =
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
 
     REMOVE_NODE_FROM_RENDERING(RectUiNode);
 
     // don't unload rect shader program because it's also used for drawing cursors
 }
 
-void UiManager::onNodeDespawning(SliderUiNode* pNode) {
-    std::scoped_lock guard(mtxData.first);
-    auto& vNodesByDepth =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
-
+void UiNodeManager::onNodeDespawning(SliderUiNode* pNode) {
     if (!pNode->isVisible()) {
         return;
     }
 
+    std::scoped_lock guard(mtxData.first);
+    auto& vNodesByDepth =
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
+
     REMOVE_NODE_FROM_RENDERING(SliderUiNode);
 }
 
-void UiManager::onNodeChangedDepth(UiNode* pTargetNode) {
+void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
     std::scoped_lock guard(mtxData.first);
 
     if (!pTargetNode->isVisible()) {
@@ -254,7 +254,7 @@ void collectInputReceivingChildNodes(UiNode* pParent, std::unordered_set<UiNode*
     }
 }
 
-void UiManager::setModalNode(UiNode* pNewModalNode) {
+void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
     std::scoped_lock guard(mtxData.first);
 
     mtxData.second.modalInputReceivingNodes.clear();
@@ -312,7 +312,7 @@ void UiManager::setModalNode(UiNode* pNewModalNode) {
     changeFocusedNode(pDeepestNode);
 }
 
-void UiManager::setFocusedNode(UiNode* pFocusedNode) {
+void UiNodeManager::setFocusedNode(UiNode* pFocusedNode) {
     std::scoped_lock guard(mtxData.first);
 
     // Find in our arrays so that we will automatically clean focus state when becomes invisible or despawns.
@@ -335,7 +335,7 @@ void UiManager::setFocusedNode(UiNode* pFocusedNode) {
     changeFocusedNode(pFocusedNode);
 }
 
-void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput) {
+void UiNodeManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput) {
     std::scoped_lock guard(mtxData.first);
     auto& layerNodes = mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())];
     auto& nodes = layerNodes.receivingInputUiNodes;
@@ -400,7 +400,7 @@ void UiManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInpu
     }
 }
 
-void UiManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
+void UiNodeManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
     std::scoped_lock guard(mtxData.first);
 
     if (mtxData.second.pFocusedNode == nullptr) {
@@ -410,7 +410,7 @@ void UiManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers,
     mtxData.second.pFocusedNode->onKeyboardInputWhileFocused(key, modifiers, bIsPressedDown);
 }
 
-void UiManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
+void UiNodeManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
     std::scoped_lock guard(mtxData.first);
 
     if (mtxData.second.pFocusedNode == nullptr) {
@@ -420,7 +420,7 @@ void UiManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
     mtxData.second.pFocusedNode->onGamepadInputWhileFocused(button, bIsPressedDown);
 }
 
-void UiManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+void UiNodeManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
     std::scoped_lock guard(mtxData.first);
 
     if (mtxData.second.pFocusedNode == nullptr) {
@@ -430,7 +430,7 @@ void UiManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) 
     mtxData.second.pFocusedNode->onKeyboardInputTextCharacterWhileFocused(sTextCharacter);
 }
 
-void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
+void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     std::scoped_lock guard(mtxData.first);
 
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
@@ -499,7 +499,7 @@ void UiManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bo
     }
 }
 
-void UiManager::onMouseMove(int iXOffset, int iYOffset) {
+void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
     std::scoped_lock guard(mtxData.first);
 
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
@@ -585,7 +585,7 @@ void UiManager::onMouseMove(int iXOffset, int iYOffset) {
     mtxData.second.bWasHoveredNodeCheckedThisFrame = true;
 }
 
-void UiManager::onMouseScrollMove(int iOffset) {
+void UiNodeManager::onMouseScrollMove(int iOffset) {
     std::scoped_lock guard(mtxData.first);
 
     if (mtxData.second.pHoveredNodeLastFrame == nullptr) {
@@ -595,13 +595,13 @@ void UiManager::onMouseScrollMove(int iOffset) {
     mtxData.second.pHoveredNodeLastFrame->onMouseScrollMoveWhileHovered(iOffset);
 }
 
-bool UiManager::hasModalUiNodeTree() {
+bool UiNodeManager::hasModalUiNodeTree() {
     std::scoped_lock guard(mtxData.first);
 
     return !mtxData.second.modalInputReceivingNodes.empty();
 }
 
-UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
+UiNodeManager::UiNodeManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
     mtxData.second.pScreenQuadGeometry = GpuResourceManager::createQuad(true);
@@ -617,12 +617,12 @@ UiManager::UiManager(Renderer* pRenderer) : pRenderer(pRenderer) {
         ShaderProgramUsage::OTHER);
 }
 
-void UiManager::onWindowSizeChanged() {
+void UiNodeManager::onWindowSizeChanged() {
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
 }
 
-void UiManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
+void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
     PROFILE_FUNC;
 
     glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
@@ -649,7 +649,7 @@ void UiManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
     mtxData.second.bWasHoveredNodeCheckedThisFrame = false;
 }
 
-void UiManager::drawRectNodes(size_t iLayer) {
+void UiNodeManager::drawRectNodes(size_t iLayer) {
     PROFILE_FUNC;
 
     std::scoped_lock guard(mtxData.first);
@@ -721,7 +721,7 @@ void UiManager::drawRectNodes(size_t iLayer) {
     glDisable(GL_BLEND);
 }
 
-void UiManager::drawSliderNodes(size_t iLayer) {
+void UiNodeManager::drawSliderNodes(size_t iLayer) {
     PROFILE_FUNC;
 
     std::scoped_lock guard(mtxData.first);
@@ -802,7 +802,7 @@ void UiManager::drawSliderNodes(size_t iLayer) {
     glDisable(GL_BLEND);
 }
 
-void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
+void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
     PROFILE_FUNC;
 
     auto& fontManager = pRenderer->getFontManager();
@@ -1146,7 +1146,7 @@ void UiManager::drawTextNodes(size_t iLayer) { // NOLINT
     glDisable(GL_BLEND);
 }
 
-void UiManager::drawLayoutScrollBars(size_t iLayer) {
+void UiNodeManager::drawLayoutScrollBars(size_t iLayer) {
     std::scoped_lock guard(mtxData.first);
     auto& layerNodes = mtxData.second.vSpawnedVisibleNodes[iLayer];
     if (layerNodes.layoutNodesWithScrollBars.empty()) {
@@ -1202,7 +1202,7 @@ void UiManager::drawLayoutScrollBars(size_t iLayer) {
     glDisable(GL_BLEND);
 }
 
-void UiManager::drawScrollBarsDataLocked(
+void UiNodeManager::drawScrollBarsDataLocked(
     const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw, unsigned int iWindowHeight) {
     if (vScrollBarsToDraw.empty()) [[unlikely]] {
         Error::showErrorAndThrowException("expected at least 1 scroll bar to be specified");
@@ -1238,7 +1238,7 @@ void UiManager::drawScrollBarsDataLocked(
     }
 }
 
-void UiManager::changeFocusedNode(UiNode* pNode) {
+void UiNodeManager::changeFocusedNode(UiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
 
     if (mtxData.second.pFocusedNode == pNode) {
@@ -1256,7 +1256,7 @@ void UiManager::changeFocusedNode(UiNode* pNode) {
     }
 }
 
-void UiManager::drawQuad(
+void UiNodeManager::drawQuad(
     const glm::vec2& screenPos,
     const glm::vec2& screenSize,
     unsigned int iScreenHeight,
@@ -1284,7 +1284,7 @@ void UiManager::drawQuad(
     glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
 }
 
-UiManager::~UiManager() {
+UiNodeManager::~UiNodeManager() {
     std::scoped_lock guard(mtxData.first);
 
     mtxData.second.pRectAndCursorShaderProgram = nullptr;

@@ -23,7 +23,6 @@ set(PROJECT_SOURCES
     private/input/EditorInputEventIds.hpp
     public/node/EditorCameraNode.h
     private/node/EditorCameraNode.cpp
-    public/misc/EditorNodeCreationHelpers.hpp
     # add your .h/.cpp files here
 )
 
@@ -49,6 +48,16 @@ message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_S
 # Add includes.
 target_include_directories(${PROJECT_NAME} PUBLIC public)
 target_include_directories(${PROJECT_NAME} PUBLIC private)
+
+# Debug helper.
+if (NOT IS_RELEASE_BUILD AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/debug.cmake")
+    message(STATUS "Disabling optimizations because the file \"debug.cmake\" exists.")
+    if (MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -O0)
+    endif()
+endif()
 
 # -------------------------------------------------------------------------------------------------
 #                                           TOOLS

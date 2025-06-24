@@ -315,7 +315,7 @@ void Node::unsafeDetachFromParentAndDespawn() {
     std::unique_ptr<Node> pSelf;
 
     {
-        if (getWorldRootNodeWhileSpawned() == this) [[unlikely]] {
+        if (isSpawned() && getWorldRootNodeWhileSpawned() == this) [[unlikely]] {
             Error::showErrorAndThrowException(
                 "instead of despawning world's root node, create/replace world using GameInstance "
                 "functions, this would destroy the previous world with all nodes");
@@ -585,6 +585,15 @@ Node::getAxisEventBindings() {
 }
 
 std::recursive_mutex& Node::getSpawnDespawnMutex() { return mtxIsSpawned.first; }
+
+World* Node::getWorldWhileSpawned() const {
+    if (pWorldWeSpawnedIn == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("unable to get world - node \"{}\" is not spawned", sNodeName));
+    }
+
+    return pWorldWeSpawnedIn;
+}
 
 void Node::spawn() {
     PROFILE_FUNC

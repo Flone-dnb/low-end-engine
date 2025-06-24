@@ -9,7 +9,7 @@
 /** Base class for UI nodes. Provides functionality for positioning on the screen. */
 class UiNode : public Node {
     // Manager calls input functions.
-    friend class UiManager;
+    friend class UiNodeManager;
 
     // Disables rendering of the node if the node is outside of the visible area of layout.
     friend class LayoutUiNode;

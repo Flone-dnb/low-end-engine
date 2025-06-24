@@ -3,16 +3,17 @@
 // Custom.
 #include "game/Window.h"
 #include "render/wrapper/ShaderProgram.h"
+#include "game/geometry/ScreenQuadGeometry.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/CameraNode.h"
 #include "game/node/MeshNode.h"
-#include "render/shader/LightSourceShaderArray.h"
 #include "render/FontManager.h"
-#include "misc/ProjectPaths.h"
-#include "render/LightSourceManager.h"
-#include "render/UiManager.h"
-#include "material/TextureManager.h"
+#include "render/UiNodeManager.h"
+#include "render/MeshNodeManager.h"
 #include "render/GpuResourceManager.h"
+#include "render/PostProcessManager.h"
+#include "misc/ProjectPaths.h"
+#include "material/TextureManager.h"
 #include "io/ConfigManager.h"
 
 // External.
@@ -68,8 +69,6 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     this->pContext = pCreatedContext;
 
     pShaderManager = std::unique_ptr<ShaderManager>(new ShaderManager(this));
-    pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager(this));
-    pUiManager = std::unique_ptr<UiManager>(new UiManager(this));
     pTextureManager = std::unique_ptr<TextureManager>(new TextureManager());
     pFontManager = FontManager::create(this);
 
@@ -87,24 +86,27 @@ void Renderer::recreateFramebuffers() {
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
 
 #if !defined(ENGINE_UI_ONLY)
-    if (pPostProcessManager == nullptr) {
-        pPostProcessManager = std::unique_ptr<PostProcessManager>(
-            new PostProcessManager(pShaderManager.get(), iWindowWidth, iWindowHeight));
-    } else {
-        pPostProcessManager->recreateFramebuffer(iWindowWidth, iWindowHeight);
+    // Update framebuffers (main, post-process).
+    const auto pGameManager = pWindow->getGameManager();
+    if (pGameManager != nullptr) {
+        auto& mtxWorldData = pGameManager->getWorlds();
+        std::scoped_lock guard(mtxWorldData.first);
+        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+            pWorld->getCameraManager().onWindowSizeChanged(pWindow);
+        }
     }
 #endif
 
-    // Main framebuffer.
-    auto iDepthFormat = GL_DEPTH_COMPONENT24;
-#if defined(ENGINE_UI_ONLY)
-    iDepthFormat = 0;
-#endif
-    pMainFramebuffer =
-        GpuResourceManager::createFramebuffer(iWindowWidth, iWindowHeight, GL_RGB8, iDepthFormat);
-
-    pUiManager->onWindowSizeChanged();
     pFontManager->onWindowSizeChanged();
+
+    // Notify UI manager.
+    if (pGameManager != nullptr) {
+        auto& mtxWorldData = pGameManager->getWorlds();
+        std::scoped_lock guard(mtxWorldData.first);
+        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+            pWorld->getUiNodeManager().onWindowSizeChanged();
+        }
+    }
 }
 
 void Renderer::onWindowSizeChanged() { recreateFramebuffers(); }
@@ -123,108 +125,126 @@ void Renderer::drawNextFrame() {
     glWaitSync(frameSync.vFences[frameSync.iCurrentFrameIndex], 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(frameSync.vFences[frameSync.iCurrentFrameIndex]);
 
-    const auto pCameraManager = pWindow->getGameManager()->getCameraManager();
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
 
-    // Get camera and shader programs.
-    auto& mtxShaderPrograms = pShaderManager->getShaderPrograms();
-    auto& mtxActiveCamera = pCameraManager->getActiveCamera();
-    std::scoped_lock guardProgramsCamera(mtxShaderPrograms.first, mtxActiveCamera.first);
-
-    const auto pCameraProperties = mtxActiveCamera.second->getCameraProperties();
-
-    // Bind framebuffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-
-    // Set viewport.
-    const auto viewportRect = pCameraProperties->getViewport();
-    const auto iViewportWidth = static_cast<unsigned int>(static_cast<float>(iWindowWidth) * viewportRect.z);
-    const auto iViewportHeight =
-        static_cast<unsigned int>(static_cast<float>(iWindowHeight) * viewportRect.w);
-    pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
-    const auto iViewportLeftBottom = static_cast<int>(
-        static_cast<float>(iWindowHeight) * (1.0F - std::min(1.0F, viewportRect.y + viewportRect.w)));
-    glViewport(0, iViewportLeftBottom, iViewportWidth, iViewportHeight);
-
 #if defined(ENGINE_UI_ONLY)
+    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+    glViewport(0, 0, iWindowWidth, iWindowHeight);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    pUiManager->drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
+    {
+        auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
+        std::scoped_lock guardWorlds(mtxWorlds.first);
+        if (!mtxWorlds.empty()) {
+            mtxWorlds.second.vWorlds[0]->getUiNodeManager().drawUiOnFramebuffer(
+                pMainFramebuffer->getFramebufferId());
+        }
+    }
     copyFramebufferToWindowFramebuffer(pMainFramebuffer->getFramebufferId(), iWindowWidth, iWindowHeight);
 #else
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Get active cameras from all worlds.
+    auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
+    std::scoped_lock guardWorlds(mtxWorlds.first);
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    struct WorldRenderInfo {
+        World* pWorld = nullptr;
+        CameraNode* pCameraNode = nullptr;
+        glm::ivec4 viewportSize;
+    };
+    std::vector<std::pair<std::recursive_mutex*, WorldRenderInfo>> vActiveCameras;
+    vActiveCameras.reserve(2);
 
-    if (mtxActiveCamera.second != nullptr) {
-        // Prepare a handy lambda.
-        const auto drawMeshes =
-            [&](const std::unordered_map<
-                std::string,
-                std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>& shaderPrograms) {
-                for (auto& [sProgramName, shaderProgram] : shaderPrograms) {
-                    const auto& [pWeakPtr, pShaderProgram] = shaderProgram;
-
-                    PROFILE_SCOPE("render mesh nodes of shader program")
-                    PROFILE_ADD_SCOPE_TEXT(sProgramName.c_str(), sProgramName.size());
-
-                    // Set shader program.
-                    glUseProgram(pShaderProgram->getShaderProgramId());
-
-                    // Set camera uniforms.
-                    pCameraProperties->getShaderConstantsSetter().setConstantsToShader(pShaderProgram);
-
-                    // Set light arrays.
-                    pLightSourceManager->setArrayPropertiesToShader(pShaderProgram);
-
-                    // Get mesh nodes.
-                    auto& mtxMeshNodes = pShaderProgram->getMeshNodesUsingThisProgram();
-                    std::scoped_lock guard(mtxMeshNodes.first);
-
-                    for (const auto& pMeshNode : mtxMeshNodes.second) {
-                        // Set mesh.
-                        auto& vao = pMeshNode->getVertexArrayObjectWhileSpawned();
-                        glBindVertexArray(vao.getVertexArrayObjectId());
-
-                        // Set mesh uniforms.
-                        pMeshNode->getShaderConstantsSetterWhileSpawned().setConstantsToShader(
-                            pShaderProgram);
-
-                        // Draw.
-                        glDrawElements(GL_TRIANGLES, vao.getIndexCount(), GL_UNSIGNED_SHORT, nullptr);
-                    }
-
-                    // Clear texture slots (if they where used).
-                    for (int i = GL_TEXTURE0; i < 4; i++) { // NOLINT
-                        glActiveTexture(i);
-                        glBindTexture(GL_TEXTURE_2D, 0);
-                    }
-                }
-            };
-
-        // Draw meshes.
-        drawMeshes(mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::MESH_NODE)]);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        {
-            drawMeshes(
-                mtxShaderPrograms.second[static_cast<size_t>(ShaderProgramUsage::TRANSPARENT_MESH_NODE)]);
+    for (const auto& pWorld : mtxWorlds.second.vWorlds) {
+        // Check camera.
+        auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
+        mtxActiveCamera.first.lock();
+        if (mtxActiveCamera.second.pNode == nullptr) {
+            mtxActiveCamera.first.unlock();
+            continue;
         }
-        glDisable(GL_BLEND);
+        const auto pCameraProperties = mtxActiveCamera.second.pNode->getCameraProperties();
 
-        // Draw post-processing before UI (use window-size viewport to avoid "applying viewport twice").
-        glViewport(0, 0, iWindowWidth, iWindowHeight);
-        {
-            pPostProcessManager->drawPostProcessing(*pFullscreenQuad, *pMainFramebuffer, pCameraProperties);
+        // Prepare viewport.
+        const auto viewportRect = pCameraProperties->getViewport();
+        const auto iViewportWidth =
+            static_cast<unsigned int>(static_cast<float>(iWindowWidth) * viewportRect.z);
+        const auto iViewportHeight =
+            static_cast<unsigned int>(static_cast<float>(iWindowHeight) * viewportRect.w);
+
+        pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
+
+        const auto iViewportX = static_cast<int>(static_cast<float>(iWindowWidth) * viewportRect.x);
+        const auto iViewportLeftBottom = static_cast<int>(
+            static_cast<float>(iWindowHeight) * (1.0F - std::min(1.0F, viewportRect.y + viewportRect.w)));
+
+        vActiveCameras.push_back(
+            {&mtxActiveCamera.first,
+             WorldRenderInfo{
+                 .pWorld = pWorld.get(),
+                 .pCameraNode = mtxActiveCamera.second.pNode,
+                 .viewportSize =
+                     glm::ivec4(iViewportX, iViewportLeftBottom, iViewportWidth, iViewportHeight)}});
+    }
+
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+
+        // Draw meshes from each camera.
+        for (const auto& mtxActiveCamera : vActiveCameras) {
+            const auto pWorld = mtxActiveCamera.second.pWorld;
+            const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
+            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+
+            glBindFramebuffer(
+                GL_FRAMEBUFFER, pWorld->getCameraManager().pMainFramebuffer->getFramebufferId());
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
+
+            pWorld->getMeshNodeManager().drawMeshes(pCameraProperties, pWorld->getLightSourceManager());
         }
-        glViewport(0, iViewportLeftBottom, iViewportWidth, iViewportHeight);
 
-        // Draw UI on post-processing framebuffer.
-        pUiManager->drawUiOnFramebuffer(pPostProcessManager->pFramebuffer->getFramebufferId());
+        // Draw post processing before UI.
+        for (const auto& mtxActiveCamera : vActiveCameras) {
+            const auto pWorld = mtxActiveCamera.second.pWorld;
+            const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
+            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
 
-        copyFramebufferToWindowFramebuffer(
-            pPostProcessManager->pFramebuffer->getFramebufferId(), iWindowWidth, iWindowHeight);
+            // Use window-size viewport to avoid "applying viewport twice".
+            glViewport(0, 0, iWindowWidth, iWindowHeight);
+            {
+                pWorld->getCameraManager().getPostProcessManager().drawPostProcessing(
+                    *pFullscreenQuad, *pWorld->getCameraManager().pMainFramebuffer, pCameraProperties);
+            }
+            glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
+        }
+
+        // Draw UI nodes on post-processing framebuffer.
+        for (const auto& mtxActiveCamera : vActiveCameras) {
+            const auto pWorld = mtxActiveCamera.second.pWorld;
+            auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
+            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+
+            glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
+
+            pWorld->getUiNodeManager().drawUiOnFramebuffer(
+                postProcessManager.pFramebuffer->getFramebufferId());
+        }
+
+        // Copy results from different worlds in order (consider viewport size).
+        for (const auto& mtxActiveCamera : vActiveCameras) {
+            const auto pWorld = mtxActiveCamera.second.pWorld;
+            auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
+            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+
+            copyFramebufferToWindowFramebuffer(*postProcessManager.pFramebuffer, viewportSize);
+        }
+    }
+
+    // Unlock cameras.
+    for (auto& mtxActiveCamera : vActiveCameras) {
+        mtxActiveCamera.first->unlock();
     }
 #endif
 
@@ -244,11 +264,26 @@ void Renderer::drawNextFrame() {
 }
 
 void Renderer::copyFramebufferToWindowFramebuffer(
-    unsigned int iFramebufferToCopy, unsigned int iWidth, unsigned int iHeight) {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, iFramebufferToCopy);
+    Framebuffer& srcFramebuffer, const glm::ivec4& viewportSize) {
+    // Prepare rect bounds (start/end pos) for blit.
+    glm::ivec4 bounds = viewportSize;
+    bounds.z += bounds.x;
+    bounds.w += bounds.y;
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFramebuffer.getFramebufferId());
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBlitFramebuffer(0, 0, iWidth, iHeight, 0, 0, iWidth, iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBlitFramebuffer(
+        bounds.x, // src
+        bounds.y,
+        bounds.z,
+        bounds.w,
+        bounds.x, // dst
+        bounds.y,
+        bounds.z,
+        bounds.w,
+        GL_COLOR_BUFFER_BIT,
+        GL_LINEAR);
 }
 
 void Renderer::calculateFrameStatistics() {
@@ -333,19 +368,11 @@ void Renderer::calculateFrameStatistics() {
 
 Renderer::~Renderer() {
     pFullscreenQuad = nullptr;
-    pUiManager =
-        nullptr; // UI manager uses some shaders programs while alive so destroy it before shader manager
     pFontManager = nullptr;
 
     for (auto& fence : frameSync.vFences) {
         glDeleteSync(fence);
     }
-
-    // Delete framebuffers and stuff before OpenGL context.
-    pPostProcessManager = nullptr;
-    pMainFramebuffer = nullptr;
-
-    pLightSourceManager = nullptr;
 
     SDL_GL_DeleteContext(pContext);
 }
@@ -371,14 +398,8 @@ void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
 
 ShaderManager& Renderer::getShaderManager() { return *pShaderManager; }
 
-LightSourceManager& Renderer::getLightSourceManager() { return *pLightSourceManager; }
-
-UiManager& Renderer::getUiManager() { return *pUiManager; }
-
 FontManager& Renderer::getFontManager() { return *pFontManager; }
 
 TextureManager& Renderer::getTextureManager() { return *pTextureManager; }
 
 RenderStatistics& Renderer::getRenderStatistics() { return renderStats; }
-
-PostProcessManager& Renderer::getPostProcessManager() { return *pPostProcessManager; }

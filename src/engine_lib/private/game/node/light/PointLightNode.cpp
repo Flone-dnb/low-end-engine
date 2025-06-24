@@ -4,6 +4,7 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "render/LightSourceManager.h"
+#include "game/World.h"
 
 // External.
 #include "nameof.hpp"
@@ -67,7 +68,7 @@ void PointLightNode::onSpawning() {
 
     if (mtxProperties.second.bIsVisible) {
         // Add to rendering.
-        auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+        auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
         mtxProperties.second.pActiveLightHandle =
             lightSourceManager.getPointLightsArray().addLightSourceToRendering(
                 this, &mtxProperties.second.shaderProperties);
@@ -96,7 +97,7 @@ void PointLightNode::setIsVisible(bool bIsVisible) {
     if (isSpawned()) {
         if (mtxProperties.second.bIsVisible) {
             // Add to rendering.
-            auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+            auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
             mtxProperties.second.pActiveLightHandle =
                 lightSourceManager.getPointLightsArray().addLightSourceToRendering(
                     this, &mtxProperties.second.shaderProperties);

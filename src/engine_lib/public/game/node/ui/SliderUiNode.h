@@ -12,7 +12,7 @@
 /** It's a slider alright. */
 class SliderUiNode : public UiNode {
     // Manager calls input functions.
-    friend class UiManager;
+    friend class UiNodeManager;
 
 public:
     SliderUiNode();

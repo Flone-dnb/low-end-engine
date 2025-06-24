@@ -59,14 +59,17 @@ set(PROJECT_SOURCES
     public/render/ShaderConstantsSetter.hpp
     private/render/LightSourceManager.cpp
     private/render/LightSourceManager.h
-    private/render/UiManager.cpp
-    private/render/UiManager.h
+    private/render/UiNodeManager.cpp
+    private/render/UiNodeManager.h
+    private/render/MeshNodeManager.h
+    private/render/MeshNodeManager.cpp
     public/render/ShaderAlignmentConstants.hpp
     private/render/FontManager.cpp
     public/render/FontManager.h
     public/render/PostProcessManager.h
     public/render/UiLayer.hpp
     private/render/PostProcessManager.cpp
+    private/render/ShaderProgramUsage.hpp
     private/misc/InitManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h
@@ -114,7 +117,7 @@ set(PROJECT_SOURCES
     public/game/GameInstance.h
     private/game/GameInstance.cpp
     private/game/World.cpp
-    private/game/World.h
+    public/game/World.h
     private/game/node/Node.cpp
     public/game/node/Node.h
     private/game/node/SpatialNode.cpp
@@ -225,6 +228,7 @@ message(STATUS "${PROJECT_NAME}: adding external dependency \"GLAD\"...")
 set(GLAD_TARGET_NAME glad)
 add_library(${GLAD_TARGET_NAME} STATIC
     ${RELATIVE_EXT_PATH}/glad_gles31/src/glad.c
+    ${RELATIVE_EXT_PATH}/glad_gles31/include/KHR/khrplatform.h
     ${RELATIVE_EXT_PATH}/glad_gles31/include/glad/glad.h
 )
 target_include_directories(${GLAD_TARGET_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/glad_gles31/include)

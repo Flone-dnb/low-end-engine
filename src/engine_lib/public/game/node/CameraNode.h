@@ -44,8 +44,10 @@ public:
      * @remark Only spawned camera nodes can be primary (active), otherwise an error will be shown.
      *
      * @remark Previously active camera (if there was one) will become inactive.
+     *
+     * @param bIsSoundListener `true` to consider position and direction of the camera as player's ears.
      */
-    void makeActive();
+    void makeActive(bool bIsSoundListener = true);
 
     /**
      * Sets how the camera can move and rotate.

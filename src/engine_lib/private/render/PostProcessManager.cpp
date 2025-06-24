@@ -7,6 +7,8 @@
 #include "render/GpuResourceManager.h"
 #include "misc/Profiler.hpp"
 #include "game/camera/CameraProperties.h"
+#include "game/GameManager.h"
+#include "game/Window.h"
 
 // External.
 #include "glad/glad.h"
@@ -30,14 +32,18 @@ void PostProcessManager::setSkySettings(const std::optional<SkySettings>& settin
     skySettings = settings;
 }
 
-PostProcessManager::PostProcessManager(
-    ShaderManager* pShaderManager, unsigned int iWidth, unsigned int iHeight) {
-    pShaderProgram = pShaderManager->getShaderProgram(
+PostProcessManager::PostProcessManager(GameManager* pGameManager) {
+    pShaderProgram = pGameManager->getRenderer()->getShaderManager().getShaderProgram(
         "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
         "engine/shaders/postprocessing/PostProcessing.frag.glsl",
         ShaderProgramUsage::OTHER);
 
-    recreateFramebuffer(iWidth, iHeight);
+    onWindowSizeChanged(pGameManager->getWindow());
+}
+
+void PostProcessManager::onWindowSizeChanged(Window* pWindow) {
+    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
+    pFramebuffer = GpuResourceManager::createFramebuffer(iWindowWidth, iWindowHeight, GL_RGB8, 0);
 }
 
 void PostProcessManager::drawPostProcessing(
@@ -95,8 +101,4 @@ void PostProcessManager::drawPostProcessing(
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glEnable(GL_DEPTH_TEST);
-}
-
-void PostProcessManager::recreateFramebuffer(unsigned int iWidth, unsigned int iHeight) {
-    pFramebuffer = GpuResourceManager::createFramebuffer(iWidth, iHeight, GL_RGB8, 0);
 }

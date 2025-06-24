@@ -6,6 +6,7 @@
 class Window;
 class EditorCameraNode;
 class TextUiNode;
+class UiNode;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -55,20 +56,55 @@ protected:
      */
     virtual void onBeforeNewFrame(float timeSincePrevCallInSec) override;
 
+    /**
+     * Called before a world is destroyed.
+     *
+     * @param pRootNode Root node of a world about to be destroyed.
+     */
+    virtual void onBeforeWorldDestroyed(Node* pRootNode) override;
+
 private:
+    /** Groups pointers to nodes from game's level. */
+    struct GameWorldNodes {
+        /** Root node of game's level. */
+        Node* pRoot = nullptr;
+
+        /** Camera that allows displaying game's level in the viewport. */
+        EditorCameraNode* pViewportCamera = nullptr;
+
+        /** FPS, RAM and other stats. */
+        TextUiNode* pStatsText = nullptr;
+    };
+
+    /** Groups pointers to nodes from editor's world. */
+    struct EditorWorldNodes {
+        /** Root node of editor's world. */
+        Node* pRoot = nullptr;
+
+        /** Node in the editor's world that occupies space for game's world to be rendered to. */
+        UiNode* pViewportUiPlaceholder = nullptr;
+    };
+
     /** Registers action and axis input events in the input manager. */
     void registerEditorInputEvents();
 
-    /** Should be called after created/loaded a new world to add editor-specific nodes. */
-    void addEditorNodesToCurrentWorld();
+    /**
+     * Should be called after created/loaded a new world to add editor-specific nodes.
+     *
+     * @param pRootNode Root node of the editor's world.
+     */
+    void attachEditorNodes(Node* pRootNode);
 
     /**
-     * Returns editor camera node.
+     * Should be called after game level was loaded.
      *
-     * @return Editor camera node.
+     * @param pRootNode Root node of game's node tree.
      */
-    EditorCameraNode* getEditorCameraNode();
+    void onAfterGameWorldCreated(Node* pRootNode);
 
-    /** Text node used to print statistics in the editor. */
-    TextUiNode* pStatsTextNode = nullptr;
+    /** Not `nullptr` if game world exists. */
+    GameWorldNodes gameWorldNodes;
+
+    /** Not `nullptr` if editor world exists. */
+    EditorWorldNodes editorWorldNodes;
 };

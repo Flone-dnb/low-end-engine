@@ -2,18 +2,48 @@
 
 // Standard.
 #include <mutex>
+#include <memory>
 
 class CameraNode;
 class Renderer;
 class CameraProperties;
+class PostProcessManager;
+class GameManager;
+class Window;
+class Framebuffer;
 
-/** Determines what camera is used to draw on the screen. */
+/** Determines which camera is used to draw a world on the screen. */
 class CameraManager {
     // Active camera node will notify the manager when it's being despawned.
     friend class CameraNode;
 
+    // Renderer notifies to change framebuffer size.
+    friend class Renderer;
+
 public:
-    CameraManager() = default;
+    /** Groups information about the active camera. */
+    struct ActiveCameraInfo {
+        ActiveCameraInfo() = default;
+
+        /**
+         * It's safe to store a raw pointer here because when the camera node will be despawning
+         * it will notify this manager to clear this pointer.
+         */
+        CameraNode* pNode = nullptr;
+
+        /** `true` to consider position and direction of the camera as player's ears. */
+        bool bIsSoundListener = true;
+    };
+
+    CameraManager() = delete;
+    ~CameraManager();
+
+    /**
+     * Creates a new manager.
+     *
+     * @param pGameManager Game manager.
+     */
+    CameraManager(GameManager* pGameManager);
 
     /**
      * Makes a camera node to be the primary camera.
@@ -22,12 +52,20 @@ public:
      *
      * @remark Previously active camera (if there was one) will become inactive.
      *
-     * @param pCameraNode Spawned camera node to make active.
+     * @param pCameraNode      Spawned camera node to make active.
+     * @param bIsSoundListener `true` to consider position and direction of the camera as player's ears.
      */
-    void setActiveCamera(CameraNode* pCameraNode);
+    void setActiveCamera(CameraNode* pCameraNode, bool bIsSoundListener = true);
 
     /** Removes the currently active camera so that there will be no active camera. */
     void clearActiveCamera();
+
+    /**
+     * Returns settings for post processing of the rendered image.
+     *
+     * @return Settings.
+     */
+    PostProcessManager& getPostProcessManager() const;
 
     /**
      * Returns the currently active camera.
@@ -40,9 +78,16 @@ public:
      *
      * @return `nullptr` as node if there is no active camera, otherwise valid camera.
      */
-    std::pair<std::recursive_mutex, CameraNode*>& getActiveCamera();
+    std::pair<std::recursive_mutex, ActiveCameraInfo>& getActiveCamera();
 
 private:
+    /**
+     * Should be called after window's size changed.
+     *
+     * @param pWindow Window.
+     */
+    void onWindowSizeChanged(Window* pWindow);
+
     /**
      * Called by an active camera node when it's being despawned.
      *
@@ -50,11 +95,12 @@ private:
      */
     void onCameraNodeDespawning(CameraNode* pCameraNode);
 
-    /**
-     * Stores active camera.
-     *
-     * @remark It's safe to store a raw pointer here because when the camera node will be despawning
-     * it will notify this manager to clear this pointer.
-     */
-    std::pair<std::recursive_mutex, CameraNode*> mtxActiveCamera;
+    /** Framebuffer for rendering. */
+    std::unique_ptr<Framebuffer> pMainFramebuffer;
+
+    /** Settings for post processing of the rendered image. */
+    std::unique_ptr<PostProcessManager> pPostProcessManager;
+
+    /** Active camera. */
+    std::pair<std::recursive_mutex, ActiveCameraInfo> mtxActiveCamera;
 };

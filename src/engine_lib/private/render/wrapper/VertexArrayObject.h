@@ -14,7 +14,7 @@
 class VertexArrayObject {
     // Only these are expected to create objects of this type.
     friend class GpuResourceManager;
-    friend class UiManager;
+    friend class UiNodeManager;
 
 public:
     VertexArrayObject() = delete;

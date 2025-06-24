@@ -6,7 +6,7 @@
 // Custom.
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
-#include "render/UiManager.h"
+#include "render/UiNodeManager.h"
 #include "game/Window.h"
 
 // External.
@@ -92,24 +92,21 @@ void SliderUiNode::onSpawning() {
     UiNode::onSpawning();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onNodeSpawning(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeSpawning(this);
 }
 
 void SliderUiNode::onDespawning() {
     UiNode::onDespawning();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onNodeDespawning(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeDespawning(this);
 }
 
 void SliderUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onSpawnedNodeChangedVisibility(this);
+    getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
 }
 
 float SliderUiNode::snapToNearest(float value, float step) { return std::round(value / step) * step; }

@@ -13,6 +13,10 @@
 
 class Node;
 class GameManager;
+class CameraManager;
+class UiNodeManager;
+class MeshNodeManager;
+class LightSourceManager;
 
 /** Tiny RAII-like class that locks a mutex and changes a boolean while alive. */
 class ReceivingInputNodesGuard {
@@ -112,6 +116,34 @@ public:
      * @return `nullptr` if world is being destroyed, otherwise pointer to world's root node.
      */
     Node* getRootNode();
+
+    /**
+     * Returns camera manager.
+     *
+     * @return Manager.
+     */
+    CameraManager& getCameraManager() const;
+
+    /**
+     * Returns UI node manager.
+     *
+     * @return Manager.
+     */
+    UiNodeManager& getUiNodeManager() const;
+
+    /**
+     * Returns mesh node manager.
+     *
+     * @return Manager.
+     */
+    MeshNodeManager& getMeshNodeManager() const;
+
+    /**
+     * Returns manager used to add/remove light sources to/from rendering.
+     *
+     * @return Manager.
+     */
+    LightSourceManager& getLightSourceManager() const;
 
     /**
      * Returns total amount of currently spawned nodes.
@@ -252,6 +284,18 @@ private:
      * True if we are currently in a loop where we call every "ticking" node or a node that receiving input.
      */
     std::pair<std::recursive_mutex, bool> mtxIsIteratingOverNodes;
+
+    /** Manages all UI nodes. */
+    std::unique_ptr<UiNodeManager> pUiNodeManager;
+
+    /** Manages all 3D mesh nodes. */
+    std::unique_ptr<MeshNodeManager> pMeshNodeManager;
+
+    /** Manages light sources (nodes). */
+    std::unique_ptr<LightSourceManager> pLightSourceManager;
+
+    /** Determines which camera is used as in-game eyes. */
+    std::unique_ptr<CameraManager> pCameraManager;
 
     /** Do not delete (free) this pointer. Always valid pointer to game manager. */
     GameManager* const pGameManager = nullptr;

@@ -7,9 +7,13 @@
 #include "glad/glad.h"
 
 Framebuffer::Framebuffer(
-    unsigned int iFramebufferId, unsigned int iColorTextureId, unsigned int iDepthStencilBufferId)
+    unsigned int iFramebufferId,
+    unsigned int iColorTextureId,
+    unsigned int iDepthStencilBufferId,
+    unsigned int iWidth,
+    unsigned int iHeight)
     : iFramebufferId(iFramebufferId), iColorTextureId(iColorTextureId),
-      iDepthStencilBufferId(iDepthStencilBufferId) {}
+      iDepthStencilBufferId(iDepthStencilBufferId), size({iWidth, iHeight}) {}
 
 Framebuffer::~Framebuffer() {
     GL_CHECK_ERROR(glDeleteFramebuffers(1, &iFramebufferId));

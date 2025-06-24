@@ -5,6 +5,8 @@
 #include "game/GameInstance.h"
 #include "game/geometry/PrimitiveMeshGenerator.h"
 #include "render/wrapper/ShaderProgram.h"
+#include "game/World.h"
+#include "render/MeshNodeManager.h"
 
 // External.
 #include "nameof.hpp"
@@ -139,8 +141,12 @@ void MeshNode::setIsVisible(bool bVisible) {
     mtxIsVisible.second = bVisible;
 
     if (isSpawned()) {
+        // First notify material to maybe update render resources.
         material.onNodeChangedVisibilityWhileSpawned(
             bVisible, this, getGameInstanceWhileSpawned()->getRenderer());
+
+        // Then manager.
+        getWorldWhileSpawned()->getMeshNodeManager().onSpawnedMeshNodeChangingVisibility(this, bVisible);
     }
 }
 
@@ -175,10 +181,16 @@ void MeshNode::onSpawning() {
                     NAMEOF(mtxShaderConstants.second.normalMatrix).c_str(), uniforms.normalMatrix);
             });
         });
+
+    // After we initialized render resources notify manager.
+    getWorldWhileSpawned()->getMeshNodeManager().onMeshNodeSpawning(this);
 }
 
 void MeshNode::onDespawning() {
     SpatialNode::onDespawning();
+
+    // Before destroying render resources notify manager.
+    getWorldWhileSpawned()->getMeshNodeManager().onMeshNodeDespawning(this);
 
     // Destroy VAO and constants manager.
     pVao = nullptr;

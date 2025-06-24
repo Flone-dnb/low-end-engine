@@ -202,7 +202,7 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return std::unique_ptr<Framebuffer>(
-        new Framebuffer(iFramebufferId, iColorTextureId, iDepthStencilBufferId));
+        new Framebuffer(iFramebufferId, iColorTextureId, iDepthStencilBufferId, iWidth, iHeight));
 }
 
 std::unique_ptr<Buffer> GpuResourceManager::createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic) {

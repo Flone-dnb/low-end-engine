@@ -6,12 +6,12 @@
 
 GameInstance::GameInstance(Window* pWindow) : pWindow(pWindow) {}
 
-void GameInstance::createWorld(const std::function<void()>& onCreated) {
-    pWindow->getGameManager()->createWorld(onCreated);
+void GameInstance::createWorld(const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds) {
+    pWindow->getGameManager()->createWorld(onCreated, bDestroyOldWorlds);
 }
 
 void GameInstance::loadNodeTreeAsWorld(
-    const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded) {
+    const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded) {
     pWindow->getGameManager()->loadNodeTreeAsWorld(pathToNodeTreeFile, onLoaded);
 }
 
@@ -60,8 +60,6 @@ void GameInstance::onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers
     it->second(modifiers, input);
 }
 
-Node* GameInstance::getWorldRootNode() const { return pWindow->getGameManager()->getWorldRootNode(); }
-
 size_t GameInstance::getTotalSpawnedNodeCount() const {
     return pWindow->getGameManager()->getTotalSpawnedNodeCount();
 }
@@ -77,10 +75,6 @@ size_t GameInstance::getReceivingInputNodeCount() const {
 Window* GameInstance::getWindow() const { return pWindow; }
 
 Renderer* GameInstance::getRenderer() const { return pWindow->getGameManager()->getRenderer(); }
-
-CameraManager* GameInstance::getCameraManager() const {
-    return pWindow->getGameManager()->getCameraManager();
-}
 
 InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }
 

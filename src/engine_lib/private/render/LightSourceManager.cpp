@@ -6,9 +6,12 @@
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
-#include "render/Renderer.h"
+#include "render/PostProcessManager.h"
 
-LightSourceManager::LightSourceManager(Renderer* pRenderer) : pRenderer(pRenderer) {
+LightSourceManager::~LightSourceManager() {}
+
+LightSourceManager::LightSourceManager(PostProcessManager* pPostProcessManager)
+    : pPostProcessManager(pPostProcessManager) {
     // Create array of directional lights.
     pDirectionalLightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(
         this,
@@ -48,8 +51,5 @@ void LightSourceManager::setArrayPropertiesToShader(ShaderProgram* pShaderProgra
     pSpotlightsArray->setArrayPropertiesToShader(pShaderProgram);
     pPointLightsArray->setArrayPropertiesToShader(pShaderProgram);
 
-    pShaderProgram->setVector3ToShader(
-        "ambientLightColor", pRenderer->getPostProcessManager().getAmbientLightColor());
+    pShaderProgram->setVector3ToShader("ambientLightColor", pPostProcessManager->getAmbientLightColor());
 }
-
-Renderer* LightSourceManager::getRenderer() const { return pRenderer; }

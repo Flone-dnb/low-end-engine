@@ -3,8 +3,9 @@
 // Custom.
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
-#include "render/UiManager.h"
+#include "render/UiNodeManager.h"
 #include "game/node/ui/LayoutUiNode.h"
+#include "game/World.h"
 
 // External.
 #include "nameof.hpp"
@@ -176,7 +177,7 @@ void UiNode::setModal() {
     }
     // don't check if receiving input, some child nodes can receive input instead of this one
 
-    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().setModalNode(this);
+    getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
 }
 
 void UiNode::setFocused() {
@@ -190,7 +191,7 @@ void UiNode::setFocused() {
         Error::showErrorAndThrowException("this function can only be called on nodes that receive input");
     }
 
-    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().setFocusedNode(this);
+    getWorldWhileSpawned()->getUiNodeManager().setFocusedNode(this);
 }
 
 size_t UiNode::getNodeDepthWhileSpawned() {
@@ -207,8 +208,7 @@ void UiNode::onSpawning() {
     recalculateNodeDepthWhileSpawned();
 
     if (isReceivingInput()) {
-        getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onSpawnedUiNodeInputStateChange(
-            this, true);
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, true);
     }
 }
 
@@ -216,16 +216,14 @@ void UiNode::onDespawning() {
     Node::onDespawning();
 
     if (isReceivingInput()) {
-        getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onSpawnedUiNodeInputStateChange(
-            this, false);
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, false);
     }
 }
 
 void UiNode::onChangedReceivingInputWhileSpawned(bool bEnabledNow) {
     Node::onChangedReceivingInputWhileSpawned(bEnabledNow);
 
-    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onSpawnedUiNodeInputStateChange(
-        this, bEnabledNow);
+    getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, bEnabledNow);
 }
 
 void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
@@ -240,7 +238,7 @@ void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
 
     recalculateNodeDepthWhileSpawned();
 
-    getGameInstanceWhileSpawned()->getRenderer()->getUiManager().onNodeChangedDepth(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeChangedDepth(this);
 }
 
 void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {

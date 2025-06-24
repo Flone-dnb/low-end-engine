@@ -25,13 +25,16 @@ class LayoutUiNode;
 class SliderUiNode;
 
 /** Keeps track of spawned UI nodes and handles UI rendering. */
-class UiManager {
-    // Only renderer is expected to create objects of this type.
-    friend class Renderer;
+class UiNodeManager {
+    // Only world is expected to create objects of this type.
+    friend class World;
 
 public:
-    UiManager() = delete;
-    ~UiManager();
+    UiNodeManager() = delete;
+    ~UiNodeManager();
+
+    /** Called after the window size changed. */
+    void onWindowSizeChanged();
 
     /**
      * Renders the UI on the specified framebuffer.
@@ -288,10 +291,7 @@ private:
      *
      * @param pRenderer Renderer.
      */
-    UiManager(Renderer* pRenderer);
-
-    /** Called after the window size changed. */
-    void onWindowSizeChanged();
+    UiNodeManager(Renderer* pRenderer);
 
     /**
      * Renders the UI text nodes on the current framebuffer.

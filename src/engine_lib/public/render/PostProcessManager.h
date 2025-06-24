@@ -11,6 +11,8 @@
 class ShaderManager;
 class Framebuffer;
 class CameraProperties;
+class GameManager;
+class Window;
 
 /** Procedural sky settings. */
 struct SkySettings {
@@ -87,7 +89,10 @@ private:
 
 /** Settings for post processing of the rendered image. */
 class PostProcessManager {
-    // Only renderer is supposed to create such objects.
+    // Only camera manager is supposed to create such objects.
+    friend class CameraManager;
+
+    // Renderer queries draw commands.
     friend class Renderer;
 
 public:
@@ -139,11 +144,9 @@ private:
     /**
      * Creates a new object.
      *
-     * @param pShaderManager Shader manager.
-     * @param iWidth         Width of the post-processing framebuffer.
-     * @param iHeight        Height of the post-processing framebuffer.
+     * @param pGameManager   Game manager.
      */
-    PostProcessManager(ShaderManager* pShaderManager, unsigned int iWidth, unsigned int iHeight);
+    PostProcessManager(GameManager* pGameManager);
 
     /**
      * Draws post-processing fullscreen quad on @ref pFramebuffer.
@@ -158,17 +161,16 @@ private:
         CameraProperties* pCameraProperties);
 
     /**
-     * (Re)creates post-processing framebuffer.
+     * Should be called after window's size changed.
      *
-     * @param iWidth  Width of the post-processing framebuffer.
-     * @param iHeight Height of the post-processing framebuffer.
+     * @param pWindow Window.
      */
-    void recreateFramebuffer(unsigned int iWidth, unsigned int iHeight);
+    void onWindowSizeChanged(Window* pWindow);
 
     /** Shader program used for rendering fullscreen quad. */
     std::shared_ptr<ShaderProgram> pShaderProgram;
 
-    /** Framebuffer to draw results of the post-processing */
+    /** Always valid. Framebuffer to draw results of the post-processing */
     std::unique_ptr<Framebuffer> pFramebuffer;
 
     /** Empty if disabled. */

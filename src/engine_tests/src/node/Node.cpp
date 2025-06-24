@@ -144,7 +144,7 @@ TEST_CASE("get parent node of type") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 auto pDerivedNodeChild = std::make_unique<MyDerivedNode>();
 
                 const auto pDerivedDerivedNode =
@@ -154,7 +154,7 @@ TEST_CASE("get parent node of type") {
                 pDerivedNodeParent->iAnswer = 42;
 
                 pDerivedNodeParent->addChildNode(std::move(pDerivedNodeChild));
-                getWorldRootNode()->addChildNode(std::move(pDerivedNodeParent));
+                pRootNode->addChildNode(std::move(pDerivedNodeParent));
 
                 REQUIRE(pDerivedDerivedNode->bSpawnCalled);
                 getWindow()->close();
@@ -210,7 +210,7 @@ TEST_CASE("get child node of type") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 auto pDerivedNodeParent = std::make_unique<MyDerivedNode>();
 
                 auto pDerivedNodeChild = std::make_unique<MyDerivedNode>("MyDerivedNode");
@@ -222,7 +222,7 @@ TEST_CASE("get child node of type") {
                 auto pDerivedDerivedNode = pDerivedDerivedNodeU.get();
 
                 pDerivedDerivedNodeU->addChildNode(std::move(pDerivedNodeParent));
-                getWorldRootNode()->addChildNode(std::move(pDerivedDerivedNodeU));
+                pRootNode->addChildNode(std::move(pDerivedDerivedNodeU));
 
                 REQUIRE(pDerivedDerivedNode->bSpawnCalled);
                 getWindow()->close();
@@ -262,21 +262,19 @@ TEST_CASE("onBeforeNewFrame is called only on marked nodes") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
-                REQUIRE(getWorldRootNode() != nullptr);
-
+            createWorld([&](Node* pRootNode) {
                 REQUIRE(getCalledEveryFrameNodeCount() == 0);
 
                 auto pNotCalledtNodeU = std::make_unique<MyNode>(false);
                 pNotCalledtNode = pNotCalledtNodeU.get();
-                getWorldRootNode()->addChildNode(
+                pRootNode->addChildNode(
                     std::move(pNotCalledtNodeU),
                     Node::AttachmentRule::KEEP_RELATIVE,
                     Node::AttachmentRule::KEEP_RELATIVE); // queues deferred task to add to world
 
                 auto pCalledNodeU = std::make_unique<MyNode>(true);
                 pCalledNode = pCalledNodeU.get();
-                getWorldRootNode()->addChildNode(
+                pRootNode->addChildNode(
                     std::move(pCalledNodeU),
                     Node::AttachmentRule::KEEP_RELATIVE,
                     Node::AttachmentRule::KEEP_RELATIVE); // queues deferred task to add to world
@@ -357,8 +355,8 @@ TEST_CASE("tick groups order is correct") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
-                REQUIRE(getWorldRootNode() != nullptr);
+            createWorld([&](Node* pRootNode) {
+                REQUIRE(pRootNode != nullptr);
 
                 auto pFirstNodeU = std::make_unique<MyFirstNode>();
                 pFirstNode = pFirstNodeU.get();
@@ -366,8 +364,8 @@ TEST_CASE("tick groups order is correct") {
                 auto pSecondNodeU = std::make_unique<MySecondNode>();
                 pSecondNode = pSecondNodeU.get();
 
-                getWorldRootNode()->addChildNode(std::move(pFirstNodeU));
-                getWorldRootNode()->addChildNode(std::move(pSecondNodeU));
+                pRootNode->addChildNode(std::move(pFirstNodeU));
+                pRootNode->addChildNode(std::move(pSecondNodeU));
             });
         }
         virtual ~TestGameInstance() override {}
@@ -436,11 +434,11 @@ TEST_CASE("input event callbacks in Node are triggered") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register events.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -493,12 +491,12 @@ TEST_CASE("detach and despawn spawned node") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([this]() {
+            createWorld([this](Node* pRootNode) {
                 REQUIRE(getTotalSpawnedNodeCount() == 1);
 
                 auto pMyNodeU = std::make_unique<Node>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
             });
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
@@ -581,11 +579,11 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register events.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -676,11 +674,11 @@ TEST_CASE("disable \"is called every frame\" in onBeforeNewFrame") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
             });
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
@@ -742,14 +740,14 @@ TEST_CASE("disable \"is called every frame\" in onBeforeNewFrame and despawn") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
 
                 REQUIRE(getCalledEveryFrameNodeCount() == 0);
 
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 REQUIRE(getCalledEveryFrameNodeCount() == 1);
             });
@@ -817,11 +815,11 @@ TEST_CASE("quickly enable and disable \"is called every frame\" while spawned") 
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
             });
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
@@ -879,11 +877,11 @@ TEST_CASE("quickly enable, disable and enable \"is called every frame\" while sp
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
             });
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
@@ -944,11 +942,11 @@ TEST_CASE("enable \"is called every frame\" while spawned and despawn") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
             });
         }
         virtual void onBeforeNewFrame(float fTimeSincePrevCallInSec) override {
@@ -1017,11 +1015,11 @@ TEST_CASE("disable receiving input while processing input") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1102,11 +1100,11 @@ TEST_CASE("disable receiving input and despawn") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1180,11 +1178,11 @@ TEST_CASE("enable receiving input and despawn") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1258,11 +1256,11 @@ TEST_CASE("enable receiving input while spawned") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1337,11 +1335,11 @@ TEST_CASE("quickly enable receiving input and disable while spawned") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1417,11 +1415,11 @@ TEST_CASE("quickly disable receiving input and enable while spawned") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1501,11 +1499,11 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 // Spawn node.
                 auto pMyNodeU = std::make_unique<MyNode>();
                 pMyNode = pMyNodeU.get();
-                getWorldRootNode()->addChildNode(std::move(pMyNodeU));
+                pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register events.
                 auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
@@ -1576,7 +1574,7 @@ TEST_CASE("serialize and deserialize node tree") {
         virtual ~TestGameInstance() override = default;
 
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pWorldRootNode) {
                 // Create tree.
                 auto pRootNode = std::make_unique<Node>("My root node");
                 const auto pChildNode =
@@ -1639,7 +1637,7 @@ TEST_CASE("serialize node tree that references an external node tree") {
         virtual ~TestGameInstance() override = default;
 
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 const auto pathToParentTree = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
                                               sTestDirName / vUsedTestFileNames[3];
                 const auto pathToExternalTree = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
@@ -1804,7 +1802,7 @@ TEST_CASE("load node tree as world") {
     public:
         TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 auto pRoot = std::make_unique<Node>("my node");
                 pRoot->addChildNode(std::make_unique<MeshNode>("my mesh"));
 
@@ -1820,9 +1818,9 @@ TEST_CASE("load node tree as world") {
                 REQUIRE(std::filesystem::exists(pathToDirectory / "test.toml"));
                 REQUIRE(std::filesystem::exists(pathToDirectory / "test.1.geometry.bin"));
 
-                loadNodeTreeAsWorld(pathToDirectory / "test", [this]() {
-                    REQUIRE(getWorldRootNode()->getNodeName() == "my node");
-                    const auto mtxChildNodes = getWorldRootNode()->getChildNodes();
+                loadNodeTreeAsWorld(pathToDirectory / "test", [this](Node* pRootNode) {
+                    REQUIRE(pRootNode->getNodeName() == "my node");
+                    const auto mtxChildNodes = pRootNode->getChildNodes();
                     REQUIRE(mtxChildNodes.second.size() == 1);
 
                     REQUIRE(mtxChildNodes.second[0]->getNodeName() == "my mesh");

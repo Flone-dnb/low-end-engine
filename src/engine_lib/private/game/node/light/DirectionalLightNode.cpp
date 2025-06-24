@@ -3,6 +3,7 @@
 // Custom.
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
+#include "game/World.h"
 #include "render/LightSourceManager.h"
 
 // External.
@@ -57,7 +58,7 @@ void DirectionalLightNode::onSpawning() {
 
     if (mtxProperties.second.bIsVisible) {
         // Add to rendering.
-        auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+        auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
         mtxProperties.second.pActiveLightHandle =
             lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(
                 this, &mtxProperties.second.shaderProperties);
@@ -86,7 +87,7 @@ void DirectionalLightNode::setIsVisible(bool bIsVisible) {
     if (isSpawned()) {
         if (mtxProperties.second.bIsVisible) {
             // Add to rendering.
-            auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+            auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
             mtxProperties.second.pActiveLightHandle =
                 lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(
                     this, &mtxProperties.second.shaderProperties);

@@ -4,6 +4,7 @@
 #include "game/GameInstance.h"
 #include "game/camera/CameraManager.h"
 #include "math/MathHelpers.hpp"
+#include "game/World.h"
 
 namespace {
     constexpr std::string_view sTypeGuid = "e472b11f-7914-49f8-a86e-a500e6bb749f";
@@ -44,10 +45,10 @@ void CameraNode::onDespawning() {
 
     {
         // Notify camera manager if this node is the active camera.
-        auto& mtxActiveCamera = getGameInstanceWhileSpawned()->getCameraManager()->getActiveCamera();
+        auto& mtxActiveCamera = getWorldWhileSpawned()->getCameraManager().getActiveCamera();
         std::scoped_lock guardActive(mtxActiveCamera.first);
-        if (mtxActiveCamera.second == this) {
-            getGameInstanceWhileSpawned()->getCameraManager()->onCameraNodeDespawning(this);
+        if (mtxActiveCamera.second.pNode == this) {
+            getWorldWhileSpawned()->getCameraManager().onCameraNodeDespawning(this);
         }
     }
 }
@@ -213,4 +214,6 @@ glm::vec3 CameraNode::getOrbitalTargetLocation() {
     return localSpaceOriginInWorldSpace;
 }
 
-void CameraNode::makeActive() { getGameInstanceWhileSpawned()->getCameraManager()->setActiveCamera(this); }
+void CameraNode::makeActive(bool bIsSoundListener) {
+    getWorldWhileSpawned()->getCameraManager().setActiveCamera(this, bIsSoundListener);
+}

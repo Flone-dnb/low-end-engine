@@ -3,19 +3,19 @@
 // Standard.
 #include <memory>
 
-class Renderer;
+class PostProcessManager;
 class LightSourceShaderArray;
 class ShaderProgram;
 
-/** Manages active (spawned and visible) light sources that will be rendered. */
+/** Manages active (spawned and visible) light nodes that will be rendered. */
 class LightSourceManager {
-    // Only renderer is expected to create objects of this type.
-    friend class Renderer;
+    // Only world is expected to create objects of this type.
+    friend class World;
 
 public:
     LightSourceManager() = delete;
 
-    ~LightSourceManager() = default;
+    ~LightSourceManager();
 
     LightSourceManager(const LightSourceManager&) = delete;
     LightSourceManager& operator=(const LightSourceManager&) = delete;
@@ -50,20 +50,13 @@ public:
      */
     void setArrayPropertiesToShader(ShaderProgram* pShaderProgram);
 
-    /**
-     * Returns renderer.
-     *
-     * @return Renderer.
-     */
-    Renderer* getRenderer() const;
-
 private:
     /**
      * Constructs a new manager.
      *
-     * @param pRenderer Renderer.
+     * @param pPostProcessManager Post-process manager.
      */
-    LightSourceManager(Renderer* pRenderer);
+    LightSourceManager(PostProcessManager* pPostProcessManager);
 
     /** Properties of all active directional lights. */
     std::unique_ptr<LightSourceShaderArray> pDirectionalLightsArray;
@@ -74,6 +67,6 @@ private:
     /** Properties of all active point lights. */
     std::unique_ptr<LightSourceShaderArray> pPointLightsArray;
 
-    /** Renderer. */
-    Renderer* const pRenderer = nullptr;
+    /** Post-process manager. */
+    PostProcessManager* const pPostProcessManager = nullptr;
 };

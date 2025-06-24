@@ -8,7 +8,7 @@
 #include "render/ShaderManager.h"
 #include "misc/Error.h"
 #include "render/RenderStatistics.h"
-#include "render/PostProcessManager.h"
+#include "math/GLMath.hpp"
 
 // External.
 #include "SDL_video.h"
@@ -17,11 +17,10 @@ typedef struct __GLsync* GLsync;
 
 class Window;
 class FontManager;
-class UiManager;
-class LightSourceManager;
 class TextureManager;
-class Framebuffer;
 class CameraProperties;
+class ScreenQuadGeometry;
+class Framebuffer;
 
 /** OpenGL ES renderer. */
 class Renderer {
@@ -73,24 +72,6 @@ public:
     ShaderManager& getShaderManager();
 
     /**
-     * Returns manager used to add/remove light sources to/from rendering.
-     *
-     * @remark As a game developer you don't need to use this. Light nodes use this function automatically.
-     *
-     * @return Manager.
-     */
-    LightSourceManager& getLightSourceManager();
-
-    /**
-     * Returns manager used to add/remove UI nodes to/from rendering.
-     *
-     * @remark As a game developer you don't need to use this. Light nodes use this function automatically.
-     *
-     * @return Manager.
-     */
-    UiManager& getUiManager();
-
-    /**
      * Returns manager used to load fonts.
      *
      * @return Manager.
@@ -110,13 +91,6 @@ public:
      * @return Stats.
      */
     RenderStatistics& getRenderStatistics();
-
-    /**
-     * Returns settings for post processing of the rendered image.
-     *
-     * @return Settings.
-     */
-    PostProcessManager& getPostProcessManager();
 
 private:
     /** Groups stuff used to synchronize GPU and CPU. */
@@ -171,12 +145,10 @@ private:
     /**
      * Copies the framebuffer with the specified ID to the window's framebuffer (framebuffer 0).
      *
-     * @param iFramebufferToCopy ID of the framebuffer to copy.
-     * @param iWidth             Width of the framebuffer to copy.
-     * @param iHeight            Height of the framebuffer to copy.
+     * @param srcFramebuffer ID of the framebuffer to copy.
+     * @param viewportSize   Rectangle to copy from/to.
      */
-    void copyFramebufferToWindowFramebuffer(
-        unsigned int iFramebufferToCopy, unsigned int iWidth, unsigned int iHeight);
+    void copyFramebufferToWindowFramebuffer(Framebuffer& srcFramebuffer, const glm::ivec4& viewportSize);
 
     /** Database of all shaders. */
     std::unique_ptr<ShaderManager> pShaderManager;
@@ -184,20 +156,8 @@ private:
     /** Texture loading and management. */
     std::unique_ptr<TextureManager> pTextureManager;
 
-    /** UI rendering. */
-    std::unique_ptr<UiManager> pUiManager;
-
     /** .ttf loading and rendering. */
     std::unique_ptr<FontManager> pFontManager;
-
-    /** Light sources to render. */
-    std::unique_ptr<LightSourceManager> pLightSourceManager;
-
-    /** Framebuffer for rendering. */
-    std::unique_ptr<Framebuffer> pMainFramebuffer;
-
-    /** Settings for post processing of the rendered image. */
-    std::unique_ptr<PostProcessManager> pPostProcessManager;
 
     /** Fullscreen quad for rendering. */
     std::unique_ptr<ScreenQuadGeometry> pFullscreenQuad;

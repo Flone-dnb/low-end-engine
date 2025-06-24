@@ -2,6 +2,7 @@
 
 // Custom.
 #include "misc/InitManager.hpp"
+#include "game/GameManager.h"
 
 #if defined(_WIN32)
 #include <Windows.h>

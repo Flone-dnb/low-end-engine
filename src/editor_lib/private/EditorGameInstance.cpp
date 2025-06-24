@@ -8,10 +8,11 @@
 #include "game/node/light/PointLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/ui/TextUiNode.h"
+#include "game/node/ui/LayoutUiNode.h"
+#include "game/node/ui/RectUiNode.h"
 #include "input/EditorInputEventIds.hpp"
 #include "input/InputManager.h"
 #include "math/MathHelpers.hpp"
-#include "misc/EditorNodeCreationHelpers.hpp"
 #include "node/EditorCameraNode.h"
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
@@ -38,30 +39,30 @@ void EditorGameInstance::onGameStarted() {
 
     registerEditorInputEvents();
 
-    // Create world.
-    createWorld([this]() { addEditorNodesToCurrentWorld(); });
+    // Create editor's world.
+    createWorld([this](Node* pRootNode) {
+        editorWorldNodes.pRoot = pRootNode;
+        attachEditorNodes(pRootNode);
+    });
 }
 
 void EditorGameInstance::onGamepadConnected(std::string_view sGamepadName) {
-    if (getWorldRootNode() == nullptr) {
+    if (gameWorldNodes.pViewportCamera == nullptr) {
         return;
     }
-
-    const auto pEditorCameraNode = getEditorCameraNode();
-    pEditorCameraNode->setIgnoreInput(false);
+    gameWorldNodes.pViewportCamera->setIgnoreInput(false);
 }
 
 void EditorGameInstance::onGamepadDisconnected() {
-    if (getWorldRootNode() == nullptr) {
+    if (gameWorldNodes.pViewportCamera == nullptr) {
         return;
     }
 
-    const auto pEditorCameraNode = getEditorCameraNode();
-    pEditorCameraNode->setIgnoreInput(true);
+    gameWorldNodes.pViewportCamera->setIgnoreInput(true);
 }
 
 void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
-    if (pStatsTextNode == nullptr) {
+    if (gameWorldNodes.pStatsText == nullptr) {
         return;
     }
 
@@ -82,11 +83,11 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
         sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
         if (ratio >= 0.9F) { // NOLINT
-            pStatsTextNode->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
         } else if (ratio >= 0.75F) { // NOLINT
-            pStatsTextNode->setTextColor(glm::vec4(1.0F, 1.0F, 0.0F, 1.0F));
+            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 1.0F, 0.0F, 1.0F));
         } else {
-            pStatsTextNode->setTextColor(glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
         }
 
         // Render.
@@ -96,8 +97,16 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
             getRenderer()->getFpsLimit());
 
         // Done.
-        pStatsTextNode->setText(utf::as_u16(sStatsText));
+        gameWorldNodes.pStatsText->setText(utf::as_u16(sStatsText));
         timeBeforeStatsUpdate = 1.0F;
+    }
+}
+
+void EditorGameInstance::onBeforeWorldDestroyed(Node* pRootNode) {
+    if (pRootNode == gameWorldNodes.pRoot) {
+        gameWorldNodes = {};
+    } else if (pRootNode == editorWorldNodes.pRoot) {
+        editorWorldNodes = {};
     }
 }
 
@@ -163,11 +172,8 @@ void EditorGameInstance::registerEditorInputEvents() {
                 if (isGamepadConnected()) {
                     return;
                 }
-
-                const auto pEditorCameraNode = getEditorCameraNode();
-
                 getWindow()->setCursorVisibility(!bIsPressed);
-                pEditorCameraNode->setIgnoreInput(!bIsPressed);
+                gameWorldNodes.pViewportCamera->setIgnoreInput(!bIsPressed);
             };
     }
 
@@ -217,65 +223,96 @@ void EditorGameInstance::registerEditorInputEvents() {
     }
 }
 
-void EditorGameInstance::addEditorNodesToCurrentWorld() {
-    // Editor camera.
-    const auto pEditorCameraNode = getWorldRootNode()->addChildNode(createEditorNode<EditorCameraNode>());
-    pEditorCameraNode->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
-    pEditorCameraNode->makeActive();
-    if (isGamepadConnected()) {
-        pEditorCameraNode->setIgnoreInput(false);
-    }
+void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
+    // Spawn some camera to view editor's UI.
+    const auto pCamera = pRootNode->addChildNode(std::make_unique<CameraNode>());
+    pCamera->makeActive(false);
 
-    // Stats.
-    pStatsTextNode = getWorldRootNode()->addChildNode(createEditorNode<TextUiNode>());
-    pStatsTextNode->setSize(glm::vec2(1.0F, 1.0F));
-    pStatsTextNode->setPosition(glm::vec2(0.0F, 0.0F));
-
-    // Stuff for testing.
+    const auto pHorizontalLayout = pRootNode->addChildNode(std::make_unique<LayoutUiNode>());
+    pHorizontalLayout->setPosition(glm::vec2(0.0F, 0.0F));
+    pHorizontalLayout->setSize(glm::vec2(1.0F, 1.0F));
+    pHorizontalLayout->setIsHorizontal(true);
+    pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     {
-        auto pFloor = createEditorNode<MeshNode>();
-        pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
-        pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
-        getWorldRootNode()->addChildNode(std::move(pFloor));
+        const auto pLeftRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
+        pLeftRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
+        pLeftRect->setExpandPortionInLayout(1);
 
-        auto pCube = createEditorNode<MeshNode>();
-        pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
-        pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
-        getWorldRootNode()->addChildNode(std::move(pCube));
+        const auto pMiddleVerticalLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
+        pMiddleVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
+        pMiddleVerticalLayout->setExpandPortionInLayout(4);
+        {
+            const auto pRect = pMiddleVerticalLayout->addChildNode(std::make_unique<RectUiNode>());
+            pRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
+            pRect->setExpandPortionInLayout(1);
 
-        auto pSun = createEditorNode<DirectionalLightNode>();
-        pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-            glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
-        getWorldRootNode()->addChildNode(std::move(pSun));
+            editorWorldNodes.pViewportUiPlaceholder =
+                pMiddleVerticalLayout->addChildNode(std::make_unique<UiNode>());
+            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(5);
+        }
 
-        auto pSpotlight = createEditorNode<SpotlightNode>();
-        pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
-        pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-            glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
-        getWorldRootNode()->addChildNode(std::move(pSpotlight));
-
-        auto pPointLight = createEditorNode<PointLightNode>();
-        pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
-        getWorldRootNode()->addChildNode(std::move(pPointLight));
+        const auto pRightRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
+        pRightRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
+        pRightRect->setExpandPortionInLayout(1);
     }
+
+    // Create game world.
+    createWorld(
+        [this](Node* pGameRootNode) {
+            auto pFloor = std::make_unique<MeshNode>();
+            pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
+            pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
+            pGameRootNode->addChildNode(std::move(pFloor));
+
+            auto pCube = std::make_unique<MeshNode>();
+            pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
+            pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
+            pGameRootNode->addChildNode(std::move(pCube));
+
+            auto pSun = std::make_unique<DirectionalLightNode>();
+            pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
+            pGameRootNode->addChildNode(std::move(pSun));
+
+            auto pSpotlight = std::make_unique<SpotlightNode>();
+            pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
+            pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
+            pGameRootNode->addChildNode(std::move(pSpotlight));
+
+            auto pPointLight = std::make_unique<PointLightNode>();
+            pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
+            pGameRootNode->addChildNode(std::move(pPointLight));
+
+            onAfterGameWorldCreated(pGameRootNode);
+        },
+        false);
 }
 
-EditorCameraNode* EditorGameInstance::getEditorCameraNode() {
-    // Get active camera.
-    auto& mtxActiveCamera = getCameraManager()->getActiveCamera();
-    std::scoped_lock guard(mtxActiveCamera.first);
+void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
+    gameWorldNodes.pRoot = pRootNode;
 
-    if (mtxActiveCamera.second == nullptr) {
-        Error::showErrorAndThrowException("expected a camera to be active");
+    if (editorWorldNodes.pViewportUiPlaceholder == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected editor's viewport UI node to be created at this point");
     }
 
-    // Cast to editor camera.
-    const auto pEditorCameraNode = dynamic_cast<EditorCameraNode*>(mtxActiveCamera.second);
-    if (pEditorCameraNode == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "expected the active camera to be an editor camera (node \"{}\")",
-            mtxActiveCamera.second->getNodeName()));
+    // Viewport camera.
+    gameWorldNodes.pViewportCamera = pRootNode->addChildNode(std::make_unique<EditorCameraNode>());
+    gameWorldNodes.pViewportCamera->setSerialize(false);
+    gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
+    gameWorldNodes.pViewportCamera->makeActive();
+    if (isGamepadConnected()) {
+        gameWorldNodes.pViewportCamera->setIgnoreInput(false);
     }
+    const auto pos = editorWorldNodes.pViewportUiPlaceholder->getPosition();
+    const auto size = editorWorldNodes.pViewportUiPlaceholder->getSize();
+    gameWorldNodes.pViewportCamera->getCameraProperties()->setViewport(
+        glm::vec4(pos.x, pos.y, size.x, size.y));
 
-    return pEditorCameraNode;
+    // Stats.
+    gameWorldNodes.pStatsText = pRootNode->addChildNode(std::make_unique<TextUiNode>());
+    gameWorldNodes.pStatsText->setSerialize(false);
+    gameWorldNodes.pStatsText->setTextHeight(0.035F);
+    gameWorldNodes.pStatsText->setSize(glm::vec2(1.0F, 1.0F));
+    gameWorldNodes.pStatsText->setPosition(glm::vec2(0.0F, 0.0F));
 }

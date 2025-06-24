@@ -146,6 +146,15 @@ public:
         return mtxMeshNodesUsingThisProgram;
     }
 
+    /**
+     * Returns name of the shader program.
+     *
+     * @remark Generally used for logging.
+     *
+     * @return Name.
+     */
+    std::string_view getName() const { return sShaderProgramName; }
+
 private:
     /**
      * Creates a new shader program.

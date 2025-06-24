@@ -48,9 +48,9 @@ private:
     /**
      * Called to update listener's direction and position.
      *
-     * @param pCameraManager Camera manager.
+     * @param cameraManager Camera manager.
      */
-    static void onBeforeNewFrame(CameraManager* pCameraManager);
+    static void onBeforeNewFrame(CameraManager& cameraManager);
 
     /**
      * Called by sound nodes when they spawn.

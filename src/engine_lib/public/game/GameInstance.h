@@ -40,13 +40,16 @@ public:
     /**
      * Creates a new world that contains only one node - root node.
      *
-     * @remark Replaces the old world (if existed).
+     * @remark Also see @ref onBeforeWorldDestroyed.
      *
      * @param onCreated Callback function that will be called after the world is
-     * created. Use GameInstance member functions as callback functions for created worlds, because all nodes
-     * and other game objects will be destroyed while the world is changing.
+     * created with world's root node passed as the only argument. Use GameInstance member functions as
+     * callback functions for created worlds, because all nodes and other game objects will be destroyed while
+     * the world is changing.
+     * @param bDestroyOldWorlds `true` to destroy all previously existing worlds before creating the new
+     * world.
      */
-    void createWorld(const std::function<void()>& onCreated);
+    void createWorld(const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds = true);
 
     /**
      * Asynchronously loads and deserializes a node tree as the new world. Node tree's root node will be used
@@ -56,14 +59,15 @@ public:
      * and other game objects will be destroyed while the world is changing.
      *
      * @remark Replaces the old world (if existed).
+     * @remark Also see @ref onBeforeWorldDestroyed.
      *
      * @param pathToNodeTreeFile Path to the file that contains a node tree to load, the ".toml"
      * extension will be automatically added if not specified.
      * @param onLoaded           Callback function that will be called on the main thread after the world
-     * is loaded.
+     * is loaded with world's root node passed as the only argument.
      */
     void loadNodeTreeAsWorld(
-        const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded);
+        const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded);
 
     /**
      * Adds a function to be executed asynchronously on the thread pool.
@@ -78,13 +82,6 @@ public:
      * @param task Function to execute.
      */
     void addTaskToThreadPool(const std::function<void()>& task) const;
-
-    /**
-     * Returns a pointer to world's root node.
-     *
-     * @return `nullptr` if world is not created or was destroyed, otherwise valid pointer.
-     */
-    Node* getWorldRootNode() const;
 
     /**
      * Returns total amount of currently spawned nodes.
@@ -126,15 +123,6 @@ public:
     Renderer* getRenderer() const;
 
     /**
-     * Returns a reference to the camera manager this game is using.
-     *
-     * @warning Do not delete (free) returned pointer.
-     *
-     * @return Always valid pointer.
-     */
-    CameraManager* getCameraManager() const;
-
-    /**
      * Returns a reference to the input manager this game instance is using.
      * Input manager allows binding IDs with multiple input keys that
      * you can receive in @ref onInputActionEvent.
@@ -167,6 +155,13 @@ protected:
      * At this point you can create and interact with the game world and etc.
      */
     virtual void onGameStarted() {}
+
+    /**
+     * Called before a world is destroyed.
+     *
+     * @param pRootNode Root node of a world about to be destroyed.
+     */
+    virtual void onBeforeWorldDestroyed(Node* pRootNode) {}
 
     /**
      * Called before a new frame is rendered.

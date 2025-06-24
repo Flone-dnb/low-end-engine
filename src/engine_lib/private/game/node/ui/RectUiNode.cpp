@@ -3,8 +3,9 @@
 // Custom.
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
-#include "render/UiManager.h"
+#include "render/UiNodeManager.h"
 #include "material/TextureManager.h"
+#include "game/World.h"
 
 // External.
 #include "nameof.hpp"
@@ -115,16 +116,14 @@ void RectUiNode::onSpawning() {
     }
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onNodeSpawning(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeSpawning(this);
 }
 
 void RectUiNode::onDespawning() {
     UiNode::onDespawning();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onNodeDespawning(this);
+    getWorldWhileSpawned()->getUiNodeManager().onNodeDespawning(this);
 
     pTexture = nullptr;
 }
@@ -133,8 +132,7 @@ void RectUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
     // Notify manager.
-    auto& uiManager = getGameInstanceWhileSpawned()->getRenderer()->getUiManager();
-    uiManager.onSpawnedNodeChangedVisibility(this);
+    getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
 }
 
 void RectUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {

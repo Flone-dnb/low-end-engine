@@ -2,12 +2,11 @@
 
 // Custom.
 #include "io/Logger.h"
-#include "game/World.h"
 #include "misc/ReflectedTypeDatabase.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/Node.h"
 #include "misc/Profiler.hpp"
-#include "render/UiManager.h"
+#include "render/UiNodeManager.h"
 #include "game/Window.h"
 #include "sound/SoundManager.h"
 
@@ -34,25 +33,29 @@ GameManager::GameManager(
 
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
-    pCameraManager = std::make_unique<CameraManager>();
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
 
     ReflectedTypeDatabase::registerEngineTypes();
 }
 
-void GameManager::destroyCurrentWorld() {
+void GameManager::onBeforeWorldDestroyed(Node* pRootNode) {
+    pGameInstance->onBeforeWorldDestroyed(pRootNode);
+}
+
+void GameManager::destroyWorlds() {
     // Wait for GPU to finish all work (just in case).
     Renderer::waitForGpuToFinishWorkUpToThisPoint();
 
     std::scoped_lock guard(mtxWorldData.first);
 
-    if (mtxWorldData.second.pWorld != nullptr) {
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
         // Not clearing the pointer because some nodes can still reference world.
-        mtxWorldData.second.pWorld->destroyWorld();
+        pWorld->destroyWorld();
 
         // Can safely destroy the world object now.
-        mtxWorldData.second.pWorld = nullptr;
+        pWorld = nullptr;
     }
+    mtxWorldData.second.vWorlds.clear();
 }
 
 void GameManager::destroy() {
@@ -62,7 +65,7 @@ void GameManager::destroy() {
     Logger::get().flushToDisk();
 
     // Destroy world before game instance, so that no node will reference game instance.
-    destroyCurrentWorld();
+    destroyWorlds();
 
     threadPool.stop();
 
@@ -92,7 +95,7 @@ GameManager::~GameManager() {
     Error::showErrorAndThrowException("unexpected state");
 }
 
-void GameManager::createWorld(const std::function<void()>& onCreated) {
+void GameManager::createWorld(const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds) {
     std::scoped_lock guard(mtxWorldData.first);
     auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
@@ -105,10 +108,11 @@ void GameManager::createWorld(const std::function<void()>& onCreated) {
     // or nodes that receiving input so avoid modifying those arrays in this case.
     pOptionalTask = std::unique_ptr<WorldCreationTask>(new WorldCreationTask());
     pOptionalTask->onCreated = onCreated;
+    pOptionalTask->bDestroyOldWorlds = bDestroyOldWorlds;
 }
 
 void GameManager::loadNodeTreeAsWorld(
-    const std::filesystem::path& pathToNodeTreeFile, const std::function<void()>& onLoaded) {
+    const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded) {
     std::scoped_lock guard(mtxWorldData.first);
     auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
@@ -138,42 +142,34 @@ void GameManager::addTaskToThreadPool(const std::function<void()>& task) {
 size_t GameManager::getReceivingInputNodeCount() {
     std::scoped_lock guard(mtxWorldData.first);
 
-    if (mtxWorldData.second.pWorld == nullptr) {
-        return 0;
+    size_t iNodeCount = 0;
+    for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+        const auto nodeGuard = pWorld->getReceivingInputNodes();
+        iNodeCount += nodeGuard.getNodes()->size();
     }
-
-    const auto nodeGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
-    return nodeGuard.getNodes()->size();
+    return iNodeCount;
 }
 
 size_t GameManager::getTotalSpawnedNodeCount() {
     std::scoped_lock guard(mtxWorldData.first);
 
-    if (mtxWorldData.second.pWorld == nullptr) {
-        return 0;
+    size_t iNodeCount = 0;
+    for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+        iNodeCount += pWorld->getTotalSpawnedNodeCount();
     }
 
-    return mtxWorldData.second.pWorld->getTotalSpawnedNodeCount();
+    return iNodeCount;
 }
 
 size_t GameManager::getCalledEveryFrameNodeCount() {
     std::scoped_lock guard(mtxWorldData.first);
 
-    if (mtxWorldData.second.pWorld == nullptr) {
-        return 0;
+    size_t iNodeCount = 0;
+    for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+        iNodeCount += pWorld->getCalledEveryFrameNodeCount();
     }
 
-    return mtxWorldData.second.pWorld->getCalledEveryFrameNodeCount();
-}
-
-Node* GameManager::getWorldRootNode() {
-    std::scoped_lock guard(mtxWorldData.first);
-
-    if (mtxWorldData.second.pWorld == nullptr) {
-        return nullptr;
-    }
-
-    return mtxWorldData.second.pWorld->getRootNode();
+    return iNodeCount;
 }
 
 void GameManager::onGameStarted() {
@@ -198,14 +194,21 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         // Create a new world if needed.
         if (pWorldCreationTask != nullptr) {
             if (pWorldCreationTask->pOptionalNodeTreeLoadTask == nullptr) {
-                destroyCurrentWorld();
-                mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(this));
+                if (pWorldCreationTask->bDestroyOldWorlds) {
+                    destroyWorlds();
+                }
+                Node* pRootNode = nullptr;
+                {
+                    auto pNewWorld = std::unique_ptr<World>(new World(this));
+                    pRootNode = pNewWorld->getRootNode();
+                    mtxWorldData.second.vWorlds.push_back(std::move(pNewWorld));
+                }
 
                 // Clear task before calling the callback because inside of the callback the user might
                 // queue new world creation.
                 auto callback = std::move(pWorldCreationTask->onCreated);
                 pWorldCreationTask.reset();
-                callback();
+                callback(pRootNode);
             } else {
                 if (!pWorldCreationTask->pOptionalNodeTreeLoadTask->bIsAsyncTaskStarted) {
                     pWorldCreationTask->pOptionalNodeTreeLoadTask->bIsAsyncTaskStarted = true;
@@ -231,14 +234,22 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
                         });
                 } else if (pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot != nullptr) {
                     // Loaded.
-                    destroyCurrentWorld();
-                    mtxWorldData.second.pWorld = std::unique_ptr<World>(new World(
-                        this, std::move(pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot)));
+                    if (pWorldCreationTask->bDestroyOldWorlds) {
+                        destroyWorlds();
+                    }
+                    Node* pRootNode = nullptr;
+                    {
+                        auto pNewWorld = std::unique_ptr<World>(new World(
+                            this,
+                            std::move(pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot)));
+                        pRootNode = pNewWorld->getRootNode();
+                        mtxWorldData.second.vWorlds.push_back(std::move(pNewWorld));
+                    }
 
                     // Same thing, clear task before callback.
                     auto callback = std::move(pWorldCreationTask->onCreated);
                     pWorldCreationTask.reset();
-                    callback();
+                    callback(pRootNode);
                 }
             }
         }
@@ -249,118 +260,157 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         pGameInstance->onBeforeNewFrame(timeSincePrevCallInSec);
     }
 
+    std::scoped_lock guard(mtxWorldData.first);
+    if (mtxWorldData.second.vWorlds.empty()) {
+        return;
+    }
+    auto& vWorlds = mtxWorldData.second.vWorlds;
+
     {
         PROFILE_SCOPE("tick nodes")
-
-        // Tick nodes.
-        std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.pWorld == nullptr) {
-            return;
+        for (const auto& pWorld : vWorlds) {
+            pWorld->tickTickableNodes(timeSincePrevCallInSec);
         }
-        mtxWorldData.second.pWorld->tickTickableNodes(timeSincePrevCallInSec);
     }
 
-    pSoundManager->onBeforeNewFrame(pCameraManager.get());
+    // Update sound info.
+    for (const auto& pWorld : vWorlds) {
+        auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
+        std::scoped_lock guard(mtxActiveCamera.first);
+        if (mtxActiveCamera.second.pNode == nullptr) {
+            continue;
+        }
+        if (!mtxActiveCamera.second.bIsSoundListener) {
+            continue;
+        }
+        pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
+        break;
+    }
 }
 
 void GameManager::onKeyboardInput(
     KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) {
-    if (!bIsRepeat && !pRenderer->getUiManager().hasModalUiNodeTree()) {
-        // Trigger raw (no events) input processing function.
-        pGameInstance->onKeyboardInput(key, modifiers, bIsPressedDown);
+    pGameInstance->onKeyboardInput(key, modifiers, bIsPressedDown);
 
-        // Trigger input events.
-        triggerActionEvents(key, modifiers, bIsPressedDown);
-        triggerAxisEvents(key, modifiers, bIsPressedDown);
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!bIsRepeat && !pWorld->getUiNodeManager().hasModalUiNodeTree()) {
+            // Trigger input events.
+            triggerActionEvents(key, modifiers, bIsPressedDown);
+            triggerAxisEvents(key, modifiers, bIsPressedDown);
+        }
+
+        // Notify UI.
+        pWorld->getUiNodeManager().onKeyboardInput(key, modifiers, bIsPressedDown);
     }
-
-    // Notify UI.
-    pRenderer->getUiManager().onKeyboardInput(key, modifiers, bIsPressedDown);
 }
 
 void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
-    pRenderer->getUiManager().onKeyboardInputTextCharacter(sTextCharacter);
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        pWorld->getUiNodeManager().onKeyboardInputTextCharacter(sTextCharacter);
+    }
 }
 
 void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
-    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
-        // Trigger raw (no events) input processing function.
-        pGameInstance->onGamepadInput(button, bIsPressedDown);
+    pGameInstance->onGamepadInput(button, bIsPressedDown);
 
-        // Trigger action events.
-        triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
+            // Trigger action events.
+            triggerActionEvents(button, KeyboardModifiers(0), bIsPressedDown);
+        }
+
+        // Notify UI.
+        pWorld->getUiNodeManager().onGamepadInput(button, bIsPressedDown);
     }
-
-    // Notify UI.
-    pRenderer->getUiManager().onGamepadInput(button, bIsPressedDown);
 }
 
 void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {
-    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
-        // Trigger raw (no events) input processing function.
-        pGameInstance->onGamepadAxisMoved(axis, position);
+    pGameInstance->onGamepadAxisMoved(axis, position);
 
-        // Trigger axis events.
-        triggerAxisEvents(axis, position);
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
+            // Trigger axis events.
+            triggerAxisEvents(axis, position);
+        }
     }
 }
 
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
-        // Trigger raw (no events) input processing function.
-        pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
+    pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
 
-        // Trigger input events.
-        triggerActionEvents(button, modifiers, bIsPressedDown);
-    }
+    std::scoped_lock guard(mtxWorldData.first);
 
-    if (getWindow()->isCursorVisible()) {
-        // Notify UI.
-        pRenderer->getUiManager().onMouseInput(button, modifiers, bIsPressedDown);
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
+            // Trigger input events.
+            triggerActionEvents(button, modifiers, bIsPressedDown);
+        }
+
+        if (getWindow()->isCursorVisible()) {
+            // Notify UI.
+            pWorld->getUiNodeManager().onMouseInput(button, modifiers, bIsPressedDown);
+        }
     }
 }
 
 void GameManager::onMouseMove(int iXOffset, int iYOffset) {
-    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
-        // Trigger game instance logic.
-        pGameInstance->onMouseMove(iXOffset, iYOffset);
+    pGameInstance->onMouseMove(iXOffset, iYOffset);
 
-        // Call on nodes that receive input.
-        std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.pWorld != nullptr) {
-            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
-            const auto pNodes = nodesGuard.getNodes();
-            for (const auto& pNode : *pNodes) {
-                pNode->onMouseMove(iXOffset, iYOffset);
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
+            // Trigger game instance logic.
+            pGameInstance->onMouseMove(iXOffset, iYOffset);
+
+            // Call on nodes that receive input.
+            std::scoped_lock guard(mtxWorldData.first);
+            for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+                const auto nodesGuard = pWorld->getReceivingInputNodes();
+                const auto pNodes = nodesGuard.getNodes();
+                for (const auto& pNode : *pNodes) {
+                    pNode->onMouseMove(iXOffset, iYOffset);
+                }
             }
         }
-    }
 
-    if (getWindow()->isCursorVisible()) {
-        // Notify UI.
-        pRenderer->getUiManager().onMouseMove(iXOffset, iYOffset);
+        if (getWindow()->isCursorVisible()) {
+            // Notify UI.
+            pWorld->getUiNodeManager().onMouseMove(iXOffset, iYOffset);
+        }
     }
 }
 
 void GameManager::onMouseScrollMove(int iOffset) {
-    if (!pRenderer->getUiManager().hasModalUiNodeTree()) {
-        // Trigger game instance logic.
-        pGameInstance->onMouseScrollMove(iOffset);
+    pGameInstance->onMouseScrollMove(iOffset);
 
-        // Call on nodes that receive input.
-        std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.pWorld != nullptr) {
-            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
-            const auto pNodes = nodesGuard.getNodes();
-            for (const auto& pNode : *pNodes) {
-                pNode->onMouseScrollMove(iOffset);
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
+            // Call on nodes that receive input.
+            std::scoped_lock guard(mtxWorldData.first);
+            for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+                const auto nodesGuard = pWorld->getReceivingInputNodes();
+                const auto pNodes = nodesGuard.getNodes();
+                for (const auto& pNode : *pNodes) {
+                    pNode->onMouseScrollMove(iOffset);
+                }
             }
         }
-    }
 
-    if (getWindow()->isCursorVisible()) {
-        // Notify UI.
-        pRenderer->getUiManager().onMouseScrollMove(iOffset);
+        if (getWindow()->isCursorVisible()) {
+            // Notify UI.
+            pWorld->getUiNodeManager().onMouseScrollMove(iOffset);
+        }
     }
 }
 
@@ -478,8 +528,8 @@ void GameManager::triggerActionEvents(
 
         // Notify nodes that receive input.
         std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.pWorld != nullptr) {
-            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+            const auto nodesGuard = pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
             for (const auto& pNode : *pNodes) {
                 pNode->onInputActionEvent(iActionId, modifiers, bNewActionState);
@@ -572,8 +622,8 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
 
         // Notify nodes that receive input.
         std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.pWorld != nullptr) {
-            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+            const auto nodesGuard = pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
             for (const auto& pNode : *pNodes) {
                 pNode->onInputAxisEvent(iAxisEventId, modifiers, axisState);
@@ -649,8 +699,8 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 
         // Notify nodes that receive input.
         std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.pWorld != nullptr) {
-            const auto nodesGuard = mtxWorldData.second.pWorld->getReceivingInputNodes();
+        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+            const auto nodesGuard = pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
             for (const auto& pNode : *pNodes) {
                 pNode->onInputAxisEvent(iAxisEventId, KeyboardModifiers(0), axisEventState.state);
@@ -662,8 +712,6 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 Window* GameManager::getWindow() const { return pWindow; }
 
 InputManager* GameManager::getInputManager() { return &inputManager; }
-
-CameraManager* GameManager::getCameraManager() const { return pCameraManager.get(); }
 
 Renderer* GameManager::getRenderer() const { return pRenderer.get(); }
 

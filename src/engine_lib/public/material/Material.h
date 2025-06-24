@@ -132,6 +132,16 @@ public:
      */
     std::string getPathToDiffuseTexture() const { return sPathToDiffuseTextureRelativeRes; }
 
+    /**
+     * Returns shader program that this material is using.
+     *
+     * @warning Do not delete (free) returned pointer. Note that returned pointer will become invalid when the
+     * spawned node (that uses this material) is despawned.
+     *
+     * @return `nullptr` if this material is not used on a spawned node (shader program is not requested yet).
+     */
+    ShaderProgram* getShaderProgram() const { return pShaderProgram.get(); }
+
 private:
     /**
      * Called after node that owns this material was spawned.

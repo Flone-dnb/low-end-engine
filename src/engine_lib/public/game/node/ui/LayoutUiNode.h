@@ -22,7 +22,7 @@ enum class ChildNodeExpandRule : uint8_t {
 /** Controls position and size of child nodes and arranges them in a horizontal or a vertical order. */
 class LayoutUiNode : public UiNode {
     // Needs access to texture handle.
-    friend class UiManager;
+    friend class UiNodeManager;
 
     // When node's expand portion in layout is changed it notifies the parent layout.
     friend class UiNode;

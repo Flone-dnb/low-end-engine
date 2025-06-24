@@ -4,6 +4,7 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "render/LightSourceManager.h"
+#include "game/World.h"
 
 // External.
 #include "nameof.hpp"
@@ -91,7 +92,7 @@ void SpotlightNode::onSpawning() {
 
     if (mtxProperties.second.bIsVisible) {
         // Add to rendering.
-        auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+        auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
         mtxProperties.second.pActiveLightHandle =
             lightSourceManager.getSpotlightsArray().addLightSourceToRendering(
                 this, &mtxProperties.second.shaderProperties);
@@ -120,7 +121,7 @@ void SpotlightNode::setIsVisible(bool bIsVisible) {
     if (isSpawned()) {
         if (mtxProperties.second.bIsVisible) {
             // Add to rendering.
-            auto& lightSourceManager = getGameInstanceWhileSpawned()->getRenderer()->getLightSourceManager();
+            auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
             mtxProperties.second.pActiveLightHandle =
                 lightSourceManager.getSpotlightsArray().addLightSourceToRendering(
                     this, &mtxProperties.second.shaderProperties);

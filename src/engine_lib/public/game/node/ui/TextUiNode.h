@@ -10,7 +10,7 @@
 /** Single-line or a multi-line text rendering. */
 class TextUiNode : public UiNode {
     // Renderer uses scroll offset and text properties.
-    friend class UiManager;
+    friend class UiNodeManager;
 
 public:
     TextUiNode();

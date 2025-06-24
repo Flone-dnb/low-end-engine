@@ -27,7 +27,8 @@ void Material::setEnableTransparency(bool bEnable) {
         // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
         // for simplicity, plus if this function is called from a non-main thread it will add more headache
         //
-        // moreover, ShaderProgram expects that we don't change our transparency state while using it
+        // moreover, ShaderProgram and MeshNodeManager expects that we don't change our transparency state
+        // while using it
         Error::showErrorAndThrowException(
             "changing material's transparency state (enabled/disabled) is not allowed while the material is "
             "used on a spawned node");

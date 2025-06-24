@@ -391,6 +391,16 @@ public:
      */
     TickGroup getTickGroup() const;
 
+    /**
+     * Returns world that this node is spawned in.
+     *
+     * @warning Do not delete (free) returned pointer.
+     * @warning Shows an error if not spawned.
+     *
+     * @return Always valid pointer to world.
+     */
+    World* getWorldWhileSpawned() const;
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node

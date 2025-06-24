@@ -15,7 +15,7 @@ TEST_CASE("serialize and deserialize layout UI node with child nodes (child node
         virtual ~TestGameInstance() override = default;
 
         virtual void onGameStarted() override {
-            createWorld([&]() {
+            createWorld([&](Node* pRootNode) {
                 const auto pathToFile = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
                                         sTestDirName / vUsedTestFileNames[10];
 
