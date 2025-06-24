@@ -18,11 +18,11 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 
 # Specify project sources.
 set(PROJECT_SOURCES
-    public/EditorGameInstance.h
-    private/EditorGameInstance.cpp
-    private/input/EditorInputEventIds.hpp
-    public/node/EditorCameraNode.h
-    private/node/EditorCameraNode.cpp
+    src/EditorGameInstance.h
+    src/EditorGameInstance.cpp
+    src/input/EditorInputEventIds.hpp
+    src/node/EditorCameraNode.h
+    src/node/EditorCameraNode.cpp
     # add your .h/.cpp files here
 )
 
@@ -46,8 +46,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_${PROJECT_CXX_STANDARD_VE
 message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_STANDARD}")
 
 # Add includes.
-target_include_directories(${PROJECT_NAME} PUBLIC public)
-target_include_directories(${PROJECT_NAME} PUBLIC private)
+target_include_directories(${PROJECT_NAME} PUBLIC src)
 
 # Debug helper.
 if (NOT IS_RELEASE_BUILD AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/debug.cmake")
@@ -68,7 +67,7 @@ if(NOT IS_RELEASE_BUILD AND NOT WIN32)
     enable_address_sanitizer()
 endif()
 
-add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/node ${CMAKE_CURRENT_LIST_DIR}/private/node)
+add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/src/node ${CMAKE_CURRENT_LIST_DIR}/src/node)
 
 # -------------------------------------------------------------------------------------------------
 #                                       DEPENDENCIES

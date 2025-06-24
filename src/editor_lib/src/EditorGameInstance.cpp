@@ -240,7 +240,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
         const auto pMiddleVerticalLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pMiddleVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-        pMiddleVerticalLayout->setExpandPortionInLayout(4);
+        pMiddleVerticalLayout->setExpandPortionInLayout(5);
         {
             const auto pRect = pMiddleVerticalLayout->addChildNode(std::make_unique<RectUiNode>());
             pRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
@@ -248,7 +248,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
             editorWorldNodes.pViewportUiPlaceholder =
                 pMiddleVerticalLayout->addChildNode(std::make_unique<UiNode>());
-            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(4);
+            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(5);
         }
 
         const auto pRightRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
