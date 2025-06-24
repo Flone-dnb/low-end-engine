@@ -125,7 +125,6 @@ private:
      * Called from shader program's destructor.
      *
      * @param sShaderProgramId Unique identifier of a shader program.
-     * @param usage            Where this program is used.
      */
     void onShaderProgramBeingDestroyed(const std::string& sShaderProgramId);
 
