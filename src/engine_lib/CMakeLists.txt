@@ -69,7 +69,6 @@ set(PROJECT_SOURCES
     public/render/PostProcessManager.h
     public/render/UiLayer.hpp
     private/render/PostProcessManager.cpp
-    private/render/ShaderProgramUsage.hpp
     private/misc/InitManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h

@@ -101,8 +101,7 @@ void Material::onNodeSpawning(
         sPathToCustomVertexShader.empty() ? MeshNode::getDefaultVertexShaderForMeshNode().data()
                                           : sPathToCustomVertexShader,
         sPathToCustomFragmentShader.empty() ? MeshNode::getDefaultFragmentShaderForMeshNode().data()
-                                            : sPathToCustomFragmentShader,
-        bIsTransparencyEnabled ? ShaderProgramUsage::TRANSPARENT_MESH_NODE : ShaderProgramUsage::MESH_NODE);
+                                            : sPathToCustomFragmentShader);
     onShaderProgramReceived(pShaderProgram.get());
 
 // Set general shader constants (branch independent constants).

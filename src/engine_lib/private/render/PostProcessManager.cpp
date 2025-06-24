@@ -35,8 +35,7 @@ void PostProcessManager::setSkySettings(const std::optional<SkySettings>& settin
 PostProcessManager::PostProcessManager(GameManager* pGameManager) {
     pShaderProgram = pGameManager->getRenderer()->getShaderManager().getShaderProgram(
         "engine/shaders/postprocessing/PostProcessingQuad.vert.glsl",
-        "engine/shaders/postprocessing/PostProcessing.frag.glsl",
-        ShaderProgramUsage::OTHER);
+        "engine/shaders/postprocessing/PostProcessing.frag.glsl");
 
     onWindowSizeChanged(pGameManager->getWindow());
 }

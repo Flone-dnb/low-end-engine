@@ -608,13 +608,9 @@ UiNodeManager::UiNodeManager(Renderer* pRenderer) : pRenderer(pRenderer) {
 
     // Load shaders.
     mtxData.second.pRectAndCursorShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-        "engine/shaders/ui/UiScreenQuad.vert.glsl",
-        "engine/shaders/ui/RectUiNode.frag.glsl",
-        ShaderProgramUsage::OTHER);
+        "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/RectUiNode.frag.glsl");
     mtxData.second.pTextShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-        "engine/shaders/ui/UiScreenQuad.vert.glsl",
-        "engine/shaders/ui/TextNode.frag.glsl",
-        ShaderProgramUsage::OTHER);
+        "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/TextNode.frag.glsl");
 }
 
 void UiNodeManager::onWindowSizeChanged() {

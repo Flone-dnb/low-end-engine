@@ -83,8 +83,6 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 }
 
 void Renderer::recreateFramebuffers() {
-    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
-
 #if !defined(ENGINE_UI_ONLY)
     // Update framebuffers (main, post-process).
     const auto pGameManager = pWindow->getGameManager();

@@ -2,6 +2,7 @@
 
 // Standard.
 #include <format>
+#include <algorithm>
 
 // Custom.
 #include "misc/Error.h"

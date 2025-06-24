@@ -248,7 +248,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
             editorWorldNodes.pViewportUiPlaceholder =
                 pMiddleVerticalLayout->addChildNode(std::make_unique<UiNode>());
-            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(5);
+            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(4);
         }
 
         const auto pRightRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());

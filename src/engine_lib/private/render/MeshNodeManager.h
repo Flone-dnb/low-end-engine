@@ -6,9 +6,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// Custom.
-#include "render/ShaderProgramUsage.hpp"
-
 class ShaderProgram;
 class MeshNode;
 class CameraProperties;

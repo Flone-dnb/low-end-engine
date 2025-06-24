@@ -8,9 +8,6 @@
 #include <array>
 #include <vector>
 
-// Custom.
-#include "render/ShaderProgramUsage.hpp"
-
 class Renderer;
 class Shader;
 class ShaderProgram;
@@ -51,14 +48,12 @@ public:
      *
      * @param sPathToVertexShaderRelativeRes   Path to .glsl vertex shader file relative `res` directory.
      * @param sPathToFragmentShaderRelativeRes Path to .glsl fragment shader file relative `res` directory.
-     * @param usage                            Usage.
      *
      * @return Compiled shader program.
      */
     std::shared_ptr<ShaderProgram> getShaderProgram(
         const std::string& sPathToVertexShaderRelativeRes,
-        const std::string& sPathToFragmentShaderRelativeRes,
-        ShaderProgramUsage usage);
+        const std::string& sPathToFragmentShaderRelativeRes);
 
     /**
      * Returns all loaded shader programs.
@@ -67,9 +62,7 @@ public:
      */
     std::pair<
         std::mutex,
-        std::array<
-            std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>,
-            static_cast<size_t>(ShaderProgramUsage::COUNT)>>&
+        std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>>&
     getShaderPrograms() {
         return mtxDatabase;
     }
@@ -105,14 +98,11 @@ private:
      *
      * @param sProgramName   Unique name of the shader program.
      * @param vLinkedShaders Shaders to link to this program.
-     * @param usage          Where this program is used.
      *
      * @return Compiled shader program.
      */
     std::shared_ptr<ShaderProgram> compileShaderProgram(
-        const std::string& sProgramName,
-        const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
-        ShaderProgramUsage usage);
+        const std::string& sProgramName, const std::vector<std::shared_ptr<Shader>>& vLinkedShaders);
 
     /**
      * Looks if a shader from the specified path was already requested previously (cached) to return it,
@@ -137,7 +127,7 @@ private:
      * @param sShaderProgramId Unique identifier of a shader program.
      * @param usage            Where this program is used.
      */
-    void onShaderProgramBeingDestroyed(const std::string& sShaderProgramId, ShaderProgramUsage usage);
+    void onShaderProgramBeingDestroyed(const std::string& sShaderProgramId);
 
     /**
      * Stores pairs of "path to .glsl file relative `res` directory" - "loaded shader".
@@ -158,9 +148,7 @@ private:
     /** Stores pairs of "linked shader names" - "shader program". */
     std::pair<
         std::mutex,
-        std::array<
-            std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>,
-            static_cast<size_t>(ShaderProgramUsage::COUNT)>>
+        std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>>
         mtxDatabase;
 
     /** Do not delete/free. Renderer that created this manager. */
