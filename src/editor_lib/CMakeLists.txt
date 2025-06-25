@@ -20,9 +20,15 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 set(PROJECT_SOURCES
     src/EditorGameInstance.h
     src/EditorGameInstance.cpp
+    src/EditorColorTheme.h
+    src/EditorColorTheme.cpp
     src/input/EditorInputEventIds.hpp
     src/node/EditorCameraNode.h
     src/node/EditorCameraNode.cpp
+    src/node/node_tree_inspector/NodeTreeInspector.h
+    src/node/node_tree_inspector/NodeTreeInspector.cpp
+    src/node/node_tree_inspector/NodeTreeInspectorItem.h
+    src/node/node_tree_inspector/NodeTreeInspectorItem.cpp
     # add your .h/.cpp files here
 )
 

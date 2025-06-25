@@ -55,7 +55,7 @@ RectUiNode::RectUiNode() : RectUiNode("Rect UI Node") {}
 RectUiNode::RectUiNode(const std::string& sNodeName) : UiNode(sNodeName) {}
 
 void RectUiNode::setColor(const glm::vec4& color) {
-    this->color = color;
+    this->color = glm::clamp(color, 0.0F, 1.0F);
 
     if (isSpawned()) {
         onColorChangedWhileSpawned();

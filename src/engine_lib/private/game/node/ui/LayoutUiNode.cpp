@@ -243,8 +243,9 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         glm::vec2 currentChildPos = getPosition();
 
         // Consider padding.
-        currentChildPos += padding * layoutOldSize;
-        const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * (padding * layoutOldSize));
+        const auto realPadding = std::min(layoutOldSize.x, layoutOldSize.y) * padding;
+        currentChildPos += realPadding;
+        const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * realPadding);
 
         // Check scroll bar.
         if (bIsScrollBarEnabled && bIsHorizontal) [[unlikely]] {
@@ -275,7 +276,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                                              : spacerPortion / expandPortionSum;
 
         float layoutNewSizeOnMainAxis =
-            padding * 2.0F; // NOLINT: will be updated while iterating over child nodes
+            realPadding * 2.0F; // will be updated while iterating over child nodes
 
         // Update position and size for all direct child nodes.
         for (const auto& pChildNode : mtxChildNodes.second) {
@@ -349,7 +350,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                         continue;
                     }
 
-                    // Half of the child is visible.
+                    // Lower half of the child is visible.
                     const auto yClipStart = std::abs(yOffsetForScrollToSkip - lastChildSize) / childNewSize.y;
                     float yClipEnd = 1.0F;
                     if (yOffsetForScrollToSkip > sizeForChildNodes.y) {

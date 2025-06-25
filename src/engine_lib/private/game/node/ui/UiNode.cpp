@@ -289,4 +289,30 @@ void UiNode::setAllowRendering(bool bAllowRendering) {
             pUiChild->setAllowRendering(bAllowRendering);
         }
     }
+
+    onVisibilityChanged();
+
+    // Notify parent container.
+    {
+        const auto mtxParent = getParentNode();
+        std::scoped_lock guard(*mtxParent.first);
+
+        if (mtxParent.second != nullptr) {
+            if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
+                pLayout->onDirectChildNodeVisibilityChanged();
+            }
+        }
+    }
+}
+
+void UiNode::onMouseScrollMoveWhileHovered(int iOffset) {
+    // Notify parent container.
+    const auto mtxParent = getParentNode();
+    std::scoped_lock guard(*mtxParent.first);
+
+    if (mtxParent.second != nullptr) {
+        if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
+            pLayout->onMouseScrollMoveWhileHovered(iOffset);
+        }
+    }
 }

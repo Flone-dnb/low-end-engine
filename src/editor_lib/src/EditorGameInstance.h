@@ -7,6 +7,7 @@ class Window;
 class EditorCameraNode;
 class TextUiNode;
 class UiNode;
+class NodeTreeInspector;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -83,6 +84,9 @@ private:
 
         /** Node in the editor's world that occupies space for game's world to be rendered to. */
         UiNode* pViewportUiPlaceholder = nullptr;
+
+        /** Allows viewing and editing game's node tree. */
+        NodeTreeInspector* pNodeTreeInspector = nullptr;
     };
 
     /** Registers action and axis input events in the input manager. */

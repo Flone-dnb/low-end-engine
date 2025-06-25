@@ -224,7 +224,7 @@ protected:
      *
      * @param iOffset Movement offset.
      */
-    virtual void onMouseScrollMoveWhileHovered(int iOffset) {}
+    virtual void onMouseScrollMoveWhileHovered(int iOffset);
 
     /**
      * Called when the mouse cursor started floating over this UI node.
@@ -309,6 +309,13 @@ protected:
      * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
      */
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
+
+    /**
+     * Tells if the UI node is allowed to be rendered or not (has higher priority over visibility).
+     *
+     * @return `false` if should not be rendered.
+     */
+    bool isRenderingAllowed() const { return bAllowRendering; }
 
 private:
     /** Recalculates @ref iNodeDepth. Must be called only while spawned. */

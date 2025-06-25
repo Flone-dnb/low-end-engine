@@ -78,7 +78,7 @@
     }
 
 void UiNodeManager::onNodeSpawning(TextUiNode* pNode) {
-    if (!pNode->isVisible()) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
         return;
     }
 
@@ -90,7 +90,7 @@ void UiNodeManager::onNodeSpawning(TextUiNode* pNode) {
 }
 
 void UiNodeManager::onNodeSpawning(RectUiNode* pNode) {
-    if (!pNode->isVisible()) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
         return;
     }
 
@@ -102,7 +102,7 @@ void UiNodeManager::onNodeSpawning(RectUiNode* pNode) {
 }
 
 void UiNodeManager::onNodeSpawning(SliderUiNode* pNode) {
-    if (!pNode->isVisible()) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
         return;
     }
 
@@ -118,7 +118,7 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
 
-    if (pNode->isVisible()) {
+    if (pNode->isRenderingAllowed() && pNode->isVisible()) {
         ADD_NODE_TO_RENDERING(TextUiNode);
     } else {
         REMOVE_NODE_FROM_RENDERING(TextUiNode);
@@ -130,7 +130,7 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
 
-    if (pNode->isVisible()) {
+    if (pNode->isRenderingAllowed() && pNode->isVisible()) {
         ADD_NODE_TO_RENDERING(RectUiNode);
     } else {
         REMOVE_NODE_FROM_RENDERING(RectUiNode);
@@ -142,7 +142,7 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
     auto& vNodesByDepth =
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
 
-    if (pNode->isVisible()) {
+    if (pNode->isRenderingAllowed() && pNode->isVisible()) {
         ADD_NODE_TO_RENDERING(SliderUiNode);
     } else {
         REMOVE_NODE_FROM_RENDERING(SliderUiNode);
@@ -150,7 +150,7 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
 }
 
 void UiNodeManager::onNodeDespawning(TextUiNode* pNode) {
-    if (!pNode->isVisible()) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
         return;
     }
 
@@ -162,7 +162,7 @@ void UiNodeManager::onNodeDespawning(TextUiNode* pNode) {
 }
 
 void UiNodeManager::onNodeDespawning(RectUiNode* pNode) {
-    if (!pNode->isVisible()) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
         return;
     }
 
@@ -176,7 +176,7 @@ void UiNodeManager::onNodeDespawning(RectUiNode* pNode) {
 }
 
 void UiNodeManager::onNodeDespawning(SliderUiNode* pNode) {
-    if (!pNode->isVisible()) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
         return;
     }
 
@@ -190,7 +190,7 @@ void UiNodeManager::onNodeDespawning(SliderUiNode* pNode) {
 void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
     std::scoped_lock guard(mtxData.first);
 
-    if (!pTargetNode->isVisible()) {
+    if (!pTargetNode->isRenderingAllowed() || !pTargetNode->isVisible()) {
         return;
     }
 
@@ -689,9 +689,6 @@ void UiNodeManager::drawRectNodes(size_t iLayer) {
                 auto pos = pRectNode->getPosition();
                 auto size = pRectNode->getSize();
 
-                pos.y += size.y * pRectNode->clipY.x;
-                size.y = size.y * (pRectNode->clipY.y - pRectNode->clipY.x);
-
                 // Set shader parameters.
                 pShaderProgram->setVector4ToShader("color", pRectNode->getColor());
                 if (pRectNode->pTexture != nullptr) {
@@ -1015,7 +1012,11 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
                         // Space character has 0 width so don't submit any rendering.
                         if (glyph.size.x != 0) {
                             glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-                            drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
+                            drawQuad(
+                                glm::vec2(xpos, ypos),
+                                glm::vec2(width, height),
+                                iWindowHeight,
+                                pTextNode->clipY);
                             iRenderedCharCount += 1;
                         }
                     }

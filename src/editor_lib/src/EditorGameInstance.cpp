@@ -16,6 +16,8 @@
 #include "node/EditorCameraNode.h"
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
+#include "node/node_tree_inspector/NodeTreeInspector.h"
+#include "EditorColorTheme.h"
 
 #if defined(GAME_LIB_INCLUDED)
 #include "MyGameInstance.h"
@@ -35,7 +37,8 @@ void EditorGameInstance::onGameStarted() {
 #endif
 
     getRenderer()->getFontManager().loadFont(
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf",
+        0.05F);
 
     registerEditorInputEvents();
 
@@ -235,15 +238,28 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     {
         const auto pLeftRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-        pLeftRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
+        pLeftRect->setColor(EditorColorTheme::getEditorBackgroundColor());
         pLeftRect->setExpandPortionInLayout(1);
+        {
+            const auto pLayout = pLeftRect->addChildNode(std::make_unique<LayoutUiNode>());
+            pLayout->setPadding(EditorColorTheme::getPadding() / 2.0F);
+            pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
+            {
+                editorWorldNodes.pNodeTreeInspector =
+                    pLayout->addChildNode(std::make_unique<NodeTreeInspector>());
+                editorWorldNodes.pNodeTreeInspector->setExpandPortionInLayout(3);
+
+                const auto pTemp = pLayout->addChildNode(std::make_unique<UiNode>());
+                pTemp->setExpandPortionInLayout(2);
+            }
+        }
 
         const auto pMiddleVerticalLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pMiddleVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
         pMiddleVerticalLayout->setExpandPortionInLayout(5);
         {
             const auto pRect = pMiddleVerticalLayout->addChildNode(std::make_unique<RectUiNode>());
-            pRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
+            pRect->setColor(EditorColorTheme::getEditorBackgroundColor());
             pRect->setExpandPortionInLayout(1);
 
             editorWorldNodes.pViewportUiPlaceholder =
@@ -252,7 +268,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         }
 
         const auto pRightRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-        pRightRect->setColor(glm::vec4(0.1F, 0.1F, 0.1F, 1.0F));
+        pRightRect->setColor(EditorColorTheme::getEditorBackgroundColor());
         pRightRect->setExpandPortionInLayout(1);
     }
 
@@ -314,5 +330,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText->setSerialize(false);
     gameWorldNodes.pStatsText->setTextHeight(0.035F);
     gameWorldNodes.pStatsText->setSize(glm::vec2(1.0F, 1.0F));
-    gameWorldNodes.pStatsText->setPosition(glm::vec2(0.0F, 0.0F));
+    gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
+
+    editorWorldNodes.pNodeTreeInspector->onGameNodeTreeLoaded(gameWorldNodes.pRoot);
 }

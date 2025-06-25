@@ -71,9 +71,13 @@ ButtonUiNode::ButtonUiNode(const std::string& sNodeName) : RectUiNode(sNodeName)
     setIsReceivingInput(true);
 }
 
-void ButtonUiNode::setColorWhileHovered(const glm::vec4& color) { colorWhileHovered = color; }
+void ButtonUiNode::setColorWhileHovered(const glm::vec4& color) {
+    colorWhileHovered = glm::clamp(color, 0.0F, 1.0F);
+}
 
-void ButtonUiNode::setColorWhilePressed(const glm::vec4& color) { colorWhilePressed = color; }
+void ButtonUiNode::setColorWhilePressed(const glm::vec4& color) {
+    colorWhilePressed = glm::clamp(color, 0.0F, 1.0F);
+}
 
 void ButtonUiNode::setPathToTextureWhileHovered(std::string sPathToTextureRelativeRes) {
     // Normalize slash.
