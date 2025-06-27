@@ -275,12 +275,12 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     // Create game world.
     createWorld(
         [this](Node* pGameRootNode) {
-            auto pFloor = std::make_unique<MeshNode>();
+            auto pFloor = std::make_unique<MeshNode>("Floor");
             pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
             pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
             pGameRootNode->addChildNode(std::move(pFloor));
 
-            auto pCube = std::make_unique<MeshNode>();
+            auto pCube = std::make_unique<MeshNode>("Cube");
             pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
             pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
             pGameRootNode->addChildNode(std::move(pCube));
@@ -313,7 +313,8 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     }
 
     // Viewport camera.
-    gameWorldNodes.pViewportCamera = pRootNode->addChildNode(std::make_unique<EditorCameraNode>());
+    gameWorldNodes.pViewportCamera = pRootNode->addChildNode(std::make_unique<EditorCameraNode>(
+        std::format("{}: camera", NodeTreeInspector::getHiddenNodeNamePrefix())));
     gameWorldNodes.pViewportCamera->setSerialize(false);
     gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
     gameWorldNodes.pViewportCamera->makeActive();
@@ -326,7 +327,8 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
         glm::vec4(pos.x, pos.y, size.x, size.y));
 
     // Stats.
-    gameWorldNodes.pStatsText = pRootNode->addChildNode(std::make_unique<TextUiNode>());
+    gameWorldNodes.pStatsText = pRootNode->addChildNode(
+        std::make_unique<TextUiNode>(std::format("{}: stats", NodeTreeInspector::getHiddenNodeNamePrefix())));
     gameWorldNodes.pStatsText->setSerialize(false);
     gameWorldNodes.pStatsText->setTextHeight(0.035F);
     gameWorldNodes.pStatsText->setSize(glm::vec2(1.0F, 1.0F));

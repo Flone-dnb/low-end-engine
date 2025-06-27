@@ -18,6 +18,13 @@ public:
     virtual ~NodeTreeInspector() override = default;
 
     /**
+     * Returns prefix to node names that won't be visible in the node tree inspector.
+     *
+     * @return Node name prefix.
+     */
+    static std::string_view getHiddenNodeNamePrefix() { return "Editor"; };
+
+    /**
      * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
      * database.
      *

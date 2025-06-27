@@ -22,6 +22,10 @@ NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : LayoutUiNod
 void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) { addGameNodeRecursive(pGameRootNode); }
 
 void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
+    if (pNode->getNodeName().starts_with(getHiddenNodeNamePrefix())) {
+        return;
+    }
+
     const auto pItem = addChildNode(std::make_unique<NodeTreeInspectorItem>());
     pItem->setNodeToDisplay(pNode);
 
