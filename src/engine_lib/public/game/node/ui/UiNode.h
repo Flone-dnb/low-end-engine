@@ -330,18 +330,10 @@ private:
     void setAllowRendering(bool bAllowRendering);
 
     /** Width and height in range [0.0; 1.0]. */
-    glm::vec2 size = glm::vec2(0.2F, 0.2F); // NOLINT
+    glm::vec2 size = glm::vec2(0.2F, 0.2F);
 
     /** Position on the screen in range [0.0; 1.0]. */
-    glm::vec2 position = glm::vec2(0.2F, 0.5F); // NOLINT
-
-    /**
-     * Start Y and end Y in range [0.0; 1.0] relative to size of the UI node to cut (to not render).
-     *
-     * @remark Used by some container parent nodes that control position/size of child nodes.
-     * @remark Is reset after the node is attached to a new parent.
-     */
-    glm::vec2 clipY = glm::vec2(0.0F, 1.0F);
+    glm::vec2 position = glm::vec2(0.2F, 0.5F);
 
     /**
      * When this node is a child node of a layout node with an "expand child nodes rule" this value defines a

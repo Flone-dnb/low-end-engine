@@ -264,5 +264,5 @@ private:
     bool bIsScrollBarEnabled = false;
 
     /** Scroll step in range [0.0; 1.0] where 1.0 means full size of the layout. */
-    static constexpr float scrollBarStepLocal = 0.1F;
+    static constexpr float scrollBarStepLocal = 0.05F;
 };

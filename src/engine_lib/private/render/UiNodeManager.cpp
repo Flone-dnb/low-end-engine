@@ -704,7 +704,7 @@ void UiNodeManager::drawRectNodes(size_t iLayer) {
                 size = glm::vec2(
                     size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
 
-                drawQuad(pos, size, iWindowHeight, pRectNode->clipY);
+                drawQuad(pos, size, iWindowHeight);
             }
         }
 
@@ -1012,11 +1012,7 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
                         // Space character has 0 width so don't submit any rendering.
                         if (glyph.size.x != 0) {
                             glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-                            drawQuad(
-                                glm::vec2(xpos, ypos),
-                                glm::vec2(width, height),
-                                iWindowHeight,
-                                pTextNode->clipY);
+                            drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
                             iRenderedCharCount += 1;
                         }
                     }
@@ -1254,22 +1250,19 @@ void UiNodeManager::changeFocusedNode(UiNode* pNode) {
 }
 
 void UiNodeManager::drawQuad(
-    const glm::vec2& screenPos,
-    const glm::vec2& screenSize,
-    unsigned int iScreenHeight,
-    const glm::vec2& yClip) const {
+    const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const {
     // Flip Y from our top-left origin to OpenGL's bottom-left origin.
     const float posY = static_cast<float>(iScreenHeight) - screenPos.y;
 
     // Update vertices.
     const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-        glm::vec4(screenPos.x, posY, 0.0F, yClip.x),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, yClip.y),
-        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, yClip.y),
+        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
 
-        glm::vec4(screenPos.x, posY, 0.0F, yClip.x),
-        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, yClip.x),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, yClip.y),
+        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
     };
 
     // Copy new vertex data to VBO.

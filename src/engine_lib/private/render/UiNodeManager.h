@@ -348,15 +348,9 @@ private:
      *
      * @param screenPos     Position of the top-left corner of the quad.
      * @param screenSize    Size of the quad.
-     * @param yClip         Start Y and end Y in range [0.0; 1.0] relative to size of the quad to cut
-     * (to not render).
      * @param iScreenHeight Height of the screen.
      */
-    void drawQuad(
-        const glm::vec2& screenPos,
-        const glm::vec2& screenSize,
-        unsigned int iScreenHeight,
-        const glm::vec2& yClip = glm::vec2(0.0F, 1.0F)) const;
+    void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
 
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;

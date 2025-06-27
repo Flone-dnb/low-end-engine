@@ -243,9 +243,9 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         glm::vec2 currentChildPos = getPosition();
 
         // Consider padding.
-        const auto realPadding = std::min(layoutOldSize.x, layoutOldSize.y) * padding;
-        currentChildPos += realPadding;
-        const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * realPadding);
+        const auto screenPadding = std::min(layoutOldSize.x, layoutOldSize.y) * padding;
+        currentChildPos += screenPadding;
+        const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * screenPadding);
 
         // Check scroll bar.
         if (bIsScrollBarEnabled && bIsHorizontal) [[unlikely]] {
@@ -276,7 +276,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                                              : spacerPortion / expandPortionSum;
 
         float layoutNewSizeOnMainAxis =
-            realPadding * 2.0F; // will be updated while iterating over child nodes
+            screenPadding * 2.0F; // will be updated while iterating over child nodes
 
         // Update position and size for all direct child nodes.
         for (const auto& pChildNode : mtxChildNodes.second) {
@@ -342,38 +342,14 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             totalScrollHeight += lastChildSize;
 
             if (bIsScrollBarEnabled) {
-                if (yOffsetForScrollToSkip < 0.0F) {
-                    yOffsetForScrollToSkip += lastChildSize;
-                    if (yOffsetForScrollToSkip < 0.0F) {
-                        // Still outside of layout's visible size.
-                        pUiChild->setAllowRendering(false);
-                        continue;
-                    }
-
-                    // Lower half of the child is visible.
-                    const auto yClipStart = std::abs(yOffsetForScrollToSkip - lastChildSize) / childNewSize.y;
-                    float yClipEnd = 1.0F;
-                    if (yOffsetForScrollToSkip > sizeForChildNodes.y) {
-                        yClipEnd =
-                            (sizeForChildNodes.y - (yOffsetForScrollToSkip - lastChildSize)) / childNewSize.y;
-                    }
-                    pUiChild->clipY = glm::vec2(yClipStart, yClipEnd);
-                } else if (yOffsetForScrollToSkip >= 0.0F && yOffsetForScrollToSkip <= sizeForChildNodes.y) {
-                    float yClipEnd = 1.0F;
-                    yOffsetForScrollToSkip += lastChildSize;
-                    if (yOffsetForScrollToSkip > sizeForChildNodes.y) {
-                        yClipEnd =
-                            (sizeForChildNodes.y - (yOffsetForScrollToSkip - lastChildSize)) / childNewSize.y;
-                    }
-                    pUiChild->clipY = glm::vec2(0.0F, yClipEnd);
-                } else if (yOffsetForScrollToSkip > sizeForChildNodes.y) {
-                    // Goes outside of visible size.
+                if (yOffsetForScrollToSkip + lastChildSize < 0.0F ||
+                    yOffsetForScrollToSkip + lastChildSize > sizeForChildNodes.y) {
+                    // Partially outside of the visible area - don't render (keeping it simple).
                     yOffsetForScrollToSkip += lastChildSize;
                     pUiChild->setAllowRendering(false);
                     continue;
                 }
-
-                currentChildPos.y -= pUiChild->clipY.x * childNewSize.y;
+                yOffsetForScrollToSkip += lastChildSize;
             }
 
             pUiChild->setAllowRendering(true);
