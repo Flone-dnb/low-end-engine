@@ -1,10 +1,12 @@
 #pragma once
 
 // Custom.
-#include "game/node/ui/LayoutUiNode.h"
+#include "game/node/ui/RectUiNode.h"
+
+class LayoutUiNode;
 
 /** Allows viewing and editing a node tree. */
-class NodeTreeInspector : public LayoutUiNode {
+class NodeTreeInspector : public RectUiNode {
 public:
     NodeTreeInspector();
 
@@ -54,4 +56,7 @@ private:
      * @param pNode Node to display.
      */
     void addGameNodeRecursive(Node* pNode);
+
+    /** Layout node. */
+    LayoutUiNode* pLayoutNode = nullptr;
 };

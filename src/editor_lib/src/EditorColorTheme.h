@@ -21,6 +21,13 @@ public:
     static glm::vec4 getEditorBackgroundColor();
 
     /**
+     * Color of container UI nodes.
+     *
+     * @return RGBA color.
+     */
+    static glm::vec4 getContainerBackgroundColor();
+
+    /**
      * Height for buttons.
      *
      * @return Value in range [0.0; 1.0].

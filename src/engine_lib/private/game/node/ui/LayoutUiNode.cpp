@@ -352,7 +352,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                 yOffsetForScrollToSkip += lastChildSize;
             }
 
-            pUiChild->setAllowRendering(true);
+            pUiChild->setAllowRendering(bAllowRendering);
             pUiChild->setSize(childNewSize);
             pUiChild->setPosition(currentChildPos);
 
