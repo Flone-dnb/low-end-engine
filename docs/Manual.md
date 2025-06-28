@@ -117,7 +117,7 @@ Let's see how this works together in an example of window creation:
 ```Cpp
 // inside of your main.cpp
 
-auto result = Window::create("My window");
+auto result = WindowBuilder().title("my game").fullscreen().build();
 if (std::holds_alternative<Error>(result)) {
     // An error occurred while creating the window.
     Error error = std::get<Error>(std::move(result));
@@ -382,7 +382,7 @@ Let's first make sure you know how to create a window, your `main.cpp` should ge
 
 int main() {
     // Create a game window.
-    auto result = Window::create("mygame");
+    auto result = WindowBuilder().title("my game").fullscreen().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();

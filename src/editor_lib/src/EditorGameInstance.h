@@ -21,13 +21,6 @@ public:
 
     virtual ~EditorGameInstance() override = default;
 
-    /**
-     * Returns title of the editor's window.
-     *
-     * @return Window title.
-     */
-    static const char* getEditorWindowTitle();
-
 protected:
     /**
      * Called after GameInstance's constructor is finished and created

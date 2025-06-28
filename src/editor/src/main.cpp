@@ -24,7 +24,7 @@ int main() {
 #endif
 
     // Create window.
-    auto result = Window::create(EditorGameInstance::getEditorWindowTitle());
+    auto result = WindowBuilder().title("Low End Editor").maximized().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         auto error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();

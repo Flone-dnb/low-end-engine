@@ -163,7 +163,7 @@ TEST_CASE("get parent node of type") {
         virtual ~TestGameInstance() override {}
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -231,7 +231,7 @@ TEST_CASE("get child node of type") {
         virtual ~TestGameInstance() override {}
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -302,7 +302,7 @@ TEST_CASE("onBeforeNewFrame is called only on marked nodes") {
         MyNode* pNotCalledtNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -381,7 +381,7 @@ TEST_CASE("tick groups order is correct") {
         MySecondNode* pSecondNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -474,7 +474,7 @@ TEST_CASE("input event callbacks in Node are triggered") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -521,7 +521,7 @@ TEST_CASE("detach and despawn spawned node") {
         Node* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -643,7 +643,7 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -707,7 +707,7 @@ TEST_CASE("disable \"is called every frame\" in onBeforeNewFrame") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -781,7 +781,7 @@ TEST_CASE("disable \"is called every frame\" in onBeforeNewFrame and despawn") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -845,7 +845,7 @@ TEST_CASE("quickly enable and disable \"is called every frame\" while spawned") 
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -908,7 +908,7 @@ TEST_CASE("quickly enable, disable and enable \"is called every frame\" while sp
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -972,7 +972,7 @@ TEST_CASE("enable \"is called every frame\" while spawned and despawn") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1056,7 +1056,7 @@ TEST_CASE("disable receiving input while processing input") {
         bool bInitialTriggerFinished = false;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1135,7 +1135,7 @@ TEST_CASE("disable receiving input and despawn") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1213,7 +1213,7 @@ TEST_CASE("enable receiving input and despawn") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1291,7 +1291,7 @@ TEST_CASE("enable receiving input while spawned") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1370,7 +1370,7 @@ TEST_CASE("quickly enable receiving input and disable while spawned") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1450,7 +1450,7 @@ TEST_CASE("quickly disable receiving input and enable while spawned") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1555,7 +1555,7 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
         MyNode* pMyNode = nullptr;
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1618,7 +1618,7 @@ TEST_CASE("serialize and deserialize node tree") {
         }
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1785,7 +1785,7 @@ TEST_CASE("serialize node tree that references an external node tree") {
         }
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();
@@ -1834,7 +1834,7 @@ TEST_CASE("load node tree as world") {
         virtual ~TestGameInstance() override {}
     };
 
-    auto result = Window::create("", {0, 0}, true);
+    auto result = WindowBuilder().hidden().build();
     if (std::holds_alternative<Error>(result)) [[unlikely]] {
         Error error = std::get<Error>(std::move(result));
         error.addCurrentLocationToErrorStack();

@@ -8,32 +8,64 @@
 #include <Windows.h>
 #endif
 
-std::variant<std::unique_ptr<Window>, Error> Window::create(
-    std::string_view sWindowName, const std::pair<unsigned int, unsigned int>& windowSize, bool bIsHidden) {
+WindowBuilder& WindowBuilder::size(unsigned int iWidth, unsigned int iHeight) {
+    params.iWindowWidth = iWidth;
+    params.iWindowHeight = iHeight;
+
+    return *this;
+}
+
+WindowBuilder& WindowBuilder::title(std::string_view sWindowTitle) {
+    params.sWindowTitle = sWindowTitle;
+
+    return *this;
+}
+
+WindowBuilder& WindowBuilder::hidden() {
+    params.bHidden = true;
+
+    return *this;
+}
+
+WindowBuilder& WindowBuilder::maximized() {
+    params.bMaximized = true;
+
+    return *this;
+}
+
+WindowBuilder& WindowBuilder::fullscreen() {
+    params.bFullscreen = true;
+
+    return *this;
+}
+
+std::variant<std::unique_ptr<Window>, Error> WindowBuilder::build() { return Window::create(params); }
+
+std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderParameters& params) {
     InitManager::init();
 
     // Get display resolution.
     SDL_DisplayMode mode;
     SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
-
     int iWindowWidth = mode.w;
     int iWindowHeight = mode.h;
 
-    bool bIsFullscreen = true;
-    if (windowSize.first != 0 && windowSize.second != 0) {
-        iWindowWidth = static_cast<int>(windowSize.first);
-        iWindowHeight = static_cast<int>(windowSize.second);
-        bIsFullscreen = false;
+    if (!params.bFullscreen && !params.bMaximized) {
+        iWindowWidth = static_cast<int>(params.iWindowWidth);
+        iWindowHeight = static_cast<int>(params.iWindowHeight);
     }
 
     // Prepare flags.
     unsigned int iWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
-    if (bIsFullscreen) {
+    if (params.bFullscreen) {
         iWindowFlags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED;
     } else {
         iWindowFlags |= SDL_WINDOW_RESIZABLE;
+        if (params.bMaximized) {
+            iWindowFlags |= SDL_WINDOW_MAXIMIZED;
+        }
     }
-    if (bIsHidden) {
+    if (params.bHidden) {
         iWindowFlags |= SDL_WINDOW_HIDDEN;
     }
 
@@ -42,7 +74,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(
 
     // Create SDL window.
     const auto pSdlWindow = SDL_CreateWindow(
-        sWindowName.data(),
+        params.sWindowTitle.data(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         iWindowWidth,
@@ -52,7 +84,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(
         return Error(SDL_GetError());
     }
 
-    auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow, bIsFullscreen));
+    auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow, params.bFullscreen));
 
     // Log resulting window size.
     const auto createdWindowSize = pWindow->getWindowSize();

@@ -20,25 +20,102 @@
 
 class GameManager;
 
-/** Manages a game window. */
-class Window {
+/** Parameters used to create a window. */
+struct WindowBuilderParameters {
+    /** Width of a window. */
+    unsigned int iWindowWidth = 800;
+
+    /** Height of a window. */
+    unsigned int iWindowHeight = 600;
+
+    /** Title of a window. */
+    std::string_view sWindowTitle;
+
+    /** Whether to show window after it was created or not. */
+    bool bHidden = false;
+
+    /** Whether the window should be maximized after creation or not. */
+    bool bMaximized = false;
+
+    /** Whether to show window in fullscreen mode. */
+    bool bFullscreen = false;
+};
+
+class Window;
+
+/** Builder pattern class for Window. */
+class WindowBuilder {
 public:
-    ~Window();
+    WindowBuilder() = default;
 
     /**
-     * Creates a new window.
+     * Defines the size of a window that we will create.
      *
-     * @param sWindowName   Name of the window.
-     * @param windowSize    Specify {0, 0} to create a fullscreen window.
-     * @param bIsHidden     Specify `true` to create an invisible window (generally used in automated
-     * testing).
+     * @remark Ignored if @ref maximized used.
      *
-     * @return Error if something went wrong, otherwise created window.
+     * @param iWidth  Width of the window.
+     * @param iHeight Height of the window.
+     *
+     * @return Builder.
      */
-    static std::variant<std::unique_ptr<Window>, Error> create(
-        std::string_view sWindowName,
-        const std::pair<unsigned int, unsigned int>& windowSize = {0, 0},
-        bool bIsHidden = false);
+    WindowBuilder& size(unsigned int iWidth, unsigned int iHeight);
+
+    /**
+     * Defines the name of a window that we will create.
+     *
+     * @param sWindowTitle Title of the window.
+     *
+     * @return Builder.
+     */
+    WindowBuilder& title(std::string_view sWindowTitle);
+
+    /**
+     * Hides the window.
+     *
+     * @return Builder.
+     */
+    WindowBuilder& hidden();
+
+    /**
+     * Whether the window should be maximized after creation or not.
+     *
+     * @remark Ignored if @ref fullscreen is used.
+     *
+     * @return Builder.
+     */
+    WindowBuilder& maximized();
+
+    /**
+     * Show window in the fullscreen mode.
+     *
+     * @remark Note that your application might have better performance
+     * and more stable frame pacing if you run it in fullscreen mode.
+     *
+     * @return Builder.
+     */
+    WindowBuilder& fullscreen();
+
+    /**
+     * Builds/creates a new window with the configured parameters.
+     *
+     * @return Returns error if something went wrong or created window otherwise.
+     *
+     * @warning This function should only be called from the main thread.
+     */
+    std::variant<std::unique_ptr<Window>, Error> build();
+
+private:
+    /** Configured window parameters. */
+    WindowBuilderParameters params;
+};
+
+/** Manages a game window. */
+class Window {
+    // Only window builder can create windows.
+    friend class WindowBuilder;
+
+public:
+    ~Window();
 
     /**
      * Whether the cursor is visible or not (locked in this window).
@@ -159,6 +236,15 @@ public:
     void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) const;
 
 private:
+    /**
+     * Creates a new window.
+     *
+     * @param params Window creation params.
+     *
+     * @return Error if something went wrong, otherwise created window.
+     */
+    static std::variant<std::unique_ptr<Window>, Error> create(const WindowBuilderParameters& params);
+
     /**
      * Initializes the window.
      *

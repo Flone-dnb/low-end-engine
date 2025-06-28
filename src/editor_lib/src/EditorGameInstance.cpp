@@ -27,8 +27,6 @@
 #include "hwinfo/hwinfo.h"
 #include "utf/utf.hpp"
 
-const char* EditorGameInstance::getEditorWindowTitle() { return "Low End Editor"; }
-
 EditorGameInstance::EditorGameInstance(Window* pWindow) : GameInstance(pWindow) {}
 
 void EditorGameInstance::onGameStarted() {
