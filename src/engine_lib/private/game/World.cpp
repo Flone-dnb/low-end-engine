@@ -25,9 +25,12 @@ World::World(GameManager* pGameManager, std::unique_ptr<Node> pRootNodeToUse) : 
 
     pCameraManager = std::make_unique<CameraManager>(pGameManager);
     pUiNodeManager = std::unique_ptr<UiNodeManager>(new UiNodeManager(pGameManager->getRenderer()));
+
+#if !defined(ENGINE_UI_ONLY)
     pMeshNodeManager = std::unique_ptr<MeshNodeManager>(new MeshNodeManager());
     pLightSourceManager =
         std::unique_ptr<LightSourceManager>(new LightSourceManager(&pCameraManager->getPostProcessManager()));
+#endif
 
     // Spawn root node.
     if (pRootNodeToUse == nullptr) {
@@ -131,9 +134,19 @@ CameraManager& World::getCameraManager() const { return *pCameraManager; }
 
 UiNodeManager& World::getUiNodeManager() const { return *pUiNodeManager; }
 
-MeshNodeManager& World::getMeshNodeManager() const { return *pMeshNodeManager; }
+MeshNodeManager& World::getMeshNodeManager() const {
+#if defined(ENGINE_UI_ONLY)
+    static_assert(false, "mesh node manager is not used in UI only apps");
+#endif
+    return *pMeshNodeManager;
+}
 
-LightSourceManager& World::getLightSourceManager() const { return *pLightSourceManager; }
+LightSourceManager& World::getLightSourceManager() const {
+#if defined(ENGINE_UI_ONLY)
+    static_assert(false, "light source manager is not used in UI only apps");
+#endif
+    return *pLightSourceManager;
+}
 
 size_t World::getTotalSpawnedNodeCount() {
     std::scoped_lock guard(mtxSpawnedNodes.first);
