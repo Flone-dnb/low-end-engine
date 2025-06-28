@@ -46,7 +46,8 @@ private:
     /**
      * Tells how much parents the node has.
      *
-     * @return Parent count.
+     * @param pNode        Node to check parents of.
+     * @param iParentCount Total number of parents in the parent chain.
      */
     static void getNodeParentCount(Node* pNode, size_t& iParentCount);
 
