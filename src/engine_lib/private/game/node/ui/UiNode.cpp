@@ -137,6 +137,16 @@ void UiNode::setIsVisible(bool bIsVisible) {
             }
         }
     }
+
+    if (isSpawned()) {
+        if (isReceivingInput()) {
+            getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, bIsVisible);
+        }
+
+        if (bIsVisible && bShouldBeModal) {
+            getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
+        }
+    }
 }
 
 void UiNode::setOccupiesSpaceEvenIfInvisible(bool bTakeSpace) { bOccupiesSpaceEvenIfInvisible = bTakeSpace; }
@@ -169,15 +179,12 @@ void UiNode::setUiLayer(UiLayer layer) {
 }
 
 void UiNode::setModal() {
-    if (!isSpawned()) [[unlikely]] {
-        Error::showErrorAndThrowException("this function can only be called while spawned");
-    }
-    if (!bIsVisible) [[unlikely]] {
-        Error::showErrorAndThrowException("this function can only be called on visible nodes");
-    }
+    bShouldBeModal = true;
     // don't check if receiving input, some child nodes can receive input instead of this one
 
-    getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
+    if (isSpawned() && bIsVisible) {
+        getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
+    }
 }
 
 void UiNode::setFocused() {
@@ -207,15 +214,20 @@ void UiNode::onSpawning() {
 
     recalculateNodeDepthWhileSpawned();
 
-    if (isReceivingInput()) {
-        getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, true);
+    if (bIsVisible) {
+        if (isReceivingInput()) {
+            getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, true);
+        }
+        if (bShouldBeModal) {
+            getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
+        }
     }
 }
 
 void UiNode::onDespawning() {
     Node::onDespawning();
 
-    if (isReceivingInput()) {
+    if (bIsVisible && isReceivingInput()) {
         getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, false);
     }
 }
@@ -242,8 +254,28 @@ void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     Node::onAfterNewDirectChildAttached(pNewDirectChild);
 
     // This rule just makes it easier to work with UI node hierarchy.
-    if (dynamic_cast<UiNode*>(pNewDirectChild) == nullptr) [[unlikely]] {
+    const auto pUiChild = dynamic_cast<UiNode*>(pNewDirectChild);
+    if (pUiChild == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("UI nodes can have only UI nodes as child nodes");
+    }
+
+    if (!isSpawned()) {
+        // Apply layer to the new child.
+        pUiChild->setUiLayer(layer);
+    }
+
+    // Apply visibility.
+    if (!bIsVisible) {
+        const auto mtxChildNodes = getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
+            if (pUiChild == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected a UI node");
+            }
+            pUiChild->setIsVisible(bIsVisible);
+        }
     }
 }
 

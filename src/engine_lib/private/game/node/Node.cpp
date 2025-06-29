@@ -308,9 +308,11 @@ TypeReflectionInfo Node::getReflectionInfo() {
         std::move(variables));
 }
 
-void Node::unsafeDetachFromParentAndDespawn() {
-    Logger::get().info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
-    Logger::get().flushToDisk(); // flush in case if we crash later
+void Node::unsafeDetachFromParentAndDespawn(bool bDontLogMessage) {
+    if (!bDontLogMessage) {
+        Logger::get().info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
+        Logger::get().flushToDisk(); // flush in case if we crash later
+    }
 
     std::unique_ptr<Node> pSelf;
 

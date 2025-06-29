@@ -101,8 +101,6 @@ public:
     /**
      * Makes this node and its child nodes a modal UI node that takes all input.
      *
-     * @warning If used while not spawned or invisible an error will be shown.
-     *
      * @remark Replaces old modal node (tree).
      * @remark Automatically becomes non-modal when a node gets despawned, becomes invisible or disables
      * input.
@@ -355,6 +353,9 @@ private:
     /** Setting that allows the user to enable/disable rendering of this node. Affects all child nodes. */
     bool bIsVisible = true;
 
+    /** `true` if this UI node (and children) should be modal (top priority for input over other nodes). */
+    bool bShouldBeModal = false;
+
     /**
      * Has more priority over @ref bIsVisible. Affects all child nodes. Used internally by container nodes
      * that operate on whether a specific child node should be rendered or not (for example the layout node
@@ -376,12 +377,5 @@ private:
      *
      * @remark UI manager modifies this value and calls @ref onMouseEntered @ref onMouseLeft if needed.
      */
-    bool bIsHoveredCurrFrame = false;
-
-    /**
-     * @ref bIsHoveredCurrFrame on previous frame.
-     *
-     * @remark UI manager modifies this value and calls @ref onMouseEntered @ref onMouseLeft if needed.
-     */
-    bool bIsHoveredPrevFrame = false;
+    bool bIsMouseCursorHovered = false;
 };

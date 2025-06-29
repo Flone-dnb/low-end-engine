@@ -42,6 +42,28 @@ public:
      */
     void setNodeToDisplay(Node* pNode);
 
+    /**
+     * Returns game node that this item is displaying.
+     *
+     * @return Game node.
+     */
+    Node* getDisplayedGameNode() const { return pGameNode; }
+
+protected:
+    /**
+     * Called when the window receives mouse input while floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * @remark This function will only be called if the user clicked on this UI node.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the button down event occurred or button up.
+     */
+    virtual void
+    onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+
 private:
     /**
      * Tells how much parents the node has.
@@ -53,4 +75,7 @@ private:
 
     /** Displayed text. */
     TextUiNode* pTextNode = nullptr;
+
+    /** Game node this item represents. */
+    Node* pGameNode = nullptr;
 };

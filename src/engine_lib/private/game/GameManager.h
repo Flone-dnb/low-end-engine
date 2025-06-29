@@ -299,6 +299,13 @@ private:
     void onGamepadAxisMoved(GamepadAxis axis, float position);
 
     /**
+     * Called when window's cursor changes its visibility.
+     *
+     * @param bVisibleNow `true` if the cursor is visible now.
+     */
+    void onCursorVisibilityChanged(bool bVisibleNow);
+
+    /**
      * Called when the window (that owns this object) receives mouse input.
      *
      * @param button         Mouse button.

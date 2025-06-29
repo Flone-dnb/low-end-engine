@@ -4,6 +4,8 @@
 #include "game/node/ui/RectUiNode.h"
 
 class LayoutUiNode;
+class ButtonUiNode;
+class NodeTreeInspectorItem;
 
 /** Allows viewing and editing a node tree. */
 class NodeTreeInspector : public RectUiNode {
@@ -49,6 +51,13 @@ public:
      */
     void onGameNodeTreeLoaded(Node* pGameRootNode);
 
+    /**
+     * Shows a menu to create a new child node to attach to the displayed node tree.
+     *
+     * @param pParent Item that should have a new child.
+     */
+    void showChildNodeCreationMenu(NodeTreeInspectorItem* pParent);
+
 private:
     /**
      * Adds a node to be displayed.
@@ -57,6 +66,17 @@ private:
      */
     void addGameNodeRecursive(Node* pNode);
 
+    /**
+     * Adds a new child node to the displayed node tree and a new inspector item to be displayed.
+     *
+     * @param pParent   Parent node to attach a new node.
+     * @param sTypeGuid GUID of the new node.
+     */
+    void addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, const std::string& sTypeGuid);
+
     /** Layout node. */
     LayoutUiNode* pLayoutNode = nullptr;
+
+    /** Root node of game's world. */
+    Node* pGameRootNode = nullptr;
 };

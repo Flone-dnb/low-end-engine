@@ -310,6 +310,22 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
 
     mtxData.second.modalInputReceivingNodes = std::move(inputReceivingNodes);
     changeFocusedNode(pDeepestNode);
+
+    // Remove mouse hover state for other nodes.
+    std::vector<UiNode*> vNotifyOnMouseLeft;
+    for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+        for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
+            if (pNode->bIsMouseCursorHovered) {
+                pNode->bIsMouseCursorHovered = false;
+                vNotifyOnMouseLeft.push_back(pNode);
+            }
+        }
+    }
+
+    // Notify now (after finished iterating) because nodes can despawn in callback.
+    for (const auto& pNode : vNotifyOnMouseLeft) {
+        pNode->onMouseLeft();
+    }
 }
 
 void UiNodeManager::setFocusedNode(UiNode* pFocusedNode) {
@@ -390,9 +406,6 @@ void UiNodeManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabled
         if (mtxData.second.pFocusedNode == pNode) {
             changeFocusedNode(nullptr);
         }
-        if (mtxData.second.pHoveredNodeLastFrame == pNode) {
-            mtxData.second.pHoveredNodeLastFrame = nullptr;
-        }
 
         if (!mtxData.second.modalInputReceivingNodes.empty()) {
             mtxData.second.modalInputReceivingNodes.erase(pNode);
@@ -428,6 +441,30 @@ void UiNodeManager::onKeyboardInputTextCharacter(const std::string& sTextCharact
     }
 
     mtxData.second.pFocusedNode->onKeyboardInputTextCharacterWhileFocused(sTextCharacter);
+}
+
+void UiNodeManager::onCursorVisibilityChanged(bool bVisibleNow) {
+    std::scoped_lock guard(mtxData.first);
+
+    if (bVisibleNow) {
+        // Update hovered state.
+        onMouseMove(0, 0);
+    } else {
+        // Remove hovered state.
+        std::vector<UiNode*> vNotifyOnMouseLeft;
+        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+            for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
+                if (pNode->bIsMouseCursorHovered) {
+                    pNode->bIsMouseCursorHovered = false;
+                    vNotifyOnMouseLeft.push_back(pNode);
+                }
+            }
+        }
+        // Notify now (after finished iterating) because nodes can despawn in callback.
+        for (const auto& pNode : vNotifyOnMouseLeft) {
+            pNode->onMouseLeft();
+        }
+    }
 }
 
 void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
@@ -509,35 +546,88 @@ void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
         static_cast<float>(iCursorX) / static_cast<float>(iWidth),
         static_cast<float>(iCursorY) / static_cast<float>(iHeight));
 
-    bool bFoundNode = false;
+    std::vector<UiNode*> vNotifyOnMouseLeft;
 
+    // Update hover state for all input receiving nodes.
     if (!mtxData.second.modalInputReceivingNodes.empty()) {
         for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
             const auto pos = pNode->getPosition();
             const auto size = pNode->getSize();
 
-            if (cursorPos.y < pos.y) {
-                continue;
-            }
-            if (cursorPos.x < pos.x) {
-                continue;
-            }
-            if (cursorPos.y > pos.y + size.y) {
-                continue;
-            }
-            if (cursorPos.x > pos.x + size.x) {
+            if (cursorPos.y < pos.y || cursorPos.x < pos.x || cursorPos.y > pos.y + size.y ||
+                cursorPos.x > pos.x + size.x) {
+                // Cursor is outside.
+                if (pNode->bIsMouseCursorHovered) {
+                    pNode->bIsMouseCursorHovered = false;
+                    vNotifyOnMouseLeft.push_back(pNode);
+                }
                 continue;
             }
 
-            pNode->bIsHoveredCurrFrame = true;
-            mtxData.second.pHoveredNodeLastFrame = pNode;
-
-            if (!pNode->bIsHoveredPrevFrame) {
+            if (!pNode->bIsMouseCursorHovered) {
                 pNode->onMouseEntered();
+                pNode->bIsMouseCursorHovered = true;
             }
 
             // When there's a model UI we must send mouse move (not the game manager).
             pNode->onMouseMove(static_cast<double>(iXOffset), static_cast<double>(iYOffset));
+        }
+    } else {
+        // Check rendered input nodes in reverse order (from front layer to back layer).
+        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+            for (auto& pNode : layerNodes.receivingInputUiNodesRenderedLastFrame) {
+                const auto pos = pNode->getPosition();
+                const auto size = pNode->getSize();
+
+                if (cursorPos.y < pos.y || cursorPos.x < pos.x || cursorPos.y > pos.y + size.y ||
+                    cursorPos.x > pos.x + size.x) {
+                    // Cursor is outside.
+                    if (pNode->bIsMouseCursorHovered) {
+                        pNode->bIsMouseCursorHovered = false;
+                        vNotifyOnMouseLeft.push_back(pNode);
+                    }
+                    continue;
+                }
+
+                if (!pNode->bIsMouseCursorHovered) {
+                    pNode->onMouseEntered();
+                    pNode->bIsMouseCursorHovered = true;
+                }
+
+                // mouse move is called by game manager not us
+            }
+        }
+    }
+
+    // Notify now (when finished iterating over the arrays) because nodes can despawn in callback.
+    for (const auto& pNode : vNotifyOnMouseLeft) {
+        pNode->onMouseLeft();
+    }
+}
+
+void UiNodeManager::onMouseScrollMove(int iOffset) {
+    std::scoped_lock guard(mtxData.first);
+
+    const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
+    const auto [iCursorX, iCursorY] = pRenderer->getWindow()->getCursorPosition();
+
+    const glm::vec2 cursorPos = glm::vec2(
+        static_cast<float>(iCursorX) / static_cast<float>(iWidth),
+        static_cast<float>(iCursorY) / static_cast<float>(iHeight));
+
+    // Find first hovered node.
+    if (!mtxData.second.modalInputReceivingNodes.empty()) {
+        for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
+            const auto pos = pNode->getPosition();
+            const auto size = pNode->getSize();
+
+            if (cursorPos.y < pos.y || cursorPos.x < pos.x || cursorPos.y > pos.y + size.y ||
+                cursorPos.x > pos.x + size.x) {
+                // Cursor is outside.
+                continue;
+            }
+
+            pNode->onMouseScrollMoveWhileHovered(iOffset);
             break;
         }
     } else {
@@ -547,52 +637,17 @@ void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
                 const auto pos = pNode->getPosition();
                 const auto size = pNode->getSize();
 
-                if (cursorPos.y < pos.y) {
-                    continue;
-                }
-                if (cursorPos.x < pos.x) {
-                    continue;
-                }
-                if (cursorPos.y > pos.y + size.y) {
-                    continue;
-                }
-                if (cursorPos.x > pos.x + size.x) {
+                if (cursorPos.y < pos.y || cursorPos.x < pos.x || cursorPos.y > pos.y + size.y ||
+                    cursorPos.x > pos.x + size.x) {
+                    // Cursor is outside.
                     continue;
                 }
 
-                bFoundNode = true;
-                pNode->bIsHoveredCurrFrame = true;
-                mtxData.second.pHoveredNodeLastFrame = pNode;
-
-                if (!pNode->bIsHoveredPrevFrame) {
-                    pNode->onMouseEntered();
-                }
-
-                // mouse move is called by game manager not us
-                break;
-            }
-
-            if (bFoundNode) {
+                pNode->onMouseScrollMoveWhileHovered(iOffset);
                 break;
             }
         }
     }
-
-    if (!bFoundNode) {
-        mtxData.second.pHoveredNodeLastFrame = nullptr;
-    }
-
-    mtxData.second.bWasHoveredNodeCheckedThisFrame = true;
-}
-
-void UiNodeManager::onMouseScrollMove(int iOffset) {
-    std::scoped_lock guard(mtxData.first);
-
-    if (mtxData.second.pHoveredNodeLastFrame == nullptr) {
-        return;
-    }
-
-    mtxData.second.pHoveredNodeLastFrame->onMouseScrollMoveWhileHovered(iOffset);
 }
 
 bool UiNodeManager::hasModalUiNodeTree() {
@@ -625,10 +680,6 @@ void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
 
     std::scoped_lock guard(mtxData.first);
 
-    if (pRenderer->getWindow()->isCursorVisible() && !mtxData.second.bWasHoveredNodeCheckedThisFrame) {
-        onMouseMove(0, 0);
-    }
-
     for (auto& nodes : mtxData.second.vSpawnedVisibleNodes) {
         nodes.receivingInputUiNodesRenderedLastFrame.clear(); // clear but don't shrink
     }
@@ -641,8 +692,6 @@ void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
         drawLayoutScrollBars(i);
     }
     glEnable(GL_DEPTH_TEST);
-
-    mtxData.second.bWasHoveredNodeCheckedThisFrame = false;
 }
 
 void UiNodeManager::drawRectNodes(size_t iLayer) {
@@ -675,16 +724,10 @@ void UiNodeManager::drawRectNodes(size_t iLayer) {
 
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
             for (const auto& pRectNode : nodes) {
-                // Update input-related things.
                 if (pRectNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
                                                            // (it will wait on our mutex)
                     vInputNodesRendered.push_back(pRectNode);
                 }
-                if (!pRectNode->bIsHoveredCurrFrame && pRectNode->bIsHoveredPrevFrame) {
-                    pRectNode->onMouseLeft();
-                }
-                pRectNode->bIsHoveredPrevFrame = pRectNode->bIsHoveredCurrFrame;
-                pRectNode->bIsHoveredCurrFrame = false;
 
                 auto pos = pRectNode->getPosition();
                 auto size = pRectNode->getSize();
@@ -752,11 +795,6 @@ void UiNodeManager::drawSliderNodes(size_t iLayer) {
                                                              // (it will wait on our mutex)
                     vInputNodesRendered.push_back(pSliderNode);
                 }
-                if (!pSliderNode->bIsHoveredCurrFrame && pSliderNode->bIsHoveredPrevFrame) {
-                    pSliderNode->onMouseLeft();
-                }
-                pSliderNode->bIsHoveredPrevFrame = pSliderNode->bIsHoveredCurrFrame;
-                pSliderNode->bIsHoveredCurrFrame = false;
 
                 const auto pos = pSliderNode->getPosition();
                 const auto size = pSliderNode->getSize();
@@ -1283,10 +1321,6 @@ UiNodeManager::~UiNodeManager() {
     if (mtxData.second.pFocusedNode != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             "UI manager is being destroyed but focused node pointer is still not `nullptr`");
-    }
-    if (mtxData.second.pHoveredNodeLastFrame != nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            "UI manager is being destroyed but hovered node pointer is still not `nullptr`");
     }
     if (!mtxData.second.modalInputReceivingNodes.empty()) [[unlikely]] {
         Error::showErrorAndThrowException(

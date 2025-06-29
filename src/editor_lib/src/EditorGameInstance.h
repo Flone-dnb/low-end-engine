@@ -8,6 +8,7 @@ class EditorCameraNode;
 class TextUiNode;
 class UiNode;
 class NodeTreeInspector;
+class ContextMenuNode;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -20,6 +21,16 @@ public:
     EditorGameInstance(Window* pWindow);
 
     virtual ~EditorGameInstance() override = default;
+
+    /**
+     * Shows context menu at the current position of the mouse cursor.
+     *
+     * @remark Menu will be automatically closed when a menu item is clicked or if mouse is no longer hovering
+     * over the context menu.
+     *
+     * @param vMenuItems Names and callbacks for menu items.
+     */
+    void openContextMenu(const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems);
 
 protected:
     /**
@@ -80,6 +91,9 @@ private:
 
         /** Allows viewing and editing game's node tree. */
         NodeTreeInspector* pNodeTreeInspector = nullptr;
+
+        /** Node used as context menu. */
+        ContextMenuNode* pContextMenu = nullptr;
     };
 
     /** Registers action and axis input events in the input manager. */

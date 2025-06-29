@@ -132,7 +132,9 @@ void RectUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
     // Notify manager.
-    getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
+    if (isSpawned()) {
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
+    }
 }
 
 void RectUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {

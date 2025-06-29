@@ -2,6 +2,8 @@
 
 // Custom.
 #include "game/node/ui/LayoutUiNode.h"
+#include "game/node/ui/TextUiNode.h"
+#include "misc/ReflectedTypeDatabase.h"
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "EditorColorTheme.h"
 
@@ -27,7 +29,19 @@ NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(
     pLayoutNode->setChildNodeSpacing(EditorColorTheme::getSpacing());
 }
 
-void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) { addGameNodeRecursive(pGameRootNode); }
+void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
+    if (this->pGameRootNode != nullptr) {
+        // Remove old tree.
+        const auto mtxChildNodes = pLayoutNode->getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+        for (const auto& pNode : mtxChildNodes.second) {
+            pNode->unsafeDetachFromParentAndDespawn(true);
+        }
+    }
+
+    this->pGameRootNode = pGameRootNode;
+    addGameNodeRecursive(pGameRootNode);
+}
 
 void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
     if (pNode->getNodeName().starts_with(getHiddenNodeNamePrefix())) {
@@ -43,4 +57,27 @@ void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
     for (const auto& pChildNode : mtxChildNodes.second) {
         addGameNodeRecursive(pChildNode);
     }
+}
+
+void NodeTreeInspector::showChildNodeCreationMenu(NodeTreeInspectorItem* pParent) {
+    // TODO: show type selection
+
+    addChildNodeToNodeTree(pParent, Node::getTypeGuidStatic());
+}
+
+void NodeTreeInspector::addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, const std::string& sTypeGuid) {
+    // Create new node.
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
+    auto pSerializable = typeInfo.createNewObject();
+    std::unique_ptr<Node> pNewNode(dynamic_cast<Node*>(pSerializable.get()));
+    if (pNewNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format("expected a node type for GUID \"{}\"", sTypeGuid));
+    }
+    pSerializable.release();
+
+    // Add child.
+    pParent->getDisplayedGameNode()->addChildNode(std::move(pNewNode));
+
+    // Refresh tree.
+    onGameNodeTreeLoaded(pGameRootNode);
 }

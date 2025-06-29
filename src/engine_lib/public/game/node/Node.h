@@ -151,8 +151,10 @@ public:
      *
      * @remark This function is usually used to mark node (tree) as "to be destroyed", if you
      * just want to change node's parent consider using @ref addChildNode.
+     *
+     * @param bDontLogMessage Specify `true` to not log a message about node being destroyed.
      */
-    void unsafeDetachFromParentAndDespawn();
+    void unsafeDetachFromParentAndDespawn(bool bDontLogMessage = false);
 
     /**
      * Sets if this node (and node's child nodes) should be serialized as part of a node tree or not.

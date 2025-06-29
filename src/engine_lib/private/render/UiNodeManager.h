@@ -165,6 +165,13 @@ public:
     void onKeyboardInputTextCharacter(const std::string& sTextCharacter);
 
     /**
+     * Called by game manager after mouse cursor changes its visibility.
+     *
+     * @param bVisibleNow `true` if the cursor is visible now.
+     */
+    void onCursorVisibilityChanged(bool bVisibleNow);
+
+    /**
      * Called by game manager when window received mouse input.
      *
      * @param button         Mouse button.
@@ -238,14 +245,8 @@ private:
         /** UI node that currently has the focus. */
         UiNode* pFocusedNode = nullptr;
 
-        /** UI node that had mouse cursor floating over it last frame. */
-        UiNode* pHoveredNodeLastFrame = nullptr;
-
         /** Empty if no modal node (tree). Nodes that receive input from node (tree) that was made modal. */
         std::unordered_set<UiNode*> modalInputReceivingNodes;
-
-        /** Tells if check for @ref pHoveredNodeLastFrame was done this frame or not. */
-        bool bWasHoveredNodeCheckedThisFrame = false;
 
         /**
          * All spawned and visible UI nodes.

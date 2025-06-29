@@ -95,12 +95,18 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderP
 }
 
 void Window::setCursorVisibility(bool bIsVisible) {
+    if (bIsVisible == bIsCursorVisible) {
+        return;
+    }
+
     if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!bIsVisible)) != 0) {
         Logger::get().error(SDL_GetError());
         return;
     }
 
     bIsCursorVisible = bIsVisible;
+
+    pGameManager->onCursorVisibilityChanged(bIsCursorVisible);
 }
 
 void Window::close() { bQuitRequested = true; }

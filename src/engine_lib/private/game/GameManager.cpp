@@ -343,6 +343,14 @@ void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {
     }
 }
 
+void GameManager::onCursorVisibilityChanged(bool bVisibleNow) {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        pWorld->getUiNodeManager().onCursorVisibilityChanged(bVisibleNow);
+    }
+}
+
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
 

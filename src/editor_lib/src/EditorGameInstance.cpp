@@ -17,6 +17,7 @@
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
 #include "node/node_tree_inspector/NodeTreeInspector.h"
+#include "node/ContextMenuNode.h"
 #include "EditorColorTheme.h"
 
 #if defined(GAME_LIB_INCLUDED)
@@ -229,6 +230,8 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     const auto pCamera = pRootNode->addChildNode(std::make_unique<CameraNode>());
     pCamera->makeActive(false);
 
+    editorWorldNodes.pContextMenu = pRootNode->addChildNode(std::make_unique<ContextMenuNode>());
+
     const auto pHorizontalLayout = pRootNode->addChildNode(std::make_unique<LayoutUiNode>());
     pHorizontalLayout->setPosition(glm::vec2(0.0F, 0.0F));
     pHorizontalLayout->setSize(glm::vec2(1.0F, 1.0F));
@@ -254,7 +257,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
         const auto pMiddleVerticalLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pMiddleVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-        pMiddleVerticalLayout->setExpandPortionInLayout(5);
+        pMiddleVerticalLayout->setExpandPortionInLayout(4);
         {
             const auto pRect = pMiddleVerticalLayout->addChildNode(std::make_unique<RectUiNode>());
             pRect->setColor(EditorColorTheme::getEditorBackgroundColor());
@@ -262,7 +265,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
             editorWorldNodes.pViewportUiPlaceholder =
                 pMiddleVerticalLayout->addChildNode(std::make_unique<UiNode>());
-            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(5);
+            editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(4);
         }
 
         const auto pRightRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
@@ -333,4 +336,12 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
 
     editorWorldNodes.pNodeTreeInspector->onGameNodeTreeLoaded(gameWorldNodes.pRoot);
+}
+
+void EditorGameInstance::openContextMenu(
+    const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems) {
+    if (editorWorldNodes.pContextMenu == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("unable to show context menu as editor world is not created");
+    }
+    editorWorldNodes.pContextMenu->openMenu(vMenuItems);
 }
