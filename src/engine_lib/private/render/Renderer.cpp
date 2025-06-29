@@ -83,9 +83,10 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 }
 
 void Renderer::recreateFramebuffers() {
+    const auto pGameManager = pWindow->getGameManager();
+
 #if !defined(ENGINE_UI_ONLY)
     // Update framebuffers (main, post-process).
-    const auto pGameManager = pWindow->getGameManager();
     if (pGameManager != nullptr) {
         auto& mtxWorldData = pGameManager->getWorlds();
         std::scoped_lock guard(mtxWorldData.first);
@@ -126,19 +127,21 @@ void Renderer::drawNextFrame() {
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
 
 #if defined(ENGINE_UI_ONLY)
-    glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-    glViewport(0, 0, iWindowWidth, iWindowHeight);
-    glClear(GL_COLOR_BUFFER_BIT);
+    auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
+    std::scoped_lock guardWorlds(mtxWorlds.first);
 
-    {
-        auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
-        std::scoped_lock guardWorlds(mtxWorlds.first);
-        if (!mtxWorlds.empty()) {
-            mtxWorlds.second.vWorlds[0]->getUiNodeManager().drawUiOnFramebuffer(
-                pMainFramebuffer->getFramebufferId());
-        }
+    if (!mtxWorlds.second.vWorlds.empty()) {
+        const auto pWorld = mtxWorlds.second.vWorlds[0].get();
+        const auto& pMainFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, iWindowWidth, iWindowHeight);
+
+        pWorld->getUiNodeManager().drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
+
+        copyFramebufferToWindowFramebuffer(*pMainFramebuffer, glm::ivec4(0, 0, iWindowWidth, iWindowHeight));
     }
-    copyFramebufferToWindowFramebuffer(pMainFramebuffer->getFramebufferId(), iWindowWidth, iWindowHeight);
 #else
     // Get active cameras from all worlds.
     auto& mtxWorlds = pWindow->getGameManager()->getWorlds();

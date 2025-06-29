@@ -136,14 +136,14 @@ UiNodeManager& World::getUiNodeManager() const { return *pUiNodeManager; }
 
 MeshNodeManager& World::getMeshNodeManager() const {
 #if defined(ENGINE_UI_ONLY)
-    static_assert(false, "mesh node manager is not used in UI only apps");
+    Error::showErrorAndThrowException("mesh node manager is not used in UI only apps");
 #endif
     return *pMeshNodeManager;
 }
 
 LightSourceManager& World::getLightSourceManager() const {
 #if defined(ENGINE_UI_ONLY)
-    static_assert(false, "light source manager is not used in UI only apps");
+    Error::showErrorAndThrowException("mesh node manager is not used in UI only apps");
 #endif
     return *pLightSourceManager;
 }

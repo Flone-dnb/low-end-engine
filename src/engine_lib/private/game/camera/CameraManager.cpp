@@ -41,7 +41,7 @@ void CameraManager::onWindowSizeChanged(Window* pWindow) {
 
 PostProcessManager& CameraManager::getPostProcessManager() const {
 #if defined(ENGINE_UI_ONLY)
-    static_assert(false, "post-process manager is not used in UI only apps");
+    Error::showErrorAndThrowException("post processing manager is not used in UI only apps");
 #endif
     return *pPostProcessManager;
 }
