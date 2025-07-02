@@ -25,22 +25,6 @@ public:
     virtual ~ContextMenuNode() override = default;
 
     /**
-     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
-     * database.
-     *
-     * @return GUID.
-     */
-    static std::string getTypeGuidStatic();
-
-    /**
-     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
-     * database.
-     *
-     * @return GUID.
-     */
-    virtual std::string getTypeGuid() const override;
-
-    /**
      * Shows context menu at the current position of the mouse cursor.
      *
      * @remark Menu will be automatically closed when a menu item is clicked or if mouse is no longer hovering
@@ -64,4 +48,7 @@ private:
 
     /** Layout to add context menu buttons to. */
     LayoutUiNode* pButtonsLayout = nullptr;
+
+    /** `true` if an option was clicked and we are currently processing it. */
+    bool bIsProcessingButtonClick = false;
 };

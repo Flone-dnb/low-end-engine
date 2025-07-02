@@ -220,8 +220,10 @@ protected:
      * @remark This function will only be called while this node is spawned.
      *
      * @param iOffset Movement offset.
+     *
+     * @return `true` if the event was handled or `false` if the event needs to be passed to a parent UI node.
      */
-    virtual void onMouseScrollMoveWhileHovered(int iOffset) override;
+    virtual bool onMouseScrollMoveWhileHovered(int iOffset) override;
 
 private:
     /** Called by direct child nodes if the user changed their visibility. */

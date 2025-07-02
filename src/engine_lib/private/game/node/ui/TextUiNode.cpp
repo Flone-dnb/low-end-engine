@@ -245,20 +245,13 @@ void TextUiNode::onVisibilityChanged() {
 void TextUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
 
-    const auto mtxChildNodes = getChildNodes();
-    std::scoped_lock guard(*mtxChildNodes.first);
-
-    if (!mtxChildNodes.second.empty()) {
-        Error::showErrorAndThrowException(
-            std::format("text ui nodes can't have child nodes (text node \"{}\")", getNodeName()));
-    }
+    Error::showErrorAndThrowException(
+        std::format("text ui nodes can't have child nodes (text node \"{}\")", getNodeName()));
 }
 
-void TextUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
-    UiNode::onMouseScrollMoveWhileHovered(iOffset);
-
+bool TextUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     if (!bIsScrollBarEnabled) {
-        return;
+        return UiNode::onMouseScrollMoveWhileHovered(iOffset);
     }
 
     if (iOffset < 0) {
@@ -270,4 +263,6 @@ void TextUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
             iCurrentScrollOffset -= static_cast<size_t>(iOffset);
         }
     }
+
+    return true;
 }

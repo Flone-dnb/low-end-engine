@@ -144,8 +144,10 @@ protected:
      * @param button         Mouse button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
+     *
+     * @return `true` if the event was handled.
      */
-    virtual void
+    virtual bool
     onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
 
     /**

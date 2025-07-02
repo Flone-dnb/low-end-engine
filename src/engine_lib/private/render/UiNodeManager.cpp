@@ -295,7 +295,7 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
 
         if (!bFound) [[unlikely]] {
             Error::showErrorAndThrowException(std::format(
-                "unable to find node \"{}\" to be spawned, visible and receiving input to make modal",
+                "unable to make node \"{}\" modal, expected it to be spawned, visible and receiving input",
                 pNode->getNodeName()));
         }
     }
@@ -495,9 +495,9 @@ void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers
                 continue;
             }
 
-            changeFocusedNode(pNode);
-            pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
-            break;
+            if (pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown)) {
+                break;
+            }
         }
 
         return;
@@ -524,10 +524,10 @@ void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers
                 continue;
             }
 
-            bFoundNode = true;
-            changeFocusedNode(pNode);
-            pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
-            break;
+            if (pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown)) {
+                bFoundNode = true;
+                break;
+            }
         }
 
         if (bFoundNode) {
@@ -601,7 +601,16 @@ void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
 
     // Notify now (when finished iterating over the arrays) because nodes can despawn in callback.
     for (const auto& pNode : vNotifyOnMouseLeft) {
-        pNode->onMouseLeft();
+        // TODO: rework this mess
+        // Because nodes can be instantly despawned in onMouseLeft which can cause a whole node tree to be
+        // despawned we check if the node pointer is still valid or not.
+        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+            const auto it = layerNodes.receivingInputUiNodes.find(pNode);
+            if (it != layerNodes.receivingInputUiNodes.end()) {
+                pNode->onMouseLeft();
+                break;
+            }
+        }
     }
 }
 
@@ -627,8 +636,9 @@ void UiNodeManager::onMouseScrollMove(int iOffset) {
                 continue;
             }
 
-            pNode->onMouseScrollMoveWhileHovered(iOffset);
-            break;
+            if (pNode->onMouseScrollMoveWhileHovered(iOffset)) {
+                break;
+            }
         }
     } else {
         // Check rendered input nodes in reverse order (from front layer to back layer).
@@ -643,8 +653,9 @@ void UiNodeManager::onMouseScrollMove(int iOffset) {
                     continue;
                 }
 
-                pNode->onMouseScrollMoveWhileHovered(iOffset);
-                break;
+                if (pNode->onMouseScrollMoveWhileHovered(iOffset)) {
+                    break;
+                }
             }
         }
     }
@@ -1271,6 +1282,30 @@ void UiNodeManager::drawScrollBarsDataLocked(
 
 void UiNodeManager::changeFocusedNode(UiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
+
+    // Make sure the node was not despawned.
+    bool bValidNode = false;
+    for (auto& pModalNode : mtxData.second.modalInputReceivingNodes) {
+        if (pNode == pModalNode) {
+            bValidNode = true;
+            break;
+        }
+    }
+    if (!bValidNode) {
+        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+            const auto it = layerNodes.receivingInputUiNodes.find(pNode);
+            if (it != layerNodes.receivingInputUiNodes.end()) {
+                bValidNode = true;
+                break;
+            }
+        }
+    }
+    if (!bValidNode) {
+        if (pNode == nullptr) {
+            mtxData.second.pFocusedNode = nullptr;
+        }
+        return;
+    }
 
     if (mtxData.second.pFocusedNode == pNode) {
         return;

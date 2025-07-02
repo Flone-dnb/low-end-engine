@@ -90,6 +90,13 @@ public:
      */
     float getPadding() const { return padding; }
 
+    /**
+     * Returns the maximum number of child nodes this type allows. This is generally 0, 1, or +inf.
+     *
+     * @return Number of child nodes.
+     */
+    virtual size_t getMaxChildCount() const override { return 1; }
+
 protected:
     /** Called after color was changed while the node was spawned. */
     virtual void onColorChangedWhileSpawned() {}

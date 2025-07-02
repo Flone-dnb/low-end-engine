@@ -29,8 +29,10 @@ set(PROJECT_SOURCES
     src/node/node_tree_inspector/NodeTreeInspector.cpp
     src/node/node_tree_inspector/NodeTreeInspectorItem.h
     src/node/node_tree_inspector/NodeTreeInspectorItem.cpp
-    src/node/ContextMenuNode.h
-    src/node/ContextMenuNode.cpp
+    src/node/menu/ContextMenuNode.h
+    src/node/menu/ContextMenuNode.cpp
+    src/node/menu/SelectNodeTypeMenu.h
+    src/node/menu/SelectNodeTypeMenu.cpp
     # add your .h/.cpp files here
 )
 

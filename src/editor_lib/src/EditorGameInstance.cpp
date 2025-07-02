@@ -17,7 +17,7 @@
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
 #include "node/node_tree_inspector/NodeTreeInspector.h"
-#include "node/ContextMenuNode.h"
+#include "node/menu/ContextMenuNode.h"
 #include "EditorColorTheme.h"
 
 #if defined(GAME_LIB_INCLUDED)

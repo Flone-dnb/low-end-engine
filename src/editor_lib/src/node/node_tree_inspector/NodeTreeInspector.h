@@ -29,22 +29,6 @@ public:
     static std::string_view getHiddenNodeNamePrefix() { return "Editor"; };
 
     /**
-     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
-     * database.
-     *
-     * @return GUID.
-     */
-    static std::string getTypeGuidStatic();
-
-    /**
-     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
-     * database.
-     *
-     * @return GUID.
-     */
-    virtual std::string getTypeGuid() const override;
-
-    /**
      * Called after a game's node tree was loaded.
      *
      * @param pGameRootNode Root node of game's node tree.
@@ -57,6 +41,13 @@ public:
      * @param pParent Item that should have a new child.
      */
     void showChildNodeCreationMenu(NodeTreeInspectorItem* pParent);
+
+    /**
+     * Deletes game node that is displayed by the specified node tree item.
+     *
+     * @param pItem Item that displays the node to delete.
+     */
+    void deleteGameNode(NodeTreeInspectorItem* pItem);
 
 private:
     /**
@@ -72,7 +63,7 @@ private:
      * @param pParent   Parent node to attach a new node.
      * @param sTypeGuid GUID of the new node.
      */
-    void addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, const std::string& sTypeGuid);
+    void addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, std::string_view sTypeGuid);
 
     /** Layout node. */
     LayoutUiNode* pLayoutNode = nullptr;

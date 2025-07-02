@@ -167,6 +167,13 @@ public:
      */
     size_t getNodeDepthWhileSpawned();
 
+    /**
+     * Returns the maximum number of child nodes this type allows. This is generally 0, 1, or +inf.
+     *
+     * @return Number of child nodes.
+     */
+    virtual size_t getMaxChildCount() const;
+
 protected:
     /**
      * Called when the window receives keyboard input.
@@ -211,8 +218,12 @@ protected:
      * @param button         Mouse button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
+     *
+     * @return `true` if the event was handled.
      */
-    virtual void onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
+    virtual bool onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
+        return false;
+    }
 
     /**
      * Called when the window receives mouse scroll movement while floating over this UI node.
@@ -221,8 +232,11 @@ protected:
      * @remark This function will only be called while this node is spawned.
      *
      * @param iOffset Movement offset.
+     *
+     * @return `true` if the event was handled or `false` if the event needs to be passed to a parent UI node.
+     * Base class implementation passes the call to the parent node.
      */
-    virtual void onMouseScrollMoveWhileHovered(int iOffset);
+    virtual bool onMouseScrollMoveWhileHovered(int iOffset);
 
     /**
      * Called when the mouse cursor started floating over this UI node.

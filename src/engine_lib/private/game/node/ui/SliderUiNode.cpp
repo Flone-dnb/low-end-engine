@@ -123,19 +123,19 @@ void SliderUiNode::setSliderStep(float stepSize) {
     }
 }
 
-void SliderUiNode::onMouseClickOnUiNode(
+bool SliderUiNode::onMouseClickOnUiNode(
     MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     UiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
 
     if (button != MouseButton::LEFT) {
-        return;
+        return true;
     }
 
     if (bIsPressedDown) {
         bIsMouseCursorDraggingHandle = true;
     } else {
         bIsMouseCursorDraggingHandle = false;
-        return;
+        return true;
     }
 
     // Move handle according to the cursor.
@@ -151,6 +151,8 @@ void SliderUiNode::onMouseClickOnUiNode(
     if (onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
+
+    return true;
 }
 
 void SliderUiNode::onMouseMove(double xOffset, double yOffset) {
@@ -196,4 +198,10 @@ void SliderUiNode::onGamepadInputWhileFocused(GamepadButton button, bool bIsPres
     }
 
     handlePosition = std::clamp(snapToNearest(handlePosition + step, step), 0.0F, 1.0F);
+}
+
+void SliderUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
+    UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
+    Error::showErrorAndThrowException(
+        std::format("slider node \"{}\" can't have child nodes", getNodeName()));
 }

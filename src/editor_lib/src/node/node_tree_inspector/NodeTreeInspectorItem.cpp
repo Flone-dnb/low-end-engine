@@ -10,13 +10,6 @@
 // External.
 #include "utf/utf.hpp"
 
-namespace {
-    constexpr std::string_view sTypeGuid = "7cf78258-31f9-489e-b1ea-8e048b002edc";
-}
-
-std::string NodeTreeInspectorItem::getTypeGuidStatic() { return sTypeGuid.data(); }
-std::string NodeTreeInspectorItem::getTypeGuid() const { return sTypeGuid.data(); }
-
 NodeTreeInspectorItem::NodeTreeInspectorItem() : NodeTreeInspectorItem("Node Tree Inspector Item") {}
 NodeTreeInspectorItem::NodeTreeInspectorItem(const std::string& sNodeName) : ButtonUiNode(sNodeName) {
     setSize(glm::vec2(getSize().x, EditorColorTheme::getButtonSizeY()));
@@ -59,7 +52,7 @@ void NodeTreeInspectorItem::getNodeParentCount(Node* pNode, size_t& iParentCount
     getNodeParentCount(mtxParent.second, iParentCount);
 }
 
-void NodeTreeInspectorItem::onMouseClickOnUiNode(
+bool NodeTreeInspectorItem::onMouseClickOnUiNode(
     MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     ButtonUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
 
@@ -69,15 +62,27 @@ void NodeTreeInspectorItem::onMouseClickOnUiNode(
             Error::showErrorAndThrowException("expected editor game instance to be valid");
         }
 
-        pGameInstance->openContextMenu(
-            {{u"Add child node",
-              [this]() { getParentNodeOfType<NodeTreeInspector>()->showChildNodeCreationMenu(this); }},
-             {u"Change name",
-              []() {
-                  // TODO: show name change menu
-              }},
-             {u"Change type", []() {
-                  // TODO: show type change menu
-              }}});
+        // Prepare context menu.
+        std::vector<std::pair<std::u16string, std::function<void()>>> vOptions;
+        vOptions.reserve(3);
+
+        const auto pUiNode = dynamic_cast<UiNode*>(getDisplayedGameNode());
+        if (pUiNode == nullptr || pUiNode->getMaxChildCount() > 0) {
+            vOptions.push_back({u"Add child node", [this]() {
+                                    getParentNodeOfType<NodeTreeInspector>()->showChildNodeCreationMenu(this);
+                                }});
+        }
+        vOptions.push_back({u"Change name", []() {
+                                // TODO: show name change menu
+                            }});
+        vOptions.push_back({u"Change type", []() {
+                                // TODO: show type change menu
+                            }});
+        vOptions.push_back(
+            {u"Delete node", [this]() { getParentNodeOfType<NodeTreeInspector>()->deleteGameNode(this); }});
+
+        dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())->openContextMenu(vOptions);
     }
+
+    return true;
 }

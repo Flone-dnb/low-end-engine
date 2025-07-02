@@ -11,5 +11,5 @@ layout(early_fragment_tests) in;
 
 /// Entry.
 void main() {
-    color = vec4(textColor.r, textColor.g, textColor.b, texture(glyphBitmap, fragmentUv).r * textColor);
+    color = vec4(textColor.r, textColor.g, textColor.b, texture(glyphBitmap, fragmentUv).r * textColor.a);
 }  

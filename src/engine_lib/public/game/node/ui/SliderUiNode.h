@@ -114,6 +114,13 @@ public:
      */
     float getSliderStep() const { return sliderStep; }
 
+    /**
+     * Returns the maximum number of child nodes this type allows. This is generally 0, 1, or +inf.
+     *
+     * @return Number of child nodes.
+     */
+    virtual size_t getMaxChildCount() const override { return 0; }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
@@ -151,8 +158,10 @@ protected:
      * @param button         Mouse button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
+     *
+     * @return `true` if the event was handled.
      */
-    virtual void
+    virtual bool
     onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
 
     /**
@@ -187,6 +196,13 @@ protected:
      * @param bIsPressedDown Whether the button was pressed or released.
      */
     virtual void onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) override;
+
+    /**
+     * Called after some child node was attached to this node.
+     *
+     * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
+     */
+    virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
 private:
     /**

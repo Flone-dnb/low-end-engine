@@ -1,4 +1,4 @@
-#include "node/ContextMenuNode.h"
+#include "node/menu/ContextMenuNode.h"
 
 // Custom.
 #include "game/node/ui/LayoutUiNode.h"
@@ -8,12 +8,8 @@
 #include "game/GameInstance.h"
 #include "game/Window.h"
 
-namespace {
-    constexpr std::string_view sTypeGuid = "f50b54c3-322b-49f8-9ff2-2fd1faf03cc9";
-}
-
-std::string ContextMenuNode::getTypeGuidStatic() { return sTypeGuid.data(); }
-std::string ContextMenuNode::getTypeGuid() const { return sTypeGuid.data(); }
+// External.
+#include "utf/utf.hpp"
 
 ContextMenuNode::ContextMenuNode() : ContextMenuNode("Context Menu Node") {}
 ContextMenuNode::ContextMenuNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
@@ -43,7 +39,9 @@ void ContextMenuNode::closeMenu() {
 void ContextMenuNode::onMouseLeft() {
     RectUiNode::onMouseLeft();
 
-    closeMenu();
+    if (!bIsProcessingButtonClick) {
+        closeMenu();
+    }
 }
 
 void ContextMenuNode::openMenu(
@@ -61,7 +59,8 @@ void ContextMenuNode::openMenu(
     float totalSizeY = 0.0F;
 
     for (const auto& [sName, callback] : vMenuItems) {
-        auto pButton = std::make_unique<ButtonUiNode>();
+        auto pButton =
+            std::make_unique<ButtonUiNode>(std::format("Context menu option \"{}\"", utf::as_str8(sName)));
         pButton->setUiLayer(UiLayer::LAYER2);
         pButton->setSize(glm::vec2(pButton->getSize().x, EditorColorTheme::getButtonSizeY()));
         pButton->setPadding(EditorColorTheme::getPadding());
@@ -69,7 +68,9 @@ void ContextMenuNode::openMenu(
         pButton->setColorWhileHovered(EditorColorTheme::getButtonHoverColor());
         pButton->setColorWhilePressed(EditorColorTheme::getButtonPressedColor());
         pButton->setOnClicked([this, callback]() {
+            bIsProcessingButtonClick = true;
             callback();
+            bIsProcessingButtonClick = false;
             closeMenu();
         });
         {

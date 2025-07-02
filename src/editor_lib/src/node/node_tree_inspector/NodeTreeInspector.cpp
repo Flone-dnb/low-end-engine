@@ -4,15 +4,9 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/TextUiNode.h"
 #include "misc/ReflectedTypeDatabase.h"
+#include "node/menu/SelectNodeTypeMenu.h"
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "EditorColorTheme.h"
-
-namespace {
-    constexpr std::string_view sTypeGuid = "9f6c749e-1b8e-4c53-b870-8cdf7730ec65";
-}
-
-std::string NodeTreeInspector::getTypeGuidStatic() { return sTypeGuid.data(); }
-std::string NodeTreeInspector::getTypeGuid() const { return sTypeGuid.data(); }
 
 NodeTreeInspector::NodeTreeInspector() : NodeTreeInspector("Node Tree Inspector") {}
 NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
@@ -60,14 +54,24 @@ void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
 }
 
 void NodeTreeInspector::showChildNodeCreationMenu(NodeTreeInspectorItem* pParent) {
-    // TODO: show type selection
+    const auto pMenu = getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<SelectNodeTypeMenu>(
+        "Add child node - select type", pParent->getDisplayedGameNode()));
+    pMenu->setPosition(pParent->getPosition());
 
-    addChildNodeToNodeTree(pParent, Node::getTypeGuidStatic());
+    pMenu->setOnTypeSelected(
+        [this, pParent](std::string_view sTypeGuid) { addChildNodeToNodeTree(pParent, sTypeGuid); });
 }
 
-void NodeTreeInspector::addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, const std::string& sTypeGuid) {
+void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
+    pItem->getDisplayedGameNode()->unsafeDetachFromParentAndDespawn();
+
+    // Refresh tree.
+    onGameNodeTreeLoaded(pGameRootNode);
+}
+
+void NodeTreeInspector::addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, std::string_view sTypeGuid) {
     // Create new node.
-    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(std::string(sTypeGuid));
     auto pSerializable = typeInfo.createNewObject();
     std::unique_ptr<Node> pNewNode(dynamic_cast<Node*>(pSerializable.get()));
     if (pNewNode == nullptr) [[unlikely]] {

@@ -162,10 +162,19 @@ public:
      */
     static const TypeReflectionInfo& getTypeInfo(const std::string& sTypeGuid);
 
+    /**
+     * Returns pairs of "type GUID" - "type info".
+     *
+     * @return Types info.
+     */
+    static const std::unordered_map<std::string, TypeReflectionInfo>& getReflectedTypes() {
+        return reflectedTypes;
+    }
+
 private:
     /** Called by game manager to register serializable type of the engine. */
     static void registerEngineTypes();
 
-    /** Reflection info of all reflected types. */
+    /** Pairs of "type GUID" - "type info". */
     static std::unordered_map<std::string, TypeReflectionInfo> reflectedTypes;
 };

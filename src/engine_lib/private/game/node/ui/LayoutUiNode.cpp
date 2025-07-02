@@ -99,11 +99,9 @@ void LayoutUiNode::onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIn
     recalculatePosAndSizeForDirectChildNodes();
 }
 
-void LayoutUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
-    UiNode::onMouseScrollMoveWhileHovered(iOffset);
-
+bool LayoutUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     if (!bIsScrollBarEnabled) {
-        return;
+        return UiNode::onMouseScrollMoveWhileHovered(iOffset);
     }
 
     if (iOffset < 0) {
@@ -117,6 +115,8 @@ void LayoutUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     }
 
     recalculatePosAndSizeForDirectChildNodes();
+
+    return true;
 }
 
 void LayoutUiNode::setIsHorizontal(bool bIsHorizontal) {
@@ -240,6 +240,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         }
 
         const auto layoutOldSize = getSize();
+        const auto layoutPos = getPosition();
         glm::vec2 currentChildPos = getPosition();
 
         // Consider padding.
@@ -343,8 +344,8 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
 
             if (bIsScrollBarEnabled) {
                 if (yOffsetForScrollToSkip + lastChildSize < 0.0F ||
-                    yOffsetForScrollToSkip + lastChildSize > sizeForChildNodes.y) {
-                    // Partially outside of the visible area - don't render (keeping it simple).
+                    currentChildPos.y + childNewSize.y > layoutPos.y + layoutOldSize.y) {
+                    //  Partially outside of the visible area - don't render (TODO: for now).
                     yOffsetForScrollToSkip += lastChildSize;
                     pUiChild->setAllowRendering(false);
                     continue;

@@ -55,6 +55,13 @@ public:
     void setIsReadOnly(bool bIsReadOnly);
 
     /**
+     * Sets a callback that will be triggered after the text is changed by user input.
+     *
+     * @param onTextChanged Callback to trigger.
+     */
+    void setOnTextChanged(const std::function<void(std::u16string_view)>& onTextChanged);
+
+    /**
      * Sets color used for regions of selected text.
      *
      * @param textSelectionColor RGBA color.
@@ -89,8 +96,10 @@ protected:
      * @param button         Mouse button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
+     *
+     * @return `true` if the event was handled.
      */
-    virtual void
+    virtual bool
     onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
 
     /**
@@ -154,6 +163,9 @@ private:
     /** Called in cases when we should consider the current mouse position as text selection end. */
     void endTextSelection();
 
+    /** User specified callback to trigger when text is changed. */
+    std::function<void(std::u16string_view)> onTextChanged;
+
     /** Empty if text edit is read only or not focused, otherwise value in range [0; textSize]. */
     std::optional<size_t> optionalCursorOffset;
 
@@ -161,7 +173,7 @@ private:
     std::optional<std::pair<size_t, size_t>> optionalSelection;
 
     /** Color of the selected region of the text. */
-    glm::vec4 textSelectionColor = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F); // NOLINT
+    glm::vec4 textSelectionColor = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F);
 
     /** `true` if editing text from the user input is not possible. */
     bool bIsReadOnly = false;

@@ -20,22 +20,6 @@ public:
     virtual ~NodeTreeInspectorItem() override = default;
 
     /**
-     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
-     * database.
-     *
-     * @return GUID.
-     */
-    static std::string getTypeGuidStatic();
-
-    /**
-     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
-     * database.
-     *
-     * @return GUID.
-     */
-    virtual std::string getTypeGuid() const override;
-
-    /**
      * Initializes node display logic.
      *
      * @param pNode Node to display.
@@ -60,8 +44,10 @@ protected:
      * @param button         Mouse button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the button down event occurred or button up.
+     *
+     * @return `true` if the event was handled.
      */
-    virtual void
+    virtual bool
     onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
 
 private:

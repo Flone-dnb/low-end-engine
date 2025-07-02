@@ -10,12 +10,18 @@
 #include <vector>
 #include <unordered_map>
 #include <string_view>
+#include <unordered_set>
 
 // External.
 #if defined(WIN32)
 #include <Windows.h>
 #include <crtdbg.h>
 #endif
+
+namespace {
+    // Names of virtual functions that don't need a super call.
+    const std::unordered_set<std::string> functionsNoNeedSuper = {"getTypeGuid", "getMaxChildCount"};
+}
 
 // Helper function for consistent log messages.
 void logLine(std::string_view sText) {
@@ -27,9 +33,6 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
     if (pathToCppFile.filename() == "Node.cpp") {
         return 0;
     }
-
-    bool bFoundGetTypeGuidOverride = false;
-    const std::string_view sGetTypeNameFunction = "getTypeGuid";
 
     bool bFoundOverrideDestructor = false;
 
@@ -126,8 +129,8 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             // Cut function name.
             const auto sFunctionName = sCode.substr(iNameStartPos, iNameEndPos - iNameStartPos);
 
-            if (sFunctionName == sGetTypeNameFunction) {
-                bFoundGetTypeGuidOverride = true;
+            const auto noSuperIt = functionsNoNeedSuper.find(sFunctionName);
+            if (noSuperIt != functionsNoNeedSuper.end()) {
                 // Don't need to call super in this function.
                 continue;
             }
@@ -138,11 +141,6 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
 
     if (!bFoundOverrideDestructor) [[unlikely]] {
         logLine(std::format("you need to override destructor for your node \"{}\"", sClassName));
-        return 1;
-    }
-    if (!bFoundGetTypeGuidOverride) [[unlikely]] {
-        logLine(std::format(
-            "you need to override the function \"{}\" in \"{}\"", sGetTypeNameFunction, sClassName));
         return 1;
     }
 

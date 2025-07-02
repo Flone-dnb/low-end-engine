@@ -64,6 +64,10 @@ void TextEditUiNode::setIsReadOnly(bool bIsReadOnly) {
     }
 }
 
+void TextEditUiNode::setOnTextChanged(const std::function<void(std::u16string_view)>& onTextChanged) {
+    this->onTextChanged = onTextChanged;
+}
+
 void TextEditUiNode::setTextSelectionColor(const glm::vec4& textSelectionColor) {
     this->textSelectionColor = textSelectionColor;
 }
@@ -74,12 +78,12 @@ void TextEditUiNode::onAfterDeserialized() {
     setIsReceivingInput(!bIsReadOnly);
 }
 
-void TextEditUiNode::onMouseClickOnUiNode(
+bool TextEditUiNode::onMouseClickOnUiNode(
     MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     TextUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
 
     if (button != MouseButton::LEFT) {
-        return;
+        return true;
     }
 
     if (bIsPressedDown) {
@@ -93,6 +97,8 @@ void TextEditUiNode::onMouseClickOnUiNode(
     } else {
         endTextSelection();
     }
+
+    return true;
 }
 
 void TextEditUiNode::onMouseLeft() {
@@ -161,6 +167,10 @@ void TextEditUiNode::onKeyboardInputWhileFocused(
         setText(sText);
 
         (*optionalCursorOffset) += 1;
+
+        if (onTextChanged) {
+            onTextChanged(sText);
+        }
     } else if (button == KeyboardButton::BACKSPACE) {
         if (optionalSelection.has_value()) {
             auto sText = std::u16string(getText());
@@ -175,6 +185,10 @@ void TextEditUiNode::onKeyboardInputWhileFocused(
             setText(sText);
 
             (*optionalCursorOffset) -= 1;
+        }
+
+        if (onTextChanged) {
+            onTextChanged(getText());
         }
     } else if (button == KeyboardButton::RIGHT) {
         optionalCursorOffset = std::min(*optionalCursorOffset + 1, getText().size());
@@ -248,6 +262,10 @@ void TextEditUiNode::onKeyboardInputTextCharacterWhileFocused(const std::string&
     setText(sText);
 
     (*optionalCursorOffset) += 1;
+
+    if (onTextChanged) {
+        onTextChanged(sText);
+    }
 }
 
 void TextEditUiNode::onGainedFocus() {

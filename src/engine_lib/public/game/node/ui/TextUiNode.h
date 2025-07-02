@@ -184,6 +184,13 @@ public:
      */
     size_t getCurrentScrollOffset() const { return iCurrentScrollOffset; }
 
+    /**
+     * Returns the maximum number of child nodes this type allows. This is generally 0, 1, or +inf.
+     *
+     * @return Number of child nodes.
+     */
+    virtual size_t getMaxChildCount() const override { return 0; }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
@@ -225,8 +232,10 @@ protected:
      * @remark This function will only be called while this node is spawned.
      *
      * @param iOffset Movement offset.
+     *
+     * @return `true` if the event was handled or `false` if the event needs to be passed to a parent UI node.
      */
-    virtual void onMouseScrollMoveWhileHovered(int iOffset) override;
+    virtual bool onMouseScrollMoveWhileHovered(int iOffset) override;
 
 private:
     /** Color of the text in the RGBA format. */

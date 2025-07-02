@@ -102,10 +102,6 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
     }
 }
 
-std::string EditorCameraNode::getTypeGuid() const {
-    Error::showErrorAndThrowException("editor nodes should not be serialized");
-}
-
 void EditorCameraNode::setIgnoreInput(bool bIgnore) {
     setIsReceivingInput(!bIgnore);
 

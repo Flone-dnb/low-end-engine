@@ -150,7 +150,7 @@ void ButtonUiNode::onDespawning() {
     pPressedTexture = nullptr;
 }
 
-void ButtonUiNode::onMouseClickOnUiNode(
+bool ButtonUiNode::onMouseClickOnUiNode(
     MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     RectUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
 
@@ -164,6 +164,8 @@ void ButtonUiNode::onMouseClickOnUiNode(
             onClicked();
         }
     }
+
+    return true;
 }
 
 void ButtonUiNode::onMouseEntered() {

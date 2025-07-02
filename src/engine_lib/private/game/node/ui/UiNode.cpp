@@ -209,6 +209,8 @@ size_t UiNode::getNodeDepthWhileSpawned() {
     return iNodeDepth;
 }
 
+size_t UiNode::getMaxChildCount() const { return std::numeric_limits<size_t>::max(); }
+
 void UiNode::onSpawning() {
     Node::onSpawning();
 
@@ -334,14 +336,19 @@ void UiNode::setAllowRendering(bool bAllowRendering) {
     }
 }
 
-void UiNode::onMouseScrollMoveWhileHovered(int iOffset) {
+bool UiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     // Notify parent container.
     const auto mtxParent = getParentNode();
     std::scoped_lock guard(*mtxParent.first);
 
     if (mtxParent.second != nullptr) {
-        if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
-            pLayout->onMouseScrollMoveWhileHovered(iOffset);
+        const auto pUiNode = dynamic_cast<UiNode*>(mtxParent.second);
+        if (pUiNode == nullptr) {
+            return false;
         }
+
+        return pUiNode->onMouseScrollMoveWhileHovered(iOffset);
     }
+
+    return false;
 }
