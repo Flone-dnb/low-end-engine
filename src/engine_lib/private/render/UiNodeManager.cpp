@@ -1109,8 +1109,6 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
 
                 // Check scroll bar.
                 if (pTextNode->getIsScrollBarEnabled()) {
-                    const float widthInPixels = scrollBarWidthRelativeNode * pTextNode->getSize().x *
-                                                static_cast<float>(iWindowWidth);
                     const auto iAverageLineCountDisplayed = static_cast<size_t>(
                         pTextNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
 
@@ -1125,11 +1123,12 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
                             static_cast<float>(
                                 std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
 
+                    const auto scrollBarWidthInPixels =
+                        std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
                     vScrollBarToDraw.push_back(ScrollBarDrawInfo{
                         .posInPixels = glm::vec2(
-                            screenMaxXForWordWrap - widthInPixels,
+                            screenMaxXForWordWrap - scrollBarWidthInPixels,
                             textPos.y * static_cast<float>(iWindowHeight)),
-                        .widthInPixels = widthInPixels,
                         .heightInPixels = pTextNode->getSize().y * static_cast<float>(iWindowHeight),
                         .verticalPos = verticalPos,
                         .verticalSize = verticalSize,
@@ -1196,7 +1195,7 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
         }
 
         if (!vScrollBarToDraw.empty()) {
-            drawScrollBarsDataLocked(vScrollBarToDraw, iWindowHeight);
+            drawScrollBarsDataLocked(vScrollBarToDraw, iWindowWidth, iWindowHeight);
         }
 
         glBindVertexArray(0);
@@ -1229,7 +1228,7 @@ void UiNodeManager::drawLayoutScrollBars(size_t iLayer) {
             const auto nodeSize = pLayoutNode->getSize();
 
             const float widthInPixels =
-                scrollBarWidthRelativeNode * nodeSize.x * static_cast<float>(iWindowWidth);
+                std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
             const auto posInPixels = glm::vec2(
                 (nodePos.x + nodeSize.x) * static_cast<float>(iWindowWidth) - widthInPixels,
                 nodePos.y * static_cast<float>(iWindowHeight));
@@ -1245,7 +1244,6 @@ void UiNodeManager::drawLayoutScrollBars(size_t iLayer) {
 
             vScrollBarsToDraw.push_back(ScrollBarDrawInfo{
                 .posInPixels = posInPixels,
-                .widthInPixels = widthInPixels,
                 .heightInPixels = pLayoutNode->getSize().y * static_cast<float>(iWindowHeight),
                 .verticalPos = verticalPos,
                 .verticalSize = verticalSize,
@@ -1253,7 +1251,7 @@ void UiNodeManager::drawLayoutScrollBars(size_t iLayer) {
             });
         }
 
-        drawScrollBarsDataLocked(vScrollBarsToDraw, iWindowHeight);
+        drawScrollBarsDataLocked(vScrollBarsToDraw, iWindowWidth, iWindowHeight);
 
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -1262,7 +1260,9 @@ void UiNodeManager::drawLayoutScrollBars(size_t iLayer) {
 }
 
 void UiNodeManager::drawScrollBarsDataLocked(
-    const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw, unsigned int iWindowHeight) {
+    const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw,
+    unsigned int iWindowWidth,
+    unsigned int iWindowHeight) {
     if (vScrollBarsToDraw.empty()) [[unlikely]] {
         Error::showErrorAndThrowException("expected at least 1 scroll bar to be specified");
     }
@@ -1283,7 +1283,7 @@ void UiNodeManager::drawScrollBarsDataLocked(
     for (auto& scrollBarInfo : vScrollBarsToDraw) {
         pShaderProgram->setVector4ToShader("color", scrollBarInfo.color);
 
-        const auto width = scrollBarInfo.widthInPixels;
+        const auto width = std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
         auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;
         auto pos = scrollBarInfo.posInPixels;
         pos.y += scrollBarInfo.verticalPos * scrollBarInfo.heightInPixels;

@@ -4,14 +4,31 @@
 #include <memory>
 #include <filesystem>
 #include <source_location>
+#include <functional>
 
 // External.
 #include "spdlog/spdlog.h"
 
-/**
- * Logs to file and console.
- */
+/** RAII-style type that creates logger callback on construction and unregisters it on destruction. */
+class LoggerCallbackGuard {
+    // Only logger should be able to create objects of this type.
+    friend class Logger;
+
+public:
+    LoggerCallbackGuard(const LoggerCallbackGuard&) = delete;
+    LoggerCallbackGuard& operator=(const LoggerCallbackGuard&) = delete;
+
+    ~LoggerCallbackGuard();
+
+private:
+    LoggerCallbackGuard() = default;
+};
+
+/** Logs to file and console. */
 class Logger {
+    // Clear callback in destructor.
+    friend class LoggerCallbackGuard;
+
 public:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
@@ -88,6 +105,16 @@ public:
     void flushToDisk();
 
     /**
+     * Sets callback that will be called after a log message is created.
+     *
+     * @param onLogMessage Callback.
+     *
+     * @return RAII-style object that will unregister the callback on destruction.
+     */
+    [[nodiscard]] std::unique_ptr<LoggerCallbackGuard>
+    setCallback(const std::function<void(const std::string&)>& onLogMessage);
+
+    /**
      * Returns the directory that contains all logs.
      *
      * @return Directory for logs.
@@ -113,6 +140,9 @@ private:
 
     /** Spdlog logger. */
     std::unique_ptr<spdlog::logger> pSpdLogger = nullptr;
+
+    /** Optional callback that should be called after a log message is created. */
+    std::function<void(const std::string&)> onLogMessage;
 
     /** Directory that is used to create logs. */
     std::filesystem::path sLoggerWorkingDirectory;

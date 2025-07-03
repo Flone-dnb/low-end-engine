@@ -17,6 +17,7 @@
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
 #include "node/node_tree_inspector/NodeTreeInspector.h"
+#include "node/LogViewNode.h"
 #include "node/menu/ContextMenuNode.h"
 #include "EditorColorTheme.h"
 
@@ -238,6 +239,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     pHorizontalLayout->setIsHorizontal(true);
     pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     {
+        // Left panel: node tree and content browser.
         const auto pLeftRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
         pLeftRect->setColor(EditorColorTheme::getEditorBackgroundColor());
         pLeftRect->setExpandPortionInLayout(1);
@@ -255,13 +257,14 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
             }
         }
 
+        // Middle panel: logger and viewport.
         const auto pMiddleVerticalLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pMiddleVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
         pMiddleVerticalLayout->setExpandPortionInLayout(4);
         {
-            const auto pRect = pMiddleVerticalLayout->addChildNode(std::make_unique<RectUiNode>());
-            pRect->setColor(EditorColorTheme::getEditorBackgroundColor());
-            pRect->setExpandPortionInLayout(1);
+            const auto pLogView = pMiddleVerticalLayout->addChildNode(std::make_unique<LogViewNode>());
+            pLogView->setColor(EditorColorTheme::getEditorBackgroundColor());
+            pLogView->setExpandPortionInLayout(1);
 
             editorWorldNodes.pViewportUiPlaceholder =
                 pMiddleVerticalLayout->addChildNode(std::make_unique<UiNode>());

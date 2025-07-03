@@ -242,8 +242,10 @@ void TextUiNode::onDespawning() {
 void TextUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
-    // Notify manager.
-    getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
+    if (isSpawned()) {
+        // Notify manager.
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
+    }
 }
 
 void TextUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {

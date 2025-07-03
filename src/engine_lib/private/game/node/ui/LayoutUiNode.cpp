@@ -178,7 +178,13 @@ void LayoutUiNode::onChildNodesSpawned() {
 void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
 
-    recalculatePosAndSizeForDirectChildNodes();
+    if (bIsScrollBarEnabled) {
+        // Scroll to bottom.
+        iCurrentScrollOffset = static_cast<unsigned int>(
+            std::max(0.0F, totalScrollHeight - getSize().y * 3.25F) / // TODO: rework magic numbers
+            scrollBarStepLocal);
+        recalculatePosAndSizeForDirectChildNodes();
+    }
 }
 
 void LayoutUiNode::onAfterDirectChildDetached(Node* pDetachedDirectChild) {

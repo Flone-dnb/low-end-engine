@@ -271,9 +271,6 @@ private:
         /** Position in pixels. */
         glm::vec2 posInPixels = glm::vec2(0.0F, 0.0F);
 
-        /** Width in pixels. */
-        float widthInPixels = 0.0F;
-
         /** Height in pixels. */
         float heightInPixels = 0.0F;
 
@@ -328,10 +325,13 @@ private:
      * @warning Expects that @ref mtxData is locked.
      *
      * @param vScrollBarsToDraw Scroll bars to render.
-     * @param iWindowHeight     Height of the window.
+     * @param iWindowWidth      Width of the window in pixels.
+     * @param iWindowHeight     Height of the window in pixels.
      */
     void drawScrollBarsDataLocked(
-        const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw, unsigned int iWindowHeight);
+        const std::vector<ScrollBarDrawInfo>& vScrollBarsToDraw,
+        unsigned int iWindowWidth,
+        unsigned int iWindowHeight);
 
     /**
      * Changes node that has focus.
@@ -387,6 +387,6 @@ private:
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
 
-    /** Width of the scroll bar relative to the width of the UI node. */
-    static constexpr float scrollBarWidthRelativeNode = 0.025F;
+    /** Width of the scroll bar relative to the width of the screen. */
+    static constexpr float scrollBarWidthRelativeScreen = 0.003F;
 };

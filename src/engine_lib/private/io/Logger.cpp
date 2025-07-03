@@ -13,6 +13,8 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+LoggerCallbackGuard::~LoggerCallbackGuard() { Logger::get().onLogMessage = {}; }
+
 Logger::~Logger() {
     if (iTotalWarningsProduced.load() > 0 || iTotalErrorsProduced.load() > 0) {
         pSpdLogger->info(std::format(
@@ -29,10 +31,7 @@ Logger::~Logger() {
 }
 
 Logger& Logger::get() {
-    // (some weird error in `last_write_time` code or clang-tidy's false-positive)
-    // NOLINTBEGIN(clang-analyzer-optin.core.EnumCastOutOfRange)
     static Logger logger;
-    // NOLINTEND(clang-analyzer-optin.core.EnumCastOutOfRange)
     return logger;
 }
 
@@ -41,32 +40,57 @@ size_t Logger::getTotalWarningsProduced() { return iTotalWarningsProduced.load()
 size_t Logger::getTotalErrorsProduced() { return iTotalErrorsProduced.load(); }
 
 void Logger::info(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->info(std::format(
+    const auto sMessage = std::format(
         "[{}, {}] {}",
         std::filesystem::path(location.file_name()).filename().string(),
         location.line(),
-        sText));
+        sText);
+
+    pSpdLogger->info(sMessage);
+
+    if (onLogMessage) {
+        onLogMessage(std::format("[info] {}", sMessage));
+    }
 }
 
 void Logger::warn(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->warn(std::format(
+    const auto sMessage = std::format(
         "[{}:{}] {}",
         std::filesystem::path(location.file_name()).filename().string(),
         location.line(),
-        sText));
+        sText);
+
+    pSpdLogger->warn(sMessage);
     iTotalWarningsProduced.fetch_add(1);
+
+    if (onLogMessage) {
+        onLogMessage(std::format("[warning] {}", sMessage));
+    }
 }
 
 void Logger::error(std::string_view sText, const std::source_location location) const {
-    pSpdLogger->error(std::format(
+    const auto sMessage = std::format(
         "[{}:{}] {}",
         std::filesystem::path(location.file_name()).filename().string(),
         location.line(),
-        sText));
+        sText);
+
+    pSpdLogger->error(sMessage);
     iTotalErrorsProduced.fetch_add(1);
+
+    if (onLogMessage) {
+        onLogMessage(std::format("[error] {}", sMessage));
+    }
 }
 
 void Logger::flushToDisk() { pSpdLogger->flush(); }
+
+std::unique_ptr<LoggerCallbackGuard>
+Logger::setCallback(const std::function<void(const std::string&)>& onLogMessage) {
+    this->onLogMessage = onLogMessage;
+
+    return std::unique_ptr<LoggerCallbackGuard>(new LoggerCallbackGuard());
+}
 
 std::filesystem::path Logger::getDirectoryWithLogs() const { return sLoggerWorkingDirectory; }
 
