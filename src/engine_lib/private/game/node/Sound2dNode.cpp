@@ -124,6 +124,10 @@ void Sound2dNode::setSoundChannel(SoundChannel channel) {
             "changing sound channel is not allowed while the node is spawned (node \"{}\")", getNodeName()));
     }
 
+    if (channel >= SoundChannel::COUNT) [[unlikely]] {
+        Error::showErrorAndThrowException("invalid sound channel specified");
+    }
+
     soundChannel = channel;
 }
 

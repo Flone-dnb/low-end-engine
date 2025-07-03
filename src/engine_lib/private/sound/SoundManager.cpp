@@ -91,9 +91,9 @@ void SoundManager::onSoundNodeDespawned(Sound2dNode* pNode) {
     // Unregister.
     auto& nodes = mtxSpawnedNodes.second.vSound2dNodesByChannel[static_cast<size_t>(*optionalSoundChannel)];
     const auto it = nodes.find(pNode);
-    if (it == nodes.end()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("node \"{}\" is not registered in the sound manager", pNode->getNodeName()));
+    if (it == nodes.end()) {
+        // OK, not registered.
+        return;
     }
     nodes.erase(it);
 }
@@ -136,9 +136,9 @@ void SoundManager::onSoundNodeDespawned(Sound3dNode* pNode) {
     // Unregister.
     auto& nodes = mtxSpawnedNodes.second.vSound3dNodesByChannel[static_cast<size_t>(*optionalSoundChannel)];
     const auto it = nodes.find(pNode);
-    if (it == nodes.end()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("node \"{}\" is not registered in the sound manager", pNode->getNodeName()));
+    if (it == nodes.end()) {
+        // OK, not registered.
+        return;
     }
     nodes.erase(it);
 }

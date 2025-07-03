@@ -29,8 +29,18 @@ public:
      * over the context menu.
      *
      * @param vMenuItems Names and callbacks for menu items.
+     * @param sTitle     Optional title of the menu to show.
      */
-    void openContextMenu(const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems);
+    void openContextMenu(
+        const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems,
+        const std::u16string& sTitle = u"");
+
+    /**
+     * Tells if @ref openContextMenu was called and the menu is still opened.
+     *
+     * @return Context menu state.
+     */
+    bool isContextMenuOpened() const;
 
 protected:
     /**

@@ -50,9 +50,9 @@ public:
     /**
      * Sets text to display.
      *
-     * @param sText Text.
+     * @param sNewText Text.
      */
-    void setText(const std::u16string& sText);
+    void setText(const std::u16string& sNewText);
 
     /**
      * Sets color of the text.

@@ -94,6 +94,7 @@ bool TextEditUiNode::onMouseClickOnUiNode(
         optionalSelection = {};
 
         bIsTextSelectionStarted = true;
+        setFocused();
     } else {
         endTextSelection();
     }

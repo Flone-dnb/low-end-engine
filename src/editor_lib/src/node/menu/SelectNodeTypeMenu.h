@@ -34,7 +34,7 @@ public:
      *
      * @param onSelected Callback.
      */
-    void setOnTypeSelected(const std::function<void(std::string_view)>& onSelected);
+    void setOnTypeSelected(const std::function<void(const std::string&)>& onSelected);
 
 private:
     /**
@@ -75,5 +75,8 @@ private:
     LayoutUiNode* pTypesLayout = nullptr;
 
     /** Callback to trigger with type's GUID once the type is selected. */
-    std::function<void(std::string_view)> onTypeSelected;
+    std::function<void(const std::string&)> onTypeSelected;
+
+    /** `true` if an option was clicked and we are currently processing it. */
+    bool bIsProcessingButtonClick = false;
 };

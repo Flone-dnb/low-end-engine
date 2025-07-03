@@ -172,6 +172,9 @@ protected:
     /** Called after texture was changed while the node was spawned. */
     virtual void onTextureChangedWhileSpawned() override;
 
+    /** Called after node's visibility was changed. */
+    virtual void onVisibilityChanged() override;
+
 private:
     /**
      * Should be used instead of the default setColor function from the parent.

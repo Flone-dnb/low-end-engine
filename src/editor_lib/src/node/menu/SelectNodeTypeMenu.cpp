@@ -1,5 +1,8 @@
 #include "node/menu/SelectNodeTypeMenu.h"
 
+// Standard.
+#include <algorithm>
+
 // Custom.
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/ButtonUiNode.h"
@@ -20,9 +23,10 @@ SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pPare
     const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
     pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     pLayout->setPadding(EditorColorTheme::getPadding());
-    pLayout->setChildNodeSpacing(EditorColorTheme::getSpacing());
+    pLayout->setChildNodeSpacing(EditorColorTheme::getSpacing() * 2.0F);
     {
         const auto pSearchBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
+        pSearchBackground->setPadding(EditorColorTheme::getPadding() * 2.0F);
         pSearchBackground->setColor(EditorColorTheme::getContainerBackgroundColor());
         {
             pSearchTextEdit = pSearchBackground->addChildNode(std::make_unique<TextEditUiNode>());
@@ -32,7 +36,7 @@ SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pPare
         }
 
         pTypesLayout = pLayout->addChildNode(std::make_unique<LayoutUiNode>());
-        pTypesLayout->setExpandPortionInLayout(8);
+        pTypesLayout->setExpandPortionInLayout(12);
         pTypesLayout->setIsScrollBarEnabled(true);
         pTypesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
         {
@@ -46,34 +50,49 @@ SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pPare
 
     // Rebuild list of types on search.
     pSearchTextEdit->setOnTextChanged([this](std::u16string_view sInputText) {
-        const auto sText = utf::as_str8(sInputText);
+        // Input to lower case for searching.
+        auto sText = utf::as_str8(sInputText);
+        std::transform(
+            sText.begin(), sText.end(), sText.begin(), [](unsigned char c) { return std::tolower(c); });
 
         const auto mtxChildNodes = pTypesLayout->getChildNodes();
         std::scoped_lock guard(*mtxChildNodes.first);
         for (const auto& pChildNode : mtxChildNodes.second) {
-            const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(pChildNode->getTypeGuid());
-
             const auto pUiNode = reinterpret_cast<UiNode*>(pChildNode);
-            pUiNode->setIsVisible(typeInfo.sTypeName.find(sText) != std::string::npos);
+
+            // Get type info.
+            const auto sTypeGuid =
+                std::string(pChildNode->getNodeName()); // we store GUIDs in node names here
+            const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
+
+            // Type name to lower case.
+            auto sTypeName = typeInfo.sTypeName;
+            std::transform(sTypeName.begin(), sTypeName.end(), sTypeName.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
+
+            pUiNode->setIsVisible(sTypeName.find(sText) != std::string::npos);
         }
     });
 }
 
-void SelectNodeTypeMenu::setOnTypeSelected(const std::function<void(std::string_view)>& onSelected) {
+void SelectNodeTypeMenu::setOnTypeSelected(const std::function<void(const std::string&)>& onSelected) {
     onTypeSelected = onSelected;
 }
 
 void SelectNodeTypeMenu::onMouseLeft() {
     RectUiNode::onMouseLeft();
 
-    unsafeDetachFromParentAndDespawn(true);
+    if (!bIsProcessingButtonClick) {
+        unsafeDetachFromParentAndDespawn(true);
+    }
 }
 
 void SelectNodeTypeMenu::onChildNodesSpawned() {
     RectUiNode::onChildNodesSpawned();
 
     setModal();
-    // pSearchTextEdit->setFocused();
+    pSearchTextEdit->setFocused();
 }
 
 void SelectNodeTypeMenu::addTypesForGuidRecursive(
@@ -85,7 +104,8 @@ void SelectNodeTypeMenu::addTypesForGuidRecursive(
         if (onTypeSelected == nullptr) [[unlikely]] {
             Error::showErrorAndThrowException("expected the \"type selected\" callback to be set");
         }
-        onTypeSelected(pButton->getNodeName());
+        bIsProcessingButtonClick = true;
+        onTypeSelected(std::string(pButton->getNodeName()));
         unsafeDetachFromParentAndDespawn(true);
     });
     pButton->setSize(glm::vec2(pButton->getSize().x, EditorColorTheme::getButtonSizeY()));
@@ -94,7 +114,8 @@ void SelectNodeTypeMenu::addTypesForGuidRecursive(
     pButton->setColorWhileHovered(EditorColorTheme::getButtonHoverColor());
     pButton->setColorWhilePressed(EditorColorTheme::getButtonPressedColor());
     {
-        const auto pText = pButton->addChildNode(std::make_unique<TextUiNode>());
+        const auto pText = pButton->addChildNode(
+            std::make_unique<TextUiNode>(std::format("select type option \"{}\"", typeInfo.sTypeName)));
 
         // Prepare text.
         std::string sText;

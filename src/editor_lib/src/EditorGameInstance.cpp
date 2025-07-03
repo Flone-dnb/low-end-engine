@@ -339,9 +339,14 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
 }
 
 void EditorGameInstance::openContextMenu(
-    const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems) {
+    const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems,
+    const std::u16string& sTitle) {
     if (editorWorldNodes.pContextMenu == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("unable to show context menu as editor world is not created");
     }
-    editorWorldNodes.pContextMenu->openMenu(vMenuItems);
+    editorWorldNodes.pContextMenu->openMenu(vMenuItems, sTitle);
+}
+
+bool EditorGameInstance::isContextMenuOpened() const {
+    return editorWorldNodes.pContextMenu != nullptr && editorWorldNodes.pContextMenu->isVisible();
 }

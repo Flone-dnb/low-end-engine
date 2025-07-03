@@ -2,6 +2,7 @@
 
 // Custom.
 #include "game/node/ui/RectUiNode.h"
+#include "sound/SoundChannel.hpp"
 
 class LayoutUiNode;
 class ButtonUiNode;
@@ -60,10 +61,14 @@ private:
     /**
      * Adds a new child node to the displayed node tree and a new inspector item to be displayed.
      *
-     * @param pParent   Parent node to attach a new node.
-     * @param sTypeGuid GUID of the new node.
+     * @param pParent      Parent node to attach a new node.
+     * @param sTypeGuid    GUID of the new node.
+     * @param soundChannel If the node is a sound node specify a sound channel for it to use.
      */
-    void addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, std::string_view sTypeGuid);
+    void addChildNodeToNodeTree(
+        NodeTreeInspectorItem* pParent,
+        std::string_view sTypeGuid,
+        SoundChannel soundChannel = SoundChannel::COUNT);
 
     /** Layout node. */
     LayoutUiNode* pLayoutNode = nullptr;

@@ -7,6 +7,13 @@
 #include "node/menu/SelectNodeTypeMenu.h"
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "EditorColorTheme.h"
+#include "EditorGameInstance.h"
+#include "game/node/Sound2dNode.h"
+#include "game/node/Sound3dNode.h"
+
+// Externa.
+#include "nameof.hpp"
+#include "utf/utf.hpp"
 
 NodeTreeInspector::NodeTreeInspector() : NodeTreeInspector("Node Tree Inspector") {}
 NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
@@ -58,8 +65,27 @@ void NodeTreeInspector::showChildNodeCreationMenu(NodeTreeInspectorItem* pParent
         "Add child node - select type", pParent->getDisplayedGameNode()));
     pMenu->setPosition(pParent->getPosition());
 
-    pMenu->setOnTypeSelected(
-        [this, pParent](std::string_view sTypeGuid) { addChildNodeToNodeTree(pParent, sTypeGuid); });
+    pMenu->setOnTypeSelected([this, pParent](const std::string& sTypeGuid) {
+        if (sTypeGuid == Sound2dNode::getTypeGuidStatic() || sTypeGuid == Sound3dNode::getTypeGuidStatic()) {
+            // We need to assign sound channel before spawning.
+            std::vector<std::pair<std::u16string, std::function<void()>>> vOptions;
+            vOptions.reserve(static_cast<size_t>(SoundChannel::COUNT));
+
+            for (size_t i = 0; i < static_cast<size_t>(SoundChannel::COUNT); i++) {
+                vOptions.push_back(
+                    {utf::as_u16(NAMEOF_ENUM(static_cast<SoundChannel>(i)).data()),
+                     [this, pParent, sTypeGuid, i]() {
+                         addChildNodeToNodeTree(pParent, sTypeGuid, static_cast<SoundChannel>(i));
+                     }});
+            }
+
+            dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
+                ->openContextMenu(vOptions, u"select sound channel:");
+            return;
+        }
+
+        addChildNodeToNodeTree(pParent, sTypeGuid);
+    });
 }
 
 void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
@@ -69,7 +95,8 @@ void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
     onGameNodeTreeLoaded(pGameRootNode);
 }
 
-void NodeTreeInspector::addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, std::string_view sTypeGuid) {
+void NodeTreeInspector::addChildNodeToNodeTree(
+    NodeTreeInspectorItem* pParent, std::string_view sTypeGuid, SoundChannel soundChannel) {
     // Create new node.
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(std::string(sTypeGuid));
     auto pSerializable = typeInfo.createNewObject();
@@ -78,6 +105,12 @@ void NodeTreeInspector::addChildNodeToNodeTree(NodeTreeInspectorItem* pParent, s
         Error::showErrorAndThrowException(std::format("expected a node type for GUID \"{}\"", sTypeGuid));
     }
     pSerializable.release();
+
+    if (auto pSoundNode = dynamic_cast<Sound2dNode*>(pNewNode.get())) {
+        pSoundNode->setSoundChannel(soundChannel);
+    } else if (auto pSoundNode = dynamic_cast<Sound3dNode*>(pNewNode.get())) {
+        pSoundNode->setSoundChannel(soundChannel);
+    }
 
     // Add child.
     pParent->getDisplayedGameNode()->addChildNode(std::move(pNewNode));

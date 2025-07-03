@@ -341,6 +341,9 @@ private:
      */
     void setAllowRendering(bool bAllowRendering);
 
+    /** Called after @ref bIsVisible or @ref bAllowRendering is changed. */
+    void processVisibilityChange();
+
     /** Width and height in range [0.0; 1.0]. */
     glm::vec2 size = glm::vec2(0.2F, 0.2F);
 

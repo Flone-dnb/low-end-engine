@@ -106,13 +106,17 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-void TextUiNode::setText(const std::u16string& sText) {
-    this->sText = sText;
+void TextUiNode::setText(const std::u16string& sNewText) {
+    sText = sNewText;
 
     iNewLineCharCountInText = 0;
     for (size_t i = 0; i < sText.size(); i++) {
         if (sText[i] == '\n') {
-            iNewLineCharCountInText += 1;
+            if (bHandleNewLineChars) {
+                iNewLineCharCountInText += 1;
+            } else {
+                sText[i] = u' ';
+            }
         }
     }
 }

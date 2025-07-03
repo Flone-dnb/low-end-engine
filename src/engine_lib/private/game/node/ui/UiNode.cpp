@@ -110,43 +110,7 @@ void UiNode::setIsVisible(bool bIsVisible) {
     }
     this->bIsVisible = bIsVisible;
 
-    // Affects all child nodes.
-    {
-        const auto mtxChildNodes = getChildNodes();
-        std::scoped_lock guard(*mtxChildNodes.first);
-
-        for (const auto& pChildNode : mtxChildNodes.second) {
-            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
-            if (pUiChild == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("expected a UI node");
-            }
-            pUiChild->setIsVisible(bIsVisible);
-        }
-    }
-
-    onVisibilityChanged();
-
-    // Notify parent container.
-    {
-        const auto mtxParent = getParentNode();
-        std::scoped_lock guard(*mtxParent.first);
-
-        if (mtxParent.second != nullptr) {
-            if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
-                pLayout->onDirectChildNodeVisibilityChanged();
-            }
-        }
-    }
-
-    if (isSpawned()) {
-        if (isReceivingInput()) {
-            getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, bIsVisible);
-        }
-
-        if (bIsVisible && bShouldBeModal) {
-            getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
-        }
-    }
+    processVisibilityChange();
 }
 
 void UiNode::setOccupiesSpaceEvenIfInvisible(bool bTakeSpace) { bOccupiesSpaceEvenIfInvisible = bTakeSpace; }
@@ -181,8 +145,7 @@ void UiNode::setUiLayer(UiLayer layer) {
 void UiNode::setModal() {
     bShouldBeModal = true;
     // don't check if receiving input, some child nodes can receive input instead of this one
-
-    if (isSpawned() && bIsVisible) {
+    if (isSpawned() && bAllowRendering && bIsVisible) {
         getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
     }
 }
@@ -216,11 +179,12 @@ void UiNode::onSpawning() {
 
     recalculateNodeDepthWhileSpawned();
 
-    if (bIsVisible) {
+    if (bAllowRendering && bIsVisible) {
         if (isReceivingInput()) {
             getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, true);
         }
         if (bShouldBeModal) {
+            // don't check if receiving input, some child nodes can receive input instead of this one
             getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
         }
     }
@@ -229,7 +193,7 @@ void UiNode::onSpawning() {
 void UiNode::onDespawning() {
     Node::onDespawning();
 
-    if (bIsVisible && isReceivingInput()) {
+    if (bAllowRendering && bIsVisible && isReceivingInput()) {
         getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, false);
     }
 }
@@ -237,13 +201,22 @@ void UiNode::onDespawning() {
 void UiNode::onChangedReceivingInputWhileSpawned(bool bEnabledNow) {
     Node::onChangedReceivingInputWhileSpawned(bEnabledNow);
 
-    getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, bEnabledNow);
+    if (bAllowRendering && bIsVisible) {
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(this, bEnabledNow);
+    }
 }
 
 void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     Node::onAfterAttachedToNewParent(bThisNodeBeingAttached);
 
     if (!isSpawned()) {
+        // Inherint UI layer.
+        const auto mtxParent = getParentNode();
+        std::scoped_lock guard(*mtxParent.first);
+        if (auto pUiParent = dynamic_cast<UiNode*>(mtxParent.second)) {
+            setUiLayer(pUiParent->getUiLayer());
+        }
+
         return;
     }
 
@@ -307,33 +280,7 @@ void UiNode::setAllowRendering(bool bAllowRendering) {
     }
     this->bAllowRendering = bAllowRendering;
 
-    // Affects all child nodes.
-    {
-        const auto mtxChildNodes = getChildNodes();
-        std::scoped_lock guard(*mtxChildNodes.first);
-
-        for (const auto& pChildNode : mtxChildNodes.second) {
-            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
-            if (pUiChild == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("expected a UI node");
-            }
-            pUiChild->setAllowRendering(bAllowRendering);
-        }
-    }
-
-    onVisibilityChanged();
-
-    // Notify parent container.
-    {
-        const auto mtxParent = getParentNode();
-        std::scoped_lock guard(*mtxParent.first);
-
-        if (mtxParent.second != nullptr) {
-            if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
-                pLayout->onDirectChildNodeVisibilityChanged();
-            }
-        }
-    }
+    processVisibilityChange();
 }
 
 bool UiNode::onMouseScrollMoveWhileHovered(int iOffset) {
@@ -351,4 +298,46 @@ bool UiNode::onMouseScrollMoveWhileHovered(int iOffset) {
     }
 
     return false;
+}
+
+void UiNode::processVisibilityChange() {
+    // Affects all child nodes.
+    {
+        const auto mtxChildNodes = getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
+            if (pUiChild == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected a UI node");
+            }
+            pUiChild->setIsVisible(bIsVisible);
+            pUiChild->setAllowRendering(bAllowRendering);
+        }
+    }
+
+    onVisibilityChanged();
+
+    // Notify parent container.
+    {
+        const auto mtxParent = getParentNode();
+        std::scoped_lock guard(*mtxParent.first);
+
+        if (mtxParent.second != nullptr) {
+            if (auto pLayout = dynamic_cast<LayoutUiNode*>(mtxParent.second)) {
+                pLayout->onDirectChildNodeVisibilityChanged();
+            }
+        }
+    }
+
+    if (isSpawned()) {
+        if (isReceivingInput()) {
+            getWorldWhileSpawned()->getUiNodeManager().onSpawnedUiNodeInputStateChange(
+                this, bAllowRendering && bIsVisible);
+        }
+
+        if (bAllowRendering && bIsVisible && bShouldBeModal) {
+            getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
+        }
+    }
 }

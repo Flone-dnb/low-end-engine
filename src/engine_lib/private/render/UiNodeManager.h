@@ -353,6 +353,29 @@ private:
      */
     void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
 
+    /**
+     * Collects all visible child nodes (recursively) that receive input and returns them.
+     *
+     * @param pParent Node to start searching from.
+     * @param inputReceivingNodes Output array of nodes.
+     */
+    void collectVisibleInputReceivingChildNodes(
+        UiNode* pParent, std::unordered_set<UiNode*>& inputReceivingNodes) const;
+
+    /**
+     * Tells if the node has a modal node in its parent chain.
+     *
+     * @return `true` if there's a modal parent node.
+     */
+    bool hasModalParent(UiNode* pNode) const;
+
+    /**
+     * Calls `onMouseLeft` on the specified nodes.
+     *
+     * @param vNodes Nodes to call the function.
+     */
+    void safelyCallOnMouseLeft(const std::vector<UiNode*>& vNodes);
+
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;
 

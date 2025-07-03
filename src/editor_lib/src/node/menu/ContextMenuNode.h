@@ -9,6 +9,7 @@
 #include "game/node/ui/RectUiNode.h"
 
 class LayoutUiNode;
+class TextUiNode;
 
 /** Customizable context menu. */
 class ContextMenuNode : public RectUiNode {
@@ -31,8 +32,11 @@ public:
      * over the context menu.
      *
      * @param vMenuItems Names and callbacks for menu items.
+     * @param sTitle     Optional title of the menu to show.
      */
-    void openMenu(const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems);
+    void openMenu(
+        const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems,
+        const std::u16string& sTitle = u"");
 
 private:
     /**

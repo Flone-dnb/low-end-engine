@@ -10,7 +10,7 @@ float EditorColorTheme::getSpacing() { return 0.0025F; }
 
 glm::vec4 EditorColorTheme::getEditorBackgroundColor() { return glm::vec4(glm::vec3(0.12F), 1.0F); }
 
-glm::vec4 EditorColorTheme::getContainerBackgroundColor() { return glm::vec4(glm::vec3(0.0F), 0.15F); }
+glm::vec4 EditorColorTheme::getContainerBackgroundColor() { return glm::vec4(glm::vec3(0.15F), 1.0F); }
 
 glm::vec4 EditorColorTheme::getButtonColor() { return getEditorBackgroundColor(); }
 

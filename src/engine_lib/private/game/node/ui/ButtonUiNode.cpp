@@ -237,3 +237,14 @@ std::unique_ptr<TextureHandle> ButtonUiNode::getTextureHandle(const std::string&
 
     return std::get<std::unique_ptr<TextureHandle>>(std::move(result));
 }
+
+void ButtonUiNode::onVisibilityChanged() {
+    RectUiNode::onVisibilityChanged();
+
+    if (!isVisible()) {
+        bIsCurrentlyHovered = false;
+
+        setButtonTexture(sTempPathToDefaultTexture);
+        setButtonColor(tempDefaultColor);
+    }
+}

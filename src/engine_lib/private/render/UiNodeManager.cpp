@@ -60,15 +60,13 @@
         if (vNodesByDepth[i].first == iNodeDepth) {                                                          \
             optionalArrayIndex = i;                                                                          \
             break;                                                                                           \
-        } else if (vNodesByDepth[i].first > iNodeDepth) { /** NOLINT: else after break */                    \
+        } else if (vNodesByDepth[i].first > iNodeDepth) {                                                    \
             break;                                                                                           \
         }                                                                                                    \
     }                                                                                                        \
-    if (!optionalArrayIndex.has_value()) [[unlikely]] {                                                      \
-        Error::showErrorAndThrowException(std::format(                                                       \
-            "unable to find the node \"{}\" with depth {} to remove from rendering",                         \
-            pNode->getNodeName(),                                                                            \
-            iNodeDepth));                                                                                    \
+    if (!optionalArrayIndex.has_value()) {                                                                   \
+        /** Already removed, this can happen due to 1 variable "allow rendering" or "visible" change.  */    \
+        return;                                                                                              \
     }                                                                                                        \
     const auto iArrayIndex = *optionalArrayIndex;                                                            \
                                                                                                              \
@@ -237,7 +235,48 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
 #endif
 }
 
-void collectInputReceivingChildNodes(UiNode* pParent, std::unordered_set<UiNode*>& inputReceivingNodes) {
+void UiNodeManager::safelyCallOnMouseLeft(const std::vector<UiNode*>& vNodes) {
+    // Notify now (when finished iterating over the arrays) because nodes can despawn in callback.
+    for (const auto& pNode : vNodes) {
+        // TODO: rework this mess
+        // Because nodes can be instantly despawned in onMouseLeft which can cause a whole node tree to be
+        // despawned we check if the node pointer is still valid or not.
+        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
+            const auto it = layerNodes.receivingInputUiNodes.find(pNode);
+            if (it != layerNodes.receivingInputUiNodes.end()) {
+                pNode->onMouseLeft();
+                break;
+            }
+        }
+    }
+}
+
+bool UiNodeManager::hasModalParent(UiNode* pNode) const {
+    if (pNode->bShouldBeModal) {
+        return true;
+    }
+
+    const auto mtxParent = pNode->getParentNode();
+    std::scoped_lock guard(*mtxParent.first);
+
+    if (mtxParent.second == nullptr) {
+        return false;
+    }
+    const auto pUiParent = dynamic_cast<UiNode*>(mtxParent.second);
+    if (pUiParent == nullptr) {
+        return false;
+    }
+
+    return hasModalParent(pUiParent);
+}
+
+void UiNodeManager::collectVisibleInputReceivingChildNodes(
+    UiNode* pParent, std::unordered_set<UiNode*>& inputReceivingNodes) const {
+    if (!pParent->isVisible() || !pParent->isRenderingAllowed()) {
+        // Skip this node.
+        return;
+    }
+
     if (pParent->isReceivingInput()) {
         inputReceivingNodes.insert(pParent);
     }
@@ -250,7 +289,7 @@ void collectInputReceivingChildNodes(UiNode* pParent, std::unordered_set<UiNode*
             Error::showErrorAndThrowException("expected a UI node");
         }
 
-        collectInputReceivingChildNodes(pUiNode, inputReceivingNodes);
+        collectVisibleInputReceivingChildNodes(pUiNode, inputReceivingNodes);
     }
 }
 
@@ -265,7 +304,7 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
 
     // Collect all child nodes that receive input.
     std::unordered_set<UiNode*> inputReceivingNodes;
-    collectInputReceivingChildNodes(pNewModalNode, inputReceivingNodes);
+    collectVisibleInputReceivingChildNodes(pNewModalNode, inputReceivingNodes);
 
     if (inputReceivingNodes.empty()) [[unlikely]] {
         Error::showErrorAndThrowException(
@@ -274,16 +313,8 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
 
     // Make sure there are all spawned and visible (i.e. stored in our arrays so that we will automatically
     // clean modalitty on them in case they became invisible or despawn or etc.).
-    // Also make deepest node a focused one.
-    UiNode* pDeepestNode = nullptr;
-    size_t iNodeDepth = 0;
     for (const auto& pNode : inputReceivingNodes) {
         bool bFound = false;
-
-        if (pNode->iNodeDepth > iNodeDepth) {
-            iNodeDepth = pNode->iNodeDepth;
-            pDeepestNode = pNode;
-        }
 
         for (const auto& layerNodes : mtxData.second.vSpawnedVisibleNodes) {
             const auto it = layerNodes.receivingInputUiNodes.find(pNode);
@@ -299,17 +330,8 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
                 pNode->getNodeName()));
         }
     }
-
-    if (pDeepestNode == nullptr) {
-        if (inputReceivingNodes.size() == 1) {
-            pDeepestNode = *inputReceivingNodes.begin();
-        } else {
-            Error::showErrorAndThrowException("unexpected case");
-        }
-    }
-
     mtxData.second.modalInputReceivingNodes = std::move(inputReceivingNodes);
-    changeFocusedNode(pDeepestNode);
+    changeFocusedNode(nullptr); // refresh focus
 
     // Remove mouse hover state for other nodes.
     std::vector<UiNode*> vNotifyOnMouseLeft;
@@ -322,10 +344,7 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
         }
     }
 
-    // Notify now (after finished iterating) because nodes can despawn in callback.
-    for (const auto& pNode : vNotifyOnMouseLeft) {
-        pNode->onMouseLeft();
-    }
+    safelyCallOnMouseLeft(vNotifyOnMouseLeft);
 }
 
 void UiNodeManager::setFocusedNode(UiNode* pFocusedNode) {
@@ -357,26 +376,29 @@ void UiNodeManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabled
     auto& nodes = layerNodes.receivingInputUiNodes;
 
     if (bEnabledInput) {
-        if (!nodes.insert(pNode).second) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "spawned node \"{}\" enabled input but it already exists in UI manager's array of nodes "
-                "that receive input",
-                pNode->getNodeName()));
+        if (hasModalParent(pNode)) {
+            mtxData.second.modalInputReceivingNodes.insert(pNode);
+        }
+
+        if (!nodes.insert(pNode).second) {
+            // Already added.
+            return;
         }
         if (auto pLayoutNode = dynamic_cast<LayoutUiNode*>(pNode)) {
-            if (!layerNodes.layoutNodesWithScrollBars.insert(pLayoutNode).second) [[unlikely]] {
+            if (pLayoutNode->getIsScrollBarEnabled() &&
+                !layerNodes.layoutNodesWithScrollBars.insert(pLayoutNode).second) [[unlikely]] {
                 Error::showErrorAndThrowException(std::format(
                     "spawned layout node \"{}\" enabled input but it already exists in UI manager's "
-                    "array of nodes that receive input",
+                    "array of layout nodes that receive input",
                     pNode->getNodeName()));
             }
         }
     } else {
         const auto it = nodes.find(pNode);
-        if (it == nodes.end()) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "unable to find spawned node \"{}\" to remove from the array of nodes that receive input",
-                pNode->getNodeName()));
+        if (it == nodes.end()) {
+            // Already removed, this might happen when node had "allow rendering" to false but enabled
+            // "visible".
+            return;
         }
         nodes.erase(it);
 
@@ -460,10 +482,8 @@ void UiNodeManager::onCursorVisibilityChanged(bool bVisibleNow) {
                 }
             }
         }
-        // Notify now (after finished iterating) because nodes can despawn in callback.
-        for (const auto& pNode : vNotifyOnMouseLeft) {
-            pNode->onMouseLeft();
-        }
+
+        safelyCallOnMouseLeft(vNotifyOnMouseLeft);
     }
 }
 
@@ -599,19 +619,7 @@ void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
         }
     }
 
-    // Notify now (when finished iterating over the arrays) because nodes can despawn in callback.
-    for (const auto& pNode : vNotifyOnMouseLeft) {
-        // TODO: rework this mess
-        // Because nodes can be instantly despawned in onMouseLeft which can cause a whole node tree to be
-        // despawned we check if the node pointer is still valid or not.
-        for (const auto& layerNodes : std::views::reverse(mtxData.second.vSpawnedVisibleNodes)) {
-            const auto it = layerNodes.receivingInputUiNodes.find(pNode);
-            if (it != layerNodes.receivingInputUiNodes.end()) {
-                pNode->onMouseLeft();
-                break;
-            }
-        }
-    }
+    safelyCallOnMouseLeft(vNotifyOnMouseLeft);
 }
 
 void UiNodeManager::onMouseScrollMove(int iOffset) {
@@ -1071,11 +1079,20 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
                 }
 
                 // Check cursor.
-                if (optionalCursorOffset.has_value() && *optionalCursorOffset >= sText.size() &&
-                    screenX < screenMaxXForWordWrap && screenY < screenYEnd && iRenderedCharCount != 0) {
-                    vCursorScreenPosToDraw.push_back(CursorDrawInfo{
-                        .screenPos = glm::vec2(screenX, screenY),
-                        .height = fontManager.getFontHeightToLoad() * scale});
+                if (optionalCursorOffset.has_value()) {
+                    if (*optionalCursorOffset == 0) {
+                        vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                            .screenPos = glm::vec2(
+                                static_cast<float>(iWindowWidth) * textPos.x,
+                                static_cast<float>(iWindowHeight) * textPos.y + textHeightInPixels),
+                            .height = fontManager.getFontHeightToLoad() * scale});
+                    } else if (
+                        *optionalCursorOffset >= sText.size() && screenX < screenMaxXForWordWrap &&
+                        screenY < screenYEnd && iRenderedCharCount != 0) {
+                        vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                            .screenPos = glm::vec2(screenX, screenY),
+                            .height = fontManager.getFontHeightToLoad() * scale});
+                    }
                 }
 
                 // Check selection.

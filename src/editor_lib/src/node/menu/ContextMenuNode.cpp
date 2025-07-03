@@ -45,7 +45,13 @@ void ContextMenuNode::onMouseLeft() {
 }
 
 void ContextMenuNode::openMenu(
-    const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems) {
+    const std::vector<std::pair<std::u16string, std::function<void()>>>& vMenuItems,
+    const std::u16string& sTitle) {
+    if (isVisible()) {
+        // Close previous menu.
+        closeMenu();
+    }
+
     // Get cursor position.
     const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
@@ -58,10 +64,19 @@ void ContextMenuNode::openMenu(
 
     float totalSizeY = 0.0F;
 
+    if (!sTitle.empty()) {
+        auto pText = std::make_unique<TextUiNode>();
+        pText->setTextHeight(EditorColorTheme::getTextHeight());
+        pText->setText(sTitle);
+
+        totalSizeY += EditorColorTheme::getTextHeight();
+
+        pButtonsLayout->addChildNode(std::move(pText));
+    }
+
     for (const auto& [sName, callback] : vMenuItems) {
         auto pButton =
             std::make_unique<ButtonUiNode>(std::format("Context menu option \"{}\"", utf::as_str8(sName)));
-        pButton->setUiLayer(UiLayer::LAYER2);
         pButton->setSize(glm::vec2(pButton->getSize().x, EditorColorTheme::getButtonSizeY()));
         pButton->setPadding(EditorColorTheme::getPadding());
         pButton->setColor(EditorColorTheme::getButtonColor());
