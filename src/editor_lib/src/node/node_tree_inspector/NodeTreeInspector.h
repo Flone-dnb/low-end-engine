@@ -67,7 +67,7 @@ private:
      */
     void addChildNodeToNodeTree(
         NodeTreeInspectorItem* pParent,
-        std::string_view sTypeGuid,
+        const std::string& sTypeGuid,
         SoundChannel soundChannel = SoundChannel::COUNT);
 
     /** Layout node. */

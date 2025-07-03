@@ -365,6 +365,8 @@ private:
     /**
      * Tells if the node has a modal node in its parent chain.
      *
+     * @param pNode Node to test.
+     *
      * @return `true` if there's a modal parent node.
      */
     bool hasModalParent(UiNode* pNode) const;

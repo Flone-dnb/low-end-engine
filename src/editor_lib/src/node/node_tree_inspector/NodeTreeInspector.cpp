@@ -96,9 +96,9 @@ void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
 }
 
 void NodeTreeInspector::addChildNodeToNodeTree(
-    NodeTreeInspectorItem* pParent, std::string_view sTypeGuid, SoundChannel soundChannel) {
+    NodeTreeInspectorItem* pParent, const std::string& sTypeGuid, SoundChannel soundChannel) {
     // Create new node.
-    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(std::string(sTypeGuid));
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
     auto pSerializable = typeInfo.createNewObject();
     std::unique_ptr<Node> pNewNode(dynamic_cast<Node*>(pSerializable.get()));
     if (pNewNode == nullptr) [[unlikely]] {
