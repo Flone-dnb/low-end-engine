@@ -463,7 +463,7 @@ In order to load a font you need to have a .ttf file to load (there is a default
 ```Cpp
 void MyGameInstance::onGameStarted() {
     getRenderer()->getFontManager().loadFont(
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf");
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf");
 
     // ... create world, nodes, etc. ...
 }

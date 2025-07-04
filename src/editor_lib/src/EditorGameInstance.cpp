@@ -37,8 +37,7 @@ void EditorGameInstance::onGameStarted() {
 #endif
 
     getRenderer()->getFontManager().loadFont(
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "RedHatDisplay-Light.ttf",
-        0.05F);
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf", 0.05F);
 
     registerEditorInputEvents();
 
