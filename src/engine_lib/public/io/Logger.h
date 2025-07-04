@@ -9,6 +9,13 @@
 // External.
 #include "spdlog/spdlog.h"
 
+/** Types of log messages. */
+enum class LogMessageCategory : unsigned char {
+    INFO,
+    WARNING,
+    ERROR,
+};
+
 /** RAII-style type that creates logger callback on construction and unregisters it on destruction. */
 class LoggerCallbackGuard {
     // Only logger should be able to create objects of this type.
@@ -112,7 +119,7 @@ public:
      * @return RAII-style object that will unregister the callback on destruction.
      */
     [[nodiscard]] std::unique_ptr<LoggerCallbackGuard>
-    setCallback(const std::function<void(const std::string&)>& onLogMessage);
+    setCallback(const std::function<void(LogMessageCategory, const std::string&)>& onLogMessage);
 
     /**
      * Returns the directory that contains all logs.
@@ -142,7 +149,7 @@ private:
     std::unique_ptr<spdlog::logger> pSpdLogger = nullptr;
 
     /** Optional callback that should be called after a log message is created. */
-    std::function<void(const std::string&)> onLogMessage;
+    std::function<void(LogMessageCategory, const std::string&)> onLogMessage;
 
     /** Directory that is used to create logs. */
     std::filesystem::path sLoggerWorkingDirectory;

@@ -175,10 +175,10 @@ void RectUiNode::updateChildNodePosAndSize() {
     }
 
     const auto size = getSize();
-    const auto paddingRealSize = size * padding;
+    const auto paddingRealSize = std::min(size.x, size.y) * padding;
 
     pUiChild->setPosition(getPosition() + paddingRealSize);
-    pUiChild->setSize(size - paddingRealSize * 2.0F); // NOLINT
+    pUiChild->setSize(size - paddingRealSize * 2.0F);
 
     if (!isVisible() && pUiChild->isVisible()) {
         pUiChild->setIsVisible(false);

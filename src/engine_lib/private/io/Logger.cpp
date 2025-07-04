@@ -49,7 +49,7 @@ void Logger::info(std::string_view sText, const std::source_location location) c
     pSpdLogger->info(sMessage);
 
     if (onLogMessage) {
-        onLogMessage(std::format("[info] {}", sMessage));
+        onLogMessage(LogMessageCategory::INFO, sMessage);
     }
 }
 
@@ -64,7 +64,7 @@ void Logger::warn(std::string_view sText, const std::source_location location) c
     iTotalWarningsProduced.fetch_add(1);
 
     if (onLogMessage) {
-        onLogMessage(std::format("[warning] {}", sMessage));
+        onLogMessage(LogMessageCategory::WARNING, sMessage);
     }
 }
 
@@ -79,14 +79,14 @@ void Logger::error(std::string_view sText, const std::source_location location) 
     iTotalErrorsProduced.fetch_add(1);
 
     if (onLogMessage) {
-        onLogMessage(std::format("[error] {}", sMessage));
+        onLogMessage(LogMessageCategory::ERROR, sMessage);
     }
 }
 
 void Logger::flushToDisk() { pSpdLogger->flush(); }
 
 std::unique_ptr<LoggerCallbackGuard>
-Logger::setCallback(const std::function<void(const std::string&)>& onLogMessage) {
+Logger::setCallback(const std::function<void(LogMessageCategory, const std::string&)>& onLogMessage) {
     this->onLogMessage = onLogMessage;
 
     return std::unique_ptr<LoggerCallbackGuard>(new LoggerCallbackGuard());

@@ -262,9 +262,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         pMiddleVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
         pMiddleVerticalLayout->setExpandPortionInLayout(4);
         {
-            const auto pLogView = pMiddleVerticalLayout->addChildNode(std::make_unique<LogViewNode>());
-            pLogView->setColor(EditorColorTheme::getEditorBackgroundColor());
-            pLogView->setExpandPortionInLayout(1);
+            pMiddleVerticalLayout->addChildNode(std::make_unique<LogViewNode>());
 
             editorWorldNodes.pViewportUiPlaceholder =
                 pMiddleVerticalLayout->addChildNode(std::make_unique<UiNode>());
