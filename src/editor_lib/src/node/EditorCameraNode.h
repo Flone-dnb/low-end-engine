@@ -50,21 +50,6 @@ protected:
      */
     virtual void onMouseMove(double xOffset, double yOffset) override;
 
-    /**
-     * Called after this node or one of the node's parents (in the parent hierarchy)
-     * was attached to a new parent node.
-     *
-     * @warning If overriding you must call the parent's version of this function first
-     * (before executing your logic) to execute parent's logic.
-     *
-     * @remark This function will also be called on all child nodes after this function
-     * is finished.
-     *
-     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
-     * `false` if some node in the parent hierarchy was attached to a parent.
-     */
-    virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) override;
-
 private:
     /**
      * Applies rotation to the camera.

@@ -306,6 +306,39 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         false);
 }
 
+void EditorGameInstance::createGameWorld() {
+    createWorld(
+        [this](Node* pGameRootNode) {
+            auto pFloor = std::make_unique<MeshNode>("Floor");
+            pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
+            pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
+            pGameRootNode->addChildNode(std::move(pFloor));
+
+            auto pCube = std::make_unique<MeshNode>("Cube");
+            pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
+            pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
+            pGameRootNode->addChildNode(std::move(pCube));
+
+            auto pSun = std::make_unique<DirectionalLightNode>();
+            pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
+            pGameRootNode->addChildNode(std::move(pSun));
+
+            auto pSpotlight = std::make_unique<SpotlightNode>();
+            pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
+            pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
+                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
+            pGameRootNode->addChildNode(std::move(pSpotlight));
+
+            auto pPointLight = std::make_unique<PointLightNode>();
+            pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
+            pGameRootNode->addChildNode(std::move(pPointLight));
+
+            onAfterGameWorldCreated(pGameRootNode);
+        },
+        false);
+}
+
 void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pRoot = pRootNode;
 
@@ -345,6 +378,14 @@ void EditorGameInstance::openContextMenu(
         Error::showErrorAndThrowException("unable to show context menu as editor world is not created");
     }
     editorWorldNodes.pContextMenu->openMenu(vMenuItems, sTitle);
+}
+
+void EditorGameInstance::changeGameWorldRootNode(std::unique_ptr<Node> pNewGameRootNode) {
+    const auto pNewGameRoot = pNewGameRootNode.get();
+    gameWorldNodes.pRoot->getWorldWhileSpawned()->changeRootNode(std::move(pNewGameRootNode));
+
+    gameWorldNodes.pRoot = pNewGameRoot;
+    gameWorldNodes.pViewportCamera->makeActive();
 }
 
 bool EditorGameInstance::isContextMenuOpened() const {

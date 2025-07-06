@@ -139,6 +139,26 @@ void GameManager::addTaskToThreadPool(const std::function<void()>& task) {
     threadPool.addTask(task);
 }
 
+void GameManager::destroyWorld(World* pWorldToDestroy) {
+    std::scoped_lock guard(mtxWorldData.first);
+
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (pWorld.get() != pWorldToDestroy) {
+            continue;
+        }
+
+        // Not clearing the pointer because some nodes can still reference world.
+        pWorld->destroyWorld();
+
+        // Can safely destroy the world object now.
+        pWorld = nullptr;
+
+        return;
+    }
+
+    Error::showErrorAndThrowException("can't destroy world because the specified pointer is invalid");
+}
+
 size_t GameManager::getReceivingInputNodeCount() {
     std::scoped_lock guard(mtxWorldData.first);
 

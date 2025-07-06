@@ -44,6 +44,13 @@ public:
     void showChildNodeCreationMenu(NodeTreeInspectorItem* pParent);
 
     /**
+     * Shows menu to change node's type.
+     *
+     * @param pItem Item that holds the node to change the type.
+     */
+    void showNodeTypeChangeMenu(NodeTreeInspectorItem* pItem);
+
+    /**
      * Deletes game node that is displayed by the specified node tree item.
      *
      * @param pItem Item that displays the node to delete.
@@ -67,6 +74,18 @@ private:
      */
     void addChildNodeToNodeTree(
         NodeTreeInspectorItem* pParent,
+        const std::string& sTypeGuid,
+        SoundChannel soundChannel = SoundChannel::COUNT);
+
+    /**
+     * Changes game node's type.
+     *
+     * @param pItem        Item that holds the node to change the type.
+     * @param sTypeGuid    GUID of the new node.
+     * @param soundChannel If the node is a sound node specify a sound channel for it to use.
+     */
+    void changeNodeType(
+        NodeTreeInspectorItem* pItem,
         const std::string& sTypeGuid,
         SoundChannel soundChannel = SoundChannel::COUNT);
 

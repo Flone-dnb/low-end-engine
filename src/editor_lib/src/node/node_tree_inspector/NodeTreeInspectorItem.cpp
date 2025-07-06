@@ -89,8 +89,8 @@ bool NodeTreeInspectorItem::onMouseClickOnUiNode(
                                 }});
 
             // Change type.
-            vOptions.push_back({u"Change type", []() {
-                                    // TODO: show type change menu
+            vOptions.push_back({u"Change type", [this]() {
+                                    getParentNodeOfType<NodeTreeInspector>()->showNodeTypeChangeMenu(this);
                                 }});
 
             // Delete node.

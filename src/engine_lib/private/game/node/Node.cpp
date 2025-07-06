@@ -386,6 +386,11 @@ Node::Node(std::string_view sName) : sNodeName(sName) {
 }
 
 Node::~Node() {
+    if (isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" is being destroyed but it's still spawned", sNodeName));
+    }
+
     // Decrement total node counter.
     iTotalAliveNodeCount.fetch_sub(1);
 }

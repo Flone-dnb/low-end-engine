@@ -7,6 +7,9 @@ class TextUiNode;
 
 /** Displays a single node from a node tree inspector. */
 class NodeTreeInspectorItem : public ButtonUiNode {
+    // Inspector manages data.
+    friend class NodeTreeInspector;
+
 public:
     NodeTreeInspectorItem();
 

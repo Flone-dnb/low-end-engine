@@ -134,6 +134,13 @@ public:
     void addTaskToThreadPool(const std::function<void()>& task);
 
     /**
+     * Destroys the specified world and all nodes spawned in that world.
+     *
+     * @param pWorldToDestroy World to destroy.
+     */
+    void destroyWorld(World* pWorldToDestroy);
+
+    /**
      * Returns the total number of spawned nodes that receive input.
      *
      * @return Node count.

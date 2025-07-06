@@ -16,6 +16,7 @@ class Window;
 class Renderer;
 class InputManager;
 class Node;
+class World;
 class CameraManager;
 
 /**
@@ -82,6 +83,13 @@ public:
      * @param task Function to execute.
      */
     void addTaskToThreadPool(const std::function<void()>& task) const;
+
+    /**
+     * Destroys the specified world and all nodes spawned in that world.
+     *
+     * @param pWorldToDestroy World to destroy.
+     */
+    void destroyWorld(World* pWorldToDestroy) const;
 
     /**
      * Returns total amount of currently spawned nodes.

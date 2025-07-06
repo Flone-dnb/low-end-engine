@@ -61,6 +61,34 @@ void World::destroyWorld() {
     pCameraManager = nullptr;
 }
 
+void World::changeRootNode(std::unique_ptr<Node> pNewRoot) {
+    if (pNewRoot->isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the new root node \"{}\" to not be spawned", pNewRoot->getNodeName()));
+    }
+
+    std::scoped_lock guardRoot(mtxRootNode.first);
+
+    // Recreate root node but keep child nodes.
+    const auto mtxChildNodes = mtxRootNode.second->getChildNodes();
+    std::scoped_lock guardChild(*mtxChildNodes.first);
+
+    mtxRootNode.second->despawn();
+
+    // Attach child nodes to new root.
+    for (const auto& pChildNode : mtxChildNodes.second) {
+        pNewRoot->addChildNode(
+            pChildNode,
+            Node::AttachmentRule::KEEP_RELATIVE,
+            Node::AttachmentRule::KEEP_RELATIVE,
+            Node::AttachmentRule::KEEP_RELATIVE);
+    }
+
+    mtxRootNode.second = std::move(pNewRoot);
+    mtxRootNode.second->pWorldWeSpawnedIn = this;
+    mtxRootNode.second->spawn();
+}
+
 ReceivingInputNodesGuard World::getReceivingInputNodes() {
     return ReceivingInputNodesGuard(&mtxIsIteratingOverNodes, &mtxReceivingInputNodes);
 }

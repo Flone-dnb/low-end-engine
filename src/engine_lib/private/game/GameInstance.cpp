@@ -19,6 +19,10 @@ void GameInstance::addTaskToThreadPool(const std::function<void()>& task) const 
     pWindow->getGameManager()->addTaskToThreadPool(task);
 }
 
+void GameInstance::destroyWorld(World* pWorldToDestroy) const {
+    pWindow->getGameManager()->destroyWorld(pWorldToDestroy);
+}
+
 std::pair<
     std::recursive_mutex,
     std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&

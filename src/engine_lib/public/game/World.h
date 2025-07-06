@@ -83,6 +83,14 @@ public:
      */
     World(GameManager* pGameManager, std::unique_ptr<Node> pRootNodeToUse = nullptr);
 
+    /**
+     * Despawns all nodes and attaches old root node's child nodes to the specified node then spawns root
+     * node.
+     *
+     * @param pNewRoot New root node.
+     */
+    void changeRootNode(std::unique_ptr<Node> pNewRoot);
+
     /** Clears pointer to the root node which causes the world to recursively be despawned and destroyed. */
     void destroyWorld();
 

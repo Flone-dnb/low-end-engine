@@ -161,24 +161,6 @@ void EditorCameraNode::onMouseMove(double xOffset, double yOffset) {
     applyLookInput(static_cast<float>(xOffset), static_cast<float>(yOffset));
 }
 
-void EditorCameraNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
-    CameraNode::onAfterAttachedToNewParent(bThisNodeBeingAttached);
-
-    // Make sure we don't have a spatial node in our parent chain
-    // so that nothing will affect our movement/rotation.
-    auto& mtxSpatialParent = getClosestSpatialParent();
-    std::scoped_lock guard(mtxSpatialParent.first);
-
-    if (mtxSpatialParent.second != nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "editor camera node was attached to some node (tree) and there is now a "
-            "spatial node \"{}\" in the editor camera's parent chain but having a spatial node "
-            "in the editor camera's parent chain might cause the camera to move/rotate according "
-            "to the parent (which is undesirable)",
-            mtxSpatialParent.second->getNodeName()));
-    }
-}
-
 void EditorCameraNode::applyLookInput(float xDelta, float yDelta) {
     // Modify rotation.
     auto currentRotation = getRelativeRotation();

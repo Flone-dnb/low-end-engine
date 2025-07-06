@@ -36,6 +36,14 @@ public:
         const std::u16string& sTitle = u"");
 
     /**
+     * Recreates game world by changing the root node. Additionally spawns editor-specific node's in game's
+     * world.
+     *
+     * @param pNewGameRootNode New root node of the game world.
+     */
+    void changeGameWorldRootNode(std::unique_ptr<Node> pNewGameRootNode);
+
+    /**
      * Tells if @ref openContextMenu was called and the menu is still opened.
      *
      * @return Context menu state.
@@ -122,6 +130,9 @@ private:
      * @param pRootNode Root node of game's node tree.
      */
     void onAfterGameWorldCreated(Node* pRootNode);
+
+    /** Creates an empty game world. */
+    void createGameWorld();
 
     /** Not `nullptr` if game world exists. */
     GameWorldNodes gameWorldNodes;
