@@ -178,6 +178,10 @@ void UiNode::onSpawning() {
     Node::onSpawning();
 
     recalculateNodeDepthWhileSpawned();
+}
+
+void UiNode::onChildNodesSpawned() {
+    Node::onChildNodesSpawned();
 
     if (bAllowRendering && bIsVisible) {
         if (isReceivingInput()) {

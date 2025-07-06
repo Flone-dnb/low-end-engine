@@ -33,6 +33,8 @@ set(PROJECT_SOURCES
     src/node/menu/ContextMenuNode.cpp
     src/node/menu/SelectNodeTypeMenu.h
     src/node/menu/SelectNodeTypeMenu.cpp
+    src/node/menu/SetNameMenu.h
+    src/node/menu/SetNameMenu.cpp
     src/node/LogViewNode.h
     src/node/LogViewNode.cpp
     # add your .h/.cpp files here

@@ -68,6 +68,10 @@ void TextEditUiNode::setOnTextChanged(const std::function<void(std::u16string_vi
     this->onTextChanged = onTextChanged;
 }
 
+void TextEditUiNode::setOnEnterPressed(const std::function<void(std::u16string_view)>& onEnterPressed) {
+    this->onEnterPressed = onEnterPressed;
+}
+
 void TextEditUiNode::setTextSelectionColor(const glm::vec4& textSelectionColor) {
     this->textSelectionColor = textSelectionColor;
 }
@@ -237,6 +241,10 @@ void TextEditUiNode::onKeyboardInputWhileFocused(
                 }
             }
         }
+    }
+
+    if (onEnterPressed && button == KeyboardButton::ENTER) {
+        onEnterPressed(getText());
     }
 }
 

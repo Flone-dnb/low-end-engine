@@ -52,7 +52,7 @@ public:
      *
      * @param sNewText Text.
      */
-    void setText(const std::u16string& sNewText);
+    void setText(std::u16string_view sNewText);
 
     /**
      * Sets color of the text.

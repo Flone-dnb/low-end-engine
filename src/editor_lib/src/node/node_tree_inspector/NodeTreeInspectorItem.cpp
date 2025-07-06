@@ -84,8 +84,8 @@ bool NodeTreeInspectorItem::onMouseClickOnUiNode(
             }
 
             // Change name.
-            vOptions.push_back({u"Change name", []() {
-                                    // TODO: show name change menu
+            vOptions.push_back({u"Change name", [this]() {
+                                    getParentNodeOfType<NodeTreeInspector>()->showChangeNodeNameMenu(this);
                                 }});
 
             // Change type.

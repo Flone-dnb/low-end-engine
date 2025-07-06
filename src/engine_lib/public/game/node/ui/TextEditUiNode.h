@@ -62,6 +62,13 @@ public:
     void setOnTextChanged(const std::function<void(std::u16string_view)>& onTextChanged);
 
     /**
+     * Sets a callback that will be triggered after the Enter key is pressed.
+     *
+     * @param onEnterPressed Callback.
+     */
+    void setOnEnterPressed(const std::function<void(std::u16string_view)>& onEnterPressed);
+
+    /**
      * Sets color used for regions of selected text.
      *
      * @param textSelectionColor RGBA color.
@@ -165,6 +172,9 @@ private:
 
     /** User specified callback to trigger when text is changed. */
     std::function<void(std::u16string_view)> onTextChanged;
+
+    /** User specified callback to trigger after the Enter button is pressed. */
+    std::function<void(std::u16string_view)> onEnterPressed;
 
     /** Empty if text edit is read only or not focused, otherwise value in range [0; textSize]. */
     std::optional<size_t> optionalCursorOffset;

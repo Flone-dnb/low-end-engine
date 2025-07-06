@@ -9,6 +9,7 @@
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "EditorColorTheme.h"
 #include "EditorGameInstance.h"
+#include "node/menu/SetNameMenu.h"
 #include "game/node/Sound2dNode.h"
 #include "game/node/Sound3dNode.h"
 
@@ -86,6 +87,16 @@ void NodeTreeInspector::showChildNodeCreationMenu(NodeTreeInspectorItem* pParent
         }
 
         addChildNodeToNodeTree(pParent, sTypeGuid);
+    });
+}
+
+void NodeTreeInspector::showChangeNodeNameMenu(NodeTreeInspectorItem* pItem) {
+    const auto pSetNameMenu = getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<SetNameMenu>());
+    pSetNameMenu->setInitialText(utf::as_u16(pItem->pGameNode->getNodeName()));
+    pSetNameMenu->setOnNameChanged([this, pItem](std::u16string_view sText) {
+        pItem->pGameNode->setNodeName(utf::as_str8(sText));
+        // Refresh tree.
+        onGameNodeTreeLoaded(pGameRootNode);
     });
 }
 

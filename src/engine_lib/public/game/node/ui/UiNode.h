@@ -176,6 +176,20 @@ public:
 
 protected:
     /**
+     * Called when this node was not spawned previously and it was either attached to a parent node
+     * that is spawned or set as world's root node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This node will be marked as spawned before this function is called.
+     * @remark @ref getSpawnDespawnMutex is locked while this function is called.
+     * @remark This function is called before any of the child nodes are spawned. If you
+     * need to do some logic after child nodes are spawned use @ref onChildNodesSpawned.
+     */
+    virtual void onSpawning() override;
+
+    /**
      * Called when the window receives keyboard input.
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
@@ -261,16 +275,17 @@ protected:
     virtual void onLostFocus() {}
 
     /**
-     * Called when this node was not spawned previously and it was either attached to a parent node
-     * that is spawned or set as world's root node to execute custom spawn logic.
-     *
-     * @remark This node will be marked as spawned before this function is called.
-     * @remark This function is called before any of the child nodes are spawned.
+     * Called after @ref onSpawning when this node and all of node's child nodes (at the moment
+     * of spawning) were spawned.
      *
      * @warning If overriding you must call the parent's version of this function first
      * (before executing your logic) to execute parent's logic.
+     *
+     * @remark Generally you might want to prefer to use @ref onSpawning, this function
+     * is mostly used to do some logic related to child nodes after all child nodes were spawned
+     * (for example if you have a camera child node you can make it active in this function).=
      */
-    virtual void onSpawning() override;
+    virtual void onChildNodesSpawned() override;
 
     /**
      * Called before this node is despawned from the world to execute custom despawn logic.

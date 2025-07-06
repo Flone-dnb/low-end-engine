@@ -44,6 +44,13 @@ public:
     void showChildNodeCreationMenu(NodeTreeInspectorItem* pParent);
 
     /**
+     * Shows a menu to change node name.
+     *
+     * @param pItem Item that holds the node to change the name.
+     */
+    void showChangeNodeNameMenu(NodeTreeInspectorItem* pItem);
+
+    /**
      * Shows menu to change node's type.
      *
      * @param pItem Item that holds the node to change the type.

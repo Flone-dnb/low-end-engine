@@ -106,7 +106,7 @@ TypeReflectionInfo TextUiNode::getReflectionInfo() {
         std::move(variables));
 }
 
-void TextUiNode::setText(const std::u16string& sNewText) {
+void TextUiNode::setText(std::u16string_view sNewText) {
     sText = sNewText;
 
     iNewLineCharCountInText = 0;
