@@ -12,6 +12,8 @@ glm::vec4 EditorColorTheme::getEditorBackgroundColor() { return glm::vec4(glm::v
 
 glm::vec4 EditorColorTheme::getContainerBackgroundColor() { return glm::vec4(glm::vec3(0.15F), 1.0F); }
 
+glm::vec4 EditorColorTheme::getSelectedItemColor() { return glm::vec4(0.85F, 0.35F, 0.2F, 1.0F); }
+
 glm::vec4 EditorColorTheme::getButtonColor() { return getEditorBackgroundColor(); }
 
 glm::vec4 EditorColorTheme::getButtonHoverColor() { return getEditorBackgroundColor() + 0.2F; }

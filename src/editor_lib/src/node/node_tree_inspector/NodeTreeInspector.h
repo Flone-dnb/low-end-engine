@@ -64,6 +64,13 @@ public:
      */
     void deleteGameNode(NodeTreeInspectorItem* pItem);
 
+    /**
+     * Displays reflected fields in property inspector.
+     *
+     * @param pItem Item that displays the game node.
+     */
+    void inspectGameNode(NodeTreeInspectorItem* pItem);
+
 private:
     /**
      * Adds a node to be displayed.
@@ -101,4 +108,7 @@ private:
 
     /** Root node of game's world. */
     Node* pGameRootNode = nullptr;
+
+    /** Node that is currently being displayed in the inspector. */
+    NodeTreeInspectorItem* pInspectedItem = nullptr;
 };

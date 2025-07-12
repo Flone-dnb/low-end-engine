@@ -5,6 +5,7 @@
 #include "game/GameInstance.h"
 #include "game/camera/CameraManager.h"
 #include "game/World.h"
+#include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 
 SetNameMenu::SetNameMenu() : SetNameMenu("Set Name Menu Node") {}
@@ -13,24 +14,37 @@ SetNameMenu::SetNameMenu(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setUiLayer(UiLayer::LAYER2);
     setPadding(EditorColorTheme::getPadding());
     setColor(EditorColorTheme::getContainerBackgroundColor());
-    setSize(glm::vec2(0.15F, EditorColorTheme::getTextHeight() * 1.2F));
+    setSize(glm::vec2(0.15F, EditorColorTheme::getTextHeight() * 3.0F));
     setModal();
 
-    pTextEditNode = addChildNode(std::make_unique<TextEditUiNode>());
-    pTextEditNode->setTextHeight(EditorColorTheme::getTextHeight());
-    pTextEditNode->setText(u"");
-    pTextEditNode->setHandleNewLineChars(false);
-    pTextEditNode->setOnEnterPressed([this](std::u16string_view sText) {
-        if (!onNameChanged) [[unlikely]] {
-            Error::showErrorAndThrowException("expected the callback to be set");
-        }
-        bIsDestroyHandled = true;
-        onNameChanged(std::u16string(sText));
-        unsafeDetachFromParentAndDespawn(true);
-    });
-}
+    const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
+    pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+    pLayout->setPadding(EditorColorTheme::getPadding());
+    pLayout->setChildNodeSpacing(EditorColorTheme::getSpacing());
+    {
+        const auto pTitle = pLayout->addChildNode(std::make_unique<TextUiNode>());
+        pTitle->setTextHeight(EditorColorTheme::getTextHeight());
+        pTitle->setText(u"New name:");
 
-void SetNameMenu::setInitialText(std::u16string_view sText) { pTextEditNode->setText(sText); }
+        const auto pTextEditBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
+        pTextEditBackground->setColor(EditorColorTheme::getButtonColor());
+        pTextEditBackground->setSize(glm::vec2(1.0F, EditorColorTheme::getTextHeight() * 1.1F));
+        {
+            pTextEditNode = pTextEditBackground->addChildNode(std::make_unique<TextEditUiNode>());
+            pTextEditNode->setTextHeight(EditorColorTheme::getTextHeight());
+            pTextEditNode->setText(u"");
+            pTextEditNode->setHandleNewLineChars(false);
+            pTextEditNode->setOnEnterPressed([this](std::u16string_view sText) {
+                if (!onNameChanged) [[unlikely]] {
+                    Error::showErrorAndThrowException("expected the callback to be set");
+                }
+                bIsDestroyHandled = true;
+                onNameChanged(std::u16string(sText));
+                unsafeDetachFromParentAndDespawn(true);
+            });
+        }
+    }
+}
 
 void SetNameMenu::setOnNameChanged(const std::function<void(std::u16string)>& onNameChanged) {
     this->onNameChanged = onNameChanged;
@@ -47,6 +61,8 @@ void SetNameMenu::onChildNodesSpawned() {
     const auto cursorPos = *optCursorPos;
 
     setPosition(cursorPos - 0.01F); // move slightly to be hovered
+
+    pTextEditNode->setFocused();
 }
 
 void SetNameMenu::onMouseLeft() {

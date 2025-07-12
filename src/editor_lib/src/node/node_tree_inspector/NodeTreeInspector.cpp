@@ -2,6 +2,7 @@
 
 // Custom.
 #include "game/World.h"
+#include "node/property_inspector/PropertyInspector.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/TextUiNode.h"
 #include "misc/ReflectedTypeDatabase.h"
@@ -13,7 +14,7 @@
 #include "game/node/Sound2dNode.h"
 #include "game/node/Sound3dNode.h"
 
-// Externa.
+// External.
 #include "nameof.hpp"
 #include "utf/utf.hpp"
 
@@ -40,6 +41,12 @@ void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
         for (const auto& pNode : mtxChildNodes.second) {
             pNode->unsafeDetachFromParentAndDespawn(true);
         }
+
+        // Clear inspector.
+        dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
+            ->getPropertyInspector()
+            ->setNodeToInspect(nullptr);
+        pInspectedItem = nullptr;
     }
 
     this->pGameRootNode = pGameRootNode;
@@ -92,7 +99,6 @@ void NodeTreeInspector::showChildNodeCreationMenu(NodeTreeInspectorItem* pParent
 
 void NodeTreeInspector::showChangeNodeNameMenu(NodeTreeInspectorItem* pItem) {
     const auto pSetNameMenu = getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<SetNameMenu>());
-    pSetNameMenu->setInitialText(utf::as_u16(pItem->pGameNode->getNodeName()));
     pSetNameMenu->setOnNameChanged([this, pItem](std::u16string_view sText) {
         pItem->pGameNode->setNodeName(utf::as_str8(sText));
         // Refresh tree.
@@ -133,6 +139,18 @@ void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
 
     // Refresh tree.
     onGameNodeTreeLoaded(pGameRootNode);
+}
+
+void NodeTreeInspector::inspectGameNode(NodeTreeInspectorItem* pItem) {
+    dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
+        ->getPropertyInspector()
+        ->setNodeToInspect(pItem->getDisplayedGameNode());
+
+    if (pInspectedItem != nullptr) {
+        pInspectedItem->setColor(EditorColorTheme::getButtonColor());
+    }
+    pInspectedItem = pItem;
+    pInspectedItem->setColor(EditorColorTheme::getSelectedItemColor());
 }
 
 void NodeTreeInspector::addChildNodeToNodeTree(

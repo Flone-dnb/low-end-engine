@@ -17,6 +17,7 @@
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
 #include "node/node_tree_inspector/NodeTreeInspector.h"
+#include "node/property_inspector/PropertyInspector.h"
 #include "node/LogViewNode.h"
 #include "node/menu/ContextMenuNode.h"
 #include "EditorColorTheme.h"
@@ -251,8 +252,9 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
                     pLayout->addChildNode(std::make_unique<NodeTreeInspector>());
                 editorWorldNodes.pNodeTreeInspector->setExpandPortionInLayout(3);
 
-                const auto pTemp = pLayout->addChildNode(std::make_unique<UiNode>());
-                pTemp->setExpandPortionInLayout(2);
+                const auto pContentBrowser = pLayout->addChildNode(std::make_unique<RectUiNode>());
+                pContentBrowser->setColor(EditorColorTheme::getContainerBackgroundColor());
+                pContentBrowser->setExpandPortionInLayout(2);
             }
         }
 
@@ -268,9 +270,9 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
             editorWorldNodes.pViewportUiPlaceholder->setExpandPortionInLayout(4);
         }
 
-        const auto pRightRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-        pRightRect->setColor(EditorColorTheme::getEditorBackgroundColor());
-        pRightRect->setExpandPortionInLayout(1);
+        // Right panel: property inspector.
+        editorWorldNodes.pPropertyInspector =
+            pHorizontalLayout->addChildNode(std::make_unique<PropertyInspector>());
     }
 
     // Create game world.
@@ -390,4 +392,8 @@ void EditorGameInstance::changeGameWorldRootNode(std::unique_ptr<Node> pNewGameR
 
 bool EditorGameInstance::isContextMenuOpened() const {
     return editorWorldNodes.pContextMenu != nullptr && editorWorldNodes.pContextMenu->isVisible();
+}
+
+PropertyInspector* EditorGameInstance::getPropertyInspector() const {
+    return editorWorldNodes.pPropertyInspector;
 }

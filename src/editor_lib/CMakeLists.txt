@@ -29,6 +29,8 @@ set(PROJECT_SOURCES
     src/node/node_tree_inspector/NodeTreeInspector.cpp
     src/node/node_tree_inspector/NodeTreeInspectorItem.h
     src/node/node_tree_inspector/NodeTreeInspectorItem.cpp
+    src/node/property_inspector/PropertyInspector.h
+    src/node/property_inspector/PropertyInspector.cpp
     src/node/menu/ContextMenuNode.h
     src/node/menu/ContextMenuNode.cpp
     src/node/menu/SelectNodeTypeMenu.h

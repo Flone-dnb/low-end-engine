@@ -213,24 +213,36 @@ void UiNode::onChangedReceivingInputWhileSpawned(bool bEnabledNow) {
 void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     Node::onAfterAttachedToNewParent(bThisNodeBeingAttached);
 
-    if (!isSpawned()) {
-        // Inherint UI layer.
+    {
         const auto mtxParent = getParentNode();
         std::scoped_lock guard(*mtxParent.first);
-        if (auto pUiParent = dynamic_cast<UiNode*>(mtxParent.second)) {
+        const auto pUiParent = dynamic_cast<UiNode*>(mtxParent.second);
+
+        if (!isSpawned() && pUiParent != nullptr) {
+            // Inherint UI layer.
             setUiLayer(pUiParent->getUiLayer());
         }
-
-        return;
     }
 
-    recalculateNodeDepthWhileSpawned();
+    if (isSpawned()) {
+        recalculateNodeDepthWhileSpawned();
 
-    getWorldWhileSpawned()->getUiNodeManager().onNodeChangedDepth(this);
+        getWorldWhileSpawned()->getUiNodeManager().onNodeChangedDepth(this);
+    }
 }
 
 void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     Node::onAfterNewDirectChildAttached(pNewDirectChild);
+
+    if (getTypeGuid() == UiNode::getTypeGuidStatic()) {
+        // Forbid child nodes because it might create confusion, for example when our parent is rect
+        // but our children aren't scaled to full rect because there's a base UI node in the middle
+        Error::showErrorAndThrowException(std::format(
+            "node \"{}\" of type \"UI node\" (type GUID: {}) can't have child nodes because it has base UI "
+            "node type",
+            getNodeName(),
+            getTypeGuid()));
+    }
 
     // This rule just makes it easier to work with UI node hierarchy.
     const auto pUiChild = dynamic_cast<UiNode*>(pNewDirectChild);

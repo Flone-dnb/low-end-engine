@@ -28,13 +28,6 @@ public:
     virtual ~SetNameMenu() override = default;
 
     /**
-     * Sets initial text to be displayed.
-     *
-     * @param sText Text to display.
-     */
-    void setInitialText(std::u16string_view sText);
-
-    /**
      * Sets callbacks to call when operation is finished.
      *
      * @remark Automatically detaches itself and despawns after the operation is finished.

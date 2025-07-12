@@ -9,6 +9,7 @@ class TextUiNode;
 class UiNode;
 class NodeTreeInspector;
 class ContextMenuNode;
+class PropertyInspector;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -49,6 +50,13 @@ public:
      * @return Context menu state.
      */
     bool isContextMenuOpened() const;
+
+    /**
+     * Returns property inspector that displays reflected fields.
+     *
+     * @return Inspector.
+     */
+    PropertyInspector* getPropertyInspector() const;
 
 protected:
     /**
@@ -109,6 +117,9 @@ private:
 
         /** Allows viewing and editing game's node tree. */
         NodeTreeInspector* pNodeTreeInspector = nullptr;
+
+        /** Displays reflected fields of a type. */
+        PropertyInspector* pPropertyInspector = nullptr;
 
         /** Node used as context menu. */
         ContextMenuNode* pContextMenu = nullptr;

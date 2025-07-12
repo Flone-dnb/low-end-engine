@@ -862,6 +862,9 @@ void UiNodeManager::drawCheckboxNodes(size_t iLayer) {
                 auto size = pCheckboxNode->getSize();
 
                 // Adjust size to be square according to aspect ratio.
+                // TODO: this creates inconsistency between UI logic (which operates on `getPos` and
+                // `getSize`) and rendered image (which is adjusted `getSize`) this means that things like
+                // clicks and hovering will work slightly outside of the rendered checkbox.
                 size.x *= 1.0F / aspectRatio;
 
                 // Draw bounds.

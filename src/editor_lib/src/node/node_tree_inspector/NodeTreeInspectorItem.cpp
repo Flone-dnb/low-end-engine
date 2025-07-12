@@ -56,12 +56,21 @@ bool NodeTreeInspectorItem::onMouseClickOnUiNode(
     MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     ButtonUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
 
-    if (button == MouseButton::RIGHT) {
-        const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
-        if (pGameInstance == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException("expected editor game instance to be valid");
-        }
+    if (!bIsPressedDown) {
+        return true;
+    }
 
+    const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
+    if (pGameInstance == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected editor game instance to be valid");
+    }
+
+    if (button == MouseButton::LEFT) {
+        getParentNodeOfType<NodeTreeInspector>()->inspectGameNode(this);
+        return true;
+    }
+
+    if (button == MouseButton::RIGHT) {
         if (pGameInstance->isContextMenuOpened()) {
             // Already opened.
             return true;
