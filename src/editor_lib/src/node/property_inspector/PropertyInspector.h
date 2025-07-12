@@ -5,6 +5,7 @@
 
 class LayoutUiNode;
 
+/** Displays reflected fields of an object. */
 class PropertyInspector : public RectUiNode {
 public:
     PropertyInspector();

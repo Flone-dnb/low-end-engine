@@ -26,7 +26,7 @@ jobs:
           Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
           refreshenv
           echo "Installed doxygen of version $(doxygen -v)."
-      - name: Run shader-formatter
+      - name: Run doxygen
         run: |
           cd docs
           doxygen
