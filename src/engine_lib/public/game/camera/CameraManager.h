@@ -3,6 +3,10 @@
 // Standard.
 #include <mutex>
 #include <memory>
+#include <optional>
+
+// Custom.
+#include "math/GLMath.hpp"
 
 class CameraNode;
 class Renderer;
@@ -61,6 +65,14 @@ public:
     void clearActiveCamera();
 
     /**
+     * If the mouse cursor is visible and is inside of the active camera's viewport returns a non-empty value
+     * in range [0.0; 1.0] where 0 is viewport's top-left corner and 1 is viewport's right-bottom corner.
+     *
+     * @return Empty if cursor is not visible or outside of viewport.
+     */
+    std::optional<glm::vec2> getCursorPosOnViewport();
+
+    /**
      * Returns settings for post processing of the rendered image.
      *
      * @return Settings.
@@ -103,4 +115,7 @@ private:
 
     /** Active camera. */
     std::pair<std::recursive_mutex, ActiveCameraInfo> mtxActiveCamera;
+
+    /** Game's window. */
+    Window* const pWindow = nullptr;
 };

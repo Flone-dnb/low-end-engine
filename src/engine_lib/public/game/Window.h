@@ -114,6 +114,9 @@ class Window {
     // Only window builder can create windows.
     friend class WindowBuilder;
 
+    // Asks cursor position.
+    friend class CameraManager;
+
 public:
     ~Window();
 
@@ -155,16 +158,6 @@ public:
      * @return Size.
      */
     std::pair<unsigned int, unsigned int> getWindowSize() const;
-
-    /**
-     * Returns the current cursor position on window.
-     *
-     * @warning This function must only be called from the main thread. If this function is called
-     * outside of the main thread an error will be shown.
-     *
-     * @return A pair of X and Y coordinates in pixels relative to the upper-left corner of the window.
-     */
-    std::pair<unsigned int, unsigned int> getCursorPosition() const;
 
     /**
      * Returns internal SDL window.
@@ -259,6 +252,16 @@ private:
      * @return `nullptr` if there's no gamepad connected.
      */
     static SDL_GameController* findConnectedGamepad();
+
+    /**
+     * Returns the current cursor position on window.
+     *
+     * @warning This function must only be called from the main thread. If this function is called
+     * outside of the main thread an error will be shown.
+     *
+     * @return A pair of X and Y coordinates in pixels relative to the upper-left corner of the window.
+     */
+    std::pair<unsigned int, unsigned int> getCursorPosition() const;
 
     /** Checks whether the current thread is the main thread or not and if not shows an error. */
     void showErrorIfNotOnMainThread() const;

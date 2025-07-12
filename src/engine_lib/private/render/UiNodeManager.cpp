@@ -9,6 +9,7 @@
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/SliderUiNode.h"
+#include "game/node/ui/CheckboxUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
@@ -18,6 +19,7 @@
 #include "render/wrapper/Texture.h"
 #include "game/Window.h"
 #include "render/GpuResourceManager.h"
+#include "game/camera/CameraManager.h"
 
 // External.
 #include "glad/glad.h"
@@ -111,6 +113,18 @@ void UiNodeManager::onNodeSpawning(SliderUiNode* pNode) {
     ADD_NODE_TO_RENDERING(SliderUiNode);
 }
 
+void UiNodeManager::onNodeSpawning(CheckboxUiNode* pNode) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
+        return;
+    }
+
+    std::scoped_lock guard(mtxData.first);
+    auto& data = mtxData.second;
+    auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vCheckboxNodes;
+
+    ADD_NODE_TO_RENDERING(CheckboxUiNode);
+}
+
 void UiNodeManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
@@ -144,6 +158,18 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(SliderUiNode* pNode) {
         ADD_NODE_TO_RENDERING(SliderUiNode);
     } else {
         REMOVE_NODE_FROM_RENDERING(SliderUiNode);
+    }
+}
+
+void UiNodeManager::onSpawnedNodeChangedVisibility(CheckboxUiNode* pNode) {
+    std::scoped_lock guard(mtxData.first);
+    auto& vNodesByDepth =
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vCheckboxNodes;
+
+    if (pNode->isRenderingAllowed() && pNode->isVisible()) {
+        ADD_NODE_TO_RENDERING(CheckboxUiNode);
+    } else {
+        REMOVE_NODE_FROM_RENDERING(CheckboxUiNode);
     }
 }
 
@@ -183,6 +209,18 @@ void UiNodeManager::onNodeDespawning(SliderUiNode* pNode) {
         mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vSliderNodes;
 
     REMOVE_NODE_FROM_RENDERING(SliderUiNode);
+}
+
+void UiNodeManager::onNodeDespawning(CheckboxUiNode* pNode) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
+        return;
+    }
+
+    std::scoped_lock guard(mtxData.first);
+    auto& vNodesByDepth =
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vCheckboxNodes;
+
+    REMOVE_NODE_FROM_RENDERING(CheckboxUiNode);
 }
 
 void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
@@ -490,12 +528,13 @@ void UiNodeManager::onCursorVisibilityChanged(bool bVisibleNow) {
 void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     std::scoped_lock guard(mtxData.first);
 
-    const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
-    const auto [iCursorX, iCursorY] = pRenderer->getWindow()->getCursorPosition();
-
-    const glm::vec2 cursorPos = glm::vec2(
-        static_cast<float>(iCursorX) / static_cast<float>(iWidth),
-        static_cast<float>(iCursorY) / static_cast<float>(iHeight));
+    // Get cursor pos.
+    const auto optCursorPos = pWorld->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        // Outside of viewport, don't process this event.
+        return;
+    }
+    const auto cursorPos = *optCursorPos;
 
     if (!mtxData.second.modalInputReceivingNodes.empty()) {
         for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
@@ -559,12 +598,13 @@ void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers
 void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
     std::scoped_lock guard(mtxData.first);
 
-    const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
-    const auto [iCursorX, iCursorY] = pRenderer->getWindow()->getCursorPosition();
-
-    const glm::vec2 cursorPos = glm::vec2(
-        static_cast<float>(iCursorX) / static_cast<float>(iWidth),
-        static_cast<float>(iCursorY) / static_cast<float>(iHeight));
+    // Get cursor pos.
+    const auto optCursorPos = pWorld->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        // Outside of viewport, don't process this event.
+        return;
+    }
+    const auto cursorPos = *optCursorPos;
 
     std::vector<UiNode*> vNotifyOnMouseLeft;
 
@@ -625,12 +665,13 @@ void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
 void UiNodeManager::onMouseScrollMove(int iOffset) {
     std::scoped_lock guard(mtxData.first);
 
-    const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
-    const auto [iCursorX, iCursorY] = pRenderer->getWindow()->getCursorPosition();
-
-    const glm::vec2 cursorPos = glm::vec2(
-        static_cast<float>(iCursorX) / static_cast<float>(iWidth),
-        static_cast<float>(iCursorY) / static_cast<float>(iHeight));
+    // Get cursor pos.
+    const auto optCursorPos = pWorld->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        // Outside of viewport, don't process this event.
+        return;
+    }
+    const auto cursorPos = *optCursorPos;
 
     // Find first hovered node.
     if (!mtxData.second.modalInputReceivingNodes.empty()) {
@@ -675,7 +716,7 @@ bool UiNodeManager::hasModalUiNodeTree() {
     return !mtxData.second.modalInputReceivingNodes.empty();
 }
 
-UiNodeManager::UiNodeManager(Renderer* pRenderer) : pRenderer(pRenderer) {
+UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRenderer), pWorld(pWorld) {
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));
     mtxData.second.pScreenQuadGeometry = GpuResourceManager::createQuad(true);
@@ -708,6 +749,7 @@ void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
         drawRectNodes(i);
         drawTextNodes(i);
         drawSliderNodes(i);
+        drawCheckboxNodes(i);
         drawLayoutScrollBars(i);
     }
     glEnable(GL_DEPTH_TEST);
@@ -767,6 +809,81 @@ void UiNodeManager::drawRectNodes(size_t iLayer) {
                     size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
 
                 drawQuad(pos, size, iWindowHeight);
+            }
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindVertexArray(0);
+    }
+    glDisable(GL_BLEND);
+}
+
+void UiNodeManager::drawCheckboxNodes(size_t iLayer) {
+    PROFILE_FUNC;
+
+    std::scoped_lock guard(mtxData.first);
+
+    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vCheckboxNodes;
+    if (vNodesByDepth.empty()) {
+        return;
+    }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+        const auto aspectRatio = static_cast<float>(iWindowWidth) / static_cast<float>(iWindowHeight);
+
+        // Set shader program.
+        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+        if (pShaderProgram == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+        }
+        glUseProgram(pShaderProgram->getShaderProgramId());
+
+        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+        pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+        constexpr float boundsWidthInPix = 2.0F;
+        constexpr float backgroundPaddingInPix = 6.0F;
+
+        for (const auto& [iDepth, nodes] : vNodesByDepth) {
+            for (const auto& pCheckboxNode : nodes) {
+                // Update input-related things.
+                if (pCheckboxNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                               // (it will wait on our mutex)
+                    vInputNodesRendered.push_back(pCheckboxNode);
+                }
+
+                auto pos = pCheckboxNode->getPosition();
+                auto size = pCheckboxNode->getSize();
+
+                // Adjust size to be square according to aspect ratio.
+                size.x *= 1.0F / aspectRatio;
+
+                // Draw bounds.
+                pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
+                pos = glm::vec2(
+                    pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
+                size = glm::vec2(
+                    size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
+                drawQuad(pos, size, iWindowHeight);
+
+                // Draw background.
+                pShaderProgram->setVector4ToShader("color", pCheckboxNode->getBackgroundColor());
+                pos += boundsWidthInPix;
+                size -= boundsWidthInPix * 2.0F;
+                drawQuad(pos, size, iWindowHeight);
+
+                if (pCheckboxNode->isChecked()) {
+                    pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
+                    pos += backgroundPaddingInPix;
+                    size -= backgroundPaddingInPix * 2.0F;
+                    drawQuad(pos, size, iWindowHeight);
+                }
             }
         }
 

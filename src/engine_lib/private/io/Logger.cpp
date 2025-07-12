@@ -64,7 +64,7 @@ void Logger::warn(std::string_view sText, const std::source_location location) c
     iTotalWarningsProduced.fetch_add(1);
 
     if (onLogMessage) {
-        onLogMessage(LogMessageCategory::WARNING, sMessage);
+        onLogMessage(LogMessageCategory::WARN, sMessage);
     }
 }
 
@@ -79,7 +79,7 @@ void Logger::error(std::string_view sText, const std::source_location location) 
     iTotalErrorsProduced.fetch_add(1);
 
     if (onLogMessage) {
-        onLogMessage(LogMessageCategory::ERROR, sMessage);
+        onLogMessage(LogMessageCategory::ERR, sMessage);
     }
 }
 

@@ -12,8 +12,8 @@
 /** Types of log messages. */
 enum class LogMessageCategory : unsigned char {
     INFO,
-    WARNING,
-    ERROR,
+    WARN,
+    ERR, //< `ERROR` is a Windows macro
 };
 
 /** RAII-style type that creates logger callback on construction and unregisters it on destruction. */

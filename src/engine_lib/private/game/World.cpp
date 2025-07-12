@@ -24,7 +24,7 @@ World::World(GameManager* pGameManager, std::unique_ptr<Node> pRootNodeToUse) : 
     Logger::get().flushToDisk();
 
     pCameraManager = std::make_unique<CameraManager>(pGameManager);
-    pUiNodeManager = std::unique_ptr<UiNodeManager>(new UiNodeManager(pGameManager->getRenderer()));
+    pUiNodeManager = std::unique_ptr<UiNodeManager>(new UiNodeManager(pGameManager->getRenderer(), this));
 
 #if !defined(ENGINE_UI_ONLY)
     pMeshNodeManager = std::unique_ptr<MeshNodeManager>(new MeshNodeManager());

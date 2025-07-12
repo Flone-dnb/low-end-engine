@@ -5,9 +5,9 @@
 
 // Custom.
 #include "game/GameInstance.h"
-#include "render/Renderer.h"
 #include "render/UiNodeManager.h"
-#include "game/Window.h"
+#include "game/World.h"
+#include "game/camera/CameraManager.h"
 
 // External.
 #include "nameof.hpp"
@@ -139,11 +139,13 @@ bool SliderUiNode::onMouseClickOnUiNode(
     }
 
     // Move handle according to the cursor.
-    const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
-    const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
-    handlePosition = ((static_cast<float>(iCursorX) / static_cast<float>(pWindow->getWindowSize().first)) -
-                      getPosition().x) /
-                     getSize().x;
+    const auto optCursorPos = getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        return true;
+    }
+    const auto cursorPos = *optCursorPos;
+
+    handlePosition = (cursorPos.x - getPosition().x) / getSize().x;
     if (sliderStep > 0.0F) {
         handlePosition = snapToNearest(handlePosition, sliderStep);
     }
@@ -165,11 +167,13 @@ void SliderUiNode::onMouseMove(double xOffset, double yOffset) {
     const auto posBefore = handlePosition;
 
     // Move handle according to the cursor.
-    const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
-    const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
-    handlePosition = ((static_cast<float>(iCursorX) / static_cast<float>(pWindow->getWindowSize().first)) -
-                      getPosition().x) /
-                     getSize().x;
+    const auto optCursorPos = getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        return;
+    }
+    const auto cursorPos = *optCursorPos;
+
+    handlePosition = (cursorPos.x - getPosition().x) / getSize().x;
     if (sliderStep > 0.0F) {
         handlePosition = snapToNearest(handlePosition, sliderStep);
     }

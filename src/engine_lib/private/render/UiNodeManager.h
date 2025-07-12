@@ -23,6 +23,8 @@ class TextUiNode;
 class RectUiNode;
 class LayoutUiNode;
 class SliderUiNode;
+class CheckboxUiNode;
+class World;
 
 /** Keeps track of spawned UI nodes and handles UI rendering. */
 class UiNodeManager {
@@ -65,6 +67,13 @@ public:
     void onNodeSpawning(SliderUiNode* pNode);
 
     /**
+     * Called by UI nodes after they are spawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeSpawning(CheckboxUiNode* pNode);
+
+    /**
      * Called by spawned UI nodes after they changed their visibility.
      *
      * @param pNode UI node.
@@ -86,6 +95,13 @@ public:
     void onSpawnedNodeChangedVisibility(SliderUiNode* pNode);
 
     /**
+     * Called by spawned UI nodes after they changed their visibility.
+     *
+     * @param pNode UI node.
+     */
+    void onSpawnedNodeChangedVisibility(CheckboxUiNode* pNode);
+
+    /**
      * Called by UI nodes before they are despawned.
      *
      * @param pNode UI node.
@@ -105,6 +121,13 @@ public:
      * @param pNode UI node.
      */
     void onNodeDespawning(SliderUiNode* pNode);
+
+    /**
+     * Called by UI nodes before they are despawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeDespawning(CheckboxUiNode* pNode);
 
     /**
      * Called by UI nodes after their depth (in the node tree) was changed.
@@ -229,6 +252,9 @@ private:
             /** Node depth - slider nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<SliderUiNode*>>> vSliderNodes;
 
+            /** Node depth - checkbox nodes on this depth. */
+            std::vector<std::pair<size_t, std::unordered_set<CheckboxUiNode*>>> vCheckboxNodes;
+
             /** Layout nodes from @ref receivingInputUiNodes that need their scroll bar to be rendered. */
             std::unordered_set<LayoutUiNode*> layoutNodesWithScrollBars;
 
@@ -288,8 +314,9 @@ private:
      * Creates a new manager.
      *
      * @param pRenderer Renderer.
+     * @param pWorld    World that created this manager.
      */
-    UiNodeManager(Renderer* pRenderer);
+    UiNodeManager(Renderer* pRenderer, World* pWorld);
 
     /**
      * Renders the UI text nodes on the current framebuffer.
@@ -311,6 +338,13 @@ private:
      * @param iLayer UI layer to render to.
      */
     void drawSliderNodes(size_t iLayer);
+
+    /**
+     * Renders the UI checkbox nodes on the current framebuffer.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawCheckboxNodes(size_t iLayer);
 
     /**
      * Renders scroll bars for layout UI nodes.
@@ -386,6 +420,9 @@ private:
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
+
+    /** World that owns this manager. */
+    World* const pWorld = nullptr;
 
     /** Width of the scroll bar relative to the width of the screen. */
     static constexpr float scrollBarWidthRelativeScreen = 0.003F;

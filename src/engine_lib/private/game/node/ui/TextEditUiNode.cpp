@@ -4,6 +4,8 @@
 #include "game/GameInstance.h"
 #include "game/Window.h"
 #include "render/FontManager.h"
+#include "game/World.h"
+#include "game/camera/CameraManager.h"
 
 // External.
 #include "nameof.hpp"
@@ -91,10 +93,7 @@ bool TextEditUiNode::onMouseClickOnUiNode(
     }
 
     if (bIsPressedDown) {
-        const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
-        const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
-
-        optionalCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
+        optionalCursorOffset = convertCursorPosToTextOffset();
         optionalSelection = {};
 
         bIsTextSelectionStarted = true;
@@ -117,20 +116,20 @@ void TextEditUiNode::onMouseMove(double xOffset, double yOffset) {
 
     if (bIsTextSelectionStarted) {
         // Don't end selection but create a temporary selection to display.
-        const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
-        const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
-        const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
+        const auto optCursorPos = getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+        if (!optCursorPos.has_value()) {
+            Error::showErrorAndThrowException("expected the cursor to be in the viewport");
+        }
+        const auto cursorPos = *optCursorPos;
 
-        const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
         const auto pos = getPosition();
-        if ((mouseCursorPos.x / static_cast<float>(iWindowWidth) < pos.x) ||
-            (mouseCursorPos.y / static_cast<float>(iWindowHeight) < pos.y)) {
+        if (cursorPos.x < pos.x || cursorPos.y < pos.y) {
             // The cursor just stopped hovering other this node.
             bIsTextSelectionStarted = false;
             return;
         }
 
-        const auto iCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
+        const auto iCursorOffset = convertCursorPosToTextOffset();
         if (optionalCursorOffset.has_value() && iCursorOffset != *optionalCursorOffset) {
             optionalSelection = {
                 std::min(iCursorOffset, *optionalCursorOffset),
@@ -140,12 +139,9 @@ void TextEditUiNode::onMouseMove(double xOffset, double yOffset) {
 }
 
 void TextEditUiNode::endTextSelection() {
-    const auto [iCursorX, iCursorY] = getGameInstanceWhileSpawned()->getWindow()->getCursorPosition();
-    const auto mouseCursorPos = glm::vec2(static_cast<float>(iCursorX), static_cast<float>(iCursorY));
-
     bIsTextSelectionStarted = false;
 
-    const auto iCursorOffset = convertScreenPosToTextOffset(mouseCursorPos);
+    const auto iCursorOffset = convertCursorPosToTextOffset();
     if (optionalCursorOffset.has_value() && iCursorOffset != *optionalCursorOffset) {
         optionalSelection = {
             std::min(iCursorOffset, *optionalCursorOffset), std::max(iCursorOffset, *optionalCursorOffset)};
@@ -290,18 +286,20 @@ void TextEditUiNode::onLostFocus() {
     bIsTextSelectionStarted = false;
 }
 
-size_t TextEditUiNode::convertScreenPosToTextOffset(const glm::vec2& screenPos) {
-    const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
+size_t TextEditUiNode::convertCursorPosToTextOffset() {
+    const auto optCursorPos = getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        Error::showErrorAndThrowException("expected the cursor to be in the viewport");
+    }
+    const auto cursorPos = *optCursorPos;
+
+    const auto pGameInstance = getGameInstanceWhileSpawned();
 
     const auto size = getSize();
+    const auto textCursorPos = (cursorPos - getPosition()) / size;
+    const auto [iWindowWidth, iWindowHeight] = pGameInstance->getWindow()->getWindowSize();
 
-    const auto targetPos = glm::vec2(
-        static_cast<float>(screenPos.x) / static_cast<float>(iWindowWidth),
-        static_cast<float>(screenPos.y) / static_cast<float>(iWindowHeight));
-
-    const auto textCursorPos = (targetPos - getPosition()) / size;
-
-    auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
+    auto& fontManager = pGameInstance->getRenderer()->getFontManager();
 
     // Determine after which character to put a cursor.
     const auto textScaleFullscreen = getTextHeight() / fontManager.getFontHeightToLoad();

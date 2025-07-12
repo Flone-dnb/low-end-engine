@@ -778,7 +778,7 @@ Once such function is called it will trigger register input bindings in your gam
 
 There are also other `on...` function in `Window` that you might find handy in simulating user input.
 
-# Building on ARM64 Linux devices
+# Building your game for a retro handhelds (ARM64 Linux devices)
 
 ## Setup
 

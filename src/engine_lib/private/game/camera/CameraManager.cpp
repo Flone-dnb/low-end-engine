@@ -13,7 +13,9 @@
 #include "render/GpuResourceManager.h"
 #include "game/Window.h"
 
-CameraManager::CameraManager(GameManager* pGameManager) { onWindowSizeChanged(pGameManager->getWindow()); }
+CameraManager::CameraManager(GameManager* pGameManager) : pWindow(pGameManager->getWindow()) {
+    onWindowSizeChanged(pGameManager->getWindow());
+}
 
 CameraManager::~CameraManager() {}
 
@@ -72,6 +74,36 @@ void CameraManager::clearActiveCamera() {
 
     // Clear pointer.
     mtxActiveCamera.second.pNode = nullptr;
+}
+
+std::optional<glm::vec2> CameraManager::getCursorPosOnViewport() {
+    std::scoped_lock guard(mtxActiveCamera.first);
+
+    if (mtxActiveCamera.second.pNode == nullptr) {
+        return {};
+    }
+
+    if (!pWindow->isCursorVisible()) {
+        return {};
+    }
+
+    const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
+    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
+
+    auto cursorPos = glm::vec2(
+        static_cast<float>(iCursorX) / static_cast<float>(iWindowWidth),
+        static_cast<float>(iCursorY) / static_cast<float>(iWindowHeight));
+    const auto viewport = mtxActiveCamera.second.pNode->getCameraProperties()->getViewport();
+
+    if (viewport.x > cursorPos.x || viewport.y > cursorPos.y) {
+        return {};
+    }
+    if (cursorPos.x > viewport.x + viewport.z || cursorPos.y > viewport.y + viewport.w) {
+        return {};
+    }
+
+    cursorPos -= glm::vec2(viewport.x, viewport.y);
+    return cursorPos / glm::vec2(viewport.z, viewport.w);
 }
 
 std::pair<std::recursive_mutex, CameraManager::ActiveCameraInfo>& CameraManager::getActiveCamera() {

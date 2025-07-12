@@ -1,6 +1,6 @@
 # low-end engine
 
-This is a cross-platform 3D game engine that targets low-end handheld ARM64 Linux devices (such as Anbernic RG35XX H, Powkiddy RGB30 and similar) but the engine also supports the usual x86-64 Windows and Linux. 
+This is a cross-platform 3D game engine that targets low-end retro handhelds (such as Anbernic RG35XX H, Powkiddy RGB30 and similar) but the engine also supports Windows and Linux. 
 
 This engine is most suited for small non open world 3D games with low-poly-ish graphics. This engine is small (fast to learn) and intuitive to use.
 
@@ -19,10 +19,11 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Post-processing effects
 - [X] GUI
 - [X] Audio (using [SFML](https://github.com/SFML/SFML))
+- [ ] Simple editor
 - [ ] Skeletal animations
 - [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
+- [ ] Occlusion culling using portals
 - [ ] Dynamic shadows
-- [ ] Simple editor
 - [ ] Instancing
 - [ ] AI and pathfinding
 - [ ] Particle effects

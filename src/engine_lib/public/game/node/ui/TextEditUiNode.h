@@ -159,13 +159,11 @@ protected:
 
 private:
     /**
-     * Converts the specified position on the screen to offset (in characters) in the text.
-     *
-     * @param screenPos Position on screen in range [0; iWindowWidth][0; iWindowHeight].
+     * Converts mouse cursor position to offset (in characters) in the text.
      *
      * @return Offset in text in range [0; textSize].
      */
-    size_t convertScreenPosToTextOffset(const glm::vec2& screenPos);
+    size_t convertCursorPosToTextOffset();
 
     /** Called in cases when we should consider the current mouse position as text selection end. */
     void endTextSelection();

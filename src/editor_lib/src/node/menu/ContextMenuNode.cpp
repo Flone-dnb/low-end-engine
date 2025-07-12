@@ -6,7 +6,8 @@
 #include "game/node/ui/TextUiNode.h"
 #include "EditorColorTheme.h"
 #include "game/GameInstance.h"
-#include "game/Window.h"
+#include "game/World.h"
+#include "game/camera/CameraManager.h"
 
 // External.
 #include "utf/utf.hpp"
@@ -53,12 +54,11 @@ void ContextMenuNode::openMenu(
     }
 
     // Get cursor position.
-    const auto pWindow = getGameInstanceWhileSpawned()->getWindow();
-    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
-    const auto [iCursorX, iCursorY] = pWindow->getCursorPosition();
-    const auto cursorPos = glm::vec2(
-        static_cast<float>(iCursorX) / static_cast<float>(iWindowWidth),
-        static_cast<float>(iCursorY) / static_cast<float>(iWindowHeight));
+    const auto optCursorPos = getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        Error::showErrorAndThrowException("expected the cursor to be in the viewport");
+    }
+    const auto cursorPos = *optCursorPos;
 
     setPosition(cursorPos - 0.01F); // move slightly to make 1st menu item to be hovered
 
