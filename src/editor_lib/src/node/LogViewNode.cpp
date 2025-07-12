@@ -24,9 +24,9 @@ LogViewNode::LogViewNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
             pTextNode->setTextHeight(EditorColorTheme::getTextHeight() * 0.9F);
             pTextNode->setText(utf::as_u16(sMessage));
 
-            if (category == LogMessageCategory::ERR) {
+            if (category == LogMessageCategory::ERROR) {
                 pTextNode->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
-            } else if (category == LogMessageCategory::WARN) {
+            } else if (category == LogMessageCategory::WARNING) {
                 pTextNode->setTextColor(glm::vec4(1.0F, 1.0F, 0.0F, 1.0F));
             }
         });

@@ -9,12 +9,13 @@
 // External.
 #include "spdlog/spdlog.h"
 
+#if defined(WIN32)
+// some windows macro that we use in enum
+#undef ERROR
+#endif
+
 /** Types of log messages. */
-enum class LogMessageCategory : unsigned char {
-    INFO,
-    WARN,
-    ERR, //< `ERROR` is a Windows macro
-};
+enum class LogMessageCategory : unsigned char { INFO, WARNING, ERROR };
 
 /** RAII-style type that creates logger callback on construction and unregisters it on destruction. */
 class LoggerCallbackGuard {
