@@ -263,13 +263,25 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
             ADD_NODE_TO_RENDERING(SliderUiNode);
         }
         // clang-format on
+    } else if (auto pNode = dynamic_cast<CheckboxUiNode*>(pTargetNode)) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vCheckboxNodes;
+        // clang-format off
+        {
+            REMOVE_NODE_FROM_RENDERING(CheckboxUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(CheckboxUiNode);
+        }
+        // clang-format on
     } else [[unlikely]] {
         Error::showErrorAndThrowException("unhandled case");
     }
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(
-        sizeof(Data::SpawnedVisibleLayerUiNodes) == 224, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 224, "add new variables here");
+#elif defined(DEBUG)
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 232, "add new variables here");
 #endif
 }
 

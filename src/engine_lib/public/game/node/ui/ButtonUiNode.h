@@ -149,7 +149,7 @@ protected:
     virtual bool onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
 
     /**
-     * Same as @ref onMousePressedOnUiNode but for mouse button released event.
+     * Same as @ref onMouseButtonPressedOnUiNode but for mouse button released event.
      *
      * @param button    Mouse button.
      * @param modifiers Keyboard modifier keys.
