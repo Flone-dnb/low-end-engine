@@ -49,13 +49,13 @@ jobs:
       run: mkdir build
     - name: Build (release)
       run: |
-        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --config Release
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+        cmake --build . --config RelWithDebInfo
       working-directory: build
     - name: Build (release) UI only
       run: |
-        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DENGINE_UI_ONLY=ON ..
-        cmake --build . --config Release
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENGINE_UI_ONLY=ON ..
+        cmake --build . --config RelWithDebInfo
       working-directory: build
     - name: Compile a new project with engine
       run: |
@@ -66,8 +66,8 @@ jobs:
         cd proj
         mkdir build
         cd build
-        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --config Release --target proj
+        cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+        cmake --build . --config RelWithDebInfo --target proj
   build-linux-clang:
     name: Build on Linux using Clang
     runs-on: ubuntu-latest
@@ -83,8 +83,8 @@ jobs:
       run: mkdir build
     - name: Build (release)
       run: |
-        CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --config Release
+        CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+        cmake --build . --config RelWithDebInfo
       working-directory: build
   build-linux-gcc:
     name: Build on Linux using GCC
@@ -101,8 +101,8 @@ jobs:
       run: mkdir build
     - name: Build (release)
       run: |
-        CC=gcc CXX=g++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --config Release
+        CC=gcc CXX=g++ cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+        cmake --build . --config RelWithDebInfo
       working-directory: build
 
 
