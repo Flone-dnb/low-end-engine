@@ -96,15 +96,10 @@ void CheckboxUiNode::onVisibilityChanged() {
     getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
 }
 
-bool CheckboxUiNode::onMouseClickOnUiNode(
-    MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    UiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
+bool CheckboxUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    UiNode::onMouseButtonPressedOnUiNode(button, modifiers);
 
     if (button != MouseButton::LEFT) {
-        return true;
-    }
-
-    if (!bIsPressedDown) {
         return true;
     }
 

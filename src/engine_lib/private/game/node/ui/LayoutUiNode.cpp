@@ -183,8 +183,9 @@ void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
         iCurrentScrollOffset = static_cast<unsigned int>(
             std::max(0.0F, totalScrollHeight - getSize().y * 3.25F) / // TODO: rework magic numbers
             scrollBarStepLocal);
-        recalculatePosAndSizeForDirectChildNodes();
     }
+
+    recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterDirectChildDetached(Node* pDetachedDirectChild) {

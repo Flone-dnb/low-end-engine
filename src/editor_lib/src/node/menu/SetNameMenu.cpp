@@ -73,13 +73,8 @@ void SetNameMenu::onMouseLeft() {
     }
 }
 
-void SetNameMenu::onKeyboardInputWhileFocused(
-    KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    RectUiNode::onKeyboardInputWhileFocused(button, modifiers, bIsPressedDown);
-
-    if (!bIsPressedDown) {
-        return;
-    }
+void SetNameMenu::onKeyboardButtonPressedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) {
+    RectUiNode::onKeyboardButtonPressedWhileFocused(button, modifiers);
 
     if (button == KeyboardButton::ESCAPE) {
         bIsDestroyHandled = true;

@@ -473,14 +473,18 @@ void UiNodeManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabled
     }
 }
 
-void UiNodeManager::onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
+void UiNodeManager::onKeyboardInput(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
     std::scoped_lock guard(mtxData.first);
 
     if (mtxData.second.pFocusedNode == nullptr) {
         return;
     }
 
-    mtxData.second.pFocusedNode->onKeyboardInputWhileFocused(key, modifiers, bIsPressedDown);
+    if (bIsPressedDown) {
+        mtxData.second.pFocusedNode->onKeyboardButtonPressedWhileFocused(button, modifiers);
+    } else {
+        mtxData.second.pFocusedNode->onKeyboardButtonReleasedWhileFocused(button, modifiers);
+    }
 }
 
 void UiNodeManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
@@ -490,7 +494,11 @@ void UiNodeManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
         return;
     }
 
-    mtxData.second.pFocusedNode->onGamepadInputWhileFocused(button, bIsPressedDown);
+    if (bIsPressedDown) {
+        mtxData.second.pFocusedNode->onGamepadButtonPressedWhileFocused(button);
+    } else {
+        mtxData.second.pFocusedNode->onGamepadButtonReleasedWhileFocused(button);
+    }
 }
 
 void UiNodeManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
@@ -554,8 +562,14 @@ void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers
                 continue;
             }
 
-            if (pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown)) {
-                break;
+            if (bIsPressedDown) {
+                if (pNode->onMouseButtonPressedOnUiNode(button, modifiers)) {
+                    break;
+                }
+            } else {
+                if (pNode->onMouseButtonReleasedOnUiNode(button, modifiers)) {
+                    break;
+                }
             }
         }
 
@@ -583,9 +597,16 @@ void UiNodeManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers
                 continue;
             }
 
-            if (pNode->onMouseClickOnUiNode(button, modifiers, bIsPressedDown)) {
-                bFoundNode = true;
-                break;
+            if (bIsPressedDown) {
+                if (pNode->onMouseButtonPressedOnUiNode(button, modifiers)) {
+                    bFoundNode = true;
+                    break;
+                }
+            } else {
+                if (pNode->onMouseButtonReleasedOnUiNode(button, modifiers)) {
+                    bFoundNode = true;
+                    break;
+                }
             }
         }
 

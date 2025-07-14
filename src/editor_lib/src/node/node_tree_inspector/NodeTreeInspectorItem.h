@@ -38,20 +38,18 @@ public:
 
 protected:
     /**
-     * Called when the window receives mouse input while floating over this UI node.
+     * Called when the window receives mouse button press event while floating over this UI node.
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if the user clicked on this UI node.
      *
-     * @param button         Mouse button.
-     * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the button down event occurred or button up.
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
      *
      * @return `true` if the event was handled.
      */
-    virtual bool
-    onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+    virtual bool onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
 
 private:
     /**

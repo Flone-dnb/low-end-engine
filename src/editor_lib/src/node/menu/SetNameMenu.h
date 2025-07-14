@@ -54,10 +54,9 @@ protected:
      *
      * @param button         Keyboard button.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void onKeyboardInputWhileFocused(
-        KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+    virtual void
+    onKeyboardButtonPressedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) override;
 
     /**
      * Called after @ref onSpawning when this node and all of node's child nodes (at the moment

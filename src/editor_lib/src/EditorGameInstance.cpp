@@ -175,6 +175,14 @@ void EditorGameInstance::registerEditorInputEvents() {
                 if (isGamepadConnected()) {
                     return;
                 }
+                if (gameWorldNodes.pRoot == nullptr) {
+                    return;
+                }
+                auto optCursorInGameViewport =
+                    gameWorldNodes.pRoot->getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+                if (!optCursorInGameViewport.has_value()) {
+                    return;
+                }
                 getWindow()->setCursorVisibility(!bIsPressed);
                 gameWorldNodes.pViewportCamera->setIgnoreInput(!bIsPressed);
             };

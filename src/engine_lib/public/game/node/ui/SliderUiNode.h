@@ -149,20 +149,28 @@ protected:
     virtual void onVisibilityChanged() override;
 
     /**
-     * Called when the window receives mouse input while floating over this UI node.
+     * Called when the window receives mouse button press event while floating over this UI node.
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if the user clicked on this UI node.
      *
-     * @param button         Mouse button.
-     * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the button down event occurred or button up.
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
      *
      * @return `true` if the event was handled.
      */
-    virtual bool
-    onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+    virtual bool onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
+
+    /**
+     * Same as @ref onMousePressedOnUiNode but for mouse button released event.
+     *
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
+     *
+     * @return `true` if the event was handled.
+     */
+    virtual bool onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
 
     /**
      * Called when the mouse cursor stopped floating over this UI node.
@@ -192,10 +200,9 @@ protected:
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if this UI node has focus.
      *
-     * @param button         Gamepad button.
-     * @param bIsPressedDown Whether the button was pressed or released.
+     * @param button Gamepad button.
      */
-    virtual void onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) override;
+    virtual void onGamepadButtonPressedWhileFocused(GamepadButton button) override;
 
     /**
      * Called after some child node was attached to this node.

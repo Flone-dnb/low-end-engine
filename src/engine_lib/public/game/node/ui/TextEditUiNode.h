@@ -94,20 +94,28 @@ protected:
     virtual void onAfterDeserialized() override;
 
     /**
-     * Called when the window receives mouse input while floating over this UI node.
+     * Called when the window receives mouse button press event while floating over this UI node.
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if the user clicked on this UI node.
      *
-     * @param button         Mouse button.
-     * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the button down event occurred or button up.
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
      *
      * @return `true` if the event was handled.
      */
-    virtual bool
-    onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+    virtual bool onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
+
+    /**
+     * Same as @ref onMousePressedOnUiNode but for mouse button released event.
+     *
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
+     *
+     * @return `true` if the event was handled.
+     */
+    virtual bool onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
 
     /**
      * Called when the window receives keyboard input.
@@ -118,10 +126,9 @@ protected:
      *
      * @param button         Keyboard button.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void onKeyboardInputWhileFocused(
-        KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+    virtual void
+    onKeyboardButtonPressedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) override;
 
     /**
      * Called by game manager when window received an event about text character being inputted.

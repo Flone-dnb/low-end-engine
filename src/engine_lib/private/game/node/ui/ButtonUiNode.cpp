@@ -150,19 +150,30 @@ void ButtonUiNode::onDespawning() {
     pPressedTexture = nullptr;
 }
 
-bool ButtonUiNode::onMouseClickOnUiNode(
-    MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    RectUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
+bool ButtonUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    RectUiNode::onMouseButtonPressedOnUiNode(button, modifiers);
 
-    if (bIsPressedDown) {
-        setButtonTexture(sPathToTextureWhilePressed);
-        setButtonColor(colorWhilePressed);
-    } else {
-        setButtonTexture(bIsCurrentlyHovered ? sPathToTextureWhileHovered : sTempPathToDefaultTexture);
-        setButtonColor(bIsCurrentlyHovered ? colorWhileHovered : tempDefaultColor);
-        if (onClicked) {
-            onClicked();
-        }
+    if (button != MouseButton::LEFT) {
+        return true;
+    }
+
+    setButtonTexture(sPathToTextureWhilePressed);
+    setButtonColor(colorWhilePressed);
+
+    return true;
+}
+
+bool ButtonUiNode::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    RectUiNode::onMouseButtonReleasedOnUiNode(button, modifiers);
+
+    if (button != MouseButton::LEFT) {
+        return true;
+    }
+
+    setButtonTexture(bIsCurrentlyHovered ? sPathToTextureWhileHovered : sTempPathToDefaultTexture);
+    setButtonColor(bIsCurrentlyHovered ? colorWhileHovered : tempDefaultColor);
+    if (onClicked) {
+        onClicked();
     }
 
     return true;

@@ -52,13 +52,8 @@ void NodeTreeInspectorItem::getNodeParentCount(Node* pNode, size_t& iParentCount
     getNodeParentCount(mtxParent.second, iParentCount);
 }
 
-bool NodeTreeInspectorItem::onMouseClickOnUiNode(
-    MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    ButtonUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
-
-    if (!bIsPressedDown) {
-        return true;
-    }
+bool NodeTreeInspectorItem::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    ButtonUiNode::onMouseButtonReleasedOnUiNode(button, modifiers);
 
     const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
     if (pGameInstance == nullptr) [[unlikely]] {

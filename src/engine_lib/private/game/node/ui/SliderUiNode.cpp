@@ -123,20 +123,14 @@ void SliderUiNode::setSliderStep(float stepSize) {
     }
 }
 
-bool SliderUiNode::onMouseClickOnUiNode(
-    MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    UiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
+bool SliderUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    UiNode::onMouseButtonPressedOnUiNode(button, modifiers);
 
     if (button != MouseButton::LEFT) {
         return true;
     }
 
-    if (bIsPressedDown) {
-        bIsMouseCursorDraggingHandle = true;
-    } else {
-        bIsMouseCursorDraggingHandle = false;
-        return true;
-    }
+    bIsMouseCursorDraggingHandle = true;
 
     // Move handle according to the cursor.
     const auto optCursorPos = getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
@@ -153,6 +147,18 @@ bool SliderUiNode::onMouseClickOnUiNode(
     if (onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
+
+    return true;
+}
+
+bool SliderUiNode::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    UiNode::onMouseButtonReleasedOnUiNode(button, modifiers);
+
+    if (button != MouseButton::LEFT) {
+        return true;
+    }
+
+    bIsMouseCursorDraggingHandle = false;
 
     return true;
 }
@@ -189,12 +195,8 @@ void SliderUiNode::onMouseLeft() {
     bIsMouseCursorDraggingHandle = false;
 }
 
-void SliderUiNode::onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) {
-    UiNode::onGamepadInputWhileFocused(button, bIsPressedDown);
-
-    if (!bIsPressedDown) {
-        return;
-    }
+void SliderUiNode::onGamepadButtonPressedWhileFocused(GamepadButton button) {
+    UiNode::onGamepadButtonPressedWhileFocused(button);
 
     float step = std::max(sliderStep, 0.05F);
     if (button == GamepadButton::DPAD_LEFT) {

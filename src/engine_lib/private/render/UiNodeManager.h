@@ -166,11 +166,11 @@ public:
     /**
      * Called by game manager when window received keyboard input.
      *
-     * @param key            Keyboard key.
+     * @param button         Keyboard button.
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown);
+    void onKeyboardInput(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown);
 
     /**
      * Called by game manager when window received gamepad input.

@@ -84,23 +84,26 @@ void TextEditUiNode::onAfterDeserialized() {
     setIsReceivingInput(!bIsReadOnly);
 }
 
-bool TextEditUiNode::onMouseClickOnUiNode(
-    MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    TextUiNode::onMouseClickOnUiNode(button, modifiers, bIsPressedDown);
+bool TextEditUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    TextUiNode::onMouseButtonPressedOnUiNode(button, modifiers);
 
     if (button != MouseButton::LEFT) {
         return true;
     }
 
-    if (bIsPressedDown) {
-        optionalCursorOffset = convertCursorPosToTextOffset();
-        optionalSelection = {};
+    optionalCursorOffset = convertCursorPosToTextOffset();
+    optionalSelection = {};
 
-        bIsTextSelectionStarted = true;
-        setFocused();
-    } else {
-        endTextSelection();
-    }
+    bIsTextSelectionStarted = true;
+    setFocused();
+
+    return true;
+}
+
+bool TextEditUiNode::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+    TextUiNode::onMouseButtonReleasedOnUiNode(button, modifiers);
+
+    endTextSelection();
 
     return true;
 }
@@ -149,13 +152,8 @@ void TextEditUiNode::endTextSelection() {
     }
 }
 
-void TextEditUiNode::onKeyboardInputWhileFocused(
-    KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    TextUiNode::onKeyboardInputWhileFocused(button, modifiers, bIsPressedDown);
-
-    if (!bIsPressedDown) {
-        return;
-    }
+void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) {
+    TextUiNode::onKeyboardButtonPressedWhileFocused(button, modifiers);
 
     if (!optionalCursorOffset.has_value()) [[unlikely]] {
         Error::showErrorAndThrowException(

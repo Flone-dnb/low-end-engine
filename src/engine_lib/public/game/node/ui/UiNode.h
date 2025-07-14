@@ -198,10 +198,16 @@ protected:
      *
      * @param button         Keyboard button.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void
-    onKeyboardInputWhileFocused(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
+    virtual void onKeyboardButtonPressedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) {}
+
+    /**
+     * Same as @ref onKeyboardButtonPressedWhileFocused but called when button is released.
+     *
+     * @param button         Keyboard button.
+     * @param modifiers      Keyboard modifier keys.
+     */
+    virtual void onKeyboardButtonReleasedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) {}
 
     /**
      * Called when the window received gamepad input.
@@ -210,10 +216,16 @@ protected:
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if this UI node has focus.
      *
-     * @param button         Gamepad button.
-     * @param bIsPressedDown Whether the button was pressed or released.
+     * @param button Gamepad button.
      */
-    virtual void onGamepadInputWhileFocused(GamepadButton button, bool bIsPressedDown) {}
+    virtual void onGamepadButtonPressedWhileFocused(GamepadButton button) {}
+
+    /**
+     * Same as @ref onGamepadButtonPressedWhileFocused but called when button is released.
+     *
+     * @param button Gamepad button.
+     */
+    virtual void onGamepadButtonReleasedWhileFocused(GamepadButton button) {}
 
     /**
      * Called by game manager when window received an event about text character being inputted.
@@ -223,19 +235,30 @@ protected:
     virtual void onKeyboardInputTextCharacterWhileFocused(const std::string& sTextCharacter) {}
 
     /**
-     * Called when the window receives mouse input while floating over this UI node.
+     * Called when the window receives mouse button press event while floating over this UI node.
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
      * @remark This function will only be called while this node is spawned.
      * @remark This function will only be called if the user clicked on this UI node.
      *
-     * @param button         Mouse button.
-     * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the button down event occurred or button up.
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
      *
      * @return `true` if the event was handled.
      */
-    virtual bool onMouseClickOnUiNode(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
+    virtual bool onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
+        return false;
+    }
+
+    /**
+     * Same as @ref onMousePressedOnUiNode but for mouse button released event.
+     *
+     * @param button    Mouse button.
+     * @param modifiers Keyboard modifier keys.
+     *
+     * @return `true` if the event was handled.
+     */
+    virtual bool onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
         return false;
     }
 
