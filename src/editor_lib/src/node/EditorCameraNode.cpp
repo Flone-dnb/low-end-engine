@@ -47,11 +47,15 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
         // Gamepad look right.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT)] =
-            [this](KeyboardModifiers modifiers, float input) { lastGamepadLookInput.x = input; };
+            [this](KeyboardModifiers modifiers, float input) {
+                lastGamepadLookInput.x = input * gamepadLookInputMult;
+            };
 
         // Gamepad look up.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP)] =
-            [this](KeyboardModifiers modifiers, float input) { lastGamepadLookInput.y = input; };
+            [this](KeyboardModifiers modifiers, float input) {
+                lastGamepadLookInput.y = input * gamepadLookInputMult;
+            };
     }
 
     // Bind action events.
@@ -79,24 +83,6 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
                     currentMovementSpeedMultiplier = speedDecreaseMultiplier;
                 } else {
                     currentMovementSpeedMultiplier = 1.0F;
-                }
-            };
-
-        // Bind increase rotation speed.
-        mtxActionEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_ROTATION_SPEED)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                if (!bIsPressed) {
-                    rotationSensitivity += 0.1F; // NOLINT
-                }
-            };
-
-        // Bind decrease rotation speed.
-        mtxActionEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_ROTATION_SPEED)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                if (!bIsPressed) {
-                    rotationSensitivity = std::max(0.1F, rotationSensitivity - 0.1F); // NOLINT
                 }
             };
     }

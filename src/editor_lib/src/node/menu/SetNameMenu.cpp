@@ -28,7 +28,7 @@ SetNameMenu::SetNameMenu(const std::string& sNodeName) : RectUiNode(sNodeName) {
 
         const auto pTextEditBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
         pTextEditBackground->setColor(EditorColorTheme::getButtonColor());
-        pTextEditBackground->setSize(glm::vec2(1.0F, EditorColorTheme::getTextHeight() * 1.1F));
+        pTextEditBackground->setSize(glm::vec2(1.0F, EditorColorTheme::getBigTextHeight()));
         {
             pTextEditNode = pTextEditBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEditNode->setTextHeight(EditorColorTheme::getTextHeight());

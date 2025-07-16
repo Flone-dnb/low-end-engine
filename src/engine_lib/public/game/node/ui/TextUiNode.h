@@ -237,6 +237,9 @@ protected:
      */
     virtual bool onMouseScrollMoveWhileHovered(int iOffset) override;
 
+    /** Called after text is changed. */
+    virtual void onAfterTextChanged() {}
+
 private:
     /** Color of the text in the RGBA format. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);

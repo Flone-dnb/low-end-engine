@@ -119,6 +119,8 @@ void TextUiNode::setText(std::u16string_view sNewText) {
             }
         }
     }
+
+    onAfterTextChanged();
 }
 
 void TextUiNode::setTextColor(const glm::vec4& color) { this->color = color; }

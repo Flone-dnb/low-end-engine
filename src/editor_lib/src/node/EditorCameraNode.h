@@ -78,7 +78,10 @@ private:
     float currentMovementSpeedMultiplier = 1.0F;
 
     /** Rotation multiplier for editor's camera. */
-    float rotationSensitivity = 0.1F; // NOLINT: default value
+    float rotationSensitivity = 0.1F;
+
+    /** Constant multiplier for gamepad's rotation input. */
+    static constexpr float gamepadLookInputMult = 10.0F;
 
     /** Speed of editor camera's movement. */
     static constexpr float movementSpeed = 5.0F;
@@ -90,5 +93,5 @@ private:
     static constexpr float speedDecreaseMultiplier = 0.5F;
 
     /** Used to compare input to zero. */
-    static constexpr float inputEpsilon = 0.0001F; // NOLINT
+    static constexpr float inputEpsilon = 0.0001F;
 };

@@ -144,16 +144,6 @@ void EditorGameInstance::registerEditorInputEvents() {
         showErrorIfNotEmpty(getInputManager()->addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED),
             {KeyboardButton::LEFT_CONTROL}));
-
-        // Increase camera rotation speed.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
-            static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_ROTATION_SPEED),
-            {GamepadButton::RIGHT_SHOULDER}));
-
-        // Decrease camera rotation speed.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
-            static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_ROTATION_SPEED),
-            {GamepadButton::LEFT_SHOULDER}));
     }
 
     // Bind to action events.
@@ -178,13 +168,19 @@ void EditorGameInstance::registerEditorInputEvents() {
                 if (gameWorldNodes.pRoot == nullptr) {
                     return;
                 }
-                auto optCursorInGameViewport =
-                    gameWorldNodes.pRoot->getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
-                if (!optCursorInGameViewport.has_value()) {
-                    return;
+                if (bIsPressed) {
+                    auto optCursorInGameViewport = gameWorldNodes.pRoot->getWorldWhileSpawned()
+                                                       ->getCameraManager()
+                                                       .getCursorPosOnViewport();
+                    if (!optCursorInGameViewport.has_value()) {
+                        return;
+                    }
+                    getWindow()->setCursorVisibility(false);
+                    gameWorldNodes.pViewportCamera->setIgnoreInput(false);
+                } else if (!getWindow()->isCursorVisible()) {
+                    getWindow()->setCursorVisibility(true);
+                    gameWorldNodes.pViewportCamera->setIgnoreInput(true);
                 }
-                getWindow()->setCursorVisibility(!bIsPressed);
-                gameWorldNodes.pViewportCamera->setIgnoreInput(!bIsPressed);
             };
     }
 
@@ -250,7 +246,6 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         // Left panel: node tree and content browser.
         const auto pLeftRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
         pLeftRect->setColor(EditorColorTheme::getEditorBackgroundColor());
-        pLeftRect->setExpandPortionInLayout(1);
         {
             const auto pLayout = pLeftRect->addChildNode(std::make_unique<LayoutUiNode>());
             pLayout->setPadding(EditorColorTheme::getPadding() / 2.0F);

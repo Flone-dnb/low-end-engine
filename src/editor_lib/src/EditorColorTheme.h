@@ -1,5 +1,8 @@
 #pragma once
 
+// Standard.
+#include <string_view>
+
 // Custom.
 #include "math/GLMath.hpp"
 
@@ -7,11 +10,44 @@
 class EditorColorTheme {
 public:
     /**
-     * Text height.
+     * Text height for default text.
      *
      * @return Text height.
      */
     static float getTextHeight();
+
+    /**
+     * Text height for big text.
+     *
+     * @return Text height.
+     */
+    static float getBigTextHeight();
+
+    /**
+     * Text height for small text.
+     *
+     * @return Text height.
+     */
+    static float getSmallTextHeight();
+
+    /**
+     * Used to format variable names such as "materialDiffuseColor" to more readable versions such as
+     * "material diffuse color".
+     *
+     * @param sName Name of the variable.
+     *
+     * @return More readable name.
+     */
+    static std::string formatVariableName(const std::string& sName);
+
+    /**
+     * Converts float to a fixed text format.
+     *
+     * @param value Value to convert.
+     *
+     * @return Number in text.
+     */
+    static std::string floatToString(float value);
 
     /**
      * Color of the editor's background.
@@ -54,6 +90,20 @@ public:
      * @return Spacing.
      */
     static float getSpacing();
+
+    /**
+     * Return spacing between property's name and value.
+     *
+     * @return Spacing.
+     */
+    static float getTypePropertyNameValueSpacing();
+
+    /**
+     * Returns spacing for property inspector.
+     *
+     * @return Spacing.
+     */
+    static float getTypePropertySpacing();
 
     /**
      * Default color for buttons.

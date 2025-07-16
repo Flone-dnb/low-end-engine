@@ -8,8 +8,6 @@ struct EditorInputEventIds {
         CAPTURE_MOUSE_CURSOR,
         INCREASE_CAMERA_MOVEMENT_SPEED,
         DECREASE_CAMERA_MOVEMENT_SPEED,
-        INCREASE_CAMERA_ROTATION_SPEED,
-        DECREASE_CAMERA_ROTATION_SPEED,
     };
 
     /** Groups axis events. */

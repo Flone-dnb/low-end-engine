@@ -164,6 +164,9 @@ protected:
      */
     virtual void onMouseMove(double xOffset, double yOffset) override;
 
+    /** Called after text is changed. */
+    virtual void onAfterTextChanged() override;
+
 private:
     /**
      * Converts mouse cursor position to offset (in characters) in the text.
@@ -174,6 +177,13 @@ private:
 
     /** Called in cases when we should consider the current mouse position as text selection end. */
     void endTextSelection();
+
+    /**
+     * Must be used instead of parent's `setText`.
+     *
+     * @param sNewText Text to set.
+     */
+    void changeText(std::u16string_view sNewText);
 
     /** User specified callback to trigger when text is changed. */
     std::function<void(std::u16string_view)> onTextChanged;
@@ -195,4 +205,7 @@ private:
 
     /** `true` if LMB was pressed on some text and was not released yet. */
     bool bIsTextSelectionStarted = false;
+
+    /** `true` if inside @ref changeText. */
+    bool bIsChangingText = false;
 };

@@ -152,6 +152,12 @@ void TextEditUiNode::endTextSelection() {
     }
 }
 
+void TextEditUiNode::changeText(std::u16string_view sNewText) {
+    bIsChangingText = true;
+    setText(sNewText);
+    bIsChangingText = false;
+}
+
 void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) {
     TextUiNode::onKeyboardButtonPressedWhileFocused(button, modifiers);
 
@@ -163,7 +169,7 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
     if (button == KeyboardButton::ENTER) {
         auto sText = std::u16string(getText());
         sText.insert(*optionalCursorOffset, u"\n");
-        setText(sText);
+        changeText(sText);
 
         (*optionalCursorOffset) += 1;
 
@@ -174,14 +180,14 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
         if (optionalSelection.has_value()) {
             auto sText = std::u16string(getText());
             sText.erase(optionalSelection->first, optionalSelection->second - optionalSelection->first);
-            setText(sText);
+            changeText(sText);
 
             optionalCursorOffset = optionalSelection->first;
             optionalSelection = {};
         } else if ((*optionalCursorOffset) > 0) {
             auto sText = std::u16string(getText());
             sText.erase(*optionalCursorOffset - 1, 1);
-            setText(sText);
+            changeText(sText);
 
             (*optionalCursorOffset) -= 1;
         }
@@ -242,6 +248,19 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
     }
 }
 
+void TextEditUiNode::onAfterTextChanged() {
+    TextUiNode::onAfterTextChanged();
+
+    if (bIsChangingText) {
+        return;
+    }
+
+    if (optionalCursorOffset.has_value()) {
+        (*optionalCursorOffset) = getText().size();
+    }
+    optionalSelection = {};
+}
+
 void TextEditUiNode::onKeyboardInputTextCharacterWhileFocused(const std::string& sTextCharacter) {
     TextUiNode::onKeyboardInputTextCharacterWhileFocused(sTextCharacter);
 
@@ -254,15 +273,20 @@ void TextEditUiNode::onKeyboardInputTextCharacterWhileFocused(const std::string&
         // Delete selected text.
         auto sText = std::u16string(getText());
         sText.erase(optionalSelection->first, optionalSelection->second - optionalSelection->first);
-        setText(sText);
+        changeText(sText);
 
         optionalCursorOffset = optionalSelection->first;
         optionalSelection = {};
     }
 
     auto sText = std::u16string(getText());
+    if (*optionalCursorOffset > sText.size()) [[unlikely]] {
+        // This means we have error somewhere else.
+        Error::showErrorAndThrowException("text cursor is out of bounds");
+    }
+
     sText.insert(*optionalCursorOffset, utf::as_u16(sTextCharacter));
-    setText(sText);
+    changeText(sText);
 
     (*optionalCursorOffset) += 1;
 
@@ -281,6 +305,7 @@ void TextEditUiNode::onLostFocus() {
     TextUiNode::onLostFocus();
 
     optionalCursorOffset = {};
+    optionalSelection = {};
     bIsTextSelectionStarted = false;
 }
 

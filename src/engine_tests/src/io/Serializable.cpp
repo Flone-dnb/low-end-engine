@@ -161,7 +161,9 @@ public:
                 }};
 
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(ReflectedVariables) == 896, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
+#elif defined(DEBUG)
+        static_assert(sizeof(ReflectedVariables) == 784, "add new variables here");
 #endif
 
         return TypeReflectionInfo(
@@ -293,15 +295,15 @@ TEST_CASE("serialize and deserialize a sample type") {
     REQUIRE(pDeserialized->vVectorStrings == pToSerialize->vVectorStrings);
     REQUIRE(pDeserialized->vVectorVec3s.size() == pToSerialize->vVectorVec3s.size());
     for (size_t i = 0; i < pDeserialized->vVectorVec3s.size(); i++) {
-        REQUIRE(
-            glm::all(
-                glm::epsilonEqual(
-                    pDeserialized->vVectorVec3s[i], pToSerialize->vVectorVec3s[i], floatEpsilon)));
+        REQUIRE(glm::all(
+            glm::epsilonEqual(pDeserialized->vVectorVec3s[i], pToSerialize->vVectorVec3s[i], floatEpsilon)));
     }
     REQUIRE(pDeserialized->meshGeometry == pToSerialize->meshGeometry);
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(ReflectedVariables) == 896, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
+#elif defined(DEBUG)
+    static_assert(sizeof(ReflectedVariables) == 784, "add new variables here");
 #endif
 
     pDeserialized = nullptr;
