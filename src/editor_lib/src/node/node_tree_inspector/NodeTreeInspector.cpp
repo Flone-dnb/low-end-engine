@@ -8,7 +8,7 @@
 #include "misc/ReflectedTypeDatabase.h"
 #include "node/menu/SelectNodeTypeMenu.h"
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "EditorGameInstance.h"
 #include "node/menu/SetNameMenu.h"
 #include "game/node/Sound2dNode.h"
@@ -21,16 +21,16 @@
 NodeTreeInspector::NodeTreeInspector() : NodeTreeInspector("Node Tree Inspector") {}
 NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setColor(glm::vec4(0.0F));
-    setPadding(EditorColorTheme::getPadding() / 2.0F);
+    setPadding(EditorTheme::getPadding() / 2.0F);
 
     const auto pBackground = addChildNode(std::make_unique<RectUiNode>());
-    pBackground->setColor(EditorColorTheme::getContainerBackgroundColor());
+    pBackground->setColor(EditorTheme::getContainerBackgroundColor());
 
     pLayoutNode = pBackground->addChildNode(std::make_unique<LayoutUiNode>("Node Tree Inspector Layout"));
     pLayoutNode->setIsScrollBarEnabled(true);
     pLayoutNode->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
-    pLayoutNode->setPadding(EditorColorTheme::getPadding());
-    pLayoutNode->setChildNodeSpacing(EditorColorTheme::getSpacing());
+    pLayoutNode->setPadding(EditorTheme::getPadding());
+    pLayoutNode->setChildNodeSpacing(EditorTheme::getSpacing());
 }
 
 void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
@@ -147,10 +147,10 @@ void NodeTreeInspector::inspectGameNode(NodeTreeInspectorItem* pItem) {
         ->setNodeToInspect(pItem->getDisplayedGameNode());
 
     if (pInspectedItem != nullptr) {
-        pInspectedItem->setColor(EditorColorTheme::getButtonColor());
+        pInspectedItem->setColor(EditorTheme::getButtonColor());
     }
     pInspectedItem = pItem;
-    pInspectedItem->setColor(EditorColorTheme::getSelectedItemColor());
+    pInspectedItem->setColor(EditorTheme::getSelectedItemColor());
 }
 
 void NodeTreeInspector::addChildNodeToNodeTree(

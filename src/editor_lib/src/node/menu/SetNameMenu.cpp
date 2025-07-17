@@ -1,7 +1,7 @@
 #include "node/menu/SetNameMenu.h"
 
 // Custom.
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "game/GameInstance.h"
 #include "game/camera/CameraManager.h"
 #include "game/World.h"
@@ -12,26 +12,26 @@ SetNameMenu::SetNameMenu() : SetNameMenu("Set Name Menu Node") {}
 SetNameMenu::SetNameMenu(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setIsReceivingInput(true);
     setUiLayer(UiLayer::LAYER2);
-    setPadding(EditorColorTheme::getPadding());
-    setColor(EditorColorTheme::getContainerBackgroundColor());
-    setSize(glm::vec2(0.15F, EditorColorTheme::getTextHeight() * 3.0F));
+    setPadding(EditorTheme::getPadding());
+    setColor(EditorTheme::getContainerBackgroundColor());
+    setSize(glm::vec2(0.15F, EditorTheme::getTextHeight() * 3.0F));
     setModal();
 
     const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
     pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
-    pLayout->setPadding(EditorColorTheme::getPadding());
-    pLayout->setChildNodeSpacing(EditorColorTheme::getSpacing());
+    pLayout->setPadding(EditorTheme::getPadding());
+    pLayout->setChildNodeSpacing(EditorTheme::getSpacing());
     {
         const auto pTitle = pLayout->addChildNode(std::make_unique<TextUiNode>());
-        pTitle->setTextHeight(EditorColorTheme::getTextHeight());
+        pTitle->setTextHeight(EditorTheme::getTextHeight());
         pTitle->setText(u"New name:");
 
         const auto pTextEditBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
-        pTextEditBackground->setColor(EditorColorTheme::getButtonColor());
-        pTextEditBackground->setSize(glm::vec2(1.0F, EditorColorTheme::getBigTextHeight()));
+        pTextEditBackground->setColor(EditorTheme::getButtonColor());
+        pTextEditBackground->setSize(glm::vec2(1.0F, EditorTheme::getBigTextHeight()));
         {
             pTextEditNode = pTextEditBackground->addChildNode(std::make_unique<TextEditUiNode>());
-            pTextEditNode->setTextHeight(EditorColorTheme::getTextHeight());
+            pTextEditNode->setTextHeight(EditorTheme::getTextHeight());
             pTextEditNode->setText(u"");
             pTextEditNode->setHandleNewLineChars(false);
             pTextEditNode->setOnEnterPressed([this](std::u16string_view sText) {

@@ -3,15 +3,15 @@
 // Custom.
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/TextUiNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 
 // External.
 #include "utf/utf.hpp"
 
 LogViewNode::LogViewNode() : LogViewNode("Log View Node") {}
 LogViewNode::LogViewNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
-    setPadding(EditorColorTheme::getPadding());
-    setColor(EditorColorTheme::getEditorBackgroundColor());
+    setPadding(EditorTheme::getPadding());
+    setColor(EditorTheme::getEditorBackgroundColor());
 
     pLayout = addChildNode(std::make_unique<LayoutUiNode>("Log View Layout"));
     pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
@@ -21,7 +21,7 @@ LogViewNode::LogViewNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
     pLoggerCallback =
         Logger::get().setCallback([this](LogMessageCategory category, const std::string& sMessage) {
             const auto pTextNode = pLayout->addChildNode(std::make_unique<TextUiNode>("Log View Message"));
-            pTextNode->setTextHeight(EditorColorTheme::getSmallTextHeight());
+            pTextNode->setTextHeight(EditorTheme::getSmallTextHeight());
             pTextNode->setText(utf::as_u16(sMessage));
 
             if (category == LogMessageCategory::ERROR) {

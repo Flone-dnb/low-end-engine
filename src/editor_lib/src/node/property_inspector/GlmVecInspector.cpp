@@ -4,7 +4,7 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "misc/ReflectedTypeDatabase.h"
 
 // External.
@@ -106,38 +106,38 @@ GlmVecInspector::GlmVecInspector(
       componentCount(componentCount) {
     const glm::vec4 currentValue = getCurrentValue(pObject, sVariableName, componentCount);
 
-    setChildNodeSpacing(EditorColorTheme::getTypePropertyNameValueSpacing());
+    setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
     setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     setSize(glm::vec2(getSize().x, 0.05F));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
-        pTitle->setTextHeight(EditorColorTheme::getTextHeight());
-        pTitle->setText(utf::as_u16(EditorColorTheme::formatVariableName(sVariableName)));
+        pTitle->setTextHeight(EditorTheme::getTextHeight());
+        pTitle->setText(utf::as_u16(EditorTheme::formatVariableName(sVariableName)));
 
         const auto pHorizontalLayout = addChildNode(std::make_unique<LayoutUiNode>());
         pHorizontalLayout->setIsHorizontal(true);
-        pHorizontalLayout->setChildNodeSpacing(EditorColorTheme::getSpacing() * 10.0F);
+        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 10.0F);
         pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_MAIN_AXIS);
         {
             auto pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-            pBackground->setPadding(EditorColorTheme::getPadding());
-            pBackground->setColor(EditorColorTheme::getButtonColor());
+            pBackground->setPadding(EditorTheme::getPadding());
+            pBackground->setColor(EditorTheme::getButtonColor());
             {
                 const auto pComponentXEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                pComponentXEdit->setTextHeight(EditorColorTheme::getSmallTextHeight());
-                pComponentXEdit->setText(utf::as_u16(EditorColorTheme::floatToString(currentValue.x)));
+                pComponentXEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                pComponentXEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.x)));
                 pComponentXEdit->setOnTextChanged([this, pComponentXEdit](std::u16string_view sNewText) {
                     onValueChanged(pComponentXEdit, VectorComponent::X, sNewText);
                 });
             }
 
             pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-            pBackground->setPadding(EditorColorTheme::getPadding());
-            pBackground->setColor(EditorColorTheme::getButtonColor());
+            pBackground->setPadding(EditorTheme::getPadding());
+            pBackground->setColor(EditorTheme::getButtonColor());
             {
                 const auto pComponentYEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                pComponentYEdit->setTextHeight(EditorColorTheme::getSmallTextHeight());
-                pComponentYEdit->setText(utf::as_u16(EditorColorTheme::floatToString(currentValue.y)));
+                pComponentYEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                pComponentYEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.y)));
                 pComponentYEdit->setOnTextChanged([this, pComponentYEdit](std::u16string_view sNewText) {
                     onValueChanged(pComponentYEdit, VectorComponent::Y, sNewText);
                 });
@@ -146,13 +146,13 @@ GlmVecInspector::GlmVecInspector(
             if (componentCount == GlmVecComponentCount::VEC3 ||
                 componentCount == GlmVecComponentCount::VEC4) {
                 pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-                pBackground->setPadding(EditorColorTheme::getPadding());
-                pBackground->setColor(EditorColorTheme::getButtonColor());
+                pBackground->setPadding(EditorTheme::getPadding());
+                pBackground->setColor(EditorTheme::getButtonColor());
                 {
                     const auto pComponentZEdit =
                         pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                    pComponentZEdit->setTextHeight(EditorColorTheme::getSmallTextHeight());
-                    pComponentZEdit->setText(utf::as_u16(EditorColorTheme::floatToString(currentValue.z)));
+                    pComponentZEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                    pComponentZEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.z)));
                     pComponentZEdit->setOnTextChanged([this, pComponentZEdit](std::u16string_view sNewText) {
                         onValueChanged(pComponentZEdit, VectorComponent::Z, sNewText);
                     });
@@ -161,13 +161,13 @@ GlmVecInspector::GlmVecInspector(
 
             if (componentCount == GlmVecComponentCount::VEC4) {
                 pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-                pBackground->setPadding(EditorColorTheme::getPadding());
-                pBackground->setColor(EditorColorTheme::getButtonColor());
+                pBackground->setPadding(EditorTheme::getPadding());
+                pBackground->setColor(EditorTheme::getButtonColor());
                 {
                     const auto pComponentWEdit =
                         pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                    pComponentWEdit->setTextHeight(EditorColorTheme::getSmallTextHeight());
-                    pComponentWEdit->setText(utf::as_u16(EditorColorTheme::floatToString(currentValue.w)));
+                    pComponentWEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                    pComponentWEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.w)));
                     pComponentWEdit->setOnTextChanged([this, pComponentWEdit](std::u16string_view sNewText) {
                         onValueChanged(pComponentWEdit, VectorComponent::W, sNewText);
                     });
@@ -221,5 +221,5 @@ void GlmVecInspector::onValueChanged(
     setNewValue(value, pObject, sVariableName, componentCount);
 
     // Display updated value.
-    pTextEdit->setText(utf::as_u16(EditorColorTheme::floatToString(newComponentValue)));
+    pTextEdit->setText(utf::as_u16(EditorTheme::floatToString(newComponentValue)));
 }

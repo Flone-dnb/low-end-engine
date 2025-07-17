@@ -4,7 +4,7 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/ButtonUiNode.h"
 #include "game/node/ui/TextUiNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "game/GameInstance.h"
 #include "game/World.h"
 #include "game/camera/CameraManager.h"
@@ -17,8 +17,8 @@ ContextMenuNode::ContextMenuNode(const std::string& sNodeName) : RectUiNode(sNod
     setIsReceivingInput(true); // for onMouseLeft to work
     setIsVisible(false);
     setUiLayer(UiLayer::LAYER2);
-    setPadding(EditorColorTheme::getPadding());
-    setColor(EditorColorTheme::getContainerBackgroundColor());
+    setPadding(EditorTheme::getPadding());
+    setColor(EditorTheme::getContainerBackgroundColor());
     setModal();
 
     pButtonsLayout = addChildNode(std::make_unique<LayoutUiNode>());
@@ -66,10 +66,10 @@ void ContextMenuNode::openMenu(
 
     if (!sTitle.empty()) {
         auto pText = std::make_unique<TextUiNode>();
-        pText->setTextHeight(EditorColorTheme::getTextHeight());
+        pText->setTextHeight(EditorTheme::getTextHeight());
         pText->setText(sTitle);
 
-        totalSizeY += EditorColorTheme::getTextHeight();
+        totalSizeY += EditorTheme::getTextHeight();
 
         pButtonsLayout->addChildNode(std::move(pText));
     }
@@ -77,11 +77,11 @@ void ContextMenuNode::openMenu(
     for (const auto& [sName, callback] : vMenuItems) {
         auto pButton =
             std::make_unique<ButtonUiNode>(std::format("Context menu option \"{}\"", utf::as_str8(sName)));
-        pButton->setSize(glm::vec2(pButton->getSize().x, EditorColorTheme::getButtonSizeY()));
-        pButton->setPadding(EditorColorTheme::getPadding());
-        pButton->setColor(EditorColorTheme::getButtonColor());
-        pButton->setColorWhileHovered(EditorColorTheme::getButtonHoverColor());
-        pButton->setColorWhilePressed(EditorColorTheme::getButtonPressedColor());
+        pButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
+        pButton->setPadding(EditorTheme::getPadding());
+        pButton->setColor(EditorTheme::getButtonColor());
+        pButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
+        pButton->setColorWhilePressed(EditorTheme::getButtonPressedColor());
         pButton->setOnClicked([this, callback]() {
             bIsProcessingButtonClick = true;
             callback();
@@ -91,7 +91,7 @@ void ContextMenuNode::openMenu(
         {
             const auto pText = pButton->addChildNode(std::make_unique<TextUiNode>());
             pText->setText(sName);
-            pText->setTextHeight(EditorColorTheme::getTextHeight());
+            pText->setTextHeight(EditorTheme::getTextHeight());
         }
 
         totalSizeY += pButton->getSize().y;

@@ -5,7 +5,7 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "node/property_inspector/GlmVecInspector.h"
 
 // External.
@@ -13,13 +13,13 @@
 
 PropertyInspector::PropertyInspector() : PropertyInspector("Property Inspector") {}
 PropertyInspector::PropertyInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
-    setColor(EditorColorTheme::getEditorBackgroundColor());
+    setColor(EditorTheme::getEditorBackgroundColor());
 
     pPropertyLayout = addChildNode(std::make_unique<LayoutUiNode>());
-    pPropertyLayout->setPadding(EditorColorTheme::getPadding());
+    pPropertyLayout->setPadding(EditorTheme::getPadding());
     pPropertyLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     pPropertyLayout->setIsScrollBarEnabled(true);
-    pPropertyLayout->setChildNodeSpacing(EditorColorTheme::getSpacing() * 2.0F);
+    pPropertyLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
 }
 
 void PropertyInspector::setNodeToInspect(Node* pNode) {
@@ -43,25 +43,25 @@ void PropertyInspector::setNodeToInspect(Node* pNode) {
 
 void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTypeGuid, Node* pObject) {
     const auto pGroupBackground = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
-    pGroupBackground->setPadding(EditorColorTheme::getPadding() / 2.0F);
-    pGroupBackground->setColor(EditorColorTheme::getContainerBackgroundColor());
+    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+    pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
 
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
 
     const auto pTypeVariablesLayout =
         pGroupBackground->addChildNode(std::make_unique<LayoutUiNode>("type group"));
-    pTypeVariablesLayout->setChildNodeSpacing(EditorColorTheme::getSpacing());
+    pTypeVariablesLayout->setChildNodeSpacing(EditorTheme::getSpacing());
     pTypeVariablesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     {
         const auto pGroupTitle = pTypeVariablesLayout->addChildNode(std::make_unique<TextUiNode>());
-        pGroupTitle->setTextHeight(EditorColorTheme::getSmallTextHeight());
+        pGroupTitle->setTextHeight(EditorTheme::getSmallTextHeight());
         pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.4F));
         pGroupTitle->setText(utf::as_u16(typeInfo.sTypeName));
         pGroupTitle->setTextColor(glm::vec4(glm::vec3(pGroupTitle->getTextColor()), 0.5F));
 
         const auto pTypePropertiesLayout =
             pTypeVariablesLayout->addChildNode(std::make_unique<LayoutUiNode>());
-        pTypePropertiesLayout->setChildNodeSpacing(EditorColorTheme::getTypePropertySpacing());
+        pTypePropertiesLayout->setChildNodeSpacing(EditorTheme::getTypePropertySpacing());
         pTypePropertiesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
 
 #define CONTINUE_IF_PARENT_VAR(array)                                                                        \

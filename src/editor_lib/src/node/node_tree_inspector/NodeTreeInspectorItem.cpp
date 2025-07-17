@@ -4,7 +4,7 @@
 #include "node/node_tree_inspector/NodeTreeInspector.h"
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "EditorGameInstance.h"
 
 // External.
@@ -12,14 +12,14 @@
 
 NodeTreeInspectorItem::NodeTreeInspectorItem() : NodeTreeInspectorItem("Node Tree Inspector Item") {}
 NodeTreeInspectorItem::NodeTreeInspectorItem(const std::string& sNodeName) : ButtonUiNode(sNodeName) {
-    setSize(glm::vec2(getSize().x, EditorColorTheme::getButtonSizeY()));
-    setPadding(EditorColorTheme::getPadding());
-    setColor(EditorColorTheme::getButtonColor());
-    setColorWhileHovered(EditorColorTheme::getButtonHoverColor());
-    setColorWhilePressed(EditorColorTheme::getButtonPressedColor());
+    setSize(glm::vec2(getSize().x, EditorTheme::getButtonSizeY()));
+    setPadding(EditorTheme::getPadding());
+    setColor(EditorTheme::getButtonColor());
+    setColorWhileHovered(EditorTheme::getButtonHoverColor());
+    setColorWhilePressed(EditorTheme::getButtonPressedColor());
 
     pTextNode = addChildNode(std::make_unique<TextUiNode>());
-    pTextNode->setTextHeight(EditorColorTheme::getTextHeight());
+    pTextNode->setTextHeight(EditorTheme::getTextHeight());
 }
 
 void NodeTreeInspectorItem::setNodeToDisplay(Node* pNode) {

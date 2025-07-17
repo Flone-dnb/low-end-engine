@@ -20,7 +20,7 @@
 #include "node/property_inspector/PropertyInspector.h"
 #include "node/LogViewNode.h"
 #include "node/menu/ContextMenuNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 
 #if defined(GAME_LIB_INCLUDED)
 #include "MyGameInstance.h"
@@ -245,10 +245,10 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     {
         // Left panel: node tree and content browser.
         const auto pLeftRect = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-        pLeftRect->setColor(EditorColorTheme::getEditorBackgroundColor());
+        pLeftRect->setColor(EditorTheme::getEditorBackgroundColor());
         {
             const auto pLayout = pLeftRect->addChildNode(std::make_unique<LayoutUiNode>());
-            pLayout->setPadding(EditorColorTheme::getPadding() / 2.0F);
+            pLayout->setPadding(EditorTheme::getPadding() / 2.0F);
             pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
             {
                 editorWorldNodes.pNodeTreeInspector =
@@ -256,7 +256,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
                 editorWorldNodes.pNodeTreeInspector->setExpandPortionInLayout(3);
 
                 const auto pContentBrowser = pLayout->addChildNode(std::make_unique<RectUiNode>());
-                pContentBrowser->setColor(EditorColorTheme::getContainerBackgroundColor());
+                pContentBrowser->setColor(EditorTheme::getContainerBackgroundColor());
                 pContentBrowser->setExpandPortionInLayout(2);
             }
         }

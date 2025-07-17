@@ -20,8 +20,8 @@ include(${RELATIVE_CMAKE_HELPERS_PATH}/utils.cmake)
 set(PROJECT_SOURCES
     src/EditorGameInstance.h
     src/EditorGameInstance.cpp
-    src/EditorColorTheme.h
-    src/EditorColorTheme.cpp
+    src/EditorTheme.h
+    src/EditorTheme.cpp
     src/input/EditorInputEventIds.hpp
     src/node/EditorCameraNode.h
     src/node/EditorCameraNode.cpp

@@ -6,8 +6,8 @@
 // Custom.
 #include "math/GLMath.hpp"
 
-/** Provides colors to use for UI nodes. */
-class EditorColorTheme {
+/** Determines color and design of the editor's UI. */
+class EditorTheme {
 public:
     /**
      * Text height for default text.

@@ -7,7 +7,7 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/ButtonUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
-#include "EditorColorTheme.h"
+#include "EditorTheme.h"
 #include "misc/ReflectedTypeDatabase.h"
 
 // External.
@@ -16,21 +16,21 @@
 SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pParent) : RectUiNode(sNodeName) {
     setIsReceivingInput(true); // for onMouseLeft to work
     setUiLayer(UiLayer::LAYER2);
-    setPadding(EditorColorTheme::getPadding());
-    setColor(EditorColorTheme::getEditorBackgroundColor());
+    setPadding(EditorTheme::getPadding());
+    setColor(EditorTheme::getEditorBackgroundColor());
     setSize(glm::vec2(0.15F, 0.4F));
 
     const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
     pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-    pLayout->setPadding(EditorColorTheme::getPadding());
-    pLayout->setChildNodeSpacing(EditorColorTheme::getSpacing() * 2.0F);
+    pLayout->setPadding(EditorTheme::getPadding());
+    pLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
     {
         const auto pSearchBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
-        pSearchBackground->setPadding(EditorColorTheme::getPadding() * 2.0F);
-        pSearchBackground->setColor(EditorColorTheme::getContainerBackgroundColor());
+        pSearchBackground->setPadding(EditorTheme::getPadding() * 2.0F);
+        pSearchBackground->setColor(EditorTheme::getContainerBackgroundColor());
         {
             pSearchTextEdit = pSearchBackground->addChildNode(std::make_unique<TextEditUiNode>());
-            pSearchTextEdit->setTextHeight(EditorColorTheme::getTextHeight());
+            pSearchTextEdit->setTextHeight(EditorTheme::getTextHeight());
             pSearchTextEdit->setText(u"");
             pSearchTextEdit->setHandleNewLineChars(false);
         }
@@ -108,11 +108,11 @@ void SelectNodeTypeMenu::addTypesForGuidRecursive(
         onTypeSelected(std::string(pButton->getNodeName()));
         unsafeDetachFromParentAndDespawn(true);
     });
-    pButton->setSize(glm::vec2(pButton->getSize().x, EditorColorTheme::getButtonSizeY()));
-    pButton->setPadding(EditorColorTheme::getPadding());
-    pButton->setColor(EditorColorTheme::getButtonColor());
-    pButton->setColorWhileHovered(EditorColorTheme::getButtonHoverColor());
-    pButton->setColorWhilePressed(EditorColorTheme::getButtonPressedColor());
+    pButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
+    pButton->setPadding(EditorTheme::getPadding());
+    pButton->setColor(EditorTheme::getButtonColor());
+    pButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
+    pButton->setColorWhilePressed(EditorTheme::getButtonPressedColor());
     {
         const auto pText = pButton->addChildNode(
             std::make_unique<TextUiNode>(std::format("select type option \"{}\"", typeInfo.sTypeName)));
@@ -125,7 +125,7 @@ void SelectNodeTypeMenu::addTypesForGuidRecursive(
         sText += typeInfo.sTypeName;
 
         pText->setText(utf::as_u16(sText));
-        pText->setTextHeight(EditorColorTheme::getTextHeight());
+        pText->setTextHeight(EditorTheme::getTextHeight());
     }
 
     // Find all types that derive from this GUID.
