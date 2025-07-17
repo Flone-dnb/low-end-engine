@@ -153,6 +153,20 @@ protected:
     /** Called after this object was finished deserializing from file. */
     virtual void onAfterDeserialized() override;
 
+    /**
+     * Called when this node was not spawned previously and it was either attached to a parent node
+     * that is spawned or set as world's root node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This node will be marked as spawned before this function is called.
+     * @remark @ref getSpawnDespawnMutex is locked while this function is called.
+     * @remark This function is called before any of the child nodes are spawned. If you
+     * need to do some logic after child nodes are spawned use @ref onChildNodesSpawned.
+     */
+    virtual void onSpawning() override;
+
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() override;
 
@@ -236,7 +250,7 @@ private:
     std::pair<std::recursive_mutex, LayoutUiNode*> mtxLayoutParent;
 
     /** Color of the scroll bar. */
-    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F); // NOLINT
+    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F);
 
     /** Offset of the scroll bar in lines of text. */
     size_t iCurrentScrollOffset = 0;

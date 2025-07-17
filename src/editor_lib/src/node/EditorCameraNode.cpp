@@ -25,11 +25,11 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
         // Move right.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.x = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.x = input; };
 
         // Move forward.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.y = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.y = input; };
 
         // Gamepad move right.
         mtxAxisEvents
@@ -43,7 +43,7 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
         // Move up.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP)] =
-            [this](KeyboardModifiers modifiers, float input) { lastInputDirection.z = input; };
+            [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.z = input; };
 
         // Gamepad look right.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT)] =
@@ -88,16 +88,40 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
     }
 }
 
-void EditorCameraNode::setIgnoreInput(bool bIgnore) {
-    setIsReceivingInput(!bIgnore);
+void EditorCameraNode::setIsMouseCaptured(bool bCaptured) {
+    bIsMouseCaptured = bCaptured;
 
-    if (bIgnore) {
-        // Reset any previous input (for ex. if the user was holding some button).
-        lastInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
-        lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
-        lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
-        currentMovementSpeedMultiplier = 1.0F;
+    if (!bCaptured && !bIsGamepadConnected) {
+        setIsReceivingInput(false);
     }
+
+    lastKeyboardInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    currentMovementSpeedMultiplier = 1.0F;
+
+    if (!bCaptured) {
+        return;
+    }
+
+    setIsReceivingInput(true);
+}
+
+void EditorCameraNode::onGamepadConnected() {
+    setIsReceivingInput(true);
+    bIsGamepadConnected = true;
+
+    lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
+}
+
+void EditorCameraNode::onGamepadDisconnected() {
+    lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
+
+    if (!bIsMouseCaptured) {
+        setIsReceivingInput(false);
+    }
+
+    bIsGamepadConnected = false;
 }
 
 void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
@@ -113,12 +137,14 @@ void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
     // Check for early exit and make sure input direction is not zero to avoid NaNs during `normalize` below.
     glm::vec3 movementDirection = glm::vec3(0.0F, 0.0F, 0.0F);
-    if (!glm::all(glm::epsilonEqual(lastInputDirection, glm::vec3(0.0F, 0.0F, 0.0F), inputEpsilon))) {
+    if (bIsMouseCaptured &&
+        !glm::all(glm::epsilonEqual(lastKeyboardInputDirection, glm::vec3(0.0F, 0.0F, 0.0F), inputEpsilon))) {
         // Normalize direction to avoid speed up on diagonal movement and apply speed.
-        movementDirection = glm::normalize(lastInputDirection) * timeSincePrevFrameInSec * movementSpeed *
-                            currentMovementSpeedMultiplier;
-    } else if (!glm::all(
-                   glm::epsilonEqual(lastGamepadInputDirection, glm::vec3(0.0F, 0.0F, 0.0F), inputEpsilon))) {
+        movementDirection = glm::normalize(lastKeyboardInputDirection) * timeSincePrevFrameInSec *
+                            movementSpeed * currentMovementSpeedMultiplier;
+    } else if (
+        bIsGamepadConnected &&
+        !glm::all(glm::epsilonEqual(lastGamepadInputDirection, glm::vec3(0.0F, 0.0F, 0.0F), inputEpsilon))) {
         movementDirection = lastGamepadInputDirection * timeSincePrevFrameInSec * movementSpeed *
                             currentMovementSpeedMultiplier;
     } else {
@@ -140,7 +166,7 @@ void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 void EditorCameraNode::onMouseMove(double xOffset, double yOffset) {
     CameraNode::onMouseMove(xOffset, yOffset);
 
-    if (!isReceivingInput()) {
+    if (!isReceivingInput() || !bIsMouseCaptured) {
         return;
     }
 

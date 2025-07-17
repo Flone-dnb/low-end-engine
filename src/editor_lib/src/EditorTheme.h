@@ -99,11 +99,18 @@ public:
     static float getTypePropertyNameValueSpacing();
 
     /**
-     * Returns spacing for property inspector.
+     * Returns spacing between type's properties.
      *
      * @return Spacing.
      */
     static float getTypePropertySpacing();
+
+    /**
+     * Returns spacing between groups of properties (1 group per node type).
+     *
+     * @return Spacing.
+     */
+    static float getTypePropertyGroupSpacing();
 
     /**
      * Default color for buttons.

@@ -1,5 +1,8 @@
 #include "game/node/ui/LayoutUiNode.h"
 
+// Custom.
+#include "game/node/ui/RectUiNode.h"
+
 // External.
 #include "nameof.hpp"
 
@@ -79,6 +82,7 @@ LayoutUiNode::LayoutUiNode() : LayoutUiNode("Layout UI Node") {}
 LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     mtxLayoutParent.second = nullptr;
     setIsReceivingInput(bIsScrollBarEnabled);
+    setSize(glm::vec2(getSize().x, 0.1F)); // set small size so that it will be expanded if needed later
 }
 
 void LayoutUiNode::onAfterPositionChanged() {
@@ -159,6 +163,12 @@ void LayoutUiNode::onAfterDeserialized() {
     setIsReceivingInput(bIsScrollBarEnabled);
 }
 
+void LayoutUiNode::onSpawning() {
+    UiNode::onSpawning();
+
+    recalculatePosAndSizeForDirectChildNodes();
+}
+
 void LayoutUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
@@ -206,6 +216,10 @@ void LayoutUiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
 void LayoutUiNode::onDirectChildNodeVisibilityChanged() { recalculatePosAndSizeForDirectChildNodes(); }
 
 void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
+    if (!isSpawned()) {
+        return;
+    }
+
     const auto mtxChildNodes = getChildNodes();
     std::scoped_lock childGuard(*mtxChildNodes.first);
 
@@ -246,15 +260,15 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             return;
         }
 
-        const auto layoutOldSize = getSize();
+        const auto layoutSize = getSize();
         const auto layoutPos = getPosition();
         glm::vec2 currentChildPos = getPosition();
 
         // Consider padding.
-        const auto screenPadding = std::min(layoutOldSize.x, layoutOldSize.y) * padding;
+        const auto screenPadding = std::min(layoutSize.x, layoutSize.y) * padding;
         currentChildPos += screenPadding;
-        const auto sizeForChildNodes = glm::vec2(layoutOldSize - 2.0F * screenPadding);
-        float visibleSizeForChildNodesLeft = bIsHorizontal ? sizeForChildNodes.x : sizeForChildNodes.y;
+        const auto sizeForChildNodes = glm::vec2(layoutSize - 2.0F * screenPadding);
+        float sizeOnMainAxisToDisplayAllChildNodes = 2.0F * screenPadding;
 
         // Check scroll bar.
         if (bIsScrollBarEnabled && bIsHorizontal) [[unlikely]] {
@@ -270,7 +284,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         float yOffsetForScrollToSkip = 0.0F;
         if (bIsScrollBarEnabled) {
             yOffsetForScrollToSkip -=
-                (scrollBarStepLocal * layoutOldSize.y) * static_cast<float>(iCurrentScrollOffset);
+                (scrollBarStepLocal * layoutSize.y) * static_cast<float>(iCurrentScrollOffset);
         }
         totalScrollHeight = 0.0F;
 
@@ -283,6 +297,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         const auto spacerActualPortion = childExpandRule == ChildNodeExpandRule::DONT_EXPAND
                                              ? childNodeSpacing
                                              : spacerPortion / expandPortionSum;
+        const auto spacerSizeOnMainAxis = spacerActualPortion * sizeForChildNodes.x;
 
         // Update position and size for all direct child nodes.
         for (const auto& pChildNode : mtxChildNodes.second) {
@@ -304,18 +319,6 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             // Calculate child size.
             switch (childExpandRule) {
             case (ChildNodeExpandRule::DONT_EXPAND): {
-                if (visibleSizeForChildNodesLeft <= 0.0F) {
-                    pUiChild->setAllowRendering(false);
-                    continue;
-                } else {
-                    if (bIsHorizontal) {
-                        childNewSize.x = std::min(childNewSize.x, visibleSizeForChildNodesLeft);
-                        childNewSize.y = std::min(childNewSize.y, sizeForChildNodes.y);
-                    } else {
-                        childNewSize.y = std::min(childNewSize.y, visibleSizeForChildNodesLeft);
-                        childNewSize.x = std::min(childNewSize.x, sizeForChildNodes.x);
-                    }
-                }
                 break;
             }
             case (ChildNodeExpandRule::EXPAND_ALONG_MAIN_AXIS): {
@@ -333,9 +336,6 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                     childNewSize = glm::vec2(childNewSize.x, sizeForChildNodes.y);
                 } else {
                     childNewSize = glm::vec2(sizeForChildNodes.x, childNewSize.y);
-                    if (!bIsScrollBarEnabled) {
-                        childNewSize.y = std::min(childNewSize.y, visibleSizeForChildNodesLeft);
-                    }
                 }
                 break;
             }
@@ -356,17 +356,17 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
 
             float lastChildSize = 0.0F;
             if (bIsHorizontal) {
-                lastChildSize = childNewSize.x + spacerActualPortion * sizeForChildNodes.x;
+                lastChildSize = childNewSize.x + spacerSizeOnMainAxis;
             } else {
-                lastChildSize = childNewSize.y + spacerActualPortion * sizeForChildNodes.y;
+                lastChildSize = childNewSize.y + spacerSizeOnMainAxis;
             }
 
+            sizeOnMainAxisToDisplayAllChildNodes += lastChildSize;
             totalScrollHeight += lastChildSize;
-            visibleSizeForChildNodesLeft -= lastChildSize;
 
             if (bIsScrollBarEnabled) {
                 if (yOffsetForScrollToSkip + lastChildSize < 0.0F ||
-                    currentChildPos.y + childNewSize.y > layoutPos.y + layoutOldSize.y) {
+                    currentChildPos.y + childNewSize.y > layoutPos.y + layoutSize.y) {
                     //  Partially outside of the visible area - don't render (TODO: for now).
                     yOffsetForScrollToSkip += lastChildSize;
                     pUiChild->setAllowRendering(false);
@@ -388,13 +388,33 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
 
         if (!mtxChildNodes.second.empty() && !bIsHorizontal) {
             // Remove last spacer.
-            totalScrollHeight -= spacerActualPortion * sizeForChildNodes.y;
+            if (!bIsHorizontal) {
+                totalScrollHeight -= spacerSizeOnMainAxis;
+            }
+            sizeOnMainAxisToDisplayAllChildNodes -= spacerSizeOnMainAxis;
+        }
+        totalScrollHeight /= layoutSize.y;
+
+        bool bExpanded = false;
+        if (!bIsScrollBarEnabled && (childExpandRule == ChildNodeExpandRule::DONT_EXPAND ||
+                                     childExpandRule == ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS)) {
+            if (bIsHorizontal && sizeOnMainAxisToDisplayAllChildNodes > layoutSize.x) {
+                setSize(glm::vec2(sizeOnMainAxisToDisplayAllChildNodes, layoutSize.y));
+                bExpanded = true;
+            } else if (!bIsHorizontal && sizeOnMainAxisToDisplayAllChildNodes > layoutSize.y) {
+                setSize(glm::vec2(layoutSize.x, sizeOnMainAxisToDisplayAllChildNodes));
+                bExpanded = true;
+            }
         }
 
-        totalScrollHeight /= layoutOldSize.y;
-
-        // Notify parent layout.
-        std::scoped_lock guard(mtxLayoutParent.first);
+        // Notify parent.
+        const auto mtxParent = getParentNode();
+        std::scoped_lock layoutGuard(mtxLayoutParent.first, *mtxParent.first);
+        if (bExpanded) {
+            if (auto pRect = dynamic_cast<RectUiNode*>(mtxParent.second)) {
+                pRect->onChildLayoutExpanded(getSize());
+            }
+        }
         if (mtxLayoutParent.second != nullptr) {
             mtxLayoutParent.second->recalculatePosAndSizeForDirectChildNodes();
         }

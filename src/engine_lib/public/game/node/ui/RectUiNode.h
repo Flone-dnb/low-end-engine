@@ -13,6 +13,9 @@ class RectUiNode : public UiNode {
     // Needs access to texture handle.
     friend class UiNodeManager;
 
+    // Child layout can notify if it expanded.
+    friend class LayoutUiNode;
+
 public:
     RectUiNode();
 
@@ -146,6 +149,13 @@ protected:
 private:
     /** Updates position and size of the child node to the current position and size of the node. */
     void updateChildNodePosAndSize();
+
+    /**
+     * Called by a direct child layout node if it expanded.
+     *
+     * @param layoutNewSize New size of the layout.
+     */
+    void onChildLayoutExpanded(const glm::vec2& layoutNewSize);
 
     /** Not `nullptr` if texture from @ref sPathToTextureRelativeRes is loaded. */
     std::unique_ptr<TextureHandle> pTexture;

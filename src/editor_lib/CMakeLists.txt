@@ -33,6 +33,8 @@ set(PROJECT_SOURCES
     src/node/property_inspector/PropertyInspector.cpp
     src/node/property_inspector/GlmVecInspector.h
     src/node/property_inspector/GlmVecInspector.cpp
+    src/node/property_inspector/StringInspector.h
+    src/node/property_inspector/StringInspector.cpp
     src/node/menu/ContextMenuNode.h
     src/node/menu/ContextMenuNode.cpp
     src/node/menu/SelectNodeTypeMenu.h

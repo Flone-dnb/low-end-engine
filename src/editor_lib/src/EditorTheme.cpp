@@ -35,11 +35,19 @@ std::string EditorTheme::formatVariableName(const std::string& sName) {
     std::string sOutputName;
     sOutputName.reserve(sName.size());
 
-    sOutputName += static_cast<char>(std::toupper(static_cast<unsigned char>(sName[0])));
-    for (size_t i = 1; i < sName.size(); i++) {
+    size_t iStartPos = 1;
+
+    if (sName.size() > 2 && std::islower(sName[0]) && std::isupper(sName[1])) {
+        // The name probably starts with a prefix such as "sText".
+        sOutputName = sName[1];
+        iStartPos = 2;
+    } else {
+        sOutputName += static_cast<char>(std::toupper(sName[0]));
+    }
+    for (size_t i = iStartPos; i < sName.size(); i++) {
         if (std::isupper(sName[i])) {
             sOutputName += ' ';
-            sOutputName += static_cast<char>(std::tolower(static_cast<unsigned char>(sName[i])));
+            sOutputName += static_cast<char>(std::tolower(sName[i]));
             continue;
         }
         sOutputName += sName[i];
@@ -58,11 +66,13 @@ float EditorTheme::getButtonSizeY() { return 0.025F; }
 
 float EditorTheme::getPadding() { return 0.0275F; }
 
-float EditorTheme::getSpacing() { return 0.0025F; }
+float EditorTheme::getSpacing() { return 0.015F; }
 
-float EditorTheme::getTypePropertyNameValueSpacing() { return getSpacing() * 4.0F; }
+float EditorTheme::getTypePropertyNameValueSpacing() { return getSpacing() * 2.0F; }
 
-float EditorTheme::getTypePropertySpacing() { return getTypePropertyNameValueSpacing() * 4.0F; }
+float EditorTheme::getTypePropertySpacing() { return getTypePropertyNameValueSpacing() * 2.0F; }
+
+float EditorTheme::getTypePropertyGroupSpacing() { return getSpacing() * 2.0F; }
 
 glm::vec4 EditorTheme::getEditorBackgroundColor() { return glm::vec4(glm::vec3(0.12F), 1.0F); }
 

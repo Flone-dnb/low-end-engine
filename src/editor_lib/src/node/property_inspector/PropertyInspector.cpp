@@ -7,6 +7,7 @@
 #include "game/node/ui/TextEditUiNode.h"
 #include "EditorTheme.h"
 #include "node/property_inspector/GlmVecInspector.h"
+#include "node/property_inspector/StringInspector.h"
 
 // External.
 #include "utf/utf.hpp"
@@ -19,7 +20,7 @@ PropertyInspector::PropertyInspector(const std::string& sNodeName) : RectUiNode(
     pPropertyLayout->setPadding(EditorTheme::getPadding());
     pPropertyLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     pPropertyLayout->setIsScrollBarEnabled(true);
-    pPropertyLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
+    pPropertyLayout->setChildNodeSpacing(EditorTheme::getTypePropertyGroupSpacing());
 }
 
 void PropertyInspector::setNodeToInspect(Node* pNode) {
@@ -42,25 +43,24 @@ void PropertyInspector::setNodeToInspect(Node* pNode) {
 }
 
 void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTypeGuid, Node* pObject) {
-    const auto pGroupBackground = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
+    auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
 
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
 
-    const auto pTypeVariablesLayout =
-        pGroupBackground->addChildNode(std::make_unique<LayoutUiNode>("type group"));
-    pTypeVariablesLayout->setChildNodeSpacing(EditorTheme::getSpacing());
-    pTypeVariablesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+    const auto pTypeGroupLayout = pGroupBackground->addChildNode(
+        std::make_unique<LayoutUiNode>(std::format("type group {}", typeInfo.sTypeName)));
+    pTypeGroupLayout->setChildNodeSpacing(EditorTheme::getSpacing());
+    pTypeGroupLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     {
-        const auto pGroupTitle = pTypeVariablesLayout->addChildNode(std::make_unique<TextUiNode>());
+        const auto pGroupTitle = pTypeGroupLayout->addChildNode(std::make_unique<TextUiNode>());
         pGroupTitle->setTextHeight(EditorTheme::getSmallTextHeight());
         pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.4F));
         pGroupTitle->setText(utf::as_u16(typeInfo.sTypeName));
         pGroupTitle->setTextColor(glm::vec4(glm::vec3(pGroupTitle->getTextColor()), 0.5F));
 
-        const auto pTypePropertiesLayout =
-            pTypeVariablesLayout->addChildNode(std::make_unique<LayoutUiNode>());
+        const auto pTypePropertiesLayout = pTypeGroupLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pTypePropertiesLayout->setChildNodeSpacing(EditorTheme::getTypePropertySpacing());
         pTypePropertiesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
 
@@ -99,6 +99,11 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
                     sVariableName,
                     GlmVecComponentCount::VEC2));
             }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.strings) {
+                CONTINUE_IF_PARENT_VAR(strings);
+                pTypePropertiesLayout->addChildNode(std::make_unique<StringInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
 
 #if defined(WIN32) && defined(DEBUG)
             static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
@@ -107,6 +112,8 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
 #endif
         }
     }
+
+    pPropertyLayout->addChildNode(std::move(pGroupBackground));
 
     if (!typeInfo.sParentTypeGuid.empty()) {
         displayPropertiesForTypeRecursive(typeInfo.sParentTypeGuid, pObject);

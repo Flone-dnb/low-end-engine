@@ -184,3 +184,8 @@ void RectUiNode::updateChildNodePosAndSize() {
         pUiChild->setIsVisible(false);
     }
 }
+
+void RectUiNode::onChildLayoutExpanded(const glm::vec2& layoutNewSize) {
+    const auto paddingRealSize = std::min(layoutNewSize.x, layoutNewSize.y) * padding;
+    setSize(layoutNewSize + paddingRealSize * 2.0F);
+}

@@ -53,7 +53,7 @@ void EditorGameInstance::onGamepadConnected(std::string_view sGamepadName) {
     if (gameWorldNodes.pViewportCamera == nullptr) {
         return;
     }
-    gameWorldNodes.pViewportCamera->setIgnoreInput(false);
+    gameWorldNodes.pViewportCamera->onGamepadConnected();
 }
 
 void EditorGameInstance::onGamepadDisconnected() {
@@ -61,7 +61,7 @@ void EditorGameInstance::onGamepadDisconnected() {
         return;
     }
 
-    gameWorldNodes.pViewportCamera->setIgnoreInput(true);
+    gameWorldNodes.pViewportCamera->onGamepadDisconnected();
 }
 
 void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
@@ -162,9 +162,6 @@ void EditorGameInstance::registerEditorInputEvents() {
         // Capture mouse.
         mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR)] =
             [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                if (isGamepadConnected()) {
-                    return;
-                }
                 if (gameWorldNodes.pRoot == nullptr) {
                     return;
                 }
@@ -176,10 +173,10 @@ void EditorGameInstance::registerEditorInputEvents() {
                         return;
                     }
                     getWindow()->setCursorVisibility(false);
-                    gameWorldNodes.pViewportCamera->setIgnoreInput(false);
+                    gameWorldNodes.pViewportCamera->setIsMouseCaptured(true);
                 } else if (!getWindow()->isCursorVisible()) {
                     getWindow()->setCursorVisibility(true);
-                    gameWorldNodes.pViewportCamera->setIgnoreInput(true);
+                    gameWorldNodes.pViewportCamera->setIsMouseCaptured(false);
                 }
             };
     }
@@ -358,7 +355,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
     gameWorldNodes.pViewportCamera->makeActive();
     if (isGamepadConnected()) {
-        gameWorldNodes.pViewportCamera->setIgnoreInput(false);
+        gameWorldNodes.pViewportCamera->onGamepadConnected();
     }
     const auto pos = editorWorldNodes.pViewportUiPlaceholder->getPosition();
     const auto size = editorWorldNodes.pViewportUiPlaceholder->getSize();

@@ -18,11 +18,17 @@ public:
     virtual ~EditorCameraNode() override = default;
 
     /**
-     * Sets whether to ignore user input or not.
+     * Tells if movement should be enabled (captured) or not.
      *
-     * @param bIgnore `true` to ignore, `false` otherwise.
+     * @param bCaptured `true` to enable input.
      */
-    void setIgnoreInput(bool bIgnore);
+    void setIsMouseCaptured(bool bCaptured);
+
+    /** Called after a gamepad was connected. */
+    void onGamepadConnected();
+
+    /** Called after a gamepad was disconnected. */
+    void onGamepadDisconnected();
 
 protected:
     /**
@@ -60,7 +66,7 @@ private:
     void applyLookInput(float xDelta, float yDelta);
 
     /** Last received user input direction for moving the camera. */
-    glm::vec3 lastInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 lastKeyboardInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
 
     /** Same as @ref lastInputDirection but for gamepad input. */
     glm::vec3 lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
@@ -79,6 +85,12 @@ private:
 
     /** Rotation multiplier for editor's camera. */
     float rotationSensitivity = 0.1F;
+
+    /** Tells if the movement is currently enabled (captured) or not. */
+    bool bIsMouseCaptured = false;
+
+    /** Tells if the movement is currently enabled or not. */
+    bool bIsGamepadConnected = false;
 
     /** Constant multiplier for gamepad's rotation input. */
     static constexpr float gamepadLookInputMult = 10.0F;
