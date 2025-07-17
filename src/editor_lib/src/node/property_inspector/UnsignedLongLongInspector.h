@@ -9,10 +9,10 @@
 
 class Serializable;
 
-/** Allows viewing and modifing a string variable. */
-class StringInspector : public LayoutUiNode {
+/** Allows viewing and modifing an integer variable. */
+class UnsignedLongLongInspector : public LayoutUiNode {
 public:
-    StringInspector() = delete;
+    UnsignedLongLongInspector() = delete;
 
     /**
      * Creates a new node.
@@ -21,9 +21,10 @@ public:
      * @param pObject        Object that owns the property.
      * @param sVariableName  Name of the variable to inspect.
      */
-    StringInspector(const std::string& sNodeName, Serializable* pObject, const std::string& sVariableName);
+    UnsignedLongLongInspector(
+        const std::string& sNodeName, Serializable* pObject, const std::string& sVariableName);
 
-    virtual ~StringInspector() override = default;
+    virtual ~UnsignedLongLongInspector() override = default;
 
 private:
     /** Object that owns the variable. */

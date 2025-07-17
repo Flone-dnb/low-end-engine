@@ -273,4 +273,7 @@ private:
 
     /** `true` to allow `\n` characters in the text to create new lines. */
     bool bHandleNewLineChars = true;
+
+    /** Used to avoid recursion. */
+    bool bIsCallingOnAfterTextChanged = false;
 };

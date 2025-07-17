@@ -180,22 +180,26 @@ GlmVecInspector::GlmVecInspector(
 void GlmVecInspector::onValueChanged(
     TextEditUiNode* pTextEdit, VectorComponent component, std::u16string_view sNewText) {
     // Filter text.
+    bool bErasedSomeText = false;
     auto sText = utf::as_str8(sNewText);
     for (auto it = sText.begin(); it != sText.end();) {
         char& item = *it;
         if (!std::isdigit(item) && item != '.' && item != ',') {
             it = sText.erase(it);
+            bErasedSomeText = true;
         } else {
             it++;
         }
     }
 
     float newComponentValue = 0.0F;
-    try {
-        newComponentValue = std::stof(sText);
-    } catch (...) {
-        Logger::get().error("unable to convert string to float");
-        return;
+    if (!sText.empty()) {
+        try {
+            newComponentValue = std::stof(sText);
+        } catch (...) {
+            Logger::get().error("unable to convert string to float");
+            return;
+        }
     }
 
     // Update value.
@@ -220,6 +224,8 @@ void GlmVecInspector::onValueChanged(
     }
     setNewValue(value, pObject, sVariableName, componentCount);
 
-    // Display updated value.
-    pTextEdit->setText(utf::as_u16(EditorTheme::floatToString(newComponentValue)));
+    if (bErasedSomeText) {
+        // Overwrite invalid text.
+        pTextEdit->setText(utf::as_u16(EditorTheme::floatToString(newComponentValue)));
+    }
 }

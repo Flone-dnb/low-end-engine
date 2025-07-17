@@ -35,6 +35,16 @@ set(PROJECT_SOURCES
     src/node/property_inspector/GlmVecInspector.cpp
     src/node/property_inspector/StringInspector.h
     src/node/property_inspector/StringInspector.cpp
+    src/node/property_inspector/FloatInspector.h
+    src/node/property_inspector/FloatInspector.cpp
+    src/node/property_inspector/UnsignedLongLongInspector.h
+    src/node/property_inspector/UnsignedLongLongInspector.cpp
+    src/node/property_inspector/LongLongInspector.h
+    src/node/property_inspector/LongLongInspector.cpp
+    src/node/property_inspector/UnsignedIntInspector.h
+    src/node/property_inspector/UnsignedIntInspector.cpp
+    src/node/property_inspector/IntInspector.h
+    src/node/property_inspector/IntInspector.cpp
     src/node/menu/ContextMenuNode.h
     src/node/menu/ContextMenuNode.cpp
     src/node/menu/SelectNodeTypeMenu.h

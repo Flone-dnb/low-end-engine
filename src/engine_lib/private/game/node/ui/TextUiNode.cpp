@@ -120,7 +120,11 @@ void TextUiNode::setText(std::u16string_view sNewText) {
         }
     }
 
-    onAfterTextChanged();
+    if (!bIsCallingOnAfterTextChanged) {
+        bIsCallingOnAfterTextChanged = true;
+        onAfterTextChanged();
+        bIsCallingOnAfterTextChanged = false;
+    }
 }
 
 void TextUiNode::setTextColor(const glm::vec4& color) { this->color = color; }

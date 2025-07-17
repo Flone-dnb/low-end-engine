@@ -8,6 +8,11 @@
 #include "EditorTheme.h"
 #include "node/property_inspector/GlmVecInspector.h"
 #include "node/property_inspector/StringInspector.h"
+#include "node/property_inspector/FloatInspector.h"
+#include "node/property_inspector/UnsignedLongLongInspector.h"
+#include "node/property_inspector/LongLongInspector.h"
+#include "node/property_inspector/UnsignedIntInspector.h"
+#include "node/property_inspector/IntInspector.h"
 
 // External.
 #include "utf/utf.hpp"
@@ -104,11 +109,36 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
                 pTypePropertiesLayout->addChildNode(std::make_unique<StringInspector>(
                     std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
             }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.floats) {
+                CONTINUE_IF_PARENT_VAR(floats);
+                pTypePropertiesLayout->addChildNode(std::make_unique<FloatInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.unsignedLongLongs) {
+                CONTINUE_IF_PARENT_VAR(unsignedLongLongs);
+                pTypePropertiesLayout->addChildNode(std::make_unique<UnsignedLongLongInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.longLongs) {
+                CONTINUE_IF_PARENT_VAR(longLongs);
+                pTypePropertiesLayout->addChildNode(std::make_unique<LongLongInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.unsignedInts) {
+                CONTINUE_IF_PARENT_VAR(unsignedInts);
+                pTypePropertiesLayout->addChildNode(std::make_unique<UnsignedIntInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.ints) {
+                CONTINUE_IF_PARENT_VAR(ints);
+                pTypePropertiesLayout->addChildNode(std::make_unique<IntInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
 
 #if defined(WIN32) && defined(DEBUG)
-            static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
+            static_assert(sizeof(ReflectedVariables) == 896, "consider adding new variables here");
 #elif defined(DEBUG)
-            static_assert(sizeof(ReflectedVariables) == 784, "add new variables here");
+            static_assert(sizeof(ReflectedVariables) == 784, "consider adding new variables here");
 #endif
         }
     }
