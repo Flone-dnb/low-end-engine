@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+// Standard.
+#include <filesystem>
+
 // Custom.
 #include "game/GameInstance.h"
 
@@ -37,12 +40,28 @@ public:
         const std::u16string& sTitle = u"");
 
     /**
+     * Loads the specified file as a new game world.
+     *
+     * @param pathToNodeTree Path to node tree file.
+     */
+    void openNodeTreeAsGameWorld(const std::filesystem::path& pathToNodeTree);
+
+    /**
      * Recreates game world by changing the root node. Additionally spawns editor-specific node's in game's
      * world.
      *
      * @param pNewGameRootNode New root node of the game world.
      */
     void changeGameWorldRootNode(std::unique_ptr<Node> pNewGameRootNode);
+
+    /**
+     * Can be used to disable game world from rendering and overwriting UI that is located in the editor's
+     * viewport area.
+     *
+     * @param bEnable Specify `false` so that game world will not overwrite pixels located in the editor's
+     * viewport.
+     */
+    void setEnableViewportCamera(bool bEnable);
 
     /**
      * Tells if @ref openContextMenu was called and the menu is still opened.

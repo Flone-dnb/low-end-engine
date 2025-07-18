@@ -60,10 +60,12 @@ public:
      * @remark Shows an error and throws an exception if path to the resources directory does not exist.
      *
      * @param directory Specific directory to query.
+     * @param bCreateIfNotExists Specify `true` to create the directory if it does not exist.
      *
      * @return Path to the directory.
      */
-    static std::filesystem::path getPathToResDirectory(ResourceDirectory directory);
+    static std::filesystem::path
+    getPathToResDirectory(ResourceDirectory directory, bool bCreateIfNotExists = false);
 
     /**
      * Returns base (root) directory used to store save and log files,

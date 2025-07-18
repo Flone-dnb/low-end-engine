@@ -11,8 +11,10 @@ void GameInstance::createWorld(const std::function<void(Node*)>& onCreated, bool
 }
 
 void GameInstance::loadNodeTreeAsWorld(
-    const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded) {
-    pWindow->getGameManager()->loadNodeTreeAsWorld(pathToNodeTreeFile, onLoaded);
+    const std::filesystem::path& pathToNodeTreeFile,
+    const std::function<void(Node*)>& onLoaded,
+    bool bDestroyOldWorlds) {
+    pWindow->getGameManager()->loadNodeTreeAsWorld(pathToNodeTreeFile, onLoaded, bDestroyOldWorlds);
 }
 
 void GameInstance::addTaskToThreadPool(const std::function<void()>& task) const {

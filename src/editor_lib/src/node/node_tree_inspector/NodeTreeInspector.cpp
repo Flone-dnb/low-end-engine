@@ -20,13 +20,10 @@
 
 NodeTreeInspector::NodeTreeInspector() : NodeTreeInspector("Node Tree Inspector") {}
 NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
-    setColor(glm::vec4(0.0F));
+    setColor(EditorTheme::getContainerBackgroundColor());
     setPadding(EditorTheme::getPadding() / 2.0F);
 
-    const auto pBackground = addChildNode(std::make_unique<RectUiNode>());
-    pBackground->setColor(EditorTheme::getContainerBackgroundColor());
-
-    pLayoutNode = pBackground->addChildNode(std::make_unique<LayoutUiNode>("Node Tree Inspector Layout"));
+    pLayoutNode = addChildNode(std::make_unique<LayoutUiNode>("Node Tree Inspector Layout"));
     pLayoutNode->setIsScrollBarEnabled(true);
     pLayoutNode->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     pLayoutNode->setPadding(EditorTheme::getPadding());

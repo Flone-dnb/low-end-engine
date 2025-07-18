@@ -112,7 +112,9 @@ void GameManager::createWorld(const std::function<void(Node*)>& onCreated, bool 
 }
 
 void GameManager::loadNodeTreeAsWorld(
-    const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded) {
+    const std::filesystem::path& pathToNodeTreeFile,
+    const std::function<void(Node*)>& onLoaded,
+    bool bDestroyOldWorlds) {
     std::scoped_lock guard(mtxWorldData.first);
     auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
@@ -128,6 +130,7 @@ void GameManager::loadNodeTreeAsWorld(
     pOptionalTask->pOptionalNodeTreeLoadTask =
         std::unique_ptr<WorldCreationTask::LoadNodeTreeTask>(new WorldCreationTask::LoadNodeTreeTask());
     pOptionalTask->pOptionalNodeTreeLoadTask->pathToNodeTreeToLoad = pathToNodeTreeFile;
+    pOptionalTask->bDestroyOldWorlds = bDestroyOldWorlds;
 }
 
 void GameManager::addTaskToThreadPool(const std::function<void()>& task) {

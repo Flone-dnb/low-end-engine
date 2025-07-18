@@ -68,7 +68,8 @@ std::filesystem::path ProjectPaths::getPathToPlayerSettingsDirectory() {
     return getPathToBaseConfigDirectory() / Globals::getApplicationName() / sSettingsDirectoryName;
 }
 
-std::filesystem::path ProjectPaths::getPathToResDirectory(ResourceDirectory directory) {
+std::filesystem::path
+ProjectPaths::getPathToResDirectory(ResourceDirectory directory, bool bCreateIfNotExists) {
     std::filesystem::path path = getPathToResDirectory();
 
     switch (directory) {
@@ -89,7 +90,12 @@ std::filesystem::path ProjectPaths::getPathToResDirectory(ResourceDirectory dire
     };
 
     if (!std::filesystem::exists(path)) {
-        Error::showErrorAndThrowException(std::format("expected directory \"{}\" to exist", path.string()));
+        if (bCreateIfNotExists) {
+            std::filesystem::create_directory(path);
+        } else {
+            Error::showErrorAndThrowException(
+                std::format("expected directory \"{}\" to exist", path.string()));
+        }
     }
 
     return path;

@@ -123,7 +123,9 @@ void ButtonUiNode::setPathToTextureWhilePressed(std::string sPathToTextureRelati
     }
 }
 
-void ButtonUiNode::setOnClicked(const std::function<void()>& onClicked) { this->onClicked = onClicked; }
+void ButtonUiNode::setOnClicked(const std::function<void()>& onClicked) { this->onLeftClick = onClicked; }
+
+void ButtonUiNode::setOnRightClick(const std::function<void()>& onClicked) { this->onRightClick = onClicked; }
 
 void ButtonUiNode::onSpawning() {
     RectUiNode::onSpawning();
@@ -166,14 +168,17 @@ bool ButtonUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModi
 bool ButtonUiNode::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {
     RectUiNode::onMouseButtonReleasedOnUiNode(button, modifiers);
 
-    if (button != MouseButton::LEFT) {
-        return true;
-    }
+    if (button == MouseButton::LEFT) {
+        setButtonTexture(bIsCurrentlyHovered ? sPathToTextureWhileHovered : sTempPathToDefaultTexture);
+        setButtonColor(bIsCurrentlyHovered ? colorWhileHovered : tempDefaultColor);
 
-    setButtonTexture(bIsCurrentlyHovered ? sPathToTextureWhileHovered : sTempPathToDefaultTexture);
-    setButtonColor(bIsCurrentlyHovered ? colorWhileHovered : tempDefaultColor);
-    if (onClicked) {
-        onClicked();
+        if (onLeftClick) {
+            onLeftClick();
+        }
+    } else {
+        if (onRightClick) {
+            onRightClick();
+        }
     }
 
     return true;

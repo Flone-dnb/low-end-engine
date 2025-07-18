@@ -45,13 +45,6 @@ void Material::setEnableTransparency(bool bEnable) {
 void Material::setOpacity(float opacity) { diffuseColor.w = opacity; }
 
 void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
-    if (pShaderProgram != nullptr) [[unlikely]] {
-        // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
-        // for simplicity, plus if this function is called from a non-main thread it will add more headache
-        Error::showErrorAndThrowException(
-            "changing material's textures is not allowed while the material is used on a spawned node");
-    }
-
     // Normalize slash.
     for (size_t i = 0; i < sPathToTextureRelativeRes.size(); i++) {
         if (sPathToTextureRelativeRes[i] == '\\') {
@@ -63,7 +56,35 @@ void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
         return;
     }
 
-    sPathToDiffuseTextureRelativeRes = sPathToTextureRelativeRes;
+    // Make sure the path is valid.
+    const auto pathToTexture =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
+    if (!std::filesystem::exists(pathToTexture)) {
+        Logger::get().error(std::format("path \"{}\" does not exist", pathToTexture.string()));
+        return;
+    }
+    if (std::filesystem::is_directory(pathToTexture)) [[unlikely]] {
+        Logger::get().error(
+            std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
+        return;
+    }
+
+    if (pShaderProgram == nullptr) {
+        sPathToDiffuseTextureRelativeRes = sPathToTextureRelativeRes;
+        return;
+    }
+
+    if (pOwnerNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected owner node to be valid");
+    }
+
+    // Re-run shader program initialization.
+    const auto pNode = pOwnerNode;
+    pNode->unregisterFromRendering(); // removes shader program and `pOwnerNode`
+    {
+        sPathToDiffuseTextureRelativeRes = sPathToTextureRelativeRes;
+    }
+    pNode->registerToRendering();
 }
 
 void Material::setPathToCustomVertexShader(const std::string& sPathToCustomVertexShader) {

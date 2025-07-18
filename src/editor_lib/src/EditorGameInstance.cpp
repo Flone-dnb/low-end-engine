@@ -18,6 +18,7 @@
 #include "misc/MemoryUsage.hpp"
 #include "node/node_tree_inspector/NodeTreeInspector.h"
 #include "node/property_inspector/PropertyInspector.h"
+#include "node/content_browser/ContentBrowser.h"
 #include "node/LogViewNode.h"
 #include "node/menu/ContextMenuNode.h"
 #include "EditorTheme.h"
@@ -246,14 +247,14 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         {
             const auto pLayout = pLeftRect->addChildNode(std::make_unique<LayoutUiNode>());
             pLayout->setPadding(EditorTheme::getPadding() / 2.0F);
+            pLayout->setChildNodeSpacing(EditorTheme::getSpacing());
             pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
             {
                 editorWorldNodes.pNodeTreeInspector =
                     pLayout->addChildNode(std::make_unique<NodeTreeInspector>());
                 editorWorldNodes.pNodeTreeInspector->setExpandPortionInLayout(3);
 
-                const auto pContentBrowser = pLayout->addChildNode(std::make_unique<RectUiNode>());
-                pContentBrowser->setColor(EditorTheme::getContainerBackgroundColor());
+                const auto pContentBrowser = pLayout->addChildNode(std::make_unique<ContentBrowser>());
                 pContentBrowser->setExpandPortionInLayout(2);
             }
         }
@@ -382,12 +383,33 @@ void EditorGameInstance::openContextMenu(
     editorWorldNodes.pContextMenu->openMenu(vMenuItems, sTitle);
 }
 
+void EditorGameInstance::openNodeTreeAsGameWorld(const std::filesystem::path& pathToNodeTree) {
+    if (gameWorldNodes.pRoot == nullptr) {
+        return;
+    }
+    destroyWorld(gameWorldNodes.pRoot->getWorldWhileSpawned());
+
+    loadNodeTreeAsWorld(pathToNodeTree, [this](Node* pRoot) { onAfterGameWorldCreated(pRoot); }, false);
+}
+
 void EditorGameInstance::changeGameWorldRootNode(std::unique_ptr<Node> pNewGameRootNode) {
     const auto pNewGameRoot = pNewGameRootNode.get();
     gameWorldNodes.pRoot->getWorldWhileSpawned()->changeRootNode(std::move(pNewGameRootNode));
 
     gameWorldNodes.pRoot = pNewGameRoot;
     gameWorldNodes.pViewportCamera->makeActive();
+}
+
+void EditorGameInstance::setEnableViewportCamera(bool bEnable) {
+    if (gameWorldNodes.pViewportCamera == nullptr) {
+        return;
+    }
+
+    if (bEnable) {
+        gameWorldNodes.pViewportCamera->makeActive();
+    } else {
+        gameWorldNodes.pViewportCamera->getWorldWhileSpawned()->getCameraManager().clearActiveCamera();
+    }
 }
 
 bool EditorGameInstance::isContextMenuOpened() const {

@@ -47,12 +47,16 @@ set(PROJECT_SOURCES
     src/node/property_inspector/IntInspector.cpp
     src/node/property_inspector/BoolInspector.h
     src/node/property_inspector/BoolInspector.cpp
+    src/node/content_browser/ContentBrowser.h
+    src/node/content_browser/ContentBrowser.cpp
     src/node/menu/ContextMenuNode.h
     src/node/menu/ContextMenuNode.cpp
     src/node/menu/SelectNodeTypeMenu.h
     src/node/menu/SelectNodeTypeMenu.cpp
     src/node/menu/SetNameMenu.h
     src/node/menu/SetNameMenu.cpp
+    src/node/menu/FileDialogMenu.h
+    src/node/menu/FileDialogMenu.cpp
     src/node/LogViewNode.h
     src/node/LogViewNode.cpp
     # add your .h/.cpp files here

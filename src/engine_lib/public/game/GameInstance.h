@@ -66,9 +66,13 @@ public:
      * extension will be automatically added if not specified.
      * @param onLoaded           Callback function that will be called on the main thread after the world
      * is loaded with world's root node passed as the only argument.
+     * @param bDestroyOldWorlds `true` to destroy all previously existing worlds before creating the new
+     * world.
      */
     void loadNodeTreeAsWorld(
-        const std::filesystem::path& pathToNodeTreeFile, const std::function<void(Node*)>& onLoaded);
+        const std::filesystem::path& pathToNodeTreeFile,
+        const std::function<void(Node*)>& onLoaded,
+        bool bDestroyOldWorlds = true);
 
     /**
      * Adds a function to be executed asynchronously on the thread pool.

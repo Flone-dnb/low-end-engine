@@ -76,11 +76,18 @@ public:
     void setPathToTextureWhilePressed(std::string sPathToTextureRelativeRes);
 
     /**
-     * Sets callback to call after a click on this UI node.
+     * Sets callback to call after left mouse click on this UI node.
      *
      * @param onClicked Callback.
      */
     void setOnClicked(const std::function<void()>& onClicked);
+
+    /**
+     * Sets callback to call after right mouse click on this UI node.
+     *
+     * @param onClicked Callback.
+     */
+    void setOnRightClick(const std::function<void()>& onClicked);
 
     /**
      * Returns color used while the mouse cursor is floating over the node.
@@ -207,8 +214,11 @@ private:
      */
     std::unique_ptr<TextureHandle> getTextureHandle(const std::string& sPathToTexture);
 
-    /** Callback to call after a click on this UI node. */
-    std::function<void()> onClicked;
+    /** Callback to call after a left mouse click on this UI node. */
+    std::function<void()> onLeftClick;
+
+    /** Callback to call after a right mouse click on this UI node. */
+    std::function<void()> onRightClick;
 
     /** Handle to @ref sTempPathToDefaultTexture. Used to keep the texture in cache. */
     std::unique_ptr<TextureHandle> pDefaultTexture;
