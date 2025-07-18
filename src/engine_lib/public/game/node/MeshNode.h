@@ -16,6 +16,9 @@ class MeshNode : public SpatialNode {
     // Guard is allowed to modify geometry.
     friend class MeshGeometryGuard;
 
+    // Notifies the mesh to re-register itself to rendering if material transparency mode changed.
+    friend class Material;
+
 public:
     MeshNode();
 
@@ -206,6 +209,12 @@ private:
 
     /** Must be called after @ref geometry was changed. */
     void onAfterMeshGeometryChanged();
+
+    /** Creates GPU resources and adds this object to be rendered. */
+    void registerToRendering();
+
+    /** Removes this object from rendering and destroys GPU resources. */
+    void unregisterFromRendering();
 
     /** Mesh geometry. */
     MeshGeometry geometry;

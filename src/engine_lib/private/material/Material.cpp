@@ -23,18 +23,23 @@ void Material::setDiffuseColor(const glm::vec3& color) {
 }
 
 void Material::setEnableTransparency(bool bEnable) {
-    if (pShaderProgram != nullptr) [[unlikely]] {
-        // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
-        // for simplicity, plus if this function is called from a non-main thread it will add more headache
-        //
-        // moreover, ShaderProgram and MeshNodeManager expects that we don't change our transparency state
-        // while using it
-        Error::showErrorAndThrowException(
-            "changing material's transparency state (enabled/disabled) is not allowed while the material is "
-            "used on a spawned node");
+    if (pShaderProgram == nullptr) {
+        bIsTransparencyEnabled = bEnable;
+        return;
     }
 
-    bIsTransparencyEnabled = bEnable;
+    if (pOwnerNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected owner node to be valid");
+    }
+
+    // Transparency is not expected to change while the mesh is registered for rendering
+    // (shader program and mesh node manager do registration based on transparency), thus:
+    const auto pNode = pOwnerNode;
+    pNode->unregisterFromRendering(); // removes shader program and `pOwnerNode`
+    {
+        bIsTransparencyEnabled = bEnable;
+    }
+    pNode->registerToRendering();
 }
 
 void Material::setOpacity(float opacity) { diffuseColor.w = opacity; }
@@ -139,6 +144,8 @@ void Material::onNodeSpawning(
         // Add node to be rendered.
         pShaderProgram->onMeshNodeStartedUsingProgram(pNode);
     }
+
+    pOwnerNode = pNode;
 }
 
 void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
@@ -160,6 +167,8 @@ void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
     if (pDiffuseTexture != nullptr) {
         pDiffuseTexture = nullptr;
     }
+
+    pOwnerNode = nullptr;
 }
 
 void Material::onNodeChangedVisibilityWhileSpawned(bool bIsVisible, MeshNode* pNode, Renderer* pRenderer) {

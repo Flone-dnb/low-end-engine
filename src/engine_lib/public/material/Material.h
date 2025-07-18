@@ -176,6 +176,12 @@ private:
     /** Diffuse light color. */
     glm::vec4 diffuseColor = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
+    /**
+     * Node that uses this material. It's safe to store a raw pointer here because the node will notify the
+     * material once it's despawning.
+     */
+    MeshNode* pOwnerNode = nullptr;
+
     /** Not `nullptr` if this material is used on a spawned renderable node. */
     std::shared_ptr<ShaderProgram> pShaderProgram;
 

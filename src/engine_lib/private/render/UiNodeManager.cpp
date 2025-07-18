@@ -542,6 +542,12 @@ void UiNodeManager::onCursorVisibilityChanged(bool bVisibleNow) {
         }
 
         safelyCallOnMouseLeft(vNotifyOnMouseLeft);
+
+        // Remove focus.
+        if (mtxData.second.pFocusedNode != nullptr) {
+            mtxData.second.pFocusedNode->onLostFocus();
+            mtxData.second.pFocusedNode = nullptr;
+        }
     }
 }
 

@@ -157,10 +157,13 @@ bool MeshNode::isVisible() {
     return mtxIsVisible.second;
 }
 
-void MeshNode::onSpawning() {
+void MeshNode::registerToRendering() {
     PROFILE_FUNC
 
-    SpatialNode::onSpawning();
+    if (pVao != nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("mesh node \"{}\" already created GPU resources", getNodeName()));
+    }
 
     // Create VAO.
     pVao = GpuResourceManager::createVertexArrayObject(geometry);
@@ -186,8 +189,13 @@ void MeshNode::onSpawning() {
     getWorldWhileSpawned()->getMeshNodeManager().onMeshNodeSpawning(this);
 }
 
-void MeshNode::onDespawning() {
-    SpatialNode::onDespawning();
+void MeshNode::unregisterFromRendering() {
+    PROFILE_FUNC
+
+    if (pVao == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("mesh node \"{}\" already destroyed GPU resources", getNodeName()));
+    }
 
     // Before destroying render resources notify manager.
     getWorldWhileSpawned()->getMeshNodeManager().onMeshNodeDespawning(this);
@@ -198,6 +206,20 @@ void MeshNode::onDespawning() {
 
     // Notify material.
     material.onNodeDespawning(this, getGameInstanceWhileSpawned()->getRenderer());
+}
+
+void MeshNode::onSpawning() {
+    PROFILE_FUNC
+
+    SpatialNode::onSpawning();
+
+    registerToRendering();
+}
+
+void MeshNode::onDespawning() {
+    SpatialNode::onDespawning();
+
+    unregisterFromRendering();
 }
 
 void MeshNode::onWorldLocationRotationScaleChanged() {
