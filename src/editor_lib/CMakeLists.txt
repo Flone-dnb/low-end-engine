@@ -45,6 +45,8 @@ set(PROJECT_SOURCES
     src/node/property_inspector/UnsignedIntInspector.cpp
     src/node/property_inspector/IntInspector.h
     src/node/property_inspector/IntInspector.cpp
+    src/node/property_inspector/BoolInspector.h
+    src/node/property_inspector/BoolInspector.cpp
     src/node/menu/ContextMenuNode.h
     src/node/menu/ContextMenuNode.cpp
     src/node/menu/SelectNodeTypeMenu.h

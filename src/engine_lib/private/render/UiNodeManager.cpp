@@ -893,6 +893,7 @@ void UiNodeManager::drawCheckboxNodes(size_t iLayer) {
 
                 auto pos = pCheckboxNode->getPosition();
                 auto size = pCheckboxNode->getSize();
+                size = glm::vec2(std::min(size.x, size.y));
 
                 // Adjust size to be square according to aspect ratio.
                 // TODO: this creates inconsistency between UI logic (which operates on `getPos` and

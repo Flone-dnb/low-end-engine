@@ -113,21 +113,3 @@ void CheckboxUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     Error::showErrorAndThrowException(
         std::format("checkbox node \"{}\" can't have child nodes", getNodeName()));
 }
-
-void CheckboxUiNode::onAfterSizeChanged() {
-    UiNode::onAfterSizeChanged();
-
-    if (bIsAdjustingSize) {
-        return;
-    }
-
-    auto size = getSize();
-
-    const auto max = std::max(size.x, size.y);
-    size.x = max;
-    size.y = max;
-
-    bIsAdjustingSize = true;
-    setSize(size);
-    bIsAdjustingSize = false;
-}

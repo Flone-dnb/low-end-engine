@@ -155,9 +155,6 @@ protected:
      */
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
-    /** Called after size of this UI node was changed. */
-    virtual void onAfterSizeChanged() override;
-
 private:
     /** User specified callback to call when the state is changed. */
     std::function<void(bool)> onStateChanged;
@@ -170,7 +167,4 @@ private:
 
     /** `true` if checkbox is enabeld. */
     bool bIsChecked = false;
-
-    /** Used to avoid recursion. */
-    bool bIsAdjustingSize = false;
 };

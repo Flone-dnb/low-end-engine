@@ -13,6 +13,7 @@
 #include "node/property_inspector/LongLongInspector.h"
 #include "node/property_inspector/UnsignedIntInspector.h"
 #include "node/property_inspector/IntInspector.h"
+#include "node/property_inspector/BoolInspector.h"
 
 // External.
 #include "utf/utf.hpp"
@@ -132,6 +133,11 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.ints) {
                 CONTINUE_IF_PARENT_VAR(ints);
                 pTypePropertiesLayout->addChildNode(std::make_unique<IntInspector>(
+                    std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
+            }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.bools) {
+                CONTINUE_IF_PARENT_VAR(bools);
+                pTypePropertiesLayout->addChildNode(std::make_unique<BoolInspector>(
                     std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
             }
 
