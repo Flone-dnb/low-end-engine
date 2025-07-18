@@ -68,7 +68,7 @@ private:
     /** Last received user input direction for moving the camera. */
     glm::vec3 lastKeyboardInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
 
-    /** Same as @ref lastInputDirection but for gamepad input. */
+    /** Same as @ref lastKeyboardInputDirection but for gamepad input. */
     glm::vec3 lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
 
     /** Gamepad input for looking right (x) and up (y). */

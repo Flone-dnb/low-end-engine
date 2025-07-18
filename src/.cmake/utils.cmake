@@ -27,6 +27,10 @@ function(enable_more_warnings)
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PUBLIC /utf-8)
     endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	# False-positive in GCC for `ReflectedTypeDatabase::getTypeInfo`.
+	target_compile_options(${PROJECT_NAME} PUBLIC -Wno-dangling-reference)
+    endif()
 endfunction()
 
 # Adds a program as a post build step to check that all Node derived types in override functions are "calling super"

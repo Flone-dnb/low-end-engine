@@ -10,6 +10,17 @@
 #include "game/geometry/MeshGeometry.h"
 #include "math/GLMath.hpp"
 
+// To suppress GCC's false-positive about dangling reference on `getTypeInfo`.
+#if __GNUC__ >= 13
+#define GCC_PUSH_DIAGNOSTIC_DISABLE_DANGLING_REF                                                             \
+    _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdangling-reference\"")
+
+#define GCC_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
+#else
+#define GCC_PUSH_DIAGNOSTIC_DISABLE_DANGLING_REF
+#define GCC_DIAGNOSTIC_POP
+#endif
+
 class Serializable;
 
 /** Groups information about a reflected field/variable of a type. */
