@@ -279,7 +279,7 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
     }
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 224, "add new variables here");
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 248, "add new variables here");
 #elif defined(DEBUG)
     static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 232, "add new variables here");
 #endif
