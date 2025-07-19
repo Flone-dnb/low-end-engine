@@ -56,6 +56,14 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
     for (size_t iPrimitive = 0; iPrimitive < mesh.primitives.size(); iPrimitive++) {
         auto& primitive = mesh.primitives[iPrimitive];
 
+        // Mark progress.
+        onProgress(std::format(
+            "processing GLTF node {}/{}, mesh {}/{}",
+            iGltfNodeProcessedCount,
+            iTotalGltfNodesToProcess,
+            iPrimitive,
+            mesh.primitives.size()));
+
         MeshGeometry meshGeometry;
 
         {
@@ -139,15 +147,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
 
         // Process attributes.
         for (auto& [sAttributeName, iAccessorIndex] : primitive.attributes) {
-            // Mark progress.
-            onProgress(std::format(
-                "processing GLTF node {}/{}, mesh {}/{}: processing attribute \"{}\"",
-                iGltfNodeProcessedCount,
-                iTotalGltfNodesToProcess,
-                iPrimitive,
-                mesh.primitives.size(),
-                sAttributeName));
-
             // Get attribute accessor.
             const auto& attributeAccessor = model.accessors[static_cast<size_t>(iAccessorIndex)];
 
@@ -315,14 +314,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                             pathDiffuseTextureRelativeRes,
                             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT))
                             .string();
-
-                    // Mark progress.
-                    onProgress(std::format(
-                        "processing GLTF node {}/{}, mesh {}/{}: importing diffuse texture",
-                        iGltfNodeProcessedCount,
-                        iTotalGltfNodesToProcess,
-                        iPrimitive,
-                        mesh.primitives.size()));
 
                     // Write image to disk.
                     if (!writeGltfTextureToDisk(diffuseImage, sTexturePathRelativeRes)) [[unlikely]] {

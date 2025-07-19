@@ -101,6 +101,14 @@ public:
     void setIsScrollBarEnabled(bool bEnable);
 
     /**
+     * If scroll bar is enabled and a new item is added the layout will automatically scroll to bottom to make
+     * sure the last item is visible.
+     *
+     * @param bEnable New state.
+     */
+    void setAutoScrollToBottom(bool bEnable);
+
+    /**
      * Sets color of the scroll bar.
      *
      * @param color Color in the RGBA format.
@@ -141,6 +149,14 @@ public:
      * @return `true` if enabled.
      */
     bool getIsScrollBarEnabled() const { return bIsScrollBarEnabled; }
+
+    /**
+     * If scroll bar is enabled and a new item is added the layout will automatically scroll to bottom to make
+     * sure the last item is visible.
+     *
+     * @return State.
+     */
+    bool getAutoScrollToBottom() const { return bAutoScrollToBottom; }
 
     /**
      * Returns color of the scroll bar.
@@ -278,6 +294,9 @@ private:
 
     /** Scroll bar state. */
     bool bIsScrollBarEnabled = false;
+
+    /** Automatically scroll to bottom if scroll bar is enabled and a new item is added. */
+    bool bAutoScrollToBottom = false;
 
     /** Scroll step in range [0.0; 1.0] where 1.0 means full size of the layout. */
     static constexpr float scrollBarStepLocal = 0.05F;

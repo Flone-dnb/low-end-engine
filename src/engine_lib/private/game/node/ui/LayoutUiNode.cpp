@@ -71,6 +71,15 @@ TypeReflectionInfo LayoutUiNode::getReflectionInfo() {
             return reinterpret_cast<LayoutUiNode*>(pThis)->getIsScrollBarEnabled();
         }};
 
+    variables.bools[NAMEOF_MEMBER(&LayoutUiNode::bAutoScrollToBottom).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<LayoutUiNode*>(pThis)->setAutoScrollToBottom(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<LayoutUiNode*>(pThis)->getAutoScrollToBottom();
+        }};
+
     return TypeReflectionInfo(
         UiNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(LayoutUiNode).data(),
@@ -155,6 +164,8 @@ void LayoutUiNode::setIsScrollBarEnabled(bool bEnable) {
     recalculatePosAndSizeForDirectChildNodes();
 }
 
+void LayoutUiNode::setAutoScrollToBottom(bool bEnable) { bAutoScrollToBottom = bEnable; }
+
 void LayoutUiNode::setScrollBarColor(const glm::vec4& color) { scrollBarColor = color; }
 
 void LayoutUiNode::onAfterDeserialized() {
@@ -188,7 +199,7 @@ void LayoutUiNode::onChildNodesSpawned() {
 void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
 
-    if (bIsScrollBarEnabled) {
+    if (bIsScrollBarEnabled && bAutoScrollToBottom) {
         // Scroll to bottom.
         iCurrentScrollOffset = static_cast<unsigned int>(
             std::max(0.0F, totalScrollHeight - getSize().y * 3.25F) / // TODO: rework magic numbers
@@ -200,6 +211,8 @@ void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
 
 void LayoutUiNode::onAfterDirectChildDetached(Node* pDetachedDirectChild) {
     UiNode::onAfterDirectChildDetached(pDetachedDirectChild);
+
+    iCurrentScrollOffset = 0;
 
     recalculatePosAndSizeForDirectChildNodes();
 }

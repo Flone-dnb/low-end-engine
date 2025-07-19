@@ -16,7 +16,7 @@ LogViewNode::LogViewNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
     pLayout = addChildNode(std::make_unique<LayoutUiNode>("Log View Layout"));
     pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     pLayout->setIsScrollBarEnabled(true);
-    pLayout->setChildNodeSpacing(0.0F);
+    pLayout->setAutoScrollToBottom(true);
 
     pLoggerCallback =
         Logger::get().setCallback([this](LogMessageCategory category, const std::string& sMessage) {
