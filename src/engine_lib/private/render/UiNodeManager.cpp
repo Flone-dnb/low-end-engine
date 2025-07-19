@@ -675,13 +675,12 @@ void UiNodeManager::processMouseHoverOnNodes() {
 void UiNodeManager::onMouseMove(int iXOffset, int iYOffset) {
     std::scoped_lock guard(mtxData.first);
 
-    // Get cursor pos.
+    // Check cursor pos.
     const auto optCursorPos = pWorld->getCameraManager().getCursorPosOnViewport();
     if (!optCursorPos.has_value()) {
         // Outside of viewport, don't process this event.
         return;
     }
-    const auto cursorPos = *optCursorPos;
 
     if (!mtxData.second.modalInputReceivingNodes.empty()) {
         for (auto& pNode : mtxData.second.modalInputReceivingNodes) {
