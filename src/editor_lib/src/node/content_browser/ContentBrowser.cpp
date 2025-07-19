@@ -137,6 +137,29 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
     std::vector<std::pair<std::u16string, std::function<void()>>> vOptions;
     {
         vOptions.push_back(
+            {u"Create node tree", [this, pathToDirectory]() {
+                 const auto pSetNameMenu =
+                     getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<SetNameMenu>());
+                 pSetNameMenu->setOnNameChanged([this, pathToDirectory](std::u16string_view sText) {
+                     const auto pathToNodeTree = pathToDirectory / utf::as_str8(sText);
+                     if (std::filesystem::exists(pathToNodeTree)) {
+                         return;
+                     }
+
+                     const auto pNode = std::make_unique<Node>("Root node");
+                     const auto optionalError = pNode->serializeNodeTree(pathToNodeTree, false);
+                     if (optionalError.has_value()) [[unlikely]] {
+                         Logger::get().error(std::format(
+                             "failed to serialize new node tree, error: {}",
+                             optionalError->getInitialMessage()));
+                         return;
+                     }
+
+                     openedDirectoryPaths.insert(pathToDirectory);
+                     rebuildFileTree();
+                 });
+             }});
+        vOptions.push_back(
             {u"Create directory", [this, pathToDirectory]() {
                  const auto pSetNameMenu =
                      getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<SetNameMenu>());
@@ -170,7 +193,6 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      rebuildFileTree();
                  });
              }});
-
         vOptions.push_back(
             {u"Import .gltf/.glb", [this, pathToDirectory]() {
                  getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(

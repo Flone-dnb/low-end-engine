@@ -195,6 +195,9 @@ void EditorGameInstance::registerEditorInputEvents() {
             {{KeyboardButton::D, KeyboardButton::A}},
             {}));
 
+        // We separate keyboard and gamepad input events because our editor camera node needs it
+        // (it's not required to separate them).
+
         // Gamepad move forward.
         showErrorIfNotEmpty(getInputManager()->addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD),

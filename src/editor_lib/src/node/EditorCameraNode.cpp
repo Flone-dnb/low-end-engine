@@ -23,20 +23,20 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
         auto& mtxAxisEvents = getAxisEventBindings();
         std::scoped_lock guard(mtxAxisEvents.first);
 
-        // Move right.
+        // Move forward.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
             [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.x = input; };
 
-        // Move forward.
+        // Move right.
         mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT)] =
             [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.y = input; };
 
-        // Gamepad move right.
+        // Gamepad move forward.
         mtxAxisEvents
             .second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD)] =
             [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.x = -input; };
 
-        // Gamepad move forward.
+        // Gamepad move right.
         mtxAxisEvents
             .second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT)] =
             [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.y = input; };

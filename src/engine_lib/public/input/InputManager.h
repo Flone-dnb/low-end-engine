@@ -49,12 +49,13 @@ public:
      * Adds a new axis event.
      *
      * Axis events operate on pairs of 2 buttons where one triggers an input value `+1.0`
-     * and the other `-1.0`. Input devices with "floating" values (such as gamepad sticks/triggers)
-     * are a perfect fit this this type of input events. For example, a gamepad stick can
+     * and the other `-1.0`. Input devices with "floating" values (such as gamepad thumbsticks/triggers)
+     * are a perfect fit this this type of input events. For example, a gamepad thumbstick can
      * be used in 2 axis events: "move forward" and "move right". But you can also
      * bind keyboard buttons to `+1.0` and `-1.0` input, this way you will support both
      * keyboard and gamepad users: an axis event "move forward" will typically have
-     * 2 pairs of triggers: W and gamepad stick up for `+1.0`, S and gamepad stick down for `-1.0`.
+     * these triggers: "W" button for `+1.0`, "S" button for `-1.0` and gamepad thumbstick axis Y for `+1.0`
+     * (up) and `-1.0` (down).
      *
      * @param iAxisEventId      Unique ID of the new axis event.
      * @param vKeyboardTriggers The first button will be associated with `+1.0` input and the second with

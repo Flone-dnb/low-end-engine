@@ -205,6 +205,249 @@ const auto pathToLogsDir = ProjectPaths::getPathToPlayerProgressDirectory();
 
 See `misc/ProjectPaths.h` for more.
 
+## Memory leak checks
+
+### Non-release builds
+
+By default in non-release builds memory leak checks are enabled, look for the output/debugger output tab of your IDE after running your project. If any leaks occurred it should print about them. You can test whether the memory leak checks are enabled or not by doing something like this:
+```Cpp
+new int(42);
+// don't `delete`
+```
+run your program that runs this code and after your program is finished you should see a message about the memory leak in the output/debugger output tab of your IDE.
+
+### About raw pointers
+
+Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For more information read the documentation for the functions you are using.
+
+## Creating a new world
+
+### World axes and world units
+
+The engine uses a left handed coordinate system. +X is world "forward" direction, +Y is world "right" direction and +Z is world "up" direction. These directions are stored in `Globals::WorldDirection` (`misc/Globals.h`).
+
+Rotations are applied in the following order: ZYX, so "yaw" is applied first, then "pitch" and then "roll". If you need to do math with rotations you can use `MathHelpers::buildRotationMatrix` that builds a rotation matrix with the correct rotation order.
+
+1 world unit is expected to be equal to 1 meter in your game.
+
+### World and node tree
+
+As you might already know a node tree can represent a game level (a game world) but node tree is not considered a game world by itself. The engine has a special object of type `World` it manages things like node spawning, cameras that can render the world and so on. When you give your not spawned node tree to the `World` object (or a path to a node tree file) the `World` creates world-related objects and spawns root node of your tree (which causes all other nodes of the tree to also be spawned). Such spawned node tree is considered a world because it can be rendered (viewed on the screen) and controlled by the user.
+
+### Creating a node tree using the editor
+
+Run the `editor` CMake target and in the content browser (left-bottom panel) right click on the "game" directory (which is your `res/game` directory) and select an option to create a new node tree in the opened context menu. Then left click on the created file to load it.
+
+In the opened node tree you should have only a single node - root node (see top-left panel - node tree inspector). To add more nodes right click on any node in the node tree inspector and select the appropriate option.
+
+Use WASD keys while holding right mouse button to move viewport camera.
+
+### Creating a world using C++
+
+You can create node tree using the editor or the code but a world can only be created using the code. Your generated project should already have a call to `createWorld` in `GameInstance::onGameStarted` which creates a world with a single node - root node. In order to load a node tree as a new world you should call `GameInstance::loadNodeTreeAsWorld`.
+
+After creating the world you would also need a camera to see your world. Here is the most simple to create an active camera after your world is created/loaded:
+
+```Cpp
+const auto pCamera = pWorldRootNode->addChildNode(std::make_unique<CameraNode>());
+pCamera->makeActive();
+```
+
+Default `CameraNode` class does not support input so it will be a static camera (probably located in 0, 0, 0). To be able to control your camera's position/rotation you need to create a new camera node class derived from `CameraNode`. As a starting point look at the editor's `EditorCameraNode` class and how it's implemented, it supports both keyboard+mouse and gamepad but there's not much code so you can easily adapt the code for your game's needs. See one of the next sections in this manual on how to work with user input.
+
+## Handling user input
+
+### Input events
+
+The usual way to handle user input is by binding to action/axis events and doing your processing once these events are triggered.
+
+Action event allows binding buttons that have only 2 states (pressed/not pressed) to an ID. When one of the specified buttons is pressed you will receive an input action event with the specified ID. This way, for example, you can have an action "jump" bound to a "space bar" button.
+
+Axis events operate on pairs of 2 buttons where one triggers an input value `+1.0` and the other `-1.0`. Input devices with "floating" values (such as gamepad thumbsticks/triggers) are a perfect fit this this type of input events. For example, a gamepad thumbstick can be used in 2 axis events: "move forward" and "move right". But you can also bind keyboard buttons to `+1.0` and `-1.0` input, this way you will support both keyboard and gamepad users: an axis event "move forward" will typically have these triggers: "W" button for `+1.0`, "S" button for `-1.0` and gamepad thumbstick axis Y for `+1.0` (up) and `-1.0` (down).
+
+Note
+> A so-called "repeat" input is disabled in the engine. "Repeat" input happens when use hold some button, while you hold it the window keeps receiving "repeat" input events with this button but the engine will ignore them and so if you will hold a button only pressed/released events will be received by your code.
+
+Mouse movement is handled using `GameInstance::onMouseMove` function or `Node::onMouseMove` function. There are other mouse related functions like `onMouseScrollMove` that you might find useful.
+
+### Input event IDs
+
+In the next sections you will learn that you can bind to input events in game instance and in nodes. Input events use IDs to be distinguished. This means that you need to have an application-global collection of unique IDs for input events.
+
+You can describe input event IDs of your application in a separate file using enums, for example:
+
+```Cpp
+// GameInputEventIds.hpp
+
+#pragma once
+
+/** Stores unique IDs of input events. */
+struct GameInputEventIds {
+    /** Groups action events. */
+    enum class Action : unsigned int {
+        CAPTURE_MOUSE_CURSOR = 0, //< Capture mouse cursor.
+        INCREASE_CAMERA_SPEED,    //< Increase camera's speed.
+        DECREASE_CAMERA_SPEED,    //< Decrease camera's speed.
+    };
+
+    /** Groups axis events. */
+     enum class Axis : unsigned int {
+        MOVE_CAMERA_FORWARD = 0, //< Move camera forward/back.
+        MOVE_CAMERA_RIGHT,       //< Move camera right/left.
+        MOVE_CAMERA_UP,          //< Move camera up/down.
+    };
+};
+```
+
+This file will store all input IDs that your game needs, even if you have switchable controls like "walking" or "in vehice" all input event IDs should be generally stored like that to make sure they all have unique IDs because all your input events will be registered in the same input manager.
+
+### Registering input events and binding to them
+
+Register your game's input events in your game instance like so:
+
+```Cpp
+// Register action event.
+auto optionalError = getInputManager()->addActionEvent(
+    static_cast<unsigned int>(GameInputEventIds::Action::INCREASE_CAMERA_SPEED),
+    {KeyboardButton::LEFT_SHIFT}
+);
+if (optionalError.has_value()) {
+    TODO;
+}
+
+// Register axis event.
+optionalError = getInputManager()->addAxisEvent(
+    static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_CAMERA_FORWARD),
+    {{KeyboardButton::W, KeyboardButton::S}},
+    {GamepadAxis::LEFT_STICK_Y}
+);
+if (optionalError.has_value()) {
+    TODO;
+}
+```
+
+Note
+> You can register/bind input events even when world does not exist or not created yet.
+
+At this point you will be able to trigger registered action/axis events by pressing the specified keyboard/gamepad buttons. Now we need to write functions that will react to these input events. You can create these functions in your game instance or in nodes (the approach is the same). For this example we bind to input events in constructor of our camera node class like so:
+
+```Cpp
+{
+    // Bind to registered action events.
+    auto& mtxActionEvents = getActionEventBindings();
+    std::scoped_lock guard(mtxActionEvents.first);
+
+    // Bind to increase movement speed.
+    mtxActionEvents
+        .second[static_cast<unsigned int>(GameInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] =
+        [this](KeyboardModifiers modifiers, bool bIsPressed) {
+            if (bIsPressed) {
+                currentMovementSpeedMultiplier = speedIncreaseMultiplier;
+            } else {
+                currentMovementSpeedMultiplier = 1.0F;
+            }
+        };
+}
+
+{
+    // Bind to registered axis events.
+    auto& mtxAxisEvents = getAxisEventBindings();
+    std::scoped_lock guard(mtxAxisEvents.first);
+
+    // Bind to move forward.
+    mtxAxisEvents
+        .second[static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
+        [this](KeyboardModifiers modifiers, float input) {
+            lastKeyboardInputDirection.x = input; // example code
+        };
+}
+```
+
+Note
+> Although you can bind to registered input events in `GameInstance` it's not really recommended because input events should generally be processed in nodes such as in your character node.
+
+## Loading font
+
+In order to load a font you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:
+
+```Cpp
+void MyGameInstance::onGameStarted() {
+    getRenderer()->getFontManager().loadFont(
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf");
+
+    // ... create world, nodes, etc. ...
+}
+```
+
+## Importing meshes
+
+Note
+> We only support import from GLTF/GLB format.
+
+### Export settings in Blender
+
+Usually the only thing that you need to do is to untick the "+Y up" checkbox in "Transform" section (since we use +Z as our UP axis).
+
+### Import in the engine using C++
+
+In order to import your file you need to use `GltfImporter` like so:
+
+```Cpp
+#include "io/GltfImporter.h"
+
+auto optionalError = GltfImporter::importFileAsNodeTree(
+    "C:\\models\\sword.glb",       // importing GLB as an example, you can import GLTF in the same way
+    "game/models",                 // path to the output directory relative `res` (should exist)
+    "sword",                       // name of the new directory that will be created (should not exist yet)
+    [](std::string_view sState) {
+        Logger::get().info(sState);
+    });
+if (optionalError.has_value()) [[unlikely]] {
+    // ... handle error ...
+}
+```
+
+If the import process went without errors you can then find your imported model(s) in form of a node tree inside of the resulting directory. You can then deserialize that node tree and use it in your game as any other node tree:
+
+```Cpp
+// Deserialize node tree.
+auto result = Node::deserializeNodeTree(
+    ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME) / "models/sword/sword.toml");
+if (std::holds_alternative<Error>(result)) [[unlikely]] {
+    // ... process errorr ...
+}
+
+// Spawn node tree.
+const auto pImportedRootNode = getWorldRootNode()->addChildNode(std::get<std::unique_ptr<Node>>(std::move(result)));
+```
+
+## Textures and texture filtering
+
+There's no texture import or anything like that, if you want your mesh to have a texture just tell it the path to the texture like so:
+
+```Cpp
+auto pCube = std::make_unique<MeshNode>();
+pCube->getMaterial().setPathToDiffuseTexture("game/textures/cube.png"); // located at `res/game/...`
+```
+
+Of course when you import a GLTF file meshes and textures will be automatically imported (copied) in the `res` directory and meshes that use texture will have a path to a texture saved in the TOML file.
+
+By default the engine uses point filtering for all textures if you want to use linear filtering use the following:
+
+```Cpp
+#include "material/TextureManager.h"
+
+void MyGameInstance::onGameStarted() {
+    getRenderer()->getTextureManager().setUsePointFiltering(false);
+
+    // ... your game code here ...
+}
+```
+
+## Post-processing
+
+You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the camera manager: `Node::getWorldWhileSpawned()->getCameraManager().getPostProcessManager()`.
+
 ## Reflection basics
 
 Reflection comes down to writing additional code to your class, this additional code allows other systems to see/analyze your class/objects (see functions/fields).
@@ -341,202 +584,6 @@ if (std::holds_alternative<Error>(result)) [[unlikely]] {
 }
 auto pDeserializedSave = std::get<std::unique_ptr<PlayerSaveData>>(std::move(result));
 ```
-
-## Memory leak checks
-
-### Non-release builds
-
-By default in non-release builds memory leak checks are enabled, look for the output/debugger output tab of your IDE after running your project. If any leaks occurred it should print about them. You can test whether the memory leak checks are enabled or not by doing something like this:
-```Cpp
-new int(42);
-// don't `delete`
-```
-run your program that runs this code and after your program is finished you should see a message about the memory leak in the output/debugger output tab of your IDE.
-
-### About raw pointers
-
-Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For more information read the documentation for the functions you are using.
-
-## Creating a new world
-
-### World axes and world units
-
-The engine uses a left handed coordinate system. +X is world "forward" direction, +Y is world "right" direction and +Z is world "up" direction. These directions are stored in `Globals::WorldDirection` (`misc/Globals.h`).
-
-Rotations are applied in the following order: ZYX, so "yaw" is applied first, then "pitch" and then "roll". If you need to do math with rotations you can use `MathHelpers::buildRotationMatrix` that builds a rotation matrix with the correct rotation order.
-
-1 world unit is expected to be equal to 1 meter in your game.
-
-### Creating a world using C++
-
-Let's first make sure you know how to create a window, your `main.cpp` should generally look like this:
-
-```Cpp
-// Standard.
-#include <stdexcept>
-
-// Custom.
-#include "MyGameInstance.h"
-#include "game/Window.h"
-#include "misc/ProjectPaths.h"
-
-int main() {
-    // Create a game window.
-    auto result = WindowBuilder().title("my game").fullscreen().build();
-    if (std::holds_alternative<Error>(result)) [[unlikely]] {
-        auto error = std::get<Error>(std::move(result));
-        error.addCurrentLocationToErrorStack();
-        error.showErrorAndThrowException();
-    }
-    auto pWindow = std::get<std::unique_ptr<Window>>(std::move(result));
-
-    // Run game loop.
-    pMainWindow->processEvents<MyGameInstance>();
-
-    return 0;
-}
-```
-
-And your game instance would generally look like this:
-
-```Cpp
-#pragma once
-
-// Custom.
-#include "game/GameInstance.h"
-
-class Window;
-
-class MyGameInstance : public GameInstance {
-public:
-    MyGameInstance(Window* pWindow);
-    virtual ~MyGameInstance() override = default;
-
-protected:
-    virtual void onGameStarted() override;
-};
-```
-
-Now let's see how we can create a world in `onGameStarted`:
-
-```Cpp
-#include "MyGameInstance.h"
-
-#include "game/node/MeshNode.h"
-
-MyGameInstance::MyGameInstance(Window* pWindow) : GameInstance(pWindow) {}
-
-void MyGameInstance::onGameStarted() {
-    createWorld([this]() {
-        // Spawn sample mesh, it gets spawned right away because world root node is spawned, if you
-        // need to configure the node before spawning configure it before `std::move`ing the `unique_ptr` to `addChildNode`
-        // here we are doing a shorter version for simplicity.
-        const auto pMeshNode = getWorldRootNode()->addChildNode(std::make_unique<MeshNode>());
-
-        // Set mesh location.
-        pMeshNode->setWorldLocation(glm::vec3(1.0F, 0.0F, 0.0F));
-    });
-}
-```
-
-The code from above creates a new world with just 2 nodes: a root node and a mesh node. As you can see you specify a callback function that will be called once the world is created.
-
-You would also need a camera to see your world but we will discuss this in one of the next sections, for now let's talk about world creation.
-
-If you instead want to load some level/map as your new world you need to use `loadNodeTreeAsWorld` instead of `createWorld`, see an example:
-
-```Cpp
-void MyGameInstance::onGameStarted() {
-    // Prepare path to your node tree to load.
-    const auto pathToMyLevel = ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME) / "mylevel.toml";
-
-    loadNodeTreeAsWorld(pathToMyLevel, [this]() {
-        // Level is loaded.
-    });
-}
-```
-
-## Loading font
-
-In order to load a font you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:
-
-```Cpp
-void MyGameInstance::onGameStarted() {
-    getRenderer()->getFontManager().loadFont(
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf");
-
-    // ... create world, nodes, etc. ...
-}
-```
-
-## Importing meshes
-
-Note
-> We only support import from GLTF/GLB format.
-
-### Export settings in Blender
-
-Usually the only thing that you need to do is to untick the "+Y up" checkbox in "Transform" section (since we use +Z as our UP axis).
-
-### Import in the engine using C++
-
-In order to import your file you need to use `GltfImporter` like so:
-
-```Cpp
-#include "io/GltfImporter.h"
-
-auto optionalError = GltfImporter::importFileAsNodeTree(
-    "C:\\models\\sword.glb",       // importing GLB as an example, you can import GLTF in the same way
-    "game/models",                 // path to the output directory relative `res` (should exist)
-    "sword",                       // name of the new directory that will be created (should not exist yet)
-    [](std::string_view sState) {
-        Logger::get().info(sState);
-    });
-if (optionalError.has_value()) [[unlikely]] {
-    // ... handle error ...
-}
-```
-
-If the import process went without errors you can then find your imported model(s) in form of a node tree inside of the resulting directory. You can then deserialize that node tree and use it in your game as any other node tree:
-
-```Cpp
-// Deserialize node tree.
-auto result = Node::deserializeNodeTree(
-    ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME) / "models/sword/sword.toml");
-if (std::holds_alternative<Error>(result)) [[unlikely]] {
-    // ... process errorr ...
-}
-
-// Spawn node tree.
-const auto pImportedRootNode = getWorldRootNode()->addChildNode(std::get<std::unique_ptr<Node>>(std::move(result)));
-```
-
-## Textures and texture filtering
-
-There's no texture import or anything like that, if you want your mesh to have a texture just tell it the path to the texture like so:
-
-```Cpp
-auto pCube = std::make_unique<MeshNode>();
-pCube->getMaterial().setPathToDiffuseTexture("game/textures/cube.png"); // located at `res/game/...`
-```
-
-Of course when you import a GLTF file meshes and textures will be automatically imported (copied) in the `res` directory and meshes that use texture will have a path to a texture saved in the TOML file.
-
-By default the engine uses point filtering for all textures if you want to use linear filtering use the following:
-
-```Cpp
-#include "material/TextureManager.h"
-
-void MyGameInstance::onGameStarted() {
-    getRenderer()->getTextureManager().setUsePointFiltering(false);
-
-    // ... your game code here ...
-}
-```
-
-## Post-processing
-
-You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the camera manager: `Node::getWorldWhileSpawned()->getCameraManager().getPostProcessManager()`.
 
 ## Game asset file format
 

@@ -3,7 +3,7 @@
 // Custom.
 #include "game/node/CameraNode.h"
 
-/** Camera used in the editor. */
+/** Camera used in the editor's viewport. */
 class EditorCameraNode : public CameraNode {
 public:
     EditorCameraNode();
@@ -18,7 +18,7 @@ public:
     virtual ~EditorCameraNode() override = default;
 
     /**
-     * Tells if movement should be enabled (captured) or not.
+     * Tells if the camera's movement/rotation should be enabled (captured) or not.
      *
      * @param bCaptured `true` to enable input.
      */
