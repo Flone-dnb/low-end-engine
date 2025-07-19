@@ -114,6 +114,18 @@ void EditorGameInstance::onBeforeWorldDestroyed(Node* pRootNode) {
     }
 }
 
+void EditorGameInstance::onWindowFocusChanged(bool bIsFocused) {
+    if (!bIsFocused) {
+        return;
+    }
+
+    if (editorWorldNodes.pContentBrowser == nullptr) {
+        return;
+    }
+
+    editorWorldNodes.pContentBrowser->rebuildFileTree();
+}
+
 void EditorGameInstance::registerEditorInputEvents() {
     // Prepare a handy lambda.
     const auto showErrorIfNotEmpty = [](const std::optional<Error>& optionalError) {
@@ -126,11 +138,6 @@ void EditorGameInstance::registerEditorInputEvents() {
 
     // Register action events.
     {
-        // Close editor.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
-            static_cast<unsigned int>(EditorInputEventIds::Action::CLOSE_EDITOR),
-            {KeyboardButton::ESCAPE, GamepadButton::BACK}));
-
         // Capture mouse.
         showErrorIfNotEmpty(getInputManager()->addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR),
@@ -151,14 +158,6 @@ void EditorGameInstance::registerEditorInputEvents() {
     {
         auto& mtxActionEvents = getActionEventBindings();
         std::scoped_lock guard(mtxActionEvents.first);
-
-        // Close editor.
-        mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CLOSE_EDITOR)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                if (!bIsPressedDown) {
-                    getWindow()->close();
-                }
-            };
 
         // Capture mouse.
         mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR)] =
@@ -254,8 +253,8 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
                     pLayout->addChildNode(std::make_unique<NodeTreeInspector>());
                 editorWorldNodes.pNodeTreeInspector->setExpandPortionInLayout(3);
 
-                const auto pContentBrowser = pLayout->addChildNode(std::make_unique<ContentBrowser>());
-                pContentBrowser->setExpandPortionInLayout(2);
+                editorWorldNodes.pContentBrowser = pLayout->addChildNode(std::make_unique<ContentBrowser>());
+                editorWorldNodes.pContentBrowser->setExpandPortionInLayout(2);
             }
         }
 
@@ -387,9 +386,9 @@ void EditorGameInstance::openNodeTreeAsGameWorld(const std::filesystem::path& pa
     if (gameWorldNodes.pRoot == nullptr) {
         return;
     }
-    destroyWorld(gameWorldNodes.pRoot->getWorldWhileSpawned());
-
-    loadNodeTreeAsWorld(pathToNodeTree, [this](Node* pRoot) { onAfterGameWorldCreated(pRoot); }, false);
+    destroyWorld(gameWorldNodes.pRoot->getWorldWhileSpawned(), [this, pathToNodeTree]() {
+        loadNodeTreeAsWorld(pathToNodeTree, [this](Node* pRoot) { onAfterGameWorldCreated(pRoot); }, false);
+    });
 }
 
 void EditorGameInstance::changeGameWorldRootNode(std::unique_ptr<Node> pNewGameRootNode) {

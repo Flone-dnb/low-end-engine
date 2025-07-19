@@ -57,15 +57,6 @@ protected:
      */
     virtual void onDespawning() override;
 
-    /**
-     * Same as @ref onKeyboardButtonPressedWhileFocused but called when button is released.
-     *
-     * @param button         Keyboard button.
-     * @param modifiers      Keyboard modifier keys.
-     */
-    virtual void
-    onKeyboardButtonReleasedWhileFocused(KeyboardButton button, KeyboardModifiers modifiers) override;
-
 private:
     /**
      * Clears previously shown content and shows contents of the specified directory.

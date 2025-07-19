@@ -14,8 +14,8 @@
 World::~World() {
     std::scoped_lock gaurd(mtxRootNode.first);
 
-    if (mtxRootNode.second != nullptr) {
-        destroyWorld();
+    if (mtxRootNode.second != nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected world to be destroyed at this point");
     }
 }
 

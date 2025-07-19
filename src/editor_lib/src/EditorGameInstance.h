@@ -12,6 +12,7 @@ class TextUiNode;
 class UiNode;
 class NodeTreeInspector;
 class ContextMenuNode;
+class ContentBrowser;
 class PropertyInspector;
 
 /** Editor's game instance. */
@@ -113,6 +114,13 @@ protected:
      */
     virtual void onBeforeWorldDestroyed(Node* pRootNode) override;
 
+    /**
+     * Called when the window focus was changed.
+     *
+     * @param bIsFocused  Whether the window has gained or lost the focus.
+     */
+    virtual void onWindowFocusChanged(bool bIsFocused) override;
+
 private:
     /** Groups pointers to nodes from game's level. */
     struct GameWorldNodes {
@@ -142,6 +150,9 @@ private:
 
         /** Node used as context menu. */
         ContextMenuNode* pContextMenu = nullptr;
+
+        /** Displays filesystem. */
+        ContentBrowser* pContentBrowser = nullptr;
     };
 
     /** Registers action and axis input events in the input manager. */

@@ -14,8 +14,6 @@ FileDialogMenu::FileDialogMenu(
     const std::filesystem::path& pathToDirectory,
     const std::function<void(const std::filesystem::path& path)>& onSelected)
     : RectUiNode("File Dialog"), onSelected(onSelected) {
-    setIsReceivingInput(true);
-
     setPosition(glm::vec2(0.0F, 0.0F));
     setSize(glm::vec2(1.0F, 1.0F));
     setColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.5F));
@@ -39,6 +37,7 @@ FileDialogMenu::FileDialogMenu(
             {
                 const auto pButton = pHorizontalLayout->addChildNode(std::make_unique<ButtonUiNode>());
                 pButton->setPadding(EditorTheme::getPadding() * 2.0F);
+                pButton->setExpandPortionInLayout(2);
                 pButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
                 pButton->setColor(EditorTheme::getButtonColor());
                 pButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
@@ -57,7 +56,7 @@ FileDialogMenu::FileDialogMenu(
 
                 const auto pCurrentPathBackground =
                     pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
-                pCurrentPathBackground->setExpandPortionInLayout(14);
+                pCurrentPathBackground->setExpandPortionInLayout(18);
                 pCurrentPathBackground->setColor(EditorTheme::getButtonColor());
                 pCurrentPathBackground->setPadding(EditorTheme::getPadding());
                 pCurrentPathBackground->setSize(
@@ -65,6 +64,20 @@ FileDialogMenu::FileDialogMenu(
                 {
                     pCurrentPathText = pCurrentPathBackground->addChildNode(std::make_unique<TextUiNode>());
                     pCurrentPathText->setTextHeight(EditorTheme::getTextHeight());
+                }
+
+                const auto pCloseButton = pHorizontalLayout->addChildNode(std::make_unique<ButtonUiNode>());
+                pCloseButton->setPadding(EditorTheme::getPadding() * 2.0F);
+                pCloseButton->setExpandPortionInLayout(2);
+                pCloseButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
+                pCloseButton->setColor(EditorTheme::getButtonColor());
+                pCloseButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
+                pCloseButton->setColorWhilePressed(EditorTheme::getButtonPressedColor());
+                pCloseButton->setOnClicked([this]() { unsafeDetachFromParentAndDespawn(true); });
+                {
+                    const auto pText = pCloseButton->addChildNode(std::make_unique<TextUiNode>());
+                    pText->setTextHeight(EditorTheme::getTextHeight());
+                    pText->setText(u"cancel");
                 }
             }
 
@@ -104,15 +117,6 @@ void FileDialogMenu::onDespawning() {
     }
 
     pGameInstance->setEnableViewportCamera(true);
-}
-
-void FileDialogMenu::onKeyboardButtonReleasedWhileFocused(
-    KeyboardButton button, KeyboardModifiers modifiers) {
-    RectUiNode::onKeyboardButtonReleasedWhileFocused(button, modifiers);
-
-    if (button == KeyboardButton::ESCAPE) {
-        unsafeDetachFromParentAndDespawn(true);
-    }
 }
 
 void FileDialogMenu::showDirectory(std::filesystem::path pathToDirectory) {

@@ -4,8 +4,7 @@
 struct EditorInputEventIds {
     /** Groups action events. */
     enum class Action : unsigned char {
-        CLOSE_EDITOR = 0,
-        CAPTURE_MOUSE_CURSOR,
+        CAPTURE_MOUSE_CURSOR = 0,
         INCREASE_CAMERA_MOVEMENT_SPEED,
         DECREASE_CAMERA_MOVEMENT_SPEED,
     };

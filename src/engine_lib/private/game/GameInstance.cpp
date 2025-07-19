@@ -21,8 +21,8 @@ void GameInstance::addTaskToThreadPool(const std::function<void()>& task) const 
     pWindow->getGameManager()->addTaskToThreadPool(task);
 }
 
-void GameInstance::destroyWorld(World* pWorldToDestroy) const {
-    pWindow->getGameManager()->destroyWorld(pWorldToDestroy);
+void GameInstance::destroyWorld(World* pWorldToDestroy, const std::function<void()>& onAfterDestroyed) const {
+    pWindow->getGameManager()->destroyWorld(pWorldToDestroy, onAfterDestroyed);
 }
 
 std::pair<

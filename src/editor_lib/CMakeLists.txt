@@ -57,6 +57,8 @@ set(PROJECT_SOURCES
     src/node/menu/SetNameMenu.cpp
     src/node/menu/FileDialogMenu.h
     src/node/menu/FileDialogMenu.cpp
+    src/node/menu/ConfirmationMenu.h
+    src/node/menu/ConfirmationMenu.cpp
     src/node/LogViewNode.h
     src/node/LogViewNode.cpp
     # add your .h/.cpp files here

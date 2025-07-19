@@ -66,18 +66,36 @@ public:
         bool bDestroyOldWorlds = true;
     };
 
+    /** Task to destroy a world (without creating a new one). */
+    struct WorldDestroyTask {
+        /** World to destroy. */
+        World* pWorld = nullptr;
+
+        /** Callback to call after the world is destroyed. */
+        std::function<void()> onAfterDestroyed;
+    };
+
     /** Groups world-related data. */
     struct WorldData {
         ~WorldData();
 
         /**
-         * Not nullptr if we need to create/load a new world.
+         * Not `nullptr` if we need to create/load a new world.
          *
          * @remark We don't create/load worlds right away but instead create/load them on the next tick
          * because when a world creation task is received we might be iterating over "tickable" nodes
          * or nodes that receive input so we avoid modifying those arrays in that case.
          */
         std::unique_ptr<WorldCreationTask> pPendingWorldCreationTask;
+
+        /**
+         * Not `nullptr` if we need to destroy a world (without creating a new one).
+         *
+         * @remark Not destroying worlds right away but instead on the next tick because such
+         * request (to destroy a world) can be passed from one of the world's entities (such as UI button
+         * click) which means that some world logic is still running and should not be destroyed.
+         */
+        std::unique_ptr<WorldDestroyTask> pWorldDestroyTask;
 
         /** Currently active worlds. */
         std::vector<std::unique_ptr<World>> vWorlds;
@@ -141,8 +159,9 @@ public:
      * Destroys the specified world and all nodes spawned in that world.
      *
      * @param pWorldToDestroy World to destroy.
+     * @param onAfterDestroyed Called after the world was destroyed.
      */
-    void destroyWorld(World* pWorldToDestroy);
+    void destroyWorld(World* pWorldToDestroy, const std::function<void()>& onAfterDestroyed);
 
     /**
      * Returns the total number of spawned nodes that receive input.
@@ -246,8 +265,13 @@ private:
      */
     void onBeforeWorldDestroyed(Node* pRootNode);
 
-    /** Destroys worlds from @ref mtxWorldData. */
-    void destroyWorlds();
+    /**
+     * Destroys worlds from @ref mtxWorldData.
+     *
+     * @warning Exepects that this function was not triggered from some world logic (such as a UI button
+     * click) because worlds are going to be destroyed inside of this function.
+     */
+    void destroyWorldsImmediately();
 
     /**
      * Must be called before destructor to destroy the world, all nodes and various systems

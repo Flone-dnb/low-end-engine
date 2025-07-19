@@ -412,11 +412,16 @@ std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
             if (!pathToFile.has_parent_path()) [[unlikely]] {
                 return Error(std::format("expected a parent path to exist for \"{}\"", pathToFile.string()));
             }
-
             if (!std::filesystem::exists(pathToFile.parent_path())) {
                 std::filesystem::create_directories(pathToFile.parent_path());
             }
-            auto basePathToBinaryFile = pathToFile.parent_path() / pathToFile.stem().string();
+
+            // Put all binary files in a separate directory.
+            auto basePathToBinaryFile =
+                pathToFile.parent_path() / sBinaryFileExtension / pathToFile.stem().string();
+            if (!std::filesystem::exists(basePathToBinaryFile.parent_path())) {
+                std::filesystem::create_directories(basePathToBinaryFile.parent_path());
+            }
 
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
                 const auto currentValue = variableInfo.getter(this);

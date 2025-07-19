@@ -91,9 +91,10 @@ public:
     /**
      * Destroys the specified world and all nodes spawned in that world.
      *
-     * @param pWorldToDestroy World to destroy.
+     * @param pWorldToDestroy  World to destroy.
+     * @param onAfterDestroyed Called after the world was destroyed.
      */
-    void destroyWorld(World* pWorldToDestroy) const;
+    void destroyWorld(World* pWorldToDestroy, const std::function<void()>& onAfterDestroyed) const;
 
     /**
      * Returns total amount of currently spawned nodes.

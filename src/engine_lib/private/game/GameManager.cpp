@@ -42,10 +42,7 @@ void GameManager::onBeforeWorldDestroyed(Node* pRootNode) {
     pGameInstance->onBeforeWorldDestroyed(pRootNode);
 }
 
-void GameManager::destroyWorlds() {
-    // Wait for GPU to finish all work (just in case).
-    Renderer::waitForGpuToFinishWorkUpToThisPoint();
-
+void GameManager::destroyWorldsImmediately() {
     std::scoped_lock guard(mtxWorldData.first);
 
     for (auto& pWorld : mtxWorldData.second.vWorlds) {
@@ -65,7 +62,7 @@ void GameManager::destroy() {
     Logger::get().flushToDisk();
 
     // Destroy world before game instance, so that no node will reference game instance.
-    destroyWorlds();
+    destroyWorldsImmediately();
 
     threadPool.stop();
 
@@ -142,24 +139,16 @@ void GameManager::addTaskToThreadPool(const std::function<void()>& task) {
     threadPool.addTask(task);
 }
 
-void GameManager::destroyWorld(World* pWorldToDestroy) {
+void GameManager::destroyWorld(World* pWorldToDestroy, const std::function<void()>& onAfterDestroyed) {
     std::scoped_lock guard(mtxWorldData.first);
 
-    for (auto& pWorld : mtxWorldData.second.vWorlds) {
-        if (pWorld.get() != pWorldToDestroy) {
-            continue;
-        }
+    // Don't destroy world right now because this function might be called from one of the world's entities
+    // (such as UI button click) which means that some world logic is still running and should not be
+    // destroyed.
 
-        // Not clearing the pointer because some nodes can still reference world.
-        pWorld->destroyWorld();
-
-        // Can safely destroy the world object now.
-        pWorld = nullptr;
-
-        return;
-    }
-
-    Error::showErrorAndThrowException("can't destroy world because the specified pointer is invalid");
+    mtxWorldData.second.pWorldDestroyTask = std::make_unique<WorldDestroyTask>();
+    mtxWorldData.second.pWorldDestroyTask->pWorld = pWorldToDestroy;
+    mtxWorldData.second.pWorldDestroyTask->onAfterDestroyed = onAfterDestroyed;
 }
 
 size_t GameManager::getReceivingInputNodeCount() {
@@ -212,13 +201,46 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
         std::scoped_lock guard(mtxWorldData.first);
 
+        // Destroy world if needed.
+        if (mtxWorldData.second.pWorldDestroyTask != nullptr) {
+            auto& vWorlds = mtxWorldData.second.vWorlds;
+            auto& pTask = mtxWorldData.second.pWorldDestroyTask;
+
+            bool bFoundWorld = false;
+            for (auto it = vWorlds.begin(); it != vWorlds.end(); it++) {
+                auto& pWorld = *it;
+
+                if (pWorld.get() != pTask->pWorld) {
+                    continue;
+                }
+
+                // Not clearing the pointer because some nodes can still reference world.
+                pWorld->destroyWorld();
+
+                // Can safely destroy the world object now.
+                pWorld = nullptr;
+
+                vWorlds.erase(it);
+                bFoundWorld = true;
+                break;
+            }
+
+            if (!bFoundWorld) {
+                Error::showErrorAndThrowException(
+                    "can't destroy world because the specified pointer is invalid");
+            }
+
+            pTask->onAfterDestroyed();
+            pTask = nullptr;
+        }
+
         auto& pWorldCreationTask = mtxWorldData.second.pPendingWorldCreationTask;
 
         // Create a new world if needed.
         if (pWorldCreationTask != nullptr) {
             if (pWorldCreationTask->pOptionalNodeTreeLoadTask == nullptr) {
                 if (pWorldCreationTask->bDestroyOldWorlds) {
-                    destroyWorlds();
+                    destroyWorldsImmediately();
                 }
                 Node* pRootNode = nullptr;
                 {
@@ -230,7 +252,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
                 // Clear task before calling the callback because inside of the callback the user might
                 // queue new world creation.
                 auto callback = std::move(pWorldCreationTask->onCreated);
-                pWorldCreationTask.reset();
+                pWorldCreationTask = nullptr;
                 callback(pRootNode);
             } else {
                 if (!pWorldCreationTask->pOptionalNodeTreeLoadTask->bIsAsyncTaskStarted) {
@@ -258,7 +280,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
                 } else if (pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot != nullptr) {
                     // Loaded.
                     if (pWorldCreationTask->bDestroyOldWorlds) {
-                        destroyWorlds();
+                        destroyWorldsImmediately();
                     }
                     Node* pRootNode = nullptr;
                     {
@@ -271,7 +293,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
                     // Same thing, clear task before callback.
                     auto callback = std::move(pWorldCreationTask->onCreated);
-                    pWorldCreationTask.reset();
+                    pWorldCreationTask = nullptr;
                     callback(pRootNode);
                 }
             }
