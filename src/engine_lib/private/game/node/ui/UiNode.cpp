@@ -345,5 +345,11 @@ void UiNode::processVisibilityChange() {
         if (bAllowRendering && bIsVisible && bShouldBeModal) {
             getWorldWhileSpawned()->getUiNodeManager().setModalNode(this);
         }
+
+        // Do as the last step because the node can despawn itself in the user callback.
+        if (bIsMouseCursorHovered) {
+            bIsMouseCursorHovered = false;
+            onMouseLeft();
+        }
     }
 }

@@ -318,6 +318,9 @@ private:
      */
     UiNodeManager(Renderer* pRenderer, World* pWorld);
 
+    /** Triggers `onMouseEntered` and `onMouseLeft` events for UI nodes. */
+    void processMouseHoverOnNodes();
+
     /**
      * Renders the UI text nodes on the current framebuffer.
      *
@@ -404,13 +407,6 @@ private:
      * @return `true` if there's a modal parent node.
      */
     bool hasModalParent(UiNode* pNode) const;
-
-    /**
-     * Calls `onMouseLeft` on the specified nodes.
-     *
-     * @param vNodes Nodes to call the function.
-     */
-    void safelyCallOnMouseLeft(const std::vector<UiNode*>& vNodes);
 
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;
