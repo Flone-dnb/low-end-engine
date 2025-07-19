@@ -270,7 +270,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
         }
 
         // Create a new mesh node with the specified data.
-        auto pMeshNode = std::make_unique<MeshNode>(mesh.name);
+        auto pMeshNode = std::make_unique<MeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
         pMeshNode->setMeshGeometryBeforeSpawned(std::move(meshGeometry));
 
         if (primitive.material >= 0) {

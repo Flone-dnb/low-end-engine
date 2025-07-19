@@ -86,7 +86,8 @@ FileDialogMenu::FileDialogMenu(
             pFilesystemBackground->setExpandPortionInLayout(16);
             pFilesystemBackground->setPadding(EditorTheme::getPadding());
             {
-                pFilesystemLayout = pFilesystemBackground->addChildNode(std::make_unique<LayoutUiNode>());
+                pFilesystemLayout =
+                    pFilesystemBackground->addChildNode(std::make_unique<LayoutUiNode>("filesystem"));
                 pFilesystemLayout->setIsScrollBarEnabled(true);
                 pFilesystemLayout->setChildNodeSpacing(EditorTheme::getSpacing());
                 pFilesystemLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
@@ -142,7 +143,8 @@ void FileDialogMenu::showDirectory(std::filesystem::path pathToDirectory) {
     for (const auto& entry : std::filesystem::directory_iterator(pathToDirectory)) {
         std::string sEntryName;
 
-        const auto pButton = pFilesystemLayout->addChildNode(std::make_unique<ButtonUiNode>());
+        const auto pButton =
+            pFilesystemLayout->addChildNode(std::make_unique<ButtonUiNode>(entry.path().filename().string()));
         pButton->setPadding(EditorTheme::getPadding());
         pButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
         pButton->setColor(EditorTheme::getButtonColor());

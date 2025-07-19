@@ -21,7 +21,7 @@ std::string TextUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 TextUiNode::TextUiNode() : TextUiNode("Text UI Node") {}
 TextUiNode::TextUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     // Text generally needs less size that default for nodes.
-    setSize(glm::vec2(0.2F, 0.03F)); // NOLINT
+    setSize(glm::vec2(0.2F, 0.02F));
 }
 
 TypeReflectionInfo TextUiNode::getReflectionInfo() {

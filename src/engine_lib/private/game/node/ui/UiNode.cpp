@@ -256,18 +256,8 @@ void UiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     }
 
     // Apply visibility.
-    if (!bIsVisible) {
-        const auto mtxChildNodes = getChildNodes();
-        std::scoped_lock guard(*mtxChildNodes.first);
-
-        for (const auto& pChildNode : mtxChildNodes.second) {
-            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
-            if (pUiChild == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("expected a UI node");
-            }
-            pUiChild->setIsVisible(bIsVisible);
-        }
-    }
+    pUiChild->setIsVisible(bIsVisible);
+    pUiChild->setAllowRendering(bAllowRendering);
 }
 
 void countDepthToRoot(Node* pCurrentNode, size_t& iDepth) {
