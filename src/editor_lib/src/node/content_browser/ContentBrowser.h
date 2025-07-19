@@ -8,6 +8,7 @@
 
 class LayoutUiNode;
 
+/** Displays filesystem. */
 class ContentBrowser : public RectUiNode {
 public:
     ContentBrowser();

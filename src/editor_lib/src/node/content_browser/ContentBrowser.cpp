@@ -208,8 +208,14 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                  getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
                      ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
                      [this, pathToDirectory](const std::filesystem::path& selectedPath) {
+                         const auto sRelativeOutputPath =
+                             std::filesystem::relative(
+                                 pathToDirectory,
+                                 ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT))
+                                 .string();
+
                          const auto optionalError =
-                             TextureManager::importTextureFromFile(selectedPath, pathToDirectory);
+                             TextureManager::importTextureFromFile(selectedPath, sRelativeOutputPath);
                          if (optionalError.has_value()) [[unlikely]] {
                              Logger::get().error(std::format(
                                  "failed to import texture, error: {}", optionalError->getInitialMessage()));
