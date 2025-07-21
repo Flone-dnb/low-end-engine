@@ -514,7 +514,7 @@ TypeReflectionInfo PlayerSaveData::getReflectionInfo() {
     // TODO
 
     return TypeReflectionInfo(
-        "", // parent GUID, if you derived from say a `Node` you would have here `Node::getTypeGuidStatic()`
+        "", // parent GUID, if your parent provides function `T::getTypeGuidStatic()` then use it here
         NAMEOF_SHORT_TYPE(PlayerSaveData).data(), // type name
         []() -> std::unique_ptr<Serializable> { return std::make_unique<PlayerSaveData>(); }, // function to create your object
         std::move(variables)); // reflected variables
