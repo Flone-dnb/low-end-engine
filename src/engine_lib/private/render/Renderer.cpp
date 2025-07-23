@@ -132,15 +132,22 @@ void Renderer::drawNextFrame() {
 
     if (!mtxWorlds.second.vWorlds.empty()) {
         const auto pWorld = mtxWorlds.second.vWorlds[0].get();
-        const auto& pMainFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
 
-        glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, iWindowWidth, iWindowHeight);
+        // Check camera.
+        auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
+        std::scoped_lock cameraGuard(mtxActiveCamera.first);
+        if (mtxActiveCamera.second.pNode != nullptr) {
+            const auto& pMainFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
 
-        pWorld->getUiNodeManager().drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
+            glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, iWindowWidth, iWindowHeight);
 
-        copyFramebufferToWindowFramebuffer(*pMainFramebuffer, glm::ivec4(0, 0, iWindowWidth, iWindowHeight));
+            pWorld->getUiNodeManager().drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
+
+            copyFramebufferToWindowFramebuffer(
+                *pMainFramebuffer, glm::ivec4(0, 0, iWindowWidth, iWindowHeight));
+        }
     }
 #else
     // Get active cameras from all worlds.
