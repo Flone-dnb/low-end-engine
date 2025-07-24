@@ -50,6 +50,21 @@ void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
     addGameNodeRecursive(pGameRootNode);
 }
 
+void NodeTreeInspector::refreshGameNodeName(Node* pGameNode) {
+    const auto mtxChildNodes = pLayoutNode->getChildNodes();
+    std::scoped_lock guard(*mtxChildNodes.first);
+    for (const auto& pNode : mtxChildNodes.second) {
+        const auto pItem = dynamic_cast<NodeTreeInspectorItem*>(pNode);
+        if (pItem == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected node tree item");
+        }
+        if (pItem->getDisplayedGameNode() == pGameNode) {
+            pItem->setNodeToDisplay(pGameNode);
+            break;
+        }
+    }
+}
+
 void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
     if (pNode->getNodeName().starts_with(getHiddenNodeNamePrefix())) {
         return;

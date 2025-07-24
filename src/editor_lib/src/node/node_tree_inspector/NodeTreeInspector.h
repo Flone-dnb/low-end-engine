@@ -30,6 +30,13 @@ public:
     static std::string_view getHiddenNodeNamePrefix() { return "Editor"; };
 
     /**
+     * Updates displayed node name.
+     *
+     * @param pGameNode Node that changed its name.
+     */
+    void refreshGameNodeName(Node* pGameNode);
+
+    /**
      * Called after a game's node tree was loaded.
      *
      * @param pGameRootNode Root node of game's node tree.

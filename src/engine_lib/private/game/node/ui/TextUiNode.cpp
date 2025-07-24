@@ -110,13 +110,17 @@ void TextUiNode::setText(std::u16string_view sNewText) {
     sText = sNewText;
 
     iNewLineCharCountInText = 0;
-    for (size_t i = 0; i < sText.size(); i++) {
-        if (sText[i] == '\n') {
+    for (auto it = sText.begin(); it != sText.end();) {
+        const auto& ch = *it;
+        if (ch == u'\n') {
             if (bHandleNewLineChars) {
                 iNewLineCharCountInText += 1;
+                it++;
             } else {
-                sText[i] = u' ';
+                it = sText.erase(it);
             }
+        } else {
+            it++;
         }
     }
 

@@ -65,6 +65,38 @@ void EditorGameInstance::onGamepadDisconnected() {
     gameWorldNodes.pViewportCamera->onGamepadDisconnected();
 }
 
+void EditorGameInstance::onKeyboardInput(
+    KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
+    if (bIsPressedDown) {
+        return;
+    }
+
+    if (gameWorldNodes.pRoot == nullptr || editorWorldNodes.pContentBrowser == nullptr) {
+        return;
+    }
+
+    if (!lastOpenedNodeTree.has_value()) {
+        return;
+    }
+
+    if (!std::filesystem::exists(*lastOpenedNodeTree)) {
+        return;
+    }
+
+    if (modifiers.isControlPressed() && key == KeyboardButton::S) {
+        const auto optionalError = gameWorldNodes.pRoot->serializeNodeTree(*lastOpenedNodeTree, false);
+        if (optionalError.has_value()) [[unlikely]] {
+            Logger::get().error(std::format(
+                "failed to save node tree to \"{}\", error: {}",
+                lastOpenedNodeTree->filename().string(),
+                optionalError->getInitialMessage()));
+        } else {
+            Logger::get().info(
+                std::format("node tree saved to \"{}\"", lastOpenedNodeTree->filename().string()));
+        }
+    }
+}
+
 void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
     if (gameWorldNodes.pStatsText == nullptr) {
         return;
@@ -390,7 +422,13 @@ void EditorGameInstance::openNodeTreeAsGameWorld(const std::filesystem::path& pa
         return;
     }
     destroyWorld(gameWorldNodes.pRoot->getWorldWhileSpawned(), [this, pathToNodeTree]() {
-        loadNodeTreeAsWorld(pathToNodeTree, [this](Node* pRoot) { onAfterGameWorldCreated(pRoot); }, false);
+        loadNodeTreeAsWorld(
+            pathToNodeTree,
+            [this, pathToNodeTree](Node* pRoot) {
+                onAfterGameWorldCreated(pRoot);
+                lastOpenedNodeTree = pathToNodeTree;
+            },
+            false);
     });
 }
 
@@ -420,4 +458,8 @@ bool EditorGameInstance::isContextMenuOpened() const {
 
 PropertyInspector* EditorGameInstance::getPropertyInspector() const {
     return editorWorldNodes.pPropertyInspector;
+}
+
+NodeTreeInspector* EditorGameInstance::getNodeTreeInspector() const {
+    return editorWorldNodes.pNodeTreeInspector;
 }

@@ -6,6 +6,8 @@
 #include "game/node/ui/TextEditUiNode.h"
 #include "EditorTheme.h"
 #include "misc/ReflectedTypeDatabase.h"
+#include "EditorGameInstance.h"
+#include "node/node_tree_inspector/NodeTreeInspector.h"
 
 // External.
 #include "utf/utf.hpp"
@@ -20,6 +22,8 @@ StringInspector::StringInspector(
         Error::showErrorAndThrowException(
             std::format("expected to find variable named \"{}\"", sVariableName));
     }
+
+    const auto bChangingNodeName = sVariableName == "sNodeName";
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
     setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
@@ -36,7 +40,8 @@ StringInspector::StringInspector(
             const auto pTextEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEdit->setTextHeight(EditorTheme::getSmallTextHeight());
             pTextEdit->setText(utf::as_u16(variableIt->second.getter(pObject)));
-            pTextEdit->setOnTextChanged([this](std::u16string_view sNewText) {
+            pTextEdit->setHandleNewLineChars(false);
+            pTextEdit->setOnTextChanged([bChangingNodeName, this](std::u16string_view sNewText) {
                 // Set new value.
                 const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(this->pObject->getTypeGuid());
                 const auto variableIt = typeInfo.reflectedVariables.strings.find(this->sVariableName);
@@ -45,6 +50,16 @@ StringInspector::StringInspector(
                         std::format("expected to find variable named \"{}\"", this->sVariableName));
                 }
                 variableIt->second.setter(this->pObject, utf::as_str8(sNewText));
+
+                if (bChangingNodeName) {
+                    const auto pGameInstance =
+                        dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
+                    if (pGameInstance == nullptr) [[unlikely]] {
+                        Error::showErrorAndThrowException("expected editor game instance");
+                    }
+                    pGameInstance->getNodeTreeInspector()->refreshGameNodeName(
+                        dynamic_cast<Node*>(this->pObject));
+                }
             });
         }
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard.
+#include <filesystem>
 #include <unordered_set>
 
 // Custom.

@@ -907,7 +907,7 @@ private:
     static constexpr std::string_view sTomlKeyParentNodeId = "parent_node_id";
 
     /** Name of the TOML key we use to serialize information about position in parent's child node array. */
-    static constexpr std::string_view sTomlKeyChildNodeArrayIndex = "child_node_array_index";
+    static constexpr std::string_view sTomlKeyChildNodeArrayIndex = "child_node_index";
 
     /** Name of the TOML key we use to store a path to an external node tree. */
     static constexpr std::string_view sTomlKeyExternalNodeTreePath = "root_node_of_external_node_tree";

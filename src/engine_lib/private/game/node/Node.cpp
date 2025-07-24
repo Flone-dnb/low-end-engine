@@ -229,6 +229,16 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
     // Add child nodes in the correct order.
     for (auto& [pParentNode, vChildNodeArray] : parentNodeToChildNodes) {
         for (auto& pChildNode : vChildNodeArray) {
+            if (pChildNode == nullptr) [[unlikely]] {
+                // Found a hole in the parent's "child nodes" array. This might mean that serialized indices
+                // in the "child nodes" array are invalid.
+                Error::showErrorAndThrowException(std::format(
+                    "found empty (nullptr) node in the array of child nodes for parent node \"{}\" this "
+                    "might mean that \"{}\" value (in the node tree file) is invalid",
+                    pParentNode->getNodeName(),
+                    sTomlKeyChildNodeArrayIndex));
+            }
+
             pParentNode->addChildNode(
                 std::move(pChildNode),
                 AttachmentRule::KEEP_RELATIVE,
@@ -807,10 +817,13 @@ Node::getInformationForSerialization(
         // Find self in the parent's array of child nodes.
         const auto mtxChildNodes = mtxParentNode.second->getChildNodes();
         std::optional<size_t> optionalIndex;
-        for (size_t i = 0; i < mtxChildNodes.second.size(); i++) {
+        for (size_t i = 0, iSerializableIndex = 0; i < mtxChildNodes.second.size(); i++) {
             if (mtxChildNodes.second[i] == this) {
-                optionalIndex = i;
+                optionalIndex = iSerializableIndex;
                 break;
+            }
+            if (mtxChildNodes.second[i]->isSerialized()) {
+                iSerializableIndex += 1;
             }
         }
         if (!optionalIndex.has_value()) [[unlikely]] {

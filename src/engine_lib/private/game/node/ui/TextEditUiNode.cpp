@@ -166,7 +166,7 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
             std::format("node \"{}\" expected to have a cursor offset already prepared", getNodeName()));
     }
 
-    if (button == KeyboardButton::ENTER) {
+    if (button == KeyboardButton::ENTER && getHandleNewLineChars()) {
         auto sText = std::u16string(getText());
         sText.insert(*optionalCursorOffset, u"\n");
         changeText(sText);

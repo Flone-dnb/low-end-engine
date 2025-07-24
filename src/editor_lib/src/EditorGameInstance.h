@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 // Standard.
+#include <optional>
 #include <filesystem>
 
 // Custom.
@@ -78,6 +79,13 @@ public:
      */
     PropertyInspector* getPropertyInspector() const;
 
+    /**
+     * Returns node tree inspector that displays game world's node tree.
+     *
+     * @return Inspector.
+     */
+    NodeTreeInspector* getNodeTreeInspector() const;
+
 protected:
     /**
      * Called after GameInstance's constructor is finished and created
@@ -96,6 +104,16 @@ protected:
 
     /** Called after a gamepad controller was disconnected. */
     virtual void onGamepadDisconnected() override;
+
+    /**
+     * Called when the window (that owns this object) receives keyboard input.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     * @param bIsPressedDown Whether the key down event occurred or key up.
+     */
+    virtual void
+    onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) override;
 
     /**
      * Called before a new frame is rendered.
@@ -180,4 +198,7 @@ private:
 
     /** Not `nullptr` if editor world exists. */
     EditorWorldNodes editorWorldNodes;
+
+    /** Path to the last opened node tree file. */
+    std::optional<std::filesystem::path> lastOpenedNodeTree;
 };
