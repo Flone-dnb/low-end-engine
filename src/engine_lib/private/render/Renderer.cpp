@@ -85,7 +85,6 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 void Renderer::recreateFramebuffers() {
     const auto pGameManager = pWindow->getGameManager();
 
-#if !defined(ENGINE_UI_ONLY)
     // Update framebuffers (main, post-process).
     if (pGameManager != nullptr) {
         auto& mtxWorldData = pGameManager->getWorlds();
@@ -94,7 +93,6 @@ void Renderer::recreateFramebuffers() {
             pWorld->getCameraManager().onWindowSizeChanged(pWindow);
         }
     }
-#endif
 
     pFontManager->onWindowSizeChanged();
 
