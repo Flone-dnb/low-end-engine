@@ -384,17 +384,13 @@ void MyGameInstance::onGameStarted() {
 Note
 > We only support import from GLTF/GLB format.
 
-### Export settings in Blender
+If you're using Blender to model your meshes, in order to properly export a GLTF/GLB file usually the only thing that you need to do is to untick the "+Y up" checkbox in "Transform" section (since we use +Z as our UP axis).
 
-Usually the only thing that you need to do is to untick the "+Y up" checkbox in "Transform" section (since we use +Z as our UP axis).
+In order to import your file you can use the editor: right click on a directory in the content browser (left-bottom corner) and select "Import GLTF/GLB" in the opened context menu. Select a .gltf or .glb file and a converted version of the asset will appear in that directory in the form of a node tree file (.TOML file) (plus some other stuff).
 
-### Import in the engine using C++
-
-In order to import your file you need to use `GltfImporter` like so:
+To do the same thing using the C++ code you need to use the `GltfImporter` class like so:
 
 ```Cpp
-#include "io/GltfImporter.h"
-
 auto optionalError = GltfImporter::importFileAsNodeTree(
     "C:\\models\\sword.glb",       // importing GLB as an example, you can import GLTF in the same way
     "game/models",                 // path to the output directory relative `res` (should exist)
@@ -421,9 +417,13 @@ if (std::holds_alternative<Error>(result)) [[unlikely]] {
 const auto pImportedRootNode = getWorldRootNode()->addChildNode(std::get<std::unique_ptr<Node>>(std::move(result)));
 ```
 
-## Textures and texture filtering
+## Texture import and texture filtering
 
-There's no texture import or anything like that, if you want your mesh to have a texture just tell it the path to the texture like so:
+In order to import a texture you can use the editor: right click on a directory in the content browser (left-bottom corner) and select "Import texture" in the opened context menu. Select a texture and a converted version of the texture will appear in that directory.
+
+You can also import a texture using the code, just use the `TextureManager::importTextureFromFile` function.
+
+In order to use the imported texture (for example on a mesh) you need to assign it like so:
 
 ```Cpp
 auto pCube = std::make_unique<MeshNode>();
