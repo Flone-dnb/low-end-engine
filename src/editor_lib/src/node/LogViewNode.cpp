@@ -22,6 +22,7 @@ LogViewNode::LogViewNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
         Logger::get().setCallback([this](LogMessageCategory category, const std::string& sMessage) {
             const auto pTextNode = pLayout->addChildNode(std::make_unique<TextUiNode>("Log View Message"));
             pTextNode->setTextHeight(EditorTheme::getSmallTextHeight());
+            pTextNode->setHandleNewLineChars(false);
             pTextNode->setText(utf::as_u16(sMessage));
 
             if (category == LogMessageCategory::ERROR) {

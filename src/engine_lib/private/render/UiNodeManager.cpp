@@ -1003,7 +1003,7 @@ void UiNodeManager::drawSliderNodes(size_t iLayer) {
     glDisable(GL_BLEND);
 }
 
-void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
+void UiNodeManager::drawTextNodes(size_t iLayer) {
     PROFILE_FUNC;
 
     auto& fontManager = pRenderer->getFontManager();
@@ -1210,7 +1210,8 @@ void UiNodeManager::drawTextNodes(size_t iLayer) { // NOLINT
                         }
                     }
 
-                    if (iLineIndex >= iLinesToSkip) {
+                    if (iLineIndex >= iLinesToSkip &&
+                        screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
                         float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
                         float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
 
