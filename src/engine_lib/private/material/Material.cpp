@@ -63,7 +63,7 @@ void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
         Logger::get().error(std::format("path \"{}\" does not exist", pathToTexture.string()));
         return;
     }
-    if (std::filesystem::is_directory(pathToTexture)) [[unlikely]] {
+    if (std::filesystem::is_directory(pathToTexture)) {
         Logger::get().error(
             std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
         return;
@@ -87,26 +87,86 @@ void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
     pNode->registerToRendering();
 }
 
-void Material::setPathToCustomVertexShader(const std::string& sPathToCustomVertexShader) {
-    if (pShaderProgram != nullptr) [[unlikely]] {
-        // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
-        // for simplicity
-        Error::showErrorAndThrowException(
-            "changing material's shaders is not allowed while the material is used on a spawned node");
+void Material::setPathToCustomVertexShader(std::string sPathToCustomVertexShader) {
+    // Normalize slash.
+    for (size_t i = 0; i < sPathToCustomVertexShader.size(); i++) {
+        if (sPathToCustomVertexShader[i] == '\\') {
+            sPathToCustomVertexShader[i] = '/';
+        }
     }
 
-    this->sPathToCustomVertexShader = sPathToCustomVertexShader;
+    if (this->sPathToCustomVertexShader == sPathToCustomVertexShader) {
+        return;
+    }
+
+    const auto pathToFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToCustomVertexShader;
+    if (!std::filesystem::exists(pathToFile)) {
+        Logger::get().error(std::format("path \"{}\" does not exist", pathToFile.string()));
+        return;
+    }
+    if (std::filesystem::is_directory(pathToFile)) {
+        Logger::get().error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
+        return;
+    }
+
+    if (pShaderProgram == nullptr) {
+        this->sPathToCustomVertexShader = sPathToCustomVertexShader;
+        return;
+    }
+
+    if (pOwnerNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected owner node to be valid");
+    }
+
+    // Vertex shader is not expected to change while the mesh is registered for rendering thus:
+    const auto pNode = pOwnerNode;
+    pNode->unregisterFromRendering(); // removes shader program and `pOwnerNode`
+    {
+        this->sPathToCustomVertexShader = sPathToCustomVertexShader;
+    }
+    pNode->registerToRendering();
 }
 
-void Material::setPathToCustomFragmentShader(const std::string& sPathToCustomFragmentShader) {
-    if (pShaderProgram != nullptr) [[unlikely]] {
-        // not allowed because this means we have to use something like `onNodeSpawning` so just won't allow
-        // for simplicity
-        Error::showErrorAndThrowException(
-            "changing material's shaders is not allowed while the material is used on a spawned node");
+void Material::setPathToCustomFragmentShader(std::string sPathToCustomFragmentShader) {
+    // Normalize slash.
+    for (size_t i = 0; i < sPathToCustomFragmentShader.size(); i++) {
+        if (sPathToCustomFragmentShader[i] == '\\') {
+            sPathToCustomFragmentShader[i] = '/';
+        }
     }
 
-    this->sPathToCustomFragmentShader = sPathToCustomFragmentShader;
+    if (this->sPathToCustomFragmentShader == sPathToCustomFragmentShader) {
+        return;
+    }
+
+    const auto pathToFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToCustomFragmentShader;
+    if (!std::filesystem::exists(pathToFile)) {
+        Logger::get().error(std::format("path \"{}\" does not exist", pathToFile.string()));
+        return;
+    }
+    if (std::filesystem::is_directory(pathToFile)) {
+        Logger::get().error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
+        return;
+    }
+
+    if (pShaderProgram == nullptr) {
+        this->sPathToCustomFragmentShader = sPathToCustomFragmentShader;
+        return;
+    }
+
+    if (pOwnerNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected owner node to be valid");
+    }
+
+    // Fragment shader is not expected to change while the mesh is registered for rendering thus:
+    const auto pNode = pOwnerNode;
+    pNode->unregisterFromRendering(); // removes shader program and `pOwnerNode`
+    {
+        this->sPathToCustomFragmentShader = sPathToCustomFragmentShader;
+    }
+    pNode->registerToRendering();
 }
 
 void Material::onNodeSpawning(

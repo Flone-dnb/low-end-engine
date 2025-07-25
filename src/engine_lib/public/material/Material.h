@@ -81,14 +81,14 @@ public:
      *
      * @param sPathToCustomVertexShader Path to .glsl file relative `res` directory.
      */
-    void setPathToCustomVertexShader(const std::string& sPathToCustomVertexShader);
+    void setPathToCustomVertexShader(std::string sPathToCustomVertexShader);
 
     /**
      * Sets GLSL fragment shader to use instead of the default one.
      *
      * @param sPathToCustomFragmentShader Path to .glsl file relative `res` directory.
      */
-    void setPathToCustomFragmentShader(const std::string& sPathToCustomFragmentShader);
+    void setPathToCustomFragmentShader(std::string sPathToCustomFragmentShader);
 
     /**
      * Returns color of the diffuse light.
