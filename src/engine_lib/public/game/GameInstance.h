@@ -191,17 +191,30 @@ protected:
      *
      * @param key            Keyboard key.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {}
+    virtual void onKeyboardButtonPressed(KeyboardButton key, KeyboardModifiers modifiers) {}
+
+    /**
+     * Called when the window (that owns this object) receives keyboard input.
+     *
+     * @param key            Keyboard key.
+     * @param modifiers      Keyboard modifier keys.
+     */
+    virtual void onKeyboardButtonReleased(KeyboardButton key, KeyboardModifiers modifiers) {}
 
     /**
      * Called when the game receives gamepad input.
      *
-     * @param button         Gamepad button.
-     * @param bIsPressedDown Whether the button was pressed or released.
+     * @param button Gamepad button.
      */
-    virtual void onGamepadInput(GamepadButton button, bool bIsPressedDown) {}
+    virtual void onGamepadButtonPressed(GamepadButton button) {}
+
+    /**
+     * Called when the game receives gamepad input.
+     *
+     * @param button Gamepad button.
+     */
+    virtual void onGamepadButtonReleased(GamepadButton button) {}
 
     /**
      * Called when the game receives gamepad axis movement.
@@ -216,9 +229,16 @@ protected:
      *
      * @param button         Mouse button.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the button down event occurred or button up.
      */
-    virtual void onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {}
+    virtual void onMouseButtonPressed(MouseButton button, KeyboardModifiers modifiers) {}
+
+    /**
+     * Called when the window (that owns this object) receives mouse input.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     */
+    virtual void onMouseButtonReleased(MouseButton button, KeyboardModifiers modifiers) {}
 
     /**
      * Called when the window received mouse movement.

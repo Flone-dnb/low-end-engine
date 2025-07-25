@@ -110,10 +110,8 @@ protected:
      *
      * @param key            Keyboard key.
      * @param modifiers      Keyboard modifier keys.
-     * @param bIsPressedDown Whether the key down event occurred or key up.
      */
-    virtual void
-    onKeyboardInput(KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) override;
+    virtual void onKeyboardButtonReleased(KeyboardButton key, KeyboardModifiers modifiers) override;
 
     /**
      * Called before a new frame is rendered.

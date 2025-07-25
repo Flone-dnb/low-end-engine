@@ -335,7 +335,13 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
 void GameManager::onKeyboardInput(
     KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) {
-    pGameInstance->onKeyboardInput(key, modifiers, bIsPressedDown);
+    if (!bIsRepeat) {
+        if (bIsPressedDown) {
+            pGameInstance->onKeyboardButtonPressed(key, modifiers);
+        } else {
+            pGameInstance->onKeyboardButtonReleased(key, modifiers);
+        }
+    }
 
     std::scoped_lock guard(mtxWorldData.first);
 
@@ -360,7 +366,11 @@ void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter
 }
 
 void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
-    pGameInstance->onGamepadInput(button, bIsPressedDown);
+    if (bIsPressedDown) {
+        pGameInstance->onGamepadButtonPressed(button);
+    } else {
+        pGameInstance->onGamepadButtonReleased(button);
+    }
 
     std::scoped_lock guard(mtxWorldData.first);
 
@@ -397,7 +407,11 @@ void GameManager::onCursorVisibilityChanged(bool bVisibleNow) {
 }
 
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    pGameInstance->onMouseInput(button, modifiers, bIsPressedDown);
+    if (bIsPressedDown) {
+        pGameInstance->onMouseButtonPressed(button, modifiers);
+    } else {
+        pGameInstance->onMouseButtonReleased(button, modifiers);
+    }
 
     std::scoped_lock guard(mtxWorldData.first);
 

@@ -65,12 +65,7 @@ void EditorGameInstance::onGamepadDisconnected() {
     gameWorldNodes.pViewportCamera->onGamepadDisconnected();
 }
 
-void EditorGameInstance::onKeyboardInput(
-    KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    if (bIsPressedDown) {
-        return;
-    }
-
+void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardModifiers modifiers) {
     if (gameWorldNodes.pRoot == nullptr || editorWorldNodes.pContentBrowser == nullptr) {
         return;
     }
