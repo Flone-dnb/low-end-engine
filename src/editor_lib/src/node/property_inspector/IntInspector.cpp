@@ -36,6 +36,7 @@ IntInspector::IntInspector(
             const auto pTextEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEdit->setTextHeight(EditorTheme::getSmallTextHeight());
             pTextEdit->setText(utf::as_u16(std::to_string(variableIt->second.getter(pObject))));
+            pTextEdit->setHandleNewLineChars(false);
             pTextEdit->setOnTextChanged([this, pTextEdit](std::u16string_view sNewText) {
                 // Filter text.
                 bool bErasedSomeText = false;

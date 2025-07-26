@@ -6,6 +6,7 @@
 #include "render/FontManager.h"
 #include "game/World.h"
 #include "game/camera/CameraManager.h"
+#include "render/UiNodeManager.h"
 
 // External.
 #include "nameof.hpp"
@@ -166,15 +167,21 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
             std::format("node \"{}\" expected to have a cursor offset already prepared", getNodeName()));
     }
 
-    if (button == KeyboardButton::ENTER && getHandleNewLineChars()) {
-        auto sText = std::u16string(getText());
-        sText.insert(*optionalCursorOffset, u"\n");
-        changeText(sText);
+    if (button == KeyboardButton::ENTER) {
+        if (getHandleNewLineChars()) {
+            auto sText = std::u16string(getText());
+            sText.insert(*optionalCursorOffset, u"\n");
+            changeText(sText);
 
-        (*optionalCursorOffset) += 1;
+            (*optionalCursorOffset) += 1;
 
-        if (onTextChanged) {
-            onTextChanged(sText);
+            if (onTextChanged) {
+                onTextChanged(sText);
+            }
+        } else {
+            optionalCursorOffset = {};
+            optionalSelection = {};
+            getWorldWhileSpawned()->getUiNodeManager().setFocusedNode(nullptr);
         }
     } else if (button == KeyboardButton::BACKSPACE) {
         if (optionalSelection.has_value()) {

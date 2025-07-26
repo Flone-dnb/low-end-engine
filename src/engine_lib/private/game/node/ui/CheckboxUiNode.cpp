@@ -92,8 +92,10 @@ void CheckboxUiNode::onDespawning() {
 void CheckboxUiNode::onVisibilityChanged() {
     UiNode::onVisibilityChanged();
 
-    // Notify manager.
-    getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
+    if (isSpawned()) {
+        // Notify manager.
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
+    }
 }
 
 bool CheckboxUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModifiers modifiers) {

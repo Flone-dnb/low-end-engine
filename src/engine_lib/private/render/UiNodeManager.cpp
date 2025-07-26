@@ -373,24 +373,29 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
 void UiNodeManager::setFocusedNode(UiNode* pFocusedNode) {
     std::scoped_lock guard(mtxData.first);
 
-    // Find in our arrays so that we will automatically clean focus state when becomes invisible or despawns.
-    bool bFound = false;
+    if (pFocusedNode == nullptr) {
+        changeFocusedNode(nullptr);
+    } else {
+        // Find in our arrays so that we will automatically clean focus state when becomes invisible or
+        // despawns.
+        bool bFound = false;
 
-    for (const auto& layerNodes : mtxData.second.vSpawnedVisibleNodes) {
-        const auto it = layerNodes.receivingInputUiNodes.find(pFocusedNode);
-        if (it != layerNodes.receivingInputUiNodes.end()) {
-            bFound = true;
-            break;
+        for (const auto& layerNodes : mtxData.second.vSpawnedVisibleNodes) {
+            const auto it = layerNodes.receivingInputUiNodes.find(pFocusedNode);
+            if (it != layerNodes.receivingInputUiNodes.end()) {
+                bFound = true;
+                break;
+            }
         }
-    }
 
-    if (!bFound) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "unable to find node \"{}\" to be spawned, visible and receiving input to make focused",
-            pFocusedNode->getNodeName()));
-    }
+        if (!bFound) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "unable to find node \"{}\" to be spawned, visible and receiving input to make focused",
+                pFocusedNode->getNodeName()));
+        }
 
-    changeFocusedNode(pFocusedNode);
+        changeFocusedNode(pFocusedNode);
+    }
 }
 
 void UiNodeManager::onSpawnedUiNodeInputStateChange(UiNode* pNode, bool bEnabledInput) {

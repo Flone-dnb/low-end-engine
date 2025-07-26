@@ -35,6 +35,7 @@ UnsignedLongLongInspector::UnsignedLongLongInspector(
         {
             const auto pTextEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+            pTextEdit->setHandleNewLineChars(false);
             pTextEdit->setText(utf::as_u16(std::to_string(variableIt->second.getter(pObject))));
             pTextEdit->setOnTextChanged([this, pTextEdit](std::u16string_view sNewText) {
                 // Filter text.

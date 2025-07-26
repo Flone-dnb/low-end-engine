@@ -125,6 +125,7 @@ GlmVecInspector::GlmVecInspector(
             {
                 const auto pComponentXEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                 pComponentXEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                pComponentXEdit->setHandleNewLineChars(false);
                 pComponentXEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.x)));
                 pComponentXEdit->setOnTextChanged([this, pComponentXEdit](std::u16string_view sNewText) {
                     onValueChanged(pComponentXEdit, VectorComponent::X, sNewText);
@@ -137,6 +138,7 @@ GlmVecInspector::GlmVecInspector(
             {
                 const auto pComponentYEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                 pComponentYEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                pComponentYEdit->setHandleNewLineChars(false);
                 pComponentYEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.y)));
                 pComponentYEdit->setOnTextChanged([this, pComponentYEdit](std::u16string_view sNewText) {
                     onValueChanged(pComponentYEdit, VectorComponent::Y, sNewText);
@@ -152,6 +154,7 @@ GlmVecInspector::GlmVecInspector(
                     const auto pComponentZEdit =
                         pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                     pComponentZEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                    pComponentZEdit->setHandleNewLineChars(false);
                     pComponentZEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.z)));
                     pComponentZEdit->setOnTextChanged([this, pComponentZEdit](std::u16string_view sNewText) {
                         onValueChanged(pComponentZEdit, VectorComponent::Z, sNewText);
@@ -167,6 +170,7 @@ GlmVecInspector::GlmVecInspector(
                     const auto pComponentWEdit =
                         pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                     pComponentWEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                    pComponentWEdit->setHandleNewLineChars(false);
                     pComponentWEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.w)));
                     pComponentWEdit->setOnTextChanged([this, pComponentWEdit](std::u16string_view sNewText) {
                         onValueChanged(pComponentWEdit, VectorComponent::W, sNewText);
