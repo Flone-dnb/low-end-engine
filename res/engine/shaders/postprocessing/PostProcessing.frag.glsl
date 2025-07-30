@@ -32,13 +32,13 @@ out vec4 color;
  * @return Coordinates in the view space.
  */
 vec3 convertScreenSpaceToViewSpace(vec2 fragmentUv, float depth) {
-    vec4 toNdc = vec4(
+    vec4 ndcPos = vec4(
         fragmentUv.x * 2.0 - 1.0,
         fragmentUv.y * 2.0 - 1.0,
         depth * 2.0 - 1.0,
         1.0);
 
-    vec4 viewPos = invProjMatrix * toNdc;
+    vec4 viewPos = invProjMatrix * ndcPos;
     viewPos.xyz /= viewPos.w;
 
     return viewPos.xyz;

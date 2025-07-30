@@ -34,12 +34,6 @@ public:
     ~Renderer();
 
     /**
-     * Blocks the current thread until the GPU finishes executing all queued graphics commands up to this
-     * point.
-     */
-    static void waitForGpuToFinishWorkUpToThisPoint();
-
-    /**
      * Sets the maximum number of FPS that is allowed to be produced in a second.
      *
      * @param iNewFpsLimit Maximum allowed FPS, specify 0 to disable.

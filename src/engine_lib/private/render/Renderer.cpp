@@ -383,8 +383,6 @@ Renderer::~Renderer() {
     SDL_GL_DeleteContext(pContext);
 }
 
-void Renderer::waitForGpuToFinishWorkUpToThisPoint() { glFinish(); }
-
 void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
     auto& data = renderStats.fpsLimitInfo;
 

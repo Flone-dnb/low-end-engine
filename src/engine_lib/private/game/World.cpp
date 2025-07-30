@@ -46,9 +46,6 @@ void World::destroyWorld() {
     Logger::get().info("world is being destroyed, despawning world's root node...");
     Logger::get().flushToDisk();
 
-    // Just in case wait for all GPU work to finish.
-    Renderer::waitForGpuToFinishWorkUpToThisPoint();
-
     pGameManager->onBeforeWorldDestroyed(mtxRootNode.second.get());
 
     std::scoped_lock guard(mtxRootNode.first);
