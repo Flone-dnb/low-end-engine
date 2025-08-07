@@ -92,6 +92,13 @@ public:
      */
     std::pair<std::recursive_mutex, ActiveCameraInfo>& getActiveCamera();
 
+    /**
+     * Returns framebuffer to draw meshes.
+     *
+     * @return Framebuffer.
+     */
+    Framebuffer& getMainFramebuffer() { return *pMainFramebuffer; }
+
 private:
     /**
      * Should be called after window's size changed.

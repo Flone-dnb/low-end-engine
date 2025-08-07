@@ -8,4 +8,5 @@
 
 Texture::~Texture() { GL_CHECK_ERROR(glDeleteTextures(1, &iTextureId)); }
 
-Texture::Texture(unsigned int iTextureId) : iTextureId(iTextureId) {}
+Texture::Texture(unsigned int iTextureId, unsigned int iWidth, unsigned int iHeight, int iGlFormat)
+    : iTextureId(iTextureId), size(iWidth, iHeight), iGlFormat(iGlFormat) {}

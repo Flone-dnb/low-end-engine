@@ -13,8 +13,9 @@
 Buffer::~Buffer() { GL_CHECK_ERROR(glDeleteBuffers(1, &iBufferId)); }
 
 void Buffer::copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize, const void* pData) const {
-    if (!bIsDynamic) [[unlikely]] {
-        Error::showErrorAndThrowException("can't copy data because this buffer is not dynamic");
+    if (!bCpuWriteAccess) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "can't copy data because this buffer does not have CPU-write access");
     }
 
     // Prevent working with content from multiple threads.
@@ -25,5 +26,5 @@ void Buffer::copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize,
     glBindBuffer(iGlType, 0);
 }
 
-Buffer::Buffer(unsigned int iSizeInBytes, unsigned int iBufferId, int iGlType, bool bIsDynamic)
-    : iSizeInBytes(iSizeInBytes), iBufferId(iBufferId), iGlType(iGlType), bIsDynamic(bIsDynamic) {}
+Buffer::Buffer(unsigned int iSizeInBytes, unsigned int iBufferId, int iGlType, bool bCpuWriteAccess)
+    : iSizeInBytes(iSizeInBytes), iBufferId(iBufferId), iGlType(iGlType), bCpuWriteAccess(bCpuWriteAccess) {}

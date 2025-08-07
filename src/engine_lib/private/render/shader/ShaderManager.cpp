@@ -36,14 +36,32 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
             pathToShader.string(),
             std::get<glsl_include::Error>(std::move(result)).message));
     }
-    const auto sSourceCode = std::get<std::string>(std::move(result));
+    auto sSourceCode = std::get<std::string>(std::move(result));
+
+#if defined(ENGINE_EDITOR)
+    // Define editor macro.
+    const auto iVersionPos = sSourceCode.find("#version");
+    if (iVersionPos == std::string::npos) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "unable to find `#version` in source \"{}\" or any included files", pathToShader.string()));
+    }
+    const auto iVersionLineEndPos = sSourceCode.find('\n', iVersionPos);
+    if (iVersionLineEndPos == std::string::npos) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "expected to have a new line after `#version` in source \"{}\"", pathToShader.string()));
+    }
+    sSourceCode.insert(iVersionLineEndPos + 1, "#define ENGINE_EDITOR\n");
+#endif
 
     // Prepare GL shader type.
     int shaderType = 0;
-    if (pathToShader.string().ends_with(".vert.glsl")) {
+    std::string sFilename = pathToShader.filename().string();
+    if (sFilename.ends_with(".vert.glsl")) {
         shaderType = GL_VERTEX_SHADER;
-    } else if (pathToShader.string().ends_with(".frag.glsl")) {
+    } else if (sFilename.ends_with(".frag.glsl")) {
         shaderType = GL_FRAGMENT_SHADER;
+    } else if (sFilename.ends_with(".comp.glsl")) {
+        shaderType = GL_COMPUTE_SHADER;
     } else [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "unable to determine shader type (vertex, fragment, etc) from shader file name, shader: {}",
@@ -59,7 +77,7 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 
     // See if there were any warnings/errors.
     int iSuccess = 0;
-    std::array<char, 1024> infoLog = {0}; // NOLINT
+    std::array<char, 1024> infoLog = {0};
     glGetShaderiv(iShaderId, GL_COMPILE_STATUS, &iSuccess);
     if (iSuccess == 0) [[unlikely]] {
         glGetShaderInfoLog(iShaderId, static_cast<int>(infoLog.size()), nullptr, infoLog.data());
@@ -143,6 +161,31 @@ std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
         // Load and compile.
         const auto pShaderProgram = compileShaderProgram(sCombinedName, {pVertexShader, pFragmentShader});
         auto& [pWeak, pRaw] = mtxDatabase.second[sCombinedName];
+        pWeak = pShaderProgram;
+        pRaw = pShaderProgram.get();
+
+        return pShaderProgram;
+    }
+
+    return it->second.first.lock();
+}
+
+std::shared_ptr<ShaderProgram>
+ShaderManager::getShaderProgram(const std::string& sPathToComputeShaderRelativeRes) {
+    PROFILE_FUNC
+
+    auto pComputeShader = getShader(sPathToComputeShaderRelativeRes);
+
+    std::scoped_lock guard(mtxDatabase.first);
+
+    // Find program.
+    const auto sName = pComputeShader->getPathToShaderRelativeRes();
+
+    const auto it = mtxDatabase.second.find(sName);
+    if (it == mtxDatabase.second.end()) {
+        // Load and compile.
+        const auto pShaderProgram = compileShaderProgram(sName, {pComputeShader});
+        auto& [pWeak, pRaw] = mtxDatabase.second[sName];
         pWeak = pShaderProgram;
         pRaw = pShaderProgram.get();
 

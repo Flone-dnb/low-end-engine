@@ -20,9 +20,6 @@ static std::atomic<size_t> iTotalAliveNodeCount{0};
  *
  * @warning Don't reset (zero) this value even if no node exists as we will never hit type limit
  * but resetting this value might cause unwanted behavior.
- *
- * @remark Used in World to quickly and safely check if some node is spawned or not
- * (for example it's used in callbacks).
  */
 static std::atomic<size_t> iAvailableNodeId{0};
 
@@ -32,6 +29,10 @@ namespace {
 
 std::string Node::getTypeGuidStatic() { return sTypeGuid.data(); }
 std::string Node::getTypeGuid() const { return sTypeGuid.data(); }
+
+size_t Node::getAliveNodeCount() { return iTotalAliveNodeCount.load(); }
+
+size_t Node::peekNextNodeId() { return iAvailableNodeId.load(); }
 
 std::variant<std::unique_ptr<Node>, Error>
 Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
@@ -297,8 +298,6 @@ std::optional<Error> Node::serializeNodeTree(std::filesystem::path pathToFile, b
     return {};
 }
 
-size_t Node::getAliveNodeCount() { return iTotalAliveNodeCount.load(); }
-
 TypeReflectionInfo Node::getReflectionInfo() {
     ReflectedVariables variables;
 
@@ -510,8 +509,6 @@ bool Node::isChildOf(Node* pNode) {
 }
 
 std::string_view Node::getNodeName() const { return sNodeName; }
-
-std::optional<size_t> Node::getNodeId() const { return iNodeId; }
 
 TickGroup Node::getTickGroup() const { return tickGroup; }
 

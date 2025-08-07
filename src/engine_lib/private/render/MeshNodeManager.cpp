@@ -60,6 +60,10 @@ void MeshNodeManager::drawMeshes(
         std::scoped_lock guard(mtxMeshNodes.first);
 
         for (const auto& pMeshNode : mtxMeshNodes.second) {
+#if defined(ENGINE_EDITOR)
+            pShaderProgram->setUintToShader("iNodeId", static_cast<unsigned int>(*pMeshNode->getNodeId()));
+#endif
+
             // Set mesh.
             auto& vao = pMeshNode->getVertexArrayObjectWhileSpawned();
             glBindVertexArray(vao.getVertexArrayObjectId());

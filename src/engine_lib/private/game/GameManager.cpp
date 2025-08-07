@@ -193,6 +193,15 @@ void GameManager::onGameStarted() {
     pGameInstance->onGameStarted();
 }
 
+void GameManager::onWindowSizeChanged() {
+    if (pRenderer != nullptr) {
+        pRenderer->onWindowSizeChanged();
+    }
+    if (pGameInstance != nullptr) {
+        pGameInstance->onWindowSizeChanged();
+    }
+}
+
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     PROFILE_FUNC
 

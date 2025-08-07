@@ -50,6 +50,21 @@ void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
     addGameNodeRecursive(pGameRootNode);
 }
 
+void NodeTreeInspector::selectNodeById(size_t iNodeId) {
+    const auto mtxChildNodes = pLayoutNode->getChildNodes();
+    std::scoped_lock guard(*mtxChildNodes.first);
+    for (const auto& pNode : mtxChildNodes.second) {
+        const auto pItem = dynamic_cast<NodeTreeInspectorItem*>(pNode);
+        if (pItem == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected node tree item");
+        }
+        if (*pItem->getDisplayedGameNode()->getNodeId() == iNodeId) {
+            inspectGameNode(pItem);
+            break;
+        }
+    }
+}
+
 void NodeTreeInspector::refreshGameNodeName(Node* pGameNode) {
     const auto mtxChildNodes = pLayoutNode->getChildNodes();
     std::scoped_lock guard(*mtxChildNodes.first);
@@ -163,6 +178,19 @@ void NodeTreeInspector::inspectGameNode(NodeTreeInspectorItem* pItem) {
     }
     pInspectedItem = pItem;
     pInspectedItem->setColor(EditorTheme::getSelectedItemColor());
+}
+
+void NodeTreeInspector::clearInspection() {
+    if (pInspectedItem == nullptr) {
+        return;
+    }
+
+    dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
+        ->getPropertyInspector()
+        ->setNodeToInspect(nullptr);
+
+    pInspectedItem->setColor(EditorTheme::getButtonColor());
+    pInspectedItem = nullptr;
 }
 
 void NodeTreeInspector::addChildNodeToNodeTree(

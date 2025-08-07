@@ -25,7 +25,7 @@ public:
     unsigned int getBufferId() const { return iBufferId; }
 
     /**
-     * If this buffer was created as a dynamic buffer copied data from the specified pointer
+     * If this buffer was created with CPU-write access copies data from the specified pointer
      * to the buffer.
      *
      * @param iStartOffset Offset in bytes from the start of the buffer to copy the data to.
@@ -41,9 +41,9 @@ private:
      * @param iSizeInBytes Size of the buffer in bytes.
      * @param iBufferId    ID of the Buffer.
      * @param iGlType      OpenGL type of this buffer.
-     * @param bIsDynamic   `true` if buffer data can be updated.
+     * @param bCpuWriteAccess   `true` if buffer data can be updated from the CPU.
      */
-    Buffer(unsigned int iSizeInBytes, unsigned int iBufferId, int iGlType, bool bIsDynamic);
+    Buffer(unsigned int iSizeInBytes, unsigned int iBufferId, int iGlType, bool bCpuWriteAccess);
 
     /** Size of the buffer in bytes. */
     const unsigned int iSizeInBytes = 0;
@@ -55,5 +55,5 @@ private:
     const int iGlType = 0;
 
     /** `true` if @ref copyDataToBuffer can be used. */
-    const bool bIsDynamic = false;
+    const bool bCpuWriteAccess = false;
 };

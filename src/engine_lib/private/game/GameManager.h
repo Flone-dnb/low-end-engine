@@ -289,6 +289,9 @@ private:
      */
     void onGameStarted();
 
+    /** Called by window after its size changed. */
+    void onWindowSizeChanged();
+
     /**
      * Called before a new frame is rendered.
      *

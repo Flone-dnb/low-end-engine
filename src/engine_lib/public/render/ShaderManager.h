@@ -56,6 +56,16 @@ public:
         const std::string& sPathToFragmentShaderRelativeRes);
 
     /**
+     * Looks if a shader from the specified path was already requested previously (cached) to return it,
+     * otherwise loads the shader from disk, compiles and returns it.
+     *
+     * @param sPathToComputeShaderRelativeRes Path to .glsl vertex shader file relative `res` directory.
+     *
+     * @return Compiled shader program.
+     */
+    std::shared_ptr<ShaderProgram> getShaderProgram(const std::string& sPathToComputeShaderRelativeRes);
+
+    /**
      * Returns all loaded shader programs.
      *
      * @return Shader programs.

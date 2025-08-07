@@ -96,6 +96,9 @@ if (NOT IS_RELEASE_BUILD AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/debug.cmake")
     endif()
 endif()
 
+# Define editor macro.
+add_compile_definitions(ENGINE_EDITOR)
+
 # -------------------------------------------------------------------------------------------------
 #                                           TOOLS
 # -------------------------------------------------------------------------------------------------

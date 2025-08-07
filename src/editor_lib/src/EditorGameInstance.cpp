@@ -20,7 +20,13 @@
 #include "node/property_inspector/PropertyInspector.h"
 #include "node/content_browser/ContentBrowser.h"
 #include "node/LogViewNode.h"
+#include "render/UiNodeManager.h"
 #include "node/menu/ContextMenuNode.h"
+#include "render/wrapper/Buffer.h"
+#include "render/wrapper/ShaderProgram.h"
+#include "render/wrapper/Framebuffer.h"
+#include "render/wrapper/Texture.h"
+#include "render/GpuResourceManager.h"
 #include "EditorTheme.h"
 
 #if defined(GAME_LIB_INCLUDED)
@@ -30,6 +36,9 @@
 // External.
 #include "hwinfo/hwinfo.h"
 #include "utf/utf.hpp"
+#include "glad/glad.h"
+
+EditorGameInstance::GpuPickingData::~GpuPickingData() {}
 
 EditorGameInstance::EditorGameInstance(Window* pWindow) : GameInstance(pWindow) {}
 
@@ -40,6 +49,12 @@ void EditorGameInstance::onGameStarted() {
 
     getRenderer()->getFontManager().loadFont(
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf", 0.05F);
+
+    gpuPickingData.pPickingProgram =
+        getRenderer()->getShaderManager().getShaderProgram("editor/shaders/Picking.comp.glsl");
+    gpuPickingData.pClearTextureProgram =
+        getRenderer()->getShaderManager().getShaderProgram("editor/shaders/ClearNodeIdTexture.comp.glsl");
+    gpuPickingData.pClickedNodeIdValueBuffer = GpuResourceManager::createStorageBuffer(sizeof(unsigned int));
 
     registerEditorInputEvents();
 
@@ -63,6 +78,24 @@ void EditorGameInstance::onGamepadDisconnected() {
     }
 
     gameWorldNodes.pViewportCamera->onGamepadDisconnected();
+}
+
+void EditorGameInstance::onMouseButtonPressed(MouseButton button, KeyboardModifiers modifiers) {
+    if (button != MouseButton::LEFT) {
+        return;
+    }
+
+    if (gameWorldNodes.pRoot == nullptr) {
+        return;
+    }
+
+    const auto optCursorInViewport =
+        gameWorldNodes.pRoot->getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorInViewport.has_value()) {
+        return;
+    }
+
+    gpuPickingData.bMouseClickedThisTick = true;
 }
 
 void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardModifiers modifiers) {
@@ -93,6 +126,71 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
 }
 
 void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
+    if (gpuPickingData.bIsWaitingForGpuResult) {
+        // Not the best approach but simple and it's not a perf-critical place.
+        glFinish();
+
+        // Map buffer for reading.
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, gpuPickingData.pClickedNodeIdValueBuffer->getBufferId());
+        {
+            const auto pResult = reinterpret_cast<unsigned int*>(glMapBufferRange(
+                GL_SHADER_STORAGE_BUFFER,
+                0,                    // offset
+                sizeof(unsigned int), // size
+                GL_MAP_READ_BIT));
+            if (pResult != nullptr) {
+                const auto iNodeIdUnderCursor = *pResult;
+                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+                if (editorWorldNodes.pNodeTreeInspector != nullptr) {
+                    if (iNodeIdUnderCursor == 0) {
+                        editorWorldNodes.pNodeTreeInspector->clearInspection();
+                    } else {
+                        editorWorldNodes.pNodeTreeInspector->selectNodeById(iNodeIdUnderCursor);
+                    }
+                }
+            }
+        }
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        gpuPickingData.bIsWaitingForGpuResult = false;
+    }
+
+    // Run compute shader to clear node ID texture.
+    if (gpuPickingData.pNodeIdTexture != nullptr) {
+        glUseProgram(gpuPickingData.pClearTextureProgram->getShaderProgramId());
+
+        const auto [iTexWidth, iTexHeight] = gpuPickingData.pNodeIdTexture->getSize();
+        glBindImageTexture(
+            0,
+            gpuPickingData.pNodeIdTexture->getTextureId(),
+            0,
+            GL_FALSE,
+            0,
+            GL_WRITE_ONLY,
+            gpuPickingData.pNodeIdTexture->getGlFormat());
+
+        gpuPickingData.pPickingProgram->setUvector2ToShader("textureSize", glm::uvec2(iTexWidth, iTexHeight));
+
+        // Calculate thread group count.
+        constexpr size_t iThreadGroupSizeOneDim = 16; // same as in shaders
+
+        size_t iGroupsX = iTexWidth / iThreadGroupSizeOneDim;
+        if (iTexWidth % iThreadGroupSizeOneDim != 0) {
+            iGroupsX += 1;
+        }
+        size_t iGroupsY = iTexHeight / iThreadGroupSizeOneDim;
+        if (iTexHeight % iThreadGroupSizeOneDim != 0) {
+            iGroupsY += 1;
+        }
+
+        glDispatchCompute(static_cast<unsigned int>(iGroupsX), static_cast<unsigned int>(iGroupsY), 1u);
+    }
+
+    updateFrameStatsText(timeSincePrevCallInSec);
+}
+
+void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
     if (gameWorldNodes.pStatsText == nullptr) {
         return;
     }
@@ -151,6 +249,110 @@ void EditorGameInstance::onWindowFocusChanged(bool bIsFocused) {
     }
 
     editorWorldNodes.pContentBrowser->rebuildFileTree();
+}
+
+void EditorGameInstance::onWindowSizeChanged() {
+    if (gameWorldNodes.pViewportCamera == nullptr) {
+        return;
+    }
+    gpuPickingData.recreateNodeIdTexture(gameWorldNodes.pViewportCamera, false);
+}
+
+void EditorGameInstance::onWindowClose() {
+    gpuPickingData.pPickingProgram = nullptr;
+    gpuPickingData.pClearTextureProgram = nullptr;
+    gpuPickingData.pClickedNodeIdValueBuffer = nullptr;
+    gpuPickingData.pNodeIdTexture = nullptr;
+}
+
+void EditorGameInstance::onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) {
+    PROFILE_FUNC
+
+    if (!gpuPickingData.bMouseClickedThisTick) {
+        return;
+    }
+
+    if (gameWorldNodes.pRoot == nullptr) {
+        return;
+    }
+
+    if (pCamera != gameWorldNodes.pViewportCamera) {
+        return;
+    }
+
+    gpuPickingData.bMouseClickedThisTick = false;
+
+    const auto pEditorWorld = editorWorldNodes.pRoot->getWorldWhileSpawned();
+    if (pEditorWorld->getUiNodeManager().hasModalUiNodeTree()) {
+        return;
+    }
+
+    const auto optCursorInViewport =
+        gameWorldNodes.pRoot->getWorldWhileSpawned()->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorInViewport.has_value()) {
+        return;
+    }
+
+    glUseProgram(gpuPickingData.pPickingProgram->getShaderProgramId());
+
+    const auto [iFramebufferWidth, iFramebufferHeight] = framebuffer.getSize();
+
+    // Self checks:
+    if (gpuPickingData.pNodeIdTexture == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected node ID texture to be created at this point");
+    }
+    const auto [iTexWidth, iTexHeight] = gpuPickingData.pNodeIdTexture->getSize();
+    if (iTexWidth != iFramebufferWidth || iTexHeight != iFramebufferHeight) [[unlikely]] {
+        Error::showErrorAndThrowException("framebuffer size and node ID texture sizes don't match");
+    }
+    if (Node::peekNextNodeId() > std::numeric_limits<unsigned int>::max()) [[unlikely]] {
+        Error::showErrorAndThrowException("node IDs reached type limit for node ID texture");
+    }
+
+    // Bind shader resources.
+    {
+        // Node IDs must be written at this point because we will read them.
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        glBindImageTexture(
+            0,
+            gpuPickingData.pNodeIdTexture->getTextureId(),
+            0,
+            GL_FALSE,
+            0,
+            GL_READ_WRITE,
+            gpuPickingData.pNodeIdTexture->getGlFormat());
+        glBindBufferBase(
+            GL_SHADER_STORAGE_BUFFER, 0, gpuPickingData.pClickedNodeIdValueBuffer->getBufferId());
+    }
+
+    // Get cursor pos in fullscreen (editor camera) because viewport's framebuffer has fullscreen size.
+    const auto optCursorEditor = pEditorWorld->getCameraManager().getCursorPosOnViewport();
+    if (!optCursorEditor.has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the cursor to be inside of the editor's camera");
+    }
+    const glm::uvec2 cursorPosInPix = glm::uvec2(
+        static_cast<unsigned int>(optCursorEditor->x * static_cast<float>(iFramebufferWidth)),
+        static_cast<unsigned int>((1.0F - optCursorEditor->y) * static_cast<float>(iFramebufferHeight)));
+
+    gpuPickingData.pPickingProgram->setUvector2ToShader(
+        "textureSize", glm::uvec2(iFramebufferWidth, iFramebufferHeight));
+    gpuPickingData.pPickingProgram->setUvector2ToShader("cursorPosInPix", cursorPosInPix);
+
+    // Calculate thread group count.
+    constexpr size_t iThreadGroupSizeOneDim = 16; // same as in shaders
+
+    size_t iGroupsX = iFramebufferWidth / iThreadGroupSizeOneDim;
+    if (iFramebufferWidth % iThreadGroupSizeOneDim != 0) {
+        iGroupsX += 1;
+    }
+    size_t iGroupsY = iFramebufferHeight / iThreadGroupSizeOneDim;
+    if (iFramebufferHeight % iThreadGroupSizeOneDim != 0) {
+        iGroupsY += 1;
+    }
+
+    glDispatchCompute(static_cast<unsigned int>(iGroupsX), static_cast<unsigned int>(iGroupsY), 1u);
+    gpuPickingData.bIsWaitingForGpuResult = true;
 }
 
 void EditorGameInstance::registerEditorInputEvents() {
@@ -338,39 +540,6 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         false);
 }
 
-void EditorGameInstance::createGameWorld() {
-    createWorld(
-        [this](Node* pGameRootNode) {
-            auto pFloor = std::make_unique<MeshNode>("Floor");
-            pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
-            pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
-            pGameRootNode->addChildNode(std::move(pFloor));
-
-            auto pCube = std::make_unique<MeshNode>("Cube");
-            pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
-            pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
-            pGameRootNode->addChildNode(std::move(pCube));
-
-            auto pSun = std::make_unique<DirectionalLightNode>();
-            pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
-            pGameRootNode->addChildNode(std::move(pSun));
-
-            auto pSpotlight = std::make_unique<SpotlightNode>();
-            pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
-            pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
-            pGameRootNode->addChildNode(std::move(pSpotlight));
-
-            auto pPointLight = std::make_unique<PointLightNode>();
-            pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
-            pGameRootNode->addChildNode(std::move(pPointLight));
-
-            onAfterGameWorldCreated(pGameRootNode);
-        },
-        false);
-}
-
 void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pRoot = pRootNode;
 
@@ -392,6 +561,8 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pViewportCamera->getCameraProperties()->setViewport(
         glm::vec4(pos.x, pos.y, size.x, size.y));
 
+    gpuPickingData.recreateNodeIdTexture(gameWorldNodes.pViewportCamera, true);
+
     // Stats.
     gameWorldNodes.pStatsText = pRootNode->addChildNode(
         std::make_unique<TextUiNode>(std::format("{}: stats", NodeTreeInspector::getHiddenNodeNamePrefix())));
@@ -401,6 +572,22 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
 
     editorWorldNodes.pNodeTreeInspector->onGameNodeTreeLoaded(gameWorldNodes.pRoot);
+}
+
+void EditorGameInstance::GpuPickingData::recreateNodeIdTexture(
+    CameraNode* pViewportCamera, bool bIsCameraRecreated) {
+    const auto [iFramebufferWidth, iFramebufferHeight] =
+        pViewportCamera->getWorldWhileSpawned()->getCameraManager().getMainFramebuffer().getSize();
+
+    pNodeIdTexture =
+        GpuResourceManager::createStorageTexture(iFramebufferWidth, iFramebufferHeight, GL_R32UI);
+
+    if (bIsCameraRecreated) {
+        pViewportCamera->getCameraProperties()->getShaderConstantsSetter().addSetterFunction(
+            [iNodeIdTextureId = pNodeIdTexture->getTextureId()](ShaderProgram* pProgram) {
+                glBindImageTexture(0, iNodeIdTextureId, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
+            });
+    }
 }
 
 void EditorGameInstance::openContextMenu(

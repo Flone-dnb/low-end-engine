@@ -3,6 +3,7 @@
 // Standard.
 #include <optional>
 #include <filesystem>
+#include <memory>
 
 // Custom.
 #include "game/GameInstance.h"
@@ -15,6 +16,10 @@ class NodeTreeInspector;
 class ContextMenuNode;
 class ContentBrowser;
 class PropertyInspector;
+class ShaderProgram;
+class Buffer;
+class Texture;
+class CameraManager;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -106,6 +111,14 @@ protected:
     virtual void onGamepadDisconnected() override;
 
     /**
+     * Called when the window (that owns this object) receives mouse input.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     */
+    virtual void onMouseButtonPressed(MouseButton button, KeyboardModifiers modifiers) override;
+
+    /**
      * Called when the window (that owns this object) receives keyboard input.
      *
      * @param key            Keyboard key.
@@ -136,6 +149,26 @@ protected:
      * @param bIsFocused  Whether the window has gained or lost the focus.
      */
     virtual void onWindowFocusChanged(bool bIsFocused) override;
+
+    /** Called by window after its size changed. */
+    virtual void onWindowSizeChanged() override;
+
+    /**
+     * Called when the window that owns this game instance
+     * was requested to close (no new frames will be rendered).
+     *
+     * Prefer to have your destructor logic here, because after this function is finished
+     * the world will be destroyed and will be inaccessible (`nullptr`).
+     */
+    virtual void onWindowClose() override;
+
+    /**
+     * Called after the renderer finished submitting draw commands to render meshes.
+     *
+     * @param pCamera     Active camera.
+     * @param framebuffer Framebuffer that was used to draw on.
+     */
+    virtual void onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) override;
 
 private:
     /** Groups pointers to nodes from game's level. */
@@ -171,6 +204,38 @@ private:
         ContentBrowser* pContentBrowser = nullptr;
     };
 
+    /** Groups data used for GPU picking. */
+    struct GpuPickingData {
+        GpuPickingData() = default;
+        ~GpuPickingData();
+
+        /**
+         * Recreates @ref pNodeIdTexture with the size of the main framebuffer.
+         *
+         * @param pViewportCamera Viewport camera.
+         * @param bIsCameraRecreated Specify `true` if the camera node was (re)created just now.
+         */
+        void recreateNodeIdTexture(CameraNode* pViewportCamera, bool bIsCameraRecreated);
+
+        /** Compute shader used to check node ID value under the mouse cursor. */
+        std::shared_ptr<ShaderProgram> pPickingProgram;
+
+        /** Compute shader used to clear node ID texture. */
+        std::shared_ptr<ShaderProgram> pClearTextureProgram;
+
+        /** Buffer that stores a single unsigned int - node ID value under the mouse cursor. */
+        std::unique_ptr<Buffer> pClickedNodeIdValueBuffer;
+
+        /** Texture that stores node IDs of all rendered objects. */
+        std::unique_ptr<Texture> pNodeIdTexture;
+
+        /** `true` if left mouse button was clicked in the game's viewport on this tick. */
+        bool bMouseClickedThisTick = false;
+
+        /** `true` if @ref pPickingProgram was started and we expect a result soon. */
+        bool bIsWaitingForGpuResult = false;
+    };
+
     /** Registers action and axis input events in the input manager. */
     void registerEditorInputEvents();
 
@@ -188,8 +253,13 @@ private:
      */
     void onAfterGameWorldCreated(Node* pRootNode);
 
-    /** Creates an empty game world. */
-    void createGameWorld();
+    /**
+     * Updates FPS and other stats.
+     *
+     * @param timeSincePrevCallInSec Time in seconds that has passed since the last call
+     * to this function.
+     */
+    void updateFrameStatsText(float timeSincePrevCallInSec);
 
     /** Not `nullptr` if game world exists. */
     GameWorldNodes gameWorldNodes;
@@ -199,4 +269,7 @@ private:
 
     /** Path to the last opened node tree file. */
     std::optional<std::filesystem::path> lastOpenedNodeTree;
+
+    /** Data for GPU-picking. */
+    GpuPickingData gpuPickingData;
 };

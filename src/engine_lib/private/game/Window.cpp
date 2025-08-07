@@ -183,8 +183,8 @@ bool Window::processWindowEvent(const SDL_Event& event) {
             windowSize.first = static_cast<unsigned int>(iWidth);
             windowSize.second = static_cast<unsigned int>(iHeight);
 
-            // Notify renderer.
-            pGameManager->pRenderer->onWindowSizeChanged();
+            // Notify.
+            pGameManager->onWindowSizeChanged();
         }
         break;
     }
@@ -235,8 +235,8 @@ void Window::setWindowSize(const std::pair<unsigned int, unsigned int>& size) {
     SDL_SetWindowSize(pSdlWindow, static_cast<int>(size.first), static_cast<int>(size.second));
 
     if (pGameManager != nullptr) {
-        // Notify renderer.
-        pGameManager->pRenderer->onWindowSizeChanged();
+        // Notify.
+        pGameManager->onWindowSizeChanged();
     }
 }
 

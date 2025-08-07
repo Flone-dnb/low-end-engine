@@ -192,6 +192,8 @@ void Renderer::drawNextFrame() {
                      glm::ivec4(iViewportX, iViewportLeftBottom, iViewportWidth, iViewportHeight)}});
     }
 
+    const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
+
     {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
@@ -201,14 +203,17 @@ void Renderer::drawNextFrame() {
             const auto pWorld = mtxActiveCamera.second.pWorld;
             const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
             const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+            const auto& pFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
 
-            glBindFramebuffer(
-                GL_FRAMEBUFFER, pWorld->getCameraManager().pMainFramebuffer->getFramebufferId());
+            glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
             pWorld->getMeshNodeManager().drawMeshes(pCameraProperties, pWorld->getLightSourceManager());
+
+            pGameInstance->onFinishedSubmittingMeshDrawCommands(
+                mtxActiveCamera.second.pCameraNode, *pFramebuffer);
         }
 
         // Draw post processing before UI.

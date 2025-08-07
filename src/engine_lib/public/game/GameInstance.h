@@ -18,6 +18,8 @@ class InputManager;
 class Node;
 class World;
 class CameraManager;
+class CameraNode;
+class Framebuffer;
 
 /**
  * Main game class, exists while the game window is not closed
@@ -29,6 +31,9 @@ class CameraManager;
 class GameInstance {
     // Game manager will create this object and trigger input events.
     friend class GameManager;
+
+    // Calls render callbacks (notifications).
+    friend class Renderer;
 
 public:
     GameInstance() = delete;
@@ -272,6 +277,9 @@ protected:
      */
     virtual void onWindowFocusChanged(bool bIsFocused) {}
 
+    /** Called by window after its size changed. */
+    virtual void onWindowSizeChanged() {}
+
     /**
      * Called when the window that owns this game instance
      * was requested to close (no new frames will be rendered).
@@ -282,6 +290,14 @@ protected:
     virtual void onWindowClose() {}
 
     /**
+     * Called after the renderer finished submitting draw commands to render meshes.
+     *
+     * @param pCamera     Active camera.
+     * @param framebuffer Framebuffer that was used to draw on.
+     */
+    virtual void onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) {}
+
+    /**
      * Returns map of action events that this GameInstance is bound to (must be used with mutex).
      * Bound callbacks will be automatically called when an action event is triggered.
      *
@@ -289,7 +305,6 @@ protected:
      * to bind to input in specific nodes instead of binding to them in GameInstance.
      * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
      * will be considered to trigger events in the node.
-     * @remark Called after @ref onKeyboardInput.
      *
      * Example:
      * @code
@@ -317,7 +332,6 @@ protected:
      * to bind to input in specific nodes instead of binding to them in GameInstance.
      * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
      * will be considered to trigger events in the node.
-     * @remark Called after @ref onKeyboardInput.
      * @remark Input parameter is a value in range [-1.0f; 1.0f] that describes input.
      *
      * Example:
@@ -342,8 +356,6 @@ private:
      * Called when a window that owns this game instance receives user
      * input and the input key exists as an action event in the InputManager.
      *
-     * @remark Called after @ref onKeyboardInput.
-     *
      * @param iActionId      Unique ID of the input action event (from input manager).
      * @param modifiers      Keyboard modifier keys.
      * @param bIsPressedDown Whether the key down event occurred or key up.
@@ -353,8 +365,6 @@ private:
     /**
      * Called when a window that owns this game instance receives user
      * input and the input key exists as an axis event in the InputManager.
-     *
-     * @remark Called after @ref onKeyboardInput and after @ref onInputActionEvent.
      *
      * @param iAxisEventId  Unique ID of the input axis event (from input manager).
      * @param modifiers     Keyboard modifier keys.

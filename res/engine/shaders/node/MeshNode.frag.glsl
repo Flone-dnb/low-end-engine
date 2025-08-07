@@ -10,12 +10,22 @@ uniform vec4 diffuseColor;
 uniform bool bIsUsingDiffuseTexture;
 layout(location = 0) uniform sampler2D diffuseTexture;
 
+#ifdef ENGINE_EDITOR
+    // Used for GPU picking.
+    layout(r32ui) uniform highp uimage2D nodeIdTexture;
+    uniform uint iNodeId;
+#endif
+
 out vec4 color;
 
 layout(early_fragment_tests) in;
 
 /// Entry point.
 void main() {
+    #ifdef ENGINE_EDITOR
+        imageStore(nodeIdTexture, ivec2(gl_FragCoord.xy), uvec4(iNodeId, 0u, 0u, 0u));
+    #endif
+
     // Normals may be unnormalized after the rasterization (when they are interpolated).
     vec3 fragmentNormalUnit = normalize(fragmentNormal);
 

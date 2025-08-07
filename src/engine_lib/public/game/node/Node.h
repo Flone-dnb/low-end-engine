@@ -77,6 +77,14 @@ public:
     static size_t getAliveNodeCount();
 
     /**
+     * Returns value that the next spawned node will use as its ID.
+     * Returned value is not "reserved" to you, this function only exists to view the next node ID.
+     *
+     * @return Node ID.
+     */
+    static size_t peekNextNodeId();
+
+    /**
      * Returns reflection info about this type.
      *
      * @return Type reflection.
@@ -376,7 +384,7 @@ public:
      *
      * @return Empty if this node was never spawned, otherwise unique ID of this node.
      */
-    std::optional<size_t> getNodeId() const;
+    std::optional<size_t> getNodeId() const { return iNodeId; }
 
     /**
      * Tells whether or not this node (and node's child nodes) will be serialized as part of a node tree.

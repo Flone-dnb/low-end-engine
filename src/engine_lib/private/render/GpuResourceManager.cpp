@@ -8,6 +8,7 @@
 // Custom.
 #include "misc/Error.h"
 #include "misc/Profiler.hpp"
+#include "render/wrapper/Texture.h"
 
 // External.
 #include "glad/glad.h"
@@ -222,4 +223,42 @@ std::unique_ptr<Buffer> GpuResourceManager::createUniformBuffer(unsigned int iSi
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     return std::unique_ptr<Buffer>(new Buffer(iSizeInBytes, iBufferId, GL_UNIFORM_BUFFER, bIsDynamic));
+}
+
+std::unique_ptr<Buffer> GpuResourceManager::createStorageBuffer(unsigned int iSizeInBytes) {
+    PROFILE_FUNC
+
+    std::scoped_lock guard(mtx);
+
+    unsigned int iBufferId = 0;
+    glGenBuffers(1, &iBufferId);
+
+    // Allocate buffer.
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, iBufferId);
+    {
+        GL_CHECK_ERROR(glBufferData(GL_SHADER_STORAGE_BUFFER, iSizeInBytes, nullptr, GL_DYNAMIC_READ));
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    return std::unique_ptr<Buffer>(new Buffer(iSizeInBytes, iBufferId, GL_SHADER_STORAGE_BUFFER, false));
+}
+
+std::unique_ptr<Texture>
+GpuResourceManager::createStorageTexture(unsigned int iWidth, unsigned int iHeight, int iFormat) {
+    PROFILE_FUNC
+
+    std::scoped_lock guard(mtx);
+
+    unsigned int iTextureId = 0;
+    glGenTextures(1, &iTextureId);
+    glBindTexture(GL_TEXTURE_2D, iTextureId);
+    {
+        GL_CHECK_ERROR(glTexStorage2D(GL_TEXTURE_2D, 1, iFormat, iWidth, iHeight));
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return std::unique_ptr<Texture>(new Texture(iTextureId, iWidth, iHeight, iFormat));
 }

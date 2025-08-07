@@ -30,6 +30,13 @@ public:
     static std::string_view getHiddenNodeNamePrefix() { return "Editor"; };
 
     /**
+     * Selects a node by a node ID (if such node exists).
+     *
+     * @param iNodeId Node ID of the node to select.
+     */
+    void selectNodeById(size_t iNodeId);
+
+    /**
      * Updates displayed node name.
      *
      * @param pGameNode Node that changed its name.
@@ -77,6 +84,9 @@ public:
      * @param pItem Item that displays the game node.
      */
     void inspectGameNode(NodeTreeInspectorItem* pItem);
+
+    /** Removes display of the reflected fields of a game node (if were displayed). */
+    void clearInspection();
 
 private:
     /**

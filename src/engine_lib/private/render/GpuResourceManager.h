@@ -11,6 +11,8 @@
 #include "render/wrapper/Buffer.h"
 #include "game/geometry/ScreenQuadGeometry.h"
 
+class Texture;
+
 /** Manages creation of GPU resources. */
 class GpuResourceManager {
 public:
@@ -65,9 +67,30 @@ public:
      * @param bIsDynamic   Specify `false` if this buffer will not be modified from the CPU side
      * and `true` if you plan on updating the contents of this buffer often.
      *
-     * @return Created uniform buffer.
+     * @return Created buffer.
      */
     static std::unique_ptr<Buffer> createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic);
+
+    /**
+     * Creates a new shader storage buffer object (SSBO).
+     *
+     * @param iSizeInBytes Size of the buffer in bytes.
+     *
+     * @return Created buffer.
+     */
+    static std::unique_ptr<Buffer> createStorageBuffer(unsigned int iSizeInBytes);
+
+    /**
+     * Creates a new storage image (image to write to from shaders).
+     *
+     * @param iWidth  Width of the texture in pixels.
+     * @param iHeight Height of the texture in pixels.
+     * @param iFormat Format of the texture, for example `GL_R32UI`.
+     *
+     * @return Created texture.
+     */
+    static std::unique_ptr<Texture>
+    createStorageTexture(unsigned int iWidth, unsigned int iHeight, int iFormat);
 
     /**
      * Mutex to guard OpenGL context modification.

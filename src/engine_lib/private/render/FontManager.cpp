@@ -122,6 +122,8 @@ void FontManager::cacheGlyphs(const std::pair<unsigned long, unsigned long>& cha
             unsigned int iTextureId = 0;
             glGenTextures(1, &iTextureId);
 
+            const int iGlFormat = GL_UNSIGNED_BYTE;
+
             // Load texture.
             glBindTexture(GL_TEXTURE_2D, iTextureId);
             {
@@ -133,7 +135,7 @@ void FontManager::cacheGlyphs(const std::pair<unsigned long, unsigned long>& cha
                     pFtFace->glyph->bitmap.rows,
                     0,
                     GL_RED,
-                    GL_UNSIGNED_BYTE,
+                    iGlFormat,
                     pFtFace->glyph->bitmap.buffer));
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -145,7 +147,8 @@ void FontManager::cacheGlyphs(const std::pair<unsigned long, unsigned long>& cha
 
             // Save.
             mtxLoadedGlyphs.second[iCharCode] = CharacterGlyph{
-                .pTexture = std::unique_ptr<Texture>(new Texture(iTextureId)),
+                .pTexture = std::unique_ptr<Texture>(new Texture(
+                    iTextureId, pFtFace->glyph->bitmap.width, pFtFace->glyph->bitmap.rows, iGlFormat)),
                 .size = glm::ivec2(pFtFace->glyph->bitmap.width, pFtFace->glyph->bitmap.rows),
                 .bearing = glm::ivec2(pFtFace->glyph->bitmap_left, pFtFace->glyph->bitmap_top),
                 .advance = static_cast<unsigned int>(pFtFace->glyph->advance.x)};
