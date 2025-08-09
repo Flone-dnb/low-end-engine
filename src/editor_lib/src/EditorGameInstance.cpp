@@ -158,19 +158,20 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
     // Run compute shader to clear node ID texture.
     if (gpuPickingData.pNodeIdTexture != nullptr) {
-        glUseProgram(gpuPickingData.pClearTextureProgram->getShaderProgramId());
+        GL_CHECK_ERROR(glUseProgram(gpuPickingData.pClearTextureProgram->getShaderProgramId()));
 
         const auto [iTexWidth, iTexHeight] = gpuPickingData.pNodeIdTexture->getSize();
-        glBindImageTexture(
+        GL_CHECK_ERROR(glBindImageTexture(
             0,
             gpuPickingData.pNodeIdTexture->getTextureId(),
             0,
             GL_FALSE,
             0,
             GL_WRITE_ONLY,
-            gpuPickingData.pNodeIdTexture->getGlFormat());
+            gpuPickingData.pNodeIdTexture->getGlFormat()));
 
-        gpuPickingData.pPickingProgram->setUvector2ToShader("textureSize", glm::uvec2(iTexWidth, iTexHeight));
+        gpuPickingData.pClearTextureProgram->setUvector2ToShader(
+            "textureSize", glm::uvec2(iTexWidth, iTexHeight));
 
         // Calculate thread group count.
         constexpr size_t iThreadGroupSizeOneDim = 16; // same as in shaders
@@ -184,7 +185,8 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
             iGroupsY += 1;
         }
 
-        glDispatchCompute(static_cast<unsigned int>(iGroupsX), static_cast<unsigned int>(iGroupsY), 1u);
+        GL_CHECK_ERROR(
+            glDispatchCompute(static_cast<unsigned int>(iGroupsX), static_cast<unsigned int>(iGroupsY), 1u));
     }
 
     updateFrameStatsText(timeSincePrevCallInSec);
@@ -293,7 +295,7 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands(CameraNode* pCamer
         return;
     }
 
-    glUseProgram(gpuPickingData.pPickingProgram->getShaderProgramId());
+    GL_CHECK_ERROR(glUseProgram(gpuPickingData.pPickingProgram->getShaderProgramId()));
 
     const auto [iFramebufferWidth, iFramebufferHeight] = framebuffer.getSize();
 
@@ -314,16 +316,16 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands(CameraNode* pCamer
         // Node IDs must be written at this point because we will read them.
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        glBindImageTexture(
+        GL_CHECK_ERROR(glBindImageTexture(
             0,
             gpuPickingData.pNodeIdTexture->getTextureId(),
             0,
             GL_FALSE,
             0,
             GL_READ_WRITE,
-            gpuPickingData.pNodeIdTexture->getGlFormat());
-        glBindBufferBase(
-            GL_SHADER_STORAGE_BUFFER, 0, gpuPickingData.pClickedNodeIdValueBuffer->getBufferId());
+            gpuPickingData.pNodeIdTexture->getGlFormat()));
+        GL_CHECK_ERROR(glBindBufferBase(
+            GL_SHADER_STORAGE_BUFFER, 0, gpuPickingData.pClickedNodeIdValueBuffer->getBufferId()));
     }
 
     // Get cursor pos in fullscreen (editor camera) because viewport's framebuffer has fullscreen size.
@@ -351,7 +353,8 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands(CameraNode* pCamer
         iGroupsY += 1;
     }
 
-    glDispatchCompute(static_cast<unsigned int>(iGroupsX), static_cast<unsigned int>(iGroupsY), 1u);
+    GL_CHECK_ERROR(
+        glDispatchCompute(static_cast<unsigned int>(iGroupsX), static_cast<unsigned int>(iGroupsY), 1u));
     gpuPickingData.bIsWaitingForGpuResult = true;
 }
 
@@ -584,8 +587,9 @@ void EditorGameInstance::GpuPickingData::recreateNodeIdTexture(
 
     if (bIsCameraRecreated) {
         pViewportCamera->getCameraProperties()->getShaderConstantsSetter().addSetterFunction(
-            [iNodeIdTextureId = pNodeIdTexture->getTextureId()](ShaderProgram* pProgram) {
-                glBindImageTexture(0, iNodeIdTextureId, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
+            [this](ShaderProgram* pProgram) {
+                GL_CHECK_ERROR(glBindImageTexture(
+                    0, pNodeIdTexture->getTextureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI));
             });
     }
 }

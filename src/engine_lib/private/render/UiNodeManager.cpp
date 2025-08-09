@@ -769,7 +769,7 @@ void UiNodeManager::onWindowSizeChanged() {
 void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
     PROFILE_FUNC;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
+    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId));
 
     std::scoped_lock guard(mtxData.first);
 
@@ -1032,9 +1032,10 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
         if (pShaderProgram == nullptr) [[unlikely]] {
             Error::showErrorAndThrowException("expected the shader to be loaded at this point");
         }
-        glUseProgram(pShaderProgram->getShaderProgramId());
+        GL_CHECK_ERROR(glUseProgram(pShaderProgram->getShaderProgramId()));
 
-        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+        GL_CHECK_ERROR(
+            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId()));
 
         pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
         glActiveTexture(GL_TEXTURE0); // glyph's bitmap

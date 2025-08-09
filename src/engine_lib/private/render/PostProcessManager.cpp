@@ -52,10 +52,10 @@ void PostProcessManager::drawPostProcessing(
     PROFILE_FUNC
 
     // Set framebuffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId());
+    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId()));
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(pShaderProgram->getShaderProgramId());
+    GL_CHECK_ERROR(glUseProgram(pShaderProgram->getShaderProgramId()));
 
     glDisable(GL_DEPTH_TEST);
     {

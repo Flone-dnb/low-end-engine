@@ -112,7 +112,7 @@ void Renderer::drawNextFrame() {
     PROFILE_FUNC
 
     // Make sure there was no GL error during the last frame.
-    const auto lastError = glGetError();
+    auto lastError = glGetError();
     if (lastError != GL_NO_ERROR) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("an OpenGL error occurred during the last frame, error code: {}", lastError));
@@ -205,7 +205,7 @@ void Renderer::drawNextFrame() {
             const auto& viewportSize = mtxActiveCamera.second.viewportSize;
             const auto& pFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
 
-            glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId());
+            GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId()));
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
@@ -272,6 +272,13 @@ void Renderer::drawNextFrame() {
 #if defined(ENGINE_PROFILER_ENABLED)
     FrameMark;
 #endif
+
+    // Make sure there was no GL error during frame submission.
+    lastError = glGetError();
+    if (lastError != GL_NO_ERROR) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("an OpenGL error occurred while submitting a new frame, error code: {}", lastError));
+    }
 }
 
 void Renderer::copyFramebufferToWindowFramebuffer(

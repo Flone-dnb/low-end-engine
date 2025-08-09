@@ -47,7 +47,7 @@ void MeshNodeManager::drawMeshes(
         PROFILE_ADD_SCOPE_TEXT(pShaderProgram->getName().data(), pShaderProgram->getName().size());
 
         // Set shader program.
-        glUseProgram(pShaderProgram->getShaderProgramId());
+        GL_CHECK_ERROR(glUseProgram(pShaderProgram->getShaderProgramId()));
 
         // Set camera uniforms.
         pCameraProperties->getShaderConstantsSetter().setConstantsToShader(pShaderProgram);
@@ -76,10 +76,12 @@ void MeshNodeManager::drawMeshes(
         }
 
         // Clear texture slots (if they where used).
-        for (int i = GL_TEXTURE0; i < 4; i++) { // NOLINT
-            glActiveTexture(i);
-            glBindTexture(GL_TEXTURE_2D, 0);
-        }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
 

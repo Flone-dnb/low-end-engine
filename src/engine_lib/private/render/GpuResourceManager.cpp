@@ -13,7 +13,7 @@
 // External.
 #include "glad/glad.h"
 
-std::mutex GpuResourceManager::mtx{};
+std::recursive_mutex GpuResourceManager::mtx{};
 
 std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
     bool bIsVertexDataDynamic,

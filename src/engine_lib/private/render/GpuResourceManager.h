@@ -97,5 +97,5 @@ public:
      *
      * @remark Made public so that you can use it outside of the manager in some cases.
      */
-    static std::mutex mtx;
+    static std::recursive_mutex mtx;
 };

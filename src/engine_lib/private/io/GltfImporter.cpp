@@ -13,6 +13,12 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
+namespace {
+    constexpr std::string_view sTexturesDirectoryName = "tex";
+    constexpr std::string_view sImportedImageExtension = "png";
+    constexpr std::string_view sDiffuseTextureName = "diffuse";
+}
+
 inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::string& sPathRelativeResToImage) {
     auto optionalError = TextureManager::importTextureFromMemory(
         sPathRelativeResToImage,
@@ -28,7 +34,7 @@ inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::stri
     return true;
 }
 
-inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMesh( // NOLINT: too complex
+inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMesh(
     const tinygltf::Model& model,
     const tinygltf::Mesh& mesh,
     const std::filesystem::path& pathToOutputFile,
@@ -39,10 +45,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
     // Prepare array to fill.
     std::vector<std::unique_ptr<MeshNode>> vMeshNodes;
 
-    const std::string sTexturesDirectoryName = "tex";
-    const std::string sImageExtension = "png";
-    const std::string sDiffuseTextureName = "diffuse";
-
     // Prepare textures directory.
     const std::filesystem::path pathToTexturesDir =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToOutputDirRelativeRes /
@@ -50,7 +52,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
     if (std::filesystem::exists(pathToTexturesDir)) {
         std::filesystem::remove_all(pathToTexturesDir);
     }
-    std::filesystem::create_directory(pathToTexturesDir);
 
     // Go through each mesh in this node.
     for (size_t iPrimitive = 0; iPrimitive < mesh.primitives.size(); iPrimitive++) {
@@ -303,11 +304,17 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     // Get image.
                     auto& diffuseImage = model.images[static_cast<size_t>(diffuseTexture.source)];
 
+                    if (!std::filesystem::exists(pathToTexturesDir)) {
+                        std::filesystem::create_directory(pathToTexturesDir);
+                    }
+
                     // Construct path to imported texture directory.
                     const auto pathDiffuseTextureRelativeRes =
-                        pathToTexturesDir /
-                        std::format(
-                            "{}_{}.{}", sDiffuseTextureName, std::to_string(iPrimitive), sImageExtension);
+                        pathToTexturesDir / std::format(
+                                                "{}_{}.{}",
+                                                sDiffuseTextureName,
+                                                std::to_string(iPrimitive),
+                                                sImportedImageExtension);
 
                     const auto sTexturePathRelativeRes =
                         std::filesystem::relative(
@@ -440,7 +447,7 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
 
     // Make sure the specified directory name is not very long
     // to avoid creating long paths which might be an issue under Windows.
-    static constexpr size_t iMaxOutputDirectoryNameLength = 10; // NOLINT
+    static constexpr size_t iMaxOutputDirectoryNameLength = 10;
     if (sOutputDirectoryName.size() > iMaxOutputDirectoryNameLength) [[unlikely]] {
         return Error(std::format(
             "the specified name \"{}\" is too long (only {} characters allowed)",
@@ -449,10 +456,10 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
     }
 
     // Make sure the specified directory name is valid (A-z, 0-9).
+    constexpr std::string_view sValidCharacters =
+        "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
     for (const auto& character : sOutputDirectoryName) {
-        const auto iAsciiCode = static_cast<int>(character);
-        if (iAsciiCode < 48 || (iAsciiCode > 57 && iAsciiCode < 65) ||               // NOLINT
-            (iAsciiCode > 90 && iAsciiCode < 97) || iAsciiCode > 122) [[unlikely]] { // NOLINT
+        if (sValidCharacters.find(character) == std::string::npos) [[unlikely]] {
             return Error(std::format(
                 "character \"{}\" in the name \"{}\" is forbidden and cannon be used",
                 character,
