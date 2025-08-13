@@ -106,6 +106,46 @@ std::optional<glm::vec2> CameraManager::getCursorPosOnViewport() {
     return cursorPos / glm::vec2(viewport.z, viewport.w);
 }
 
+std::optional<CameraManager::MouseCursorWorldPosResult> CameraManager::convertCursorPosToWorld() {
+    std::scoped_lock guard(mtxActiveCamera.first);
+
+    const auto optCursorPos = getCursorPosOnViewport();
+    if (!optCursorPos.has_value()) {
+        return {};
+    }
+
+    return convertViewportPosToWorld(*optCursorPos);
+}
+
+std::optional<CameraManager::MouseCursorWorldPosResult>
+CameraManager::convertViewportPosToWorld(const glm::vec2& viewportPos) {
+    std::scoped_lock guard(mtxActiveCamera.first);
+
+    if (mtxActiveCamera.second.pNode == nullptr) {
+        return {};
+    }
+
+    const auto pCameraProperties = mtxActiveCamera.second.pNode->getCameraProperties();
+
+    // Convert [0; 1] screen pos to NDC [-1; 1].
+    const auto ndcPos =
+        glm::vec4(viewportPos.x * 2.0F - 1.0F, (1.0F - viewportPos.y) * 2.0F - 1.0F, 0.0F, 1.0F);
+
+    // Convert to view space.
+    const auto invProjMatrix = pCameraProperties->getInverseProjectionMatrix();
+    const glm::vec4 viewSpacePosBeforeDiv = invProjMatrix * ndcPos;
+    const glm::vec4 viewSpacePos = viewSpacePosBeforeDiv / viewSpacePosBeforeDiv.w;
+
+    // Convert to world space.
+    const auto invViewMatrix = pCameraProperties->getInverseViewMatrix();
+    const auto worldSpacePos = glm::vec3(invViewMatrix * viewSpacePos);
+
+    const auto cameraPos = mtxActiveCamera.second.pNode->getWorldLocation();
+
+    return MouseCursorWorldPosResult{
+        .worldLocation = cameraPos, .worldDirection = glm::normalize(worldSpacePos - cameraPos)};
+}
+
 std::pair<std::recursive_mutex, CameraManager::ActiveCameraInfo>& CameraManager::getActiveCamera() {
     return mtxActiveCamera;
 }

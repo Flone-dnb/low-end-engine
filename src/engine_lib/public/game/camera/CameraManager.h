@@ -39,6 +39,15 @@ public:
         bool bIsSoundListener = true;
     };
 
+    /** Result of converting mouse cursor position to world space. */
+    struct MouseCursorWorldPosResult {
+        /** Location of the active camera. */
+        glm::vec3 worldLocation;
+
+        /** Normalized direction from @ref worldLocation along the mouse cursor pos. */
+        glm::vec3 worldDirection;
+    };
+
     CameraManager() = delete;
     ~CameraManager();
 
@@ -68,9 +77,26 @@ public:
      * If the mouse cursor is visible and is inside of the active camera's viewport returns a non-empty value
      * in range [0.0; 1.0] where 0 is viewport's top-left corner and 1 is viewport's right-bottom corner.
      *
-     * @return Empty if cursor is not visible or outside of viewport.
+     * @return Empty if the cursor is not visible or is outside of the viewport.
      */
     std::optional<glm::vec2> getCursorPosOnViewport();
+
+    /**
+     * Converts mouse cursor pos to world space.
+     *
+     * @return Empty if the cursor is not visible or is outside of the viewport.
+     */
+    std::optional<MouseCursorWorldPosResult> convertCursorPosToWorld();
+
+    /**
+     * Converts the specified position within the active camera's viewport (a rectangle on the screen)
+     * to world space.
+     *
+     * @param viewportPos Position in range [0; 1].
+     *
+     * @return Empty if no active camera.
+     */
+    std::optional<MouseCursorWorldPosResult> convertViewportPosToWorld(const glm::vec2& viewportPos);
 
     /**
      * Returns settings for post processing of the rendered image.

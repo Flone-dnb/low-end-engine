@@ -23,13 +23,6 @@ public:
     virtual ~NodeTreeInspector() override = default;
 
     /**
-     * Returns prefix to node names that won't be visible in the node tree inspector.
-     *
-     * @return Node name prefix.
-     */
-    static std::string_view getHiddenNodeNamePrefix() { return "Editor"; };
-
-    /**
      * Selects a node by a node ID (if such node exists).
      *
      * @param iNodeId Node ID of the node to select.

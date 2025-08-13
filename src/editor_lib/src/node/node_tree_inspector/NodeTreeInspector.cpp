@@ -13,6 +13,7 @@
 #include "node/menu/SetNameMenu.h"
 #include "game/node/Sound2dNode.h"
 #include "game/node/Sound3dNode.h"
+#include "EditorConstants.hpp"
 
 // External.
 #include "nameof.hpp"
@@ -81,7 +82,7 @@ void NodeTreeInspector::refreshGameNodeName(Node* pGameNode) {
 }
 
 void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
-    if (pNode->getNodeName().starts_with(getHiddenNodeNamePrefix())) {
+    if (pNode->getNodeName().starts_with(EditorConstants::getHiddenNodeNamePrefix())) {
         return;
     }
 
@@ -169,15 +170,22 @@ void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
 }
 
 void NodeTreeInspector::inspectGameNode(NodeTreeInspectorItem* pItem) {
-    dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
-        ->getPropertyInspector()
-        ->setNodeToInspect(pItem->getDisplayedGameNode());
+    const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
 
+    // Display properties.
+    pGameInstance->getPropertyInspector()->setNodeToInspect(pItem->getDisplayedGameNode());
+
+    // Update inspected item.
     if (pInspectedItem != nullptr) {
         pInspectedItem->setColor(EditorTheme::getButtonColor());
     }
     pInspectedItem = pItem;
     pInspectedItem->setColor(EditorTheme::getSelectedItemColor());
+
+    // Show gizmo.
+    if (auto pSpatialNode = dynamic_cast<SpatialNode*>(pItem->getDisplayedGameNode())) {
+        pGameInstance->showGizmoToControlNode(pSpatialNode);
+    }
 }
 
 void NodeTreeInspector::clearInspection() {

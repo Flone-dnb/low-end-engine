@@ -4,6 +4,7 @@
 #include <cmath>
 
 // Custom.
+#include "game/geometry/shapes/Plane.h"
 #include "misc/Globals.h"
 #include "io/Logger.h"
 #include "math/GLMath.hpp"
@@ -103,9 +104,21 @@ public:
      */
     static inline glm::vec3 normalizeSafely(const glm::vec3& vector);
 
+    /**
+     * Calculates intersection between a ray and a plane.
+     *
+     * @param rayOrigin    Start of the ray.
+     * @param rayDirection Normalized direction of the ray.
+     * @param plane        Plane.
+     *
+     * @return Negative value if no intersection, otherwise length of the ray to the intersection point.
+     */
+    static inline float calculateRayPlaneIntersection(
+        const glm::vec3& rayOrigin, const glm::vec3& rayDirection, const Plane& plane);
+
 private:
     /** Default tolerance for floats to use. */
-    static inline const float smallFloatEpsilon = 0.0000001F; // NOLINT: not a very small number
+    static inline const float smallFloatEpsilon = 0.0000001F;
 };
 
 glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3& direction) {
@@ -226,7 +239,7 @@ float MathHelpers::normalizeToRange(float value, float min, float max) {
     const auto width = max - min;
     const auto offsetValue = value - min;
 
-    return (offsetValue - (floor(offsetValue / width) * width)) + min;
+    return (offsetValue - (static_cast<float>(floor(offsetValue / width) * width))) + min;
 }
 
 glm::vec3 MathHelpers::normalizeSafely(const glm::vec3& vector) {
@@ -237,4 +250,16 @@ glm::vec3 MathHelpers::normalizeSafely(const glm::vec3& vector) {
     }
 
     return vector * glm::inversesqrt(squareSum);
+}
+
+float MathHelpers::calculateRayPlaneIntersection(
+    const glm::vec3& rayOrigin, const glm::vec3& rayDirection, const Plane& plane) {
+    const float numer = glm::dot(plane.normal, rayOrigin) - plane.distanceFromOrigin;
+    const float denom = glm::dot(plane.normal, rayDirection);
+
+    if (std::abs(denom) < smallFloatEpsilon) {
+        return -1.0F;
+    }
+
+    return -numer / denom;
 }

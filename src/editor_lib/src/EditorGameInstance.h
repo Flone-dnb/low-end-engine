@@ -19,7 +19,9 @@ class PropertyInspector;
 class ShaderProgram;
 class Buffer;
 class Texture;
+class GizmoNode;
 class CameraManager;
+class SpatialNode;
 
 /** Editor's game instance. */
 class EditorGameInstance : public GameInstance {
@@ -71,6 +73,13 @@ public:
     void setEnableViewportCamera(bool bEnable);
 
     /**
+     * Creates gizmo to control the specified node.
+     *
+     * @param pNode Node to control.
+     */
+    void showGizmoToControlNode(SpatialNode* pNode);
+
+    /**
      * Tells if @ref openContextMenu was called and the menu is still opened.
      *
      * @return Context menu state.
@@ -117,6 +126,14 @@ protected:
      * @param modifiers      Keyboard modifier keys.
      */
     virtual void onMouseButtonPressed(MouseButton button, KeyboardModifiers modifiers) override;
+
+    /**
+     * Called when the window (that owns this object) receives mouse input.
+     *
+     * @param button         Mouse button.
+     * @param modifiers      Keyboard modifier keys.
+     */
+    virtual void onMouseButtonReleased(MouseButton button, KeyboardModifiers modifiers) override;
 
     /**
      * Called when the window (that owns this object) receives keyboard input.
@@ -181,6 +198,9 @@ private:
 
         /** FPS, RAM and other stats. */
         TextUiNode* pStatsText = nullptr;
+
+        /** Not `nullptr` if a gizmo is shown. */
+        GizmoNode* pGizmoNode = nullptr;
     };
 
     /** Groups pointers to nodes from editor's world. */
@@ -232,6 +252,9 @@ private:
         /** `true` if left mouse button was clicked in the game's viewport on this tick. */
         bool bMouseClickedThisTick = false;
 
+        /** `false` if left mouse button was pressed but button was not released yet. */
+        bool bLeftMouseButtonReleased = true;
+
         /** `true` if @ref pPickingProgram was started and we expect a result soon. */
         bool bIsWaitingForGpuResult = false;
     };
@@ -260,6 +283,9 @@ private:
      * to this function.
      */
     void updateFrameStatsText(float timeSincePrevCallInSec);
+
+    /** Processes results of the clicked object. */
+    void processGpuPickingResult();
 
     /** Not `nullptr` if game world exists. */
     GameWorldNodes gameWorldNodes;

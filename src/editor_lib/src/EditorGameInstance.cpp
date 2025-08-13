@@ -10,6 +10,7 @@
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
+#include "node/GizmoNode.h"
 #include "input/EditorInputEventIds.hpp"
 #include "input/InputManager.h"
 #include "math/MathHelpers.hpp"
@@ -27,7 +28,9 @@
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
+#include "EditorResourcePaths.hpp"
 #include "EditorTheme.h"
+#include "EditorConstants.hpp"
 
 #if defined(GAME_LIB_INCLUDED)
 #include "MyGameInstance.h"
@@ -50,10 +53,10 @@ void EditorGameInstance::onGameStarted() {
     getRenderer()->getFontManager().loadFont(
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf", 0.05F);
 
-    gpuPickingData.pPickingProgram =
-        getRenderer()->getShaderManager().getShaderProgram("editor/shaders/Picking.comp.glsl");
-    gpuPickingData.pClearTextureProgram =
-        getRenderer()->getShaderManager().getShaderProgram("editor/shaders/ClearNodeIdTexture.comp.glsl");
+    gpuPickingData.pPickingProgram = getRenderer()->getShaderManager().getShaderProgram(
+        EditorResourcePaths::getPathToShadersRelativeRes() + "Picking.comp.glsl");
+    gpuPickingData.pClearTextureProgram = getRenderer()->getShaderManager().getShaderProgram(
+        EditorResourcePaths::getPathToShadersRelativeRes() + "ClearNodeIdTexture.comp.glsl");
     gpuPickingData.pClickedNodeIdValueBuffer = GpuResourceManager::createStorageBuffer(sizeof(unsigned int));
 
     registerEditorInputEvents();
@@ -96,6 +99,16 @@ void EditorGameInstance::onMouseButtonPressed(MouseButton button, KeyboardModifi
     }
 
     gpuPickingData.bMouseClickedThisTick = true;
+    gpuPickingData.bLeftMouseButtonReleased = false;
+}
+
+void EditorGameInstance::onMouseButtonReleased(MouseButton button, KeyboardModifiers modifiers) {
+    if (button == MouseButton::LEFT) {
+        gpuPickingData.bLeftMouseButtonReleased = true;
+        if (gameWorldNodes.pGizmoNode != nullptr) {
+            gameWorldNodes.pGizmoNode->stopTrackingMouseMovement();
+        }
+    }
 }
 
 void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardModifiers modifiers) {
@@ -125,35 +138,64 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
     }
 }
 
-void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
-    if (gpuPickingData.bIsWaitingForGpuResult) {
-        // Not the best approach but simple and it's not a perf-critical place.
-        glFinish();
+void EditorGameInstance::processGpuPickingResult() {
+    if (!gpuPickingData.bIsWaitingForGpuResult) [[unlikely]] {
+        Error::showErrorAndThrowException("expected GPU request to be made at this point");
+    }
 
-        // Map buffer for reading.
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, gpuPickingData.pClickedNodeIdValueBuffer->getBufferId());
-        {
-            const auto pResult = reinterpret_cast<unsigned int*>(glMapBufferRange(
-                GL_SHADER_STORAGE_BUFFER,
-                0,                    // offset
-                sizeof(unsigned int), // size
-                GL_MAP_READ_BIT));
-            if (pResult != nullptr) {
-                const auto iNodeIdUnderCursor = *pResult;
-                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    // Not the best approach but simple and it's not a perf-critical place.
+    glFinish();
 
-                if (editorWorldNodes.pNodeTreeInspector != nullptr) {
-                    if (iNodeIdUnderCursor == 0) {
-                        editorWorldNodes.pNodeTreeInspector->clearInspection();
-                    } else {
+    // Map buffer for reading.
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, gpuPickingData.pClickedNodeIdValueBuffer->getBufferId());
+    {
+        const auto pResult = reinterpret_cast<unsigned int*>(glMapBufferRange(
+            GL_SHADER_STORAGE_BUFFER,
+            0,                    // offset
+            sizeof(unsigned int), // size
+            GL_MAP_READ_BIT));
+        if (pResult != nullptr) {
+            const auto iNodeIdUnderCursor = *pResult;
+            glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+            if (editorWorldNodes.pNodeTreeInspector != nullptr) {
+                if (iNodeIdUnderCursor == 0) {
+                    editorWorldNodes.pNodeTreeInspector->clearInspection();
+                    if (gameWorldNodes.pGizmoNode != nullptr) {
+                        gameWorldNodes.pGizmoNode->unsafeDetachFromParentAndDespawn(true);
+                        gameWorldNodes.pGizmoNode = nullptr;
+                    }
+                } else {
+                    bool bSelectedGizmo = false;
+                    if (!gpuPickingData.bLeftMouseButtonReleased && gameWorldNodes.pGizmoNode != nullptr) {
+                        if (iNodeIdUnderCursor == gameWorldNodes.pGizmoNode->getAxisNodeId(GizmoAxis::X)) {
+                            bSelectedGizmo = true;
+                            gameWorldNodes.pGizmoNode->trackMouseMovement(GizmoAxis::X);
+                        } else if (
+                            iNodeIdUnderCursor == gameWorldNodes.pGizmoNode->getAxisNodeId(GizmoAxis::Y)) {
+                            bSelectedGizmo = true;
+                            gameWorldNodes.pGizmoNode->trackMouseMovement(GizmoAxis::Y);
+                        } else if (
+                            iNodeIdUnderCursor == gameWorldNodes.pGizmoNode->getAxisNodeId(GizmoAxis::Z)) {
+                            bSelectedGizmo = true;
+                            gameWorldNodes.pGizmoNode->trackMouseMovement(GizmoAxis::Z);
+                        }
+                    }
+                    if (!bSelectedGizmo) {
                         editorWorldNodes.pNodeTreeInspector->selectNodeById(iNodeIdUnderCursor);
                     }
                 }
             }
         }
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-        gpuPickingData.bIsWaitingForGpuResult = false;
+    gpuPickingData.bIsWaitingForGpuResult = false;
+}
+
+void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
+    if (gpuPickingData.bIsWaitingForGpuResult) {
+        processGpuPickingResult();
     }
 
     // Run compute shader to clear node ID texture.
@@ -243,6 +285,10 @@ void EditorGameInstance::onBeforeWorldDestroyed(Node* pRootNode) {
 
 void EditorGameInstance::onWindowFocusChanged(bool bIsFocused) {
     if (!bIsFocused) {
+        gpuPickingData.bLeftMouseButtonReleased = true;
+        if (gameWorldNodes.pGizmoNode != nullptr) {
+            gameWorldNodes.pGizmoNode->stopTrackingMouseMovement();
+        }
         return;
     }
 
@@ -258,6 +304,10 @@ void EditorGameInstance::onWindowSizeChanged() {
         return;
     }
     gpuPickingData.recreateNodeIdTexture(gameWorldNodes.pViewportCamera, false);
+    gpuPickingData.bLeftMouseButtonReleased = true;
+    if (gameWorldNodes.pGizmoNode != nullptr) {
+        gameWorldNodes.pGizmoNode->stopTrackingMouseMovement();
+    }
 }
 
 void EditorGameInstance::onWindowClose() {
@@ -552,7 +602,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
 
     // Viewport camera.
     gameWorldNodes.pViewportCamera = pRootNode->addChildNode(std::make_unique<EditorCameraNode>(
-        std::format("{}: camera", NodeTreeInspector::getHiddenNodeNamePrefix())));
+        std::format("{}: camera", EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pViewportCamera->setSerialize(false);
     gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
     gameWorldNodes.pViewportCamera->makeActive();
@@ -568,7 +618,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
 
     // Stats.
     gameWorldNodes.pStatsText = pRootNode->addChildNode(
-        std::make_unique<TextUiNode>(std::format("{}: stats", NodeTreeInspector::getHiddenNodeNamePrefix())));
+        std::make_unique<TextUiNode>(std::format("{}: stats", EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pStatsText->setSerialize(false);
     gameWorldNodes.pStatsText->setTextHeight(0.035F);
     gameWorldNodes.pStatsText->setSize(glm::vec2(1.0F, 1.0F));
@@ -636,6 +686,15 @@ void EditorGameInstance::setEnableViewportCamera(bool bEnable) {
     } else {
         gameWorldNodes.pViewportCamera->getWorldWhileSpawned()->getCameraManager().clearActiveCamera();
     }
+}
+
+void EditorGameInstance::showGizmoToControlNode(SpatialNode* pNode) {
+    if (gameWorldNodes.pGizmoNode != nullptr) {
+        gameWorldNodes.pGizmoNode->unsafeDetachFromParentAndDespawn(true);
+    }
+
+    gameWorldNodes.pGizmoNode = pNode->addChildNode(
+        std::make_unique<GizmoNode>(GizmoMode::MOVE, pNode), Node::AttachmentRule::KEEP_RELATIVE);
 }
 
 bool EditorGameInstance::isContextMenuOpened() const {

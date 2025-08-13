@@ -61,6 +61,8 @@ set(PROJECT_SOURCES
     src/node/menu/ConfirmationMenu.cpp
     src/node/LogViewNode.h
     src/node/LogViewNode.cpp
+    src/node/GizmoNode.h
+    src/node/GizmoNode.cpp
     # add your .h/.cpp files here
 )
 
