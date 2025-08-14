@@ -35,6 +35,8 @@ public:
      */
     GizmoNode(GizmoMode mode, SpatialNode* pControlledNode);
 
+    virtual ~GizmoNode() override = default;
+
     /**
      * Returns node ID of the mesh node that controls X axis of the gizmo.
      *
@@ -54,7 +56,19 @@ public:
     /** Stops mouse tracking (see @ref trackMouseMovement) if it was enabled. */
     void stopTrackingMouseMovement();
 
-    virtual ~GizmoNode() override = default;
+    /**
+     * Returns node which the gizmo controls.
+     *
+     * @return Node.
+     */
+    SpatialNode* getControlledNode() const { return pControlledNode; }
+
+    /**
+     * Returns gizmo mode.
+     *
+     * @return Mode.
+     */
+    GizmoMode getMode() const { return mode; }
 
 protected:
     /**
@@ -76,8 +90,11 @@ private:
         /** Axis along which to apply changes. */
         GizmoAxis axis = GizmoAxis::X;
 
-        /** Relative (to parent node) position of the controlled node when the tracking was started. */
-        glm::vec3 originalRelativePos = glm::vec3(0.0F);
+        /**
+         * Relative (to parent node) position/rotation/scale of the controlled node when the tracking was
+         * started.
+         */
+        glm::vec3 originalRelativeTransform = glm::vec3(0.0F);
 
         /** World position of the controlled node when the tracking was started. */
         glm::vec3 originalWorldPos = glm::vec3(0.0F);

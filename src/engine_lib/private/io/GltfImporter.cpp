@@ -447,7 +447,7 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
 
     // Make sure the specified directory name is not very long
     // to avoid creating long paths which might be an issue under Windows.
-    static constexpr size_t iMaxOutputDirectoryNameLength = 10;
+    static constexpr size_t iMaxOutputDirectoryNameLength = 16;
     if (sOutputDirectoryName.size() > iMaxOutputDirectoryNameLength) [[unlikely]] {
         return Error(std::format(
             "the specified name \"{}\" is too long (only {} characters allowed)",

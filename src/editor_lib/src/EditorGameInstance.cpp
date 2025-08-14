@@ -112,19 +112,19 @@ void EditorGameInstance::onMouseButtonReleased(MouseButton button, KeyboardModif
 }
 
 void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardModifiers modifiers) {
-    if (gameWorldNodes.pRoot == nullptr || editorWorldNodes.pContentBrowser == nullptr) {
-        return;
-    }
-
-    if (!lastOpenedNodeTree.has_value()) {
-        return;
-    }
-
-    if (!std::filesystem::exists(*lastOpenedNodeTree)) {
+    if (gameWorldNodes.pRoot == nullptr) {
         return;
     }
 
     if (modifiers.isControlPressed() && key == KeyboardButton::S) {
+        if (!lastOpenedNodeTree.has_value()) {
+            return;
+        }
+
+        if (!std::filesystem::exists(*lastOpenedNodeTree)) {
+            return;
+        }
+
         const auto optionalError = gameWorldNodes.pRoot->serializeNodeTree(*lastOpenedNodeTree, false);
         if (optionalError.has_value()) [[unlikely]] {
             Logger::get().error(std::format(
@@ -134,6 +134,29 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
         } else {
             Logger::get().info(
                 std::format("node tree saved to \"{}\"", lastOpenedNodeTree->filename().string()));
+        }
+
+        return;
+    }
+
+    if (gameWorldNodes.pGizmoNode != nullptr &&
+        (key == KeyboardButton::NUM_1 || key == KeyboardButton::NUM_2 || key == KeyboardButton::NUM_3) &&
+        !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasFocusedNode() &&
+        !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasModalUiNodeTree()) {
+        GizmoMode newMode = GizmoMode::MOVE;
+        if (key == KeyboardButton::NUM_2) {
+            newMode = GizmoMode::ROTATE;
+        } else if (key == KeyboardButton::NUM_3) {
+            newMode = GizmoMode::SCALE;
+        }
+
+        if (gameWorldNodes.pGizmoNode->getMode() != newMode) {
+            const auto pNode = gameWorldNodes.pGizmoNode->getControlledNode();
+
+            gameWorldNodes.pGizmoNode->unsafeDetachFromParentAndDespawn(true);
+
+            gameWorldNodes.pGizmoNode = pNode->addChildNode(
+                std::make_unique<GizmoNode>(newMode, pNode), Node::AttachmentRule::KEEP_RELATIVE);
         }
     }
 }

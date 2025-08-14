@@ -749,6 +749,12 @@ bool UiNodeManager::hasModalUiNodeTree() {
     return !mtxData.second.modalInputReceivingNodes.empty();
 }
 
+bool UiNodeManager::hasFocusedNode() {
+    std::scoped_lock guard(mtxData.first);
+
+    return mtxData.second.pFocusedNode != nullptr;
+}
+
 UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRenderer), pWorld(pWorld) {
     const auto [iWidth, iHeight] = pRenderer->getWindow()->getWindowSize();
     uiProjMatrix = glm::ortho(0.0F, static_cast<float>(iWidth), 0.0F, static_cast<float>(iHeight));

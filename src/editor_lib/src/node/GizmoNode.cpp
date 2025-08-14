@@ -17,26 +17,19 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     setSerialize(false);
     setIsReceivingInput(true);
 
-    // Deserialize gizmo geometry.
-    std::unique_ptr<Node> pXAxisGizmoU;
+    // Prepare path to gizmo model.
+    std::string_view sGizmoModelName;
     switch (mode) {
     case (GizmoMode::MOVE): {
-        auto result = Node::deserializeNodeTree(
-            EditorResourcePaths::getPathToModelsDirectory() / "gizmo_move" / "gizmo_move.toml");
-        if (std::holds_alternative<Error>(result)) [[unlikely]] {
-            auto error = std::get<Error>(std::move(result));
-            error.addCurrentLocationToErrorStack();
-            error.showErrorAndThrowException();
-        }
-        pXAxisGizmoU = std::get<std::unique_ptr<Node>>(std::move(result));
+        sGizmoModelName = "gizmo_move";
         break;
     }
     case (GizmoMode::ROTATE): {
-        Error::showErrorAndThrowException("not implemented");
+        sGizmoModelName = "gizmo_rotate";
         break;
     }
     case (GizmoMode::SCALE): {
-        Error::showErrorAndThrowException("not implemented");
+        sGizmoModelName = "gizmo_scale";
         break;
     }
     default: {
@@ -44,46 +37,55 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     }
     }
 
-    const auto pXAxisGizmo = dynamic_cast<MeshNode*>(pXAxisGizmoU.get());
-    if (pXAxisGizmo == nullptr) [[unlikely]] {
+    // Deserialize model.
+    auto result = Node::deserializeNodeTree(
+        EditorResourcePaths::getPathToModelsDirectory() / sGizmoModelName / sGizmoModelName);
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        auto error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        error.showErrorAndThrowException();
+    }
+    auto pXAxisGizmoU = std::get<std::unique_ptr<Node>>(std::move(result));
+
+    const auto pXAxisMesh = dynamic_cast<MeshNode*>(pXAxisGizmoU.get());
+    if (pXAxisMesh == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected a mesh node");
     }
-    if (!pXAxisGizmo->getChildNodes().second.empty()) [[unlikely]] {
+    if (!pXAxisMesh->getChildNodes().second.empty()) [[unlikely]] {
         Error::showErrorAndThrowException("expected a single mesh node");
     }
 
-    MeshGeometry gizmoGeometry = pXAxisGizmo->copyMeshData();
+    MeshGeometry gizmoGeometry = pXAxisMesh->copyMeshData();
 
-    auto pYAxisGizmoU = std::make_unique<MeshNode>("Gizmo Y");
-    pYAxisGizmoU->setMeshGeometryBeforeSpawned(gizmoGeometry);
-    pYAxisGizmoU->setRelativeRotation(glm::vec3(0.0F, 0.0F, 90.0F));
+    auto pYAxisMeshU = std::make_unique<MeshNode>("Gizmo Y");
+    pYAxisMeshU->setMeshGeometryBeforeSpawned(gizmoGeometry);
+    pYAxisMeshU->setRelativeRotation(glm::vec3(0.0F, 0.0F, 90.0F));
 
-    auto pZAxisGizmoU = std::make_unique<MeshNode>("Gizmo Z");
-    pZAxisGizmoU->setMeshGeometryBeforeSpawned(std::move(gizmoGeometry));
-    pZAxisGizmoU->setRelativeRotation(glm::vec3(0.0F, -90.0F, 0.0F));
+    auto pZAxisMeshU = std::make_unique<MeshNode>("Gizmo Z");
+    pZAxisMeshU->setMeshGeometryBeforeSpawned(std::move(gizmoGeometry));
+    pZAxisMeshU->setRelativeRotation(glm::vec3(0.0F, -90.0F, 0.0F));
 
     // Set color.
-    pXAxisGizmo->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.0F, 0.0F));
-    pYAxisGizmoU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 1.0F, 0.0F));
-    pZAxisGizmoU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.0F, 1.0F));
+    pXAxisMesh->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.0F, 0.0F));
+    pYAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 1.0F, 0.0F));
+    pZAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.0F, 1.0F));
 
-    // Save.
-    pXAxisGizmoNode = pXAxisGizmo;
-    pYAxisGizmoNode = pYAxisGizmoU.get();
-    pZAxisGizmoNode = pZAxisGizmoU.get();
+    // Save pointers.
+    pXAxisGizmoNode = pXAxisMesh;
+    pYAxisGizmoNode = pYAxisMeshU.get();
+    pZAxisGizmoNode = pZAxisMeshU.get();
 
     pXAxisGizmoNode->setSerialize(false);
     pYAxisGizmoNode->setSerialize(false);
     pZAxisGizmoNode->setSerialize(false);
 
     addChildNode(std::move(pXAxisGizmoU));
-    addChildNode(std::move(pYAxisGizmoU));
-    addChildNode(std::move(pZAxisGizmoU));
+    addChildNode(std::move(pYAxisMeshU));
+    addChildNode(std::move(pZAxisMeshU));
 
     // Add usage hint.
     {
-        const auto pUsageHintText = addChildNode(std::make_unique<TextUiNode>(
-            std::format("{}Gizmo Hint", EditorConstants::getHiddenNodeNamePrefix())));
+        const auto pUsageHintText = addChildNode(std::make_unique<TextUiNode>());
         pUsageHintText->setSerialize(false);
 
         pUsageHintText->setPosition(glm::vec2(0.6F, 0.01F));
@@ -126,23 +128,44 @@ GizmoNode::calculateOffsetFromGizmoToCursorRay(const glm::vec3& gizmoOriginalLoc
 
     glm::vec3 normalForPlaneAlongAxis = glm::vec3(0.0F);
 
-    switch (axis) {
-    case (GizmoAxis::X): {
-        normalForPlaneAlongAxis = glm::vec3(0.0F, 1.0F, 0.0F);
-        break;
-    }
-    case (GizmoAxis::Y): {
-        normalForPlaneAlongAxis = glm::vec3(-1.0F, 0.0F, 0.0F);
-        break;
-    }
-    case (GizmoAxis::Z): {
-        normalForPlaneAlongAxis = glm::vec3(1.0F, 0.0F, 0.0F);
-        break;
-    }
-    default: {
-        Error::showErrorAndThrowException("unhandled case");
-        break;
-    }
+    if (mode == GizmoMode::ROTATE) {
+        switch (axis) {
+        case (GizmoAxis::X): {
+            normalForPlaneAlongAxis = glm::vec3(1.0F, 0.0F, 0.0F);
+            break;
+        }
+        case (GizmoAxis::Y): {
+            normalForPlaneAlongAxis = glm::vec3(0.0F, 1.0F, 0.0F);
+            break;
+        }
+        case (GizmoAxis::Z): {
+            normalForPlaneAlongAxis = glm::vec3(0.0F, 0.0F, 1.0F);
+            break;
+        }
+        default: {
+            Error::showErrorAndThrowException("unhandled case");
+            break;
+        }
+        }
+    } else {
+        switch (axis) {
+        case (GizmoAxis::X): {
+            normalForPlaneAlongAxis = glm::vec3(0.0F, 1.0F, 0.0F);
+            break;
+        }
+        case (GizmoAxis::Y): {
+            normalForPlaneAlongAxis = glm::vec3(-1.0F, 0.0F, 0.0F);
+            break;
+        }
+        case (GizmoAxis::Z): {
+            normalForPlaneAlongAxis = glm::vec3(1.0F, 0.0F, 0.0F);
+            break;
+        }
+        default: {
+            Error::showErrorAndThrowException("unhandled case");
+            break;
+        }
+        }
     }
 
     Plane planeAlongAxis(normalForPlaneAlongAxis, gizmoOriginalLocation);
@@ -155,23 +178,44 @@ GizmoNode::calculateOffsetFromGizmoToCursorRay(const glm::vec3& gizmoOriginalLoc
         optCursorWorldInfo->worldLocation + optCursorWorldInfo->worldDirection * rayLength;
     const glm::vec3 offsetVector = toHitOnGizmo - gizmoOriginalLocation;
 
-    switch (axis) {
-    case (GizmoAxis::X): {
-        return offsetVector.x;
-        break;
-    }
-    case (GizmoAxis::Y): {
-        return offsetVector.y;
-        break;
-    }
-    case (GizmoAxis::Z): {
-        return offsetVector.z;
-        break;
-    }
-    default: {
-        Error::showErrorAndThrowException("unhandled case");
-        break;
-    }
+    if (mode == GizmoMode::ROTATE) {
+        switch (axis) {
+        case (GizmoAxis::X): {
+            return -offsetVector.y;
+            break;
+        }
+        case (GizmoAxis::Y): {
+            return offsetVector.x;
+            break;
+        }
+        case (GizmoAxis::Z): {
+            return -offsetVector.y;
+            break;
+        }
+        default: {
+            Error::showErrorAndThrowException("unhandled case");
+            break;
+        }
+        }
+    } else {
+        switch (axis) {
+        case (GizmoAxis::X): {
+            return offsetVector.x;
+            break;
+        }
+        case (GizmoAxis::Y): {
+            return offsetVector.y;
+            break;
+        }
+        case (GizmoAxis::Z): {
+            return offsetVector.z;
+            break;
+        }
+        default: {
+            Error::showErrorAndThrowException("unhandled case");
+            break;
+        }
+        }
     }
 
     return {};
@@ -183,9 +227,28 @@ void GizmoNode::trackMouseMovement(GizmoAxis axis) {
         return;
     }
 
+    glm::vec3 originalRelativeTransform;
+    switch (mode) {
+    case (GizmoMode::MOVE): {
+        originalRelativeTransform = pControlledNode->getRelativeLocation();
+        break;
+    }
+    case (GizmoMode::ROTATE): {
+        originalRelativeTransform = pControlledNode->getRelativeRotation();
+        break;
+    }
+    case (GizmoMode::SCALE): {
+        originalRelativeTransform = pControlledNode->getRelativeScale();
+        break;
+    }
+    default: {
+        Error::showErrorAndThrowException("unhandled case");
+    }
+    }
+
     optTrackingInfo = TrackingInfo{
         .axis = axis,
-        .originalRelativePos = pControlledNode->getRelativeLocation(),
+        .originalRelativeTransform = originalRelativeTransform,
         .originalWorldPos = pControlledNode->getWorldLocation(),
         .offsetToGizmoPivot = *optOffset};
 }
@@ -221,35 +284,39 @@ void GizmoNode::onMouseMove(double xOffset, double yOffset) {
         return;
     }
 
+    // Calculate mouse movement diff.
+    glm::vec3 offsetDiff = glm::vec3(0.0F);
+    switch (optTrackingInfo->axis) {
+    case (GizmoAxis::X): {
+        offsetDiff.x = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
+        break;
+    }
+    case (GizmoAxis::Y): {
+        offsetDiff.y = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
+        break;
+    }
+    case (GizmoAxis::Z): {
+        offsetDiff.z = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
+        break;
+    }
+    default: {
+        Error::showErrorAndThrowException("unhandled case");
+    }
+    }
+
+    // Apply change.
     switch (mode) {
     case (GizmoMode::MOVE): {
-        glm::vec3 offsetDiff = glm::vec3(0.0F);
-        switch (optTrackingInfo->axis) {
-        case (GizmoAxis::X): {
-            offsetDiff.x = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
-            break;
-        }
-        case (GizmoAxis::Y): {
-            offsetDiff.y = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
-            break;
-        }
-        case (GizmoAxis::Z): {
-            offsetDiff.z = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
-            break;
-        }
-        default: {
-            Error::showErrorAndThrowException("unhandled case");
-        }
-        }
-        pControlledNode->setRelativeLocation(optTrackingInfo->originalRelativePos + offsetDiff);
+        pControlledNode->setRelativeLocation(optTrackingInfo->originalRelativeTransform + offsetDiff);
         break;
     }
     case (GizmoMode::ROTATE): {
-        Error::showErrorAndThrowException("not implemented");
+        pControlledNode->setRelativeRotation(
+            optTrackingInfo->originalRelativeTransform + offsetDiff * 10.0F); // make rotation more sensitive
         break;
     }
     case (GizmoMode::SCALE): {
-        Error::showErrorAndThrowException("not implemented");
+        pControlledNode->setRelativeScale(optTrackingInfo->originalRelativeTransform + offsetDiff);
         break;
     }
     default: {

@@ -225,6 +225,13 @@ public:
      */
     bool hasModalUiNodeTree();
 
+    /**
+     * Tells if a focused node exists or not.
+     *
+     * @return `true` if focused node exists.
+     */
+    bool hasFocusedNode();
+
 private:
     /** Groups mutex-guarded data. */
     struct Data {
