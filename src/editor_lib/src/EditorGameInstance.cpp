@@ -691,6 +691,11 @@ void EditorGameInstance::setEnableViewportCamera(bool bEnable) {
 void EditorGameInstance::showGizmoToControlNode(SpatialNode* pNode) {
     if (gameWorldNodes.pGizmoNode != nullptr) {
         gameWorldNodes.pGizmoNode->unsafeDetachFromParentAndDespawn(true);
+        gameWorldNodes.pGizmoNode = nullptr;
+    }
+
+    if (pNode == nullptr) {
+        return;
     }
 
     gameWorldNodes.pGizmoNode = pNode->addChildNode(

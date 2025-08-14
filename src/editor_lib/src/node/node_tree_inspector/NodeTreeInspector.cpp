@@ -33,18 +33,14 @@ NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(
 
 void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
     if (this->pGameRootNode != nullptr) {
+        clearInspection();
+
         // Remove old tree.
         const auto mtxChildNodes = pLayoutNode->getChildNodes();
         std::scoped_lock guard(*mtxChildNodes.first);
         for (const auto& pNode : mtxChildNodes.second) {
             pNode->unsafeDetachFromParentAndDespawn(true);
         }
-
-        // Clear inspector.
-        dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
-            ->getPropertyInspector()
-            ->setNodeToInspect(nullptr);
-        pInspectedItem = nullptr;
     }
 
     this->pGameRootNode = pGameRootNode;
@@ -163,6 +159,8 @@ void NodeTreeInspector::showNodeTypeChangeMenu(NodeTreeInspectorItem* pItem) {
 }
 
 void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
+    clearInspection();
+
     pItem->getDisplayedGameNode()->unsafeDetachFromParentAndDespawn();
 
     // Refresh tree.
@@ -171,6 +169,12 @@ void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
 
 void NodeTreeInspector::inspectGameNode(NodeTreeInspectorItem* pItem) {
     const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
+
+    if (pInspectedItem == pItem) {
+        // Clicked again - clear selection.
+        clearInspection();
+        return;
+    }
 
     // Display properties.
     pGameInstance->getPropertyInspector()->setNodeToInspect(pItem->getDisplayedGameNode());
@@ -193,9 +197,10 @@ void NodeTreeInspector::clearInspection() {
         return;
     }
 
-    dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())
-        ->getPropertyInspector()
-        ->setNodeToInspect(nullptr);
+    const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
+
+    pGameInstance->getPropertyInspector()->setNodeToInspect(nullptr);
+    pGameInstance->showGizmoToControlNode(nullptr);
 
     pInspectedItem->setColor(EditorTheme::getButtonColor());
     pInspectedItem = nullptr;
@@ -227,6 +232,8 @@ void NodeTreeInspector::addChildNodeToNodeTree(
 
 void NodeTreeInspector::changeNodeType(
     NodeTreeInspectorItem* pItem, const std::string& sTypeGuid, SoundChannel soundChannel) {
+    clearInspection();
+
     // Create new node.
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
     auto pSerializable = typeInfo.createNewObject();

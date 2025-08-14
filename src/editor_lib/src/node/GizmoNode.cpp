@@ -9,6 +9,7 @@
 #include "EditorConstants.hpp"
 #include "EditorGameInstance.h"
 #include "node/property_inspector/PropertyInspector.h"
+#include "game/node/ui/TextUiNode.h"
 
 GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     : SpatialNode(std::string(EditorConstants::getHiddenNodeNamePrefix()) + " Gizmo Node"), mode(mode),
@@ -78,6 +79,19 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     addChildNode(std::move(pXAxisGizmoU));
     addChildNode(std::move(pYAxisGizmoU));
     addChildNode(std::move(pZAxisGizmoU));
+
+    // Add usage hint.
+    {
+        const auto pUsageHintText = addChildNode(std::make_unique<TextUiNode>(
+            std::format("{}Gizmo Hint", EditorConstants::getHiddenNodeNamePrefix())));
+        pUsageHintText->setSerialize(false);
+
+        pUsageHintText->setPosition(glm::vec2(0.6F, 0.01F));
+        pUsageHintText->setTextHeight(0.025F);
+        pUsageHintText->setSize(
+            glm::vec2(1.0F - pUsageHintText->getPosition().x, pUsageHintText->getTextHeight() * 1.25F));
+        pUsageHintText->setText(u"gizmo usage (keyboard): 1 - move, 2 - rotate, 3 - scale");
+    }
 }
 
 size_t GizmoNode::getAxisNodeId(GizmoAxis axis) {
