@@ -27,6 +27,16 @@ public:
      */
     void setNodeToInspect(Node* pNode);
 
+    /** Clears and displays all inspected properties again (if inspected node was previously set). */
+    void refreshInspectedProperties();
+
+    /**
+     * Returns currently inspected node (if exists).
+     *
+     * @return `nullptr` if not inspecting.
+     */
+    Node* getInspectedNode() const { return pInspectedNode; }
+
 private:
     /**
      * Displays reflected fields of the specified type (ignoring inherited fields) by taking the current

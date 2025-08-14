@@ -48,6 +48,23 @@ void PropertyInspector::setNodeToInspect(Node* pNode) {
     displayPropertiesForTypeRecursive(pNode->getTypeGuid(), pNode);
 }
 
+void PropertyInspector::refreshInspectedProperties() {
+    if (pInspectedNode == nullptr) {
+        return;
+    }
+
+    // Clear currently displayed properties.
+    {
+        const auto mtxChildNodes = pPropertyLayout->getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+        for (const auto& pNode : mtxChildNodes.second) {
+            pNode->unsafeDetachFromParentAndDespawn(true);
+        }
+    }
+
+    displayPropertiesForTypeRecursive(pInspectedNode->getTypeGuid(), pInspectedNode);
+}
+
 void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTypeGuid, Node* pObject) {
     auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);

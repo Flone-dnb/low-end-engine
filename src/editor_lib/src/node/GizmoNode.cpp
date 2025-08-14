@@ -7,6 +7,8 @@
 #include "game/World.h"
 #include "game/camera/CameraManager.h"
 #include "EditorConstants.hpp"
+#include "EditorGameInstance.h"
+#include "node/property_inspector/PropertyInspector.h"
 
 GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     : SpatialNode(std::string(EditorConstants::getHiddenNodeNamePrefix()) + " Gizmo Node"), mode(mode),
@@ -174,7 +176,22 @@ void GizmoNode::trackMouseMovement(GizmoAxis axis) {
         .offsetToGizmoPivot = *optOffset};
 }
 
-void GizmoNode::stopTrackingMouseMovement() { optTrackingInfo = {}; }
+void GizmoNode::stopTrackingMouseMovement() {
+    if (!optTrackingInfo.has_value()) {
+        return;
+    }
+
+    const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
+    if (pGameInstance == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected editor game instance");
+    }
+
+    if (pGameInstance->getPropertyInspector()->getInspectedNode() == pControlledNode) {
+        pGameInstance->getPropertyInspector()->refreshInspectedProperties();
+    }
+
+    optTrackingInfo = {};
+}
 
 void GizmoNode::onMouseMove(double xOffset, double yOffset) {
     SpatialNode::onMouseMove(xOffset, yOffset);
