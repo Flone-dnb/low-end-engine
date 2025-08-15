@@ -27,6 +27,9 @@ public:
      */
     void setNodeToInspect(Node* pNode);
 
+    /** Called after the inspected node changed its location. */
+    void onAfterInspectedNodeMoved();
+
     /** Clears and displays all inspected properties again (if inspected node was previously set). */
     void refreshInspectedProperties();
 

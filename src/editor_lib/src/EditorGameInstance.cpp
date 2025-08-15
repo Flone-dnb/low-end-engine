@@ -152,11 +152,7 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
 
         if (gameWorldNodes.pGizmoNode->getMode() != newMode) {
             const auto pNode = gameWorldNodes.pGizmoNode->getControlledNode();
-
-            gameWorldNodes.pGizmoNode->unsafeDetachFromParentAndDespawn(true);
-
-            gameWorldNodes.pGizmoNode = pNode->addChildNode(
-                std::make_unique<GizmoNode>(newMode, pNode), Node::AttachmentRule::KEEP_RELATIVE);
+            showGizmoToControlNode(pNode, newMode);
         }
     }
 }
@@ -711,7 +707,7 @@ void EditorGameInstance::setEnableViewportCamera(bool bEnable) {
     }
 }
 
-void EditorGameInstance::showGizmoToControlNode(SpatialNode* pNode) {
+void EditorGameInstance::showGizmoToControlNode(SpatialNode* pNode, GizmoMode mode) {
     if (gameWorldNodes.pGizmoNode != nullptr) {
         gameWorldNodes.pGizmoNode->unsafeDetachFromParentAndDespawn(true);
         gameWorldNodes.pGizmoNode = nullptr;
@@ -721,13 +717,15 @@ void EditorGameInstance::showGizmoToControlNode(SpatialNode* pNode) {
         return;
     }
 
-    gameWorldNodes.pGizmoNode = pNode->addChildNode(
-        std::make_unique<GizmoNode>(GizmoMode::MOVE, pNode), Node::AttachmentRule::KEEP_RELATIVE);
+    gameWorldNodes.pGizmoNode = gameWorldNodes.pRoot->addChildNode(
+        std::make_unique<GizmoNode>(mode, pNode), Node::AttachmentRule::KEEP_RELATIVE);
 }
 
 bool EditorGameInstance::isContextMenuOpened() const {
     return editorWorldNodes.pContextMenu != nullptr && editorWorldNodes.pContextMenu->isVisible();
 }
+
+GizmoNode* EditorGameInstance::getGizmoNode() { return gameWorldNodes.pGizmoNode; }
 
 PropertyInspector* EditorGameInstance::getPropertyInspector() const {
     return editorWorldNodes.pPropertyInspector;

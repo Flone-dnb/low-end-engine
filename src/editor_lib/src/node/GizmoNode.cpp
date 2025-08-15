@@ -225,6 +225,16 @@ GizmoNode::calculateOffsetFromGizmoToCursorRay(const glm::vec3& gizmoOriginalLoc
     return {};
 }
 
+void GizmoNode::onSpawning() {
+    SpatialNode::onSpawning();
+
+    setWorldLocation(pControlledNode->getWorldLocation());
+
+    if (mode == GizmoMode::ROTATE || mode == GizmoMode::SCALE) {
+        setWorldRotation(pControlledNode->getWorldRotation());
+    }
+}
+
 void GizmoNode::trackMouseMovement(GizmoAxis axis) {
     const auto optOffset = calculateOffsetFromGizmoToCursorRay(getWorldLocation(), axis);
     if (!optOffset.has_value()) {
@@ -312,15 +322,19 @@ void GizmoNode::onMouseMove(double xOffset, double yOffset) {
     switch (mode) {
     case (GizmoMode::MOVE): {
         pControlledNode->setRelativeLocation(optTrackingInfo->originalRelativeTransform + offsetDiff);
+        setWorldLocation(pControlledNode->getWorldLocation());
         break;
     }
     case (GizmoMode::ROTATE): {
         pControlledNode->setRelativeRotation(
             optTrackingInfo->originalRelativeTransform + offsetDiff * 10.0F); // make rotation more sensitive
+        setWorldRotation(pControlledNode->getWorldRotation());
         break;
     }
     case (GizmoMode::SCALE): {
-        pControlledNode->setRelativeScale(optTrackingInfo->originalRelativeTransform + offsetDiff);
+        auto newScale = optTrackingInfo->originalRelativeTransform + offsetDiff;
+        newScale = glm::max(newScale, glm::vec3(0.01F, 0.01F, 0.01F)); // avoid negative scale
+        pControlledNode->setRelativeScale(newScale);
         break;
     }
     default: {

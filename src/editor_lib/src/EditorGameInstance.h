@@ -7,6 +7,7 @@
 
 // Custom.
 #include "game/GameInstance.h"
+#include "node/GizmoMode.hpp"
 
 class Window;
 class EditorCameraNode;
@@ -76,8 +77,9 @@ public:
      * Creates gizmo to control the specified node.
      *
      * @param pNode Node to control.
+     * @param mode  Gizmo mode.
      */
-    void showGizmoToControlNode(SpatialNode* pNode);
+    void showGizmoToControlNode(SpatialNode* pNode, GizmoMode mode = GizmoMode::MOVE);
 
     /**
      * Tells if @ref openContextMenu was called and the menu is still opened.
@@ -85,6 +87,13 @@ public:
      * @return Context menu state.
      */
     bool isContextMenuOpened() const;
+
+    /**
+     * Returns gizmo if it's visible.
+     *
+     * @return `nullptr` if the gizmo is not active.
+     */
+    GizmoNode* getGizmoNode();
 
     /**
      * Returns property inspector that displays reflected fields.

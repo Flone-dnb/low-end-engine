@@ -5,15 +5,9 @@
 
 // Custom.
 #include "game/node/SpatialNode.h"
+#include "node/GizmoMode.hpp"
 
 class MeshNode;
-
-/** Defines type of a gizmo. */
-enum class GizmoMode {
-    MOVE,
-    ROTATE,
-    SCALE,
-};
 
 /** Gizmo element that controls a specific axis. */
 enum class GizmoAxis {
@@ -71,6 +65,20 @@ public:
     GizmoMode getMode() const { return mode; }
 
 protected:
+    /**
+     * Called when this node was not spawned previously and it was either attached to a parent node
+     * that is spawned or set as world's root node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This node will be marked as spawned before this function is called.
+     * @remark @ref getSpawnDespawnMutex is locked while this function is called.
+     * @remark This function is called before any of the child nodes are spawned. If you
+     * need to do some logic after child nodes are spawned use @ref onChildNodesSpawned.
+     */
+    virtual void onSpawning() override;
+
     /**
      * Called when the window received mouse movement.
      *

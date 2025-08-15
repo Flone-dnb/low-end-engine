@@ -6,6 +6,7 @@
 #include "game/node/ui/TextEditUiNode.h"
 #include "EditorTheme.h"
 #include "misc/ReflectedTypeDatabase.h"
+#include "node/property_inspector/PropertyInspector.h"
 
 // External.
 #include "utf/utf.hpp"
@@ -52,49 +53,53 @@ namespace {
         };
         return currentValue;
     }
+}
 
-    void setNewValue(
-        const glm::vec4& value,
-        Serializable* pObject,
-        const std::string& sVariableName,
-        GlmVecComponentCount componentCount) {
-        const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(pObject->getTypeGuid());
+void GlmVecInspector::setNewValue(const glm::vec4& value) {
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(pObject->getTypeGuid());
 
-        switch (componentCount) {
-        case (GlmVecComponentCount::VEC2): {
-            const auto variableIt = typeInfo.reflectedVariables.vec2s.find(sVariableName);
-            if (variableIt == typeInfo.reflectedVariables.vec2s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format("expected to find reflected variable \"{}\"", sVariableName));
-            }
-            variableIt->second.setter(pObject, value);
-            break;
+    switch (componentCount) {
+    case (GlmVecComponentCount::VEC2): {
+        const auto variableIt = typeInfo.reflectedVariables.vec2s.find(sVariableName);
+        if (variableIt == typeInfo.reflectedVariables.vec2s.end()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected to find reflected variable \"{}\"", sVariableName));
         }
-        case (GlmVecComponentCount::VEC3): {
-            const auto variableIt = typeInfo.reflectedVariables.vec3s.find(sVariableName);
-            if (variableIt == typeInfo.reflectedVariables.vec3s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format("expected to find reflected variable \"{}\"", sVariableName));
-            }
-            variableIt->second.setter(pObject, value);
-            break;
-        }
-        case (GlmVecComponentCount::VEC4): {
-            const auto variableIt = typeInfo.reflectedVariables.vec4s.find(sVariableName);
-            if (variableIt == typeInfo.reflectedVariables.vec4s.end()) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    std::format("expected to find reflected variable \"{}\"", sVariableName));
-            }
-            variableIt->second.setter(pObject, value);
-            break;
-        }
-        default: {
-            Error::showErrorAndThrowException("unhandled case");
-            break;
-        }
-        };
+        variableIt->second.setter(pObject, value);
+        break;
     }
+    case (GlmVecComponentCount::VEC3): {
+        const auto variableIt = typeInfo.reflectedVariables.vec3s.find(sVariableName);
+        if (variableIt == typeInfo.reflectedVariables.vec3s.end()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected to find reflected variable \"{}\"", sVariableName));
+        }
+        variableIt->second.setter(pObject, value);
 
+        if (sVariableName == "worldLocation" || sVariableName == "relativeLocation") {
+            const auto pInspector = getParentNodeOfType<PropertyInspector>();
+            if (pInspector == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected a valid property inspector");
+            }
+            pInspector->onAfterInspectedNodeMoved();
+        }
+
+        break;
+    }
+    case (GlmVecComponentCount::VEC4): {
+        const auto variableIt = typeInfo.reflectedVariables.vec4s.find(sVariableName);
+        if (variableIt == typeInfo.reflectedVariables.vec4s.end()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected to find reflected variable \"{}\"", sVariableName));
+        }
+        variableIt->second.setter(pObject, value);
+        break;
+    }
+    default: {
+        Error::showErrorAndThrowException("unhandled case");
+        break;
+    }
+    };
 }
 
 GlmVecInspector::GlmVecInspector(
@@ -188,12 +193,16 @@ void GlmVecInspector::onValueChanged(
     auto sText = utf::as_str8(sNewText);
     for (auto it = sText.begin(); it != sText.end();) {
         char& item = *it;
-        if (!std::isdigit(item) && item != '.' && item != ',') {
+        if (!std::isdigit(item) && item != '.' && item != ',' && item != '-') {
             it = sText.erase(it);
             bErasedSomeText = true;
         } else {
             it++;
         }
+    }
+
+    if (sText.size() == 1 && sText[0] == '-') {
+        sText = "";
     }
 
     float newComponentValue = 0.0F;
@@ -226,7 +235,7 @@ void GlmVecInspector::onValueChanged(
         break;
     }
     }
-    setNewValue(value, pObject, sVariableName, componentCount);
+    setNewValue(value);
 
     if (bErasedSomeText) {
         // Overwrite invalid text.

@@ -6,6 +6,8 @@
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 #include "EditorTheme.h"
+#include "EditorGameInstance.h"
+#include "node/GizmoNode.h"
 #include "node/property_inspector/GlmVecInspector.h"
 #include "node/property_inspector/StringInspector.h"
 #include "node/property_inspector/FloatInspector.h"
@@ -46,6 +48,25 @@ void PropertyInspector::setNodeToInspect(Node* pNode) {
     }
 
     displayPropertiesForTypeRecursive(pNode->getTypeGuid(), pNode);
+}
+
+void PropertyInspector::onAfterInspectedNodeMoved() {
+    const auto pGameInstance = dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned());
+    if (pGameInstance == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected editor game instance");
+    }
+
+    const auto pGizmoNode = pGameInstance->getGizmoNode();
+    if (pGizmoNode == nullptr) {
+        return;
+    }
+
+    const auto pSpatialNode = dynamic_cast<SpatialNode*>(pInspectedNode);
+    if (pSpatialNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected a spatial node");
+    }
+
+    pGizmoNode->setWorldLocation(pSpatialNode->getWorldLocation());
 }
 
 void PropertyInspector::refreshInspectedProperties() {

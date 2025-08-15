@@ -52,6 +52,13 @@ private:
      */
     void onValueChanged(TextEditUiNode* pTextEdit, VectorComponent component, std::u16string_view sNewText);
 
+    /**
+     * Sets a new value to @ref pObject.
+     *
+     * @param value Value to set.
+     */
+    void setNewValue(const glm::vec4& value);
+
     /** Object that owns the variable. */
     Serializable* const pObject = nullptr;
 

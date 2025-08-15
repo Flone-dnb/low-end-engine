@@ -43,12 +43,16 @@ FloatInspector::FloatInspector(
                 auto sText = utf::as_str8(sNewText);
                 for (auto it = sText.begin(); it != sText.end();) {
                     char& item = *it;
-                    if (!std::isdigit(item) && item != '.' && item != ',') {
+                    if (!std::isdigit(item) && item != '.' && item != ',' && item != '-') {
                         it = sText.erase(it);
                         bErasedSomeText = true;
                     } else {
                         it++;
                     }
+                }
+
+                if (sText.size() == 1 && sText[0] == '-') {
+                    sText = "";
                 }
 
                 float newValue = 0.0F;
