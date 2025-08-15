@@ -114,6 +114,10 @@ size_t GizmoNode::getAxisNodeId(GizmoAxis axis) {
         return pZAxisGizmoNode->getNodeId().value();
         break;
     }
+    default: {
+        Error::showErrorAndThrowException("unhandled case");
+        break;
+    }
     }
 }
 
