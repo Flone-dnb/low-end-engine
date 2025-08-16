@@ -7,6 +7,8 @@ in vec2 fragmentUv;
 
 uniform vec4 diffuseColor;
 
+uniform bool bEnableSelfShadow;
+
 uniform bool bIsUsingDiffuseTexture;
 layout(location = 0) uniform sampler2D diffuseTexture;
 
@@ -36,7 +38,10 @@ void main() {
     }
 
     // Light.
-    vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
+    vec3 lightColor = fragmentDiffuseColor.rgb;
+    if (bEnableSelfShadow) {
+        lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
+    }
 
     color = vec4(lightColor, fragmentDiffuseColor.a);
 } 

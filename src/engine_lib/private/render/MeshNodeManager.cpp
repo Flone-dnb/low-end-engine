@@ -12,8 +12,12 @@
 MeshNodeManager::~MeshNodeManager() {
     std::scoped_lock guard(mtxSpawnedVisibleNodes.first);
 
-    if (!mtxSpawnedVisibleNodes.second.opaqueMeshes.empty() ||
-        !mtxSpawnedVisibleNodes.second.transparentMeshes.empty()) [[unlikely]] {
+    size_t iNodeCount = 0;
+    for (const auto& registeredNodes : mtxSpawnedVisibleNodes.second) {
+        iNodeCount += registeredNodes.opaqueMeshes.size();
+        iNodeCount += registeredNodes.transparentMeshes.size();
+    }
+    if (iNodeCount != 0) [[unlikely]] {
         Error::showErrorAndThrowException(
             "mesh node manager is being destroyed but there are still some nodes registered");
     }
@@ -23,23 +27,39 @@ void MeshNodeManager::drawMeshes(
     CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager) {
     std::scoped_lock guard(mtxSpawnedVisibleNodes.first);
 
-    if (!mtxSpawnedVisibleNodes.second.opaqueMeshes.empty()) {
-        drawMeshes(mtxSpawnedVisibleNodes.second.opaqueMeshes, pCameraProperties, lightSourceManager);
+    const auto drawLayer = [pCameraProperties, &lightSourceManager](SpawnedVisibleNodes& layerNodes) {
+        if (!layerNodes.opaqueMeshes.empty()) {
+            drawMeshes(layerNodes.opaqueMeshes, pCameraProperties, lightSourceManager);
+        }
+
+        if (!layerNodes.transparentMeshes.empty()) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            {
+                drawMeshes(layerNodes.transparentMeshes, pCameraProperties, lightSourceManager);
+            }
+            glDisable(GL_BLEND);
+        }
+    };
+
+    drawLayer(mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER1)]);
+
+    auto& layer2 = mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER2)];
+    if (layer2.opaqueMeshes.size() > 0) {
+        auto it = layer2.opaqueMeshes.begin();
+        const auto size = it->second.size();
+        if (size != 3) {
+            Error::showErrorAndThrowException("here");
+        }
     }
 
-    if (!mtxSpawnedVisibleNodes.second.transparentMeshes.empty()) {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        {
-            drawMeshes(
-                mtxSpawnedVisibleNodes.second.transparentMeshes, pCameraProperties, lightSourceManager);
-        }
-        glDisable(GL_BLEND);
-    }
+    glDepthFunc(GL_ALWAYS);
+    drawLayer(mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER2)]);
+    glDepthFunc(GL_LESS);
 }
 
 void MeshNodeManager::drawMeshes(
-    std::unordered_map<ShaderProgram*, std::unordered_set<MeshNode*>>& meshes,
+    const std::unordered_map<ShaderProgram*, std::unordered_set<MeshNode*>>& meshes,
     CameraProperties* pCameraProperties,
     LightSourceManager& lightSourceManager) {
     for (auto& [pShaderProgram, meshNodes] : meshes) {
@@ -55,11 +75,7 @@ void MeshNodeManager::drawMeshes(
         // Set light arrays.
         lightSourceManager.setArrayPropertiesToShader(pShaderProgram);
 
-        // Get mesh nodes.
-        auto& mtxMeshNodes = pShaderProgram->getMeshNodesUsingThisProgram();
-        std::scoped_lock guard(mtxMeshNodes.first);
-
-        for (const auto& pMeshNode : mtxMeshNodes.second) {
+        for (const auto& pMeshNode : meshNodes) {
 #if defined(ENGINE_EDITOR)
             pShaderProgram->setUintToShader("iNodeId", static_cast<unsigned int>(*pMeshNode->getNodeId()));
 #endif
@@ -114,10 +130,12 @@ void MeshNodeManager::addMeshNodeToRendering(MeshNode* pNode) {
 
     std::unordered_map<ShaderProgram*, std::unordered_set<MeshNode*>>* pShaderToNodes = nullptr;
 
+    const auto iLayerIndex = static_cast<unsigned int>(pNode->getDrawLayer());
+    auto& registeredNodes = mtxSpawnedVisibleNodes.second[iLayerIndex];
     if (pNode->getMaterial().isTransparencyEnabled()) {
-        pShaderToNodes = &mtxSpawnedVisibleNodes.second.transparentMeshes;
+        pShaderToNodes = &registeredNodes.transparentMeshes;
     } else {
-        pShaderToNodes = &mtxSpawnedVisibleNodes.second.opaqueMeshes;
+        pShaderToNodes = &registeredNodes.opaqueMeshes;
     }
 
     // Get shader.
@@ -127,7 +145,7 @@ void MeshNodeManager::addMeshNodeToRendering(MeshNode* pNode) {
             std::format("node \"{}\" material has invalid shader program", pNode->getNodeName()));
     }
 
-    // Find array.
+    // Find node array.
     auto meshesIt = pShaderToNodes->find(pShaderProgram);
     if (meshesIt == pShaderToNodes->end()) {
         bool bIsInserted = false;
@@ -146,10 +164,11 @@ void MeshNodeManager::removeMeshNodeFromRendering(MeshNode* pNode) {
 
     std::unordered_map<ShaderProgram*, std::unordered_set<MeshNode*>>* pShaderToNodes = nullptr;
 
+    auto& registeredNodes = mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(pNode->getDrawLayer())];
     if (pNode->getMaterial().isTransparencyEnabled()) {
-        pShaderToNodes = &mtxSpawnedVisibleNodes.second.transparentMeshes;
+        pShaderToNodes = &registeredNodes.transparentMeshes;
     } else {
-        pShaderToNodes = &mtxSpawnedVisibleNodes.second.opaqueMeshes;
+        pShaderToNodes = &registeredNodes.opaqueMeshes;
     }
 
     // Get shader.
@@ -159,7 +178,7 @@ void MeshNodeManager::removeMeshNodeFromRendering(MeshNode* pNode) {
             std::format("node \"{}\" material has invalid shader program", pNode->getNodeName()));
     }
 
-    // Find array.
+    // Find node array.
     auto meshesIt = pShaderToNodes->find(pShaderProgram);
     if (meshesIt == pShaderToNodes->end()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(

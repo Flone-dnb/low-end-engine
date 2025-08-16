@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+// Custom.
+#include "render/MeshDrawLayer.hpp"
+
 class ShaderProgram;
 class MeshNode;
 class CameraProperties;
@@ -64,13 +67,6 @@ public:
      */
     void onSpawnedMeshNodeChangingVisibility(MeshNode* pNode, bool bNewVisibility);
 
-    /**
-     * Returns all currently spawned and visible mesh nodes.
-     *
-     * @return Nodes.
-     */
-    std::pair<std::mutex, SpawnedVisibleNodes>& getSpawnedVisibleNodes() { return mtxSpawnedVisibleNodes; }
-
 private:
     MeshNodeManager() = default;
 
@@ -81,8 +77,8 @@ private:
      * @param pCameraProperties  Camera properties.
      * @param lightSourceManager Light source manager.
      */
-    void drawMeshes(
-        std::unordered_map<ShaderProgram*, std::unordered_set<MeshNode*>>& meshes,
+    static void drawMeshes(
+        const std::unordered_map<ShaderProgram*, std::unordered_set<MeshNode*>>& meshes,
         CameraProperties* pCameraProperties,
         LightSourceManager& lightSourceManager);
 
@@ -100,6 +96,7 @@ private:
      */
     void removeMeshNodeFromRendering(MeshNode* pNode);
 
-    /** Groups info about spawned and visible mesh nodes. */
-    std::pair<std::mutex, SpawnedVisibleNodes> mtxSpawnedVisibleNodes;
+    /** Groups info about spawned and visible mesh nodes (per draw layer). */
+    std::pair<std::mutex, std::array<SpawnedVisibleNodes, static_cast<size_t>(MeshDrawLayer::COUNT)>>
+        mtxSpawnedVisibleNodes;
 };

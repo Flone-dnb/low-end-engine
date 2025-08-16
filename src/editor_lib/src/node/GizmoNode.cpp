@@ -55,6 +55,8 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
         Error::showErrorAndThrowException("expected a single mesh node");
     }
 
+    pXAxisMesh->setNodeName("Gizmo X");
+
     MeshGeometry gizmoGeometry = pXAxisMesh->copyMeshData();
 
     auto pYAxisMeshU = std::make_unique<MeshNode>("Gizmo Y");
@@ -75,9 +77,18 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pYAxisGizmoNode = pYAxisMeshU.get();
     pZAxisGizmoNode = pZAxisMeshU.get();
 
+    // Configure meshes.
     pXAxisGizmoNode->setSerialize(false);
     pYAxisGizmoNode->setSerialize(false);
     pZAxisGizmoNode->setSerialize(false);
+
+    pXAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
+    pYAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
+    pZAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
+
+    pXAxisGizmoNode->setEnableSelfShadow(false);
+    pYAxisGizmoNode->setEnableSelfShadow(false);
+    pZAxisGizmoNode->setEnableSelfShadow(false);
 
     addChildNode(std::move(pXAxisGizmoU));
     addChildNode(std::move(pYAxisMeshU));

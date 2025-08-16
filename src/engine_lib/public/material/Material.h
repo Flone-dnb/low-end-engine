@@ -164,15 +164,6 @@ private:
      */
     void onNodeDespawning(MeshNode* pNode, Renderer* pRenderer);
 
-    /**
-     * Called from node that owns this material after it changed its visibility.
-     *
-     * @param bIsVisible New visibility of the node.
-     * @param pNode      Node that triggered this event.
-     * @param pRenderer  Renderer.
-     */
-    void onNodeChangedVisibilityWhileSpawned(bool bIsVisible, MeshNode* pNode, Renderer* pRenderer);
-
     /** Diffuse light color. */
     glm::vec4 diffuseColor = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 

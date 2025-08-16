@@ -221,11 +221,6 @@ void Material::onNodeSpawning(
             [this](ShaderProgram* pShaderProgram) { SHADER_CONSTANTS_CODE });
     }
 
-    if (pNode->isVisible()) {
-        // Add node to be rendered.
-        pShaderProgram->onMeshNodeStartedUsingProgram(pNode);
-    }
-
     pOwnerNode = pNode;
 }
 
@@ -238,11 +233,6 @@ void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
             std::format("material on node \"{}\" not requested shaders yet", pNode->getNodeName()));
     }
 
-    if (pNode->isVisible()) {
-        // Remove node from rendering.
-        pShaderProgram->onMeshNodeStoppedUsingProgram(pNode);
-    }
-
     // Unload stuff.
     pShaderProgram = {};
     if (pDiffuseTexture != nullptr) {
@@ -250,14 +240,4 @@ void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
     }
 
     pOwnerNode = nullptr;
-}
-
-void Material::onNodeChangedVisibilityWhileSpawned(bool bIsVisible, MeshNode* pNode, Renderer* pRenderer) {
-    if (bIsVisible) {
-        // Add node to be rendered.
-        pShaderProgram->onMeshNodeStartedUsingProgram(pNode);
-    } else {
-        // Remove node from rendering.
-        pShaderProgram->onMeshNodeStoppedUsingProgram(pNode);
-    }
 }

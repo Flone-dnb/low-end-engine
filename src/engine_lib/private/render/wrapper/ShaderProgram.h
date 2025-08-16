@@ -146,15 +146,6 @@ public:
     ShaderManager& getShaderManager() const { return *pShaderManager; }
 
     /**
-     * Returns all spawned mesh nodes that use this program.
-     *
-     * @return Mesh nodes.
-     */
-    std::pair<std::mutex, std::unordered_set<MeshNode*>>& getMeshNodesUsingThisProgram() {
-        return mtxMeshNodesUsingThisProgram;
-    }
-
-    /**
      * Returns name of the shader program.
      *
      * @remark Generally used for logging.
@@ -177,20 +168,6 @@ private:
         const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
         unsigned int iShaderProgramId,
         const std::string& sShaderProgramName);
-
-    /**
-     * Called after some material on a spawned mesh node started using this shader program.
-     *
-     * @param pMeshNode Node.
-     */
-    void onMeshNodeStartedUsingProgram(MeshNode* pMeshNode);
-
-    /**
-     * Called after some material on a spawned mesh node stopped using this shader program.
-     *
-     * @param pMeshNode Node.
-     */
-    void onMeshNodeStoppedUsingProgram(MeshNode* pMeshNode);
 
     /**
      * Returns location of a shader uniform with the specified name.
@@ -219,13 +196,6 @@ private:
 
     /** Binding indices of all uniform blocks. */
     std::unordered_map<std::string, unsigned int> cachedUniformBlockBindingIndices;
-
-    /**
-     * Mesh nodes that use this shader program.
-     *
-     * @remark Used for fast access during frame rendering.
-     */
-    std::pair<std::mutex, std::unordered_set<MeshNode*>> mtxMeshNodesUsingThisProgram;
 
     /** Manager that created this program. */
     ShaderManager* const pShaderManager = nullptr;

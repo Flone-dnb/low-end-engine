@@ -85,6 +85,28 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().isTransparencyEnabled();
         }};
 
+    variables.bools[NAMEOF_MEMBER(&MeshNode::bEnableSelfShadow).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<MeshNode*>(pThis)->setEnableSelfShadow(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<MeshNode*>(pThis)->isSelfShadowEnabled();
+        }};
+
+    variables.unsignedInts[NAMEOF_MEMBER(&MeshNode::drawLayer).data()] = ReflectedVariableInfo<unsigned int>{
+        .setter =
+            [](Serializable* pThis, const unsigned int& iNewValue) {
+                MeshDrawLayer layer = MeshDrawLayer::LAYER1;
+                if (iNewValue < static_cast<unsigned int>(MeshDrawLayer::COUNT)) {
+                    layer = static_cast<MeshDrawLayer>(iNewValue);
+                }
+                reinterpret_cast<MeshNode*>(pThis)->setDrawLayer(layer);
+            },
+        .getter = [](Serializable* pThis) -> unsigned int {
+            return static_cast<unsigned int>(reinterpret_cast<MeshNode*>(pThis)->getDrawLayer());
+        }};
+
     variables.meshGeometries[NAMEOF_MEMBER(&MeshNode::geometry).data()] = ReflectedVariableInfo<MeshGeometry>{
         .setter =
             [](Serializable* pThis, const MeshGeometry& newValue) {
@@ -141,14 +163,20 @@ void MeshNode::setIsVisible(bool bVisible) {
     mtxIsVisible.second = bVisible;
 
     if (isSpawned()) {
-        // First notify material to maybe update render resources.
-        material.onNodeChangedVisibilityWhileSpawned(
-            bVisible, this, getGameInstanceWhileSpawned()->getRenderer());
-
-        // Then manager.
         getWorldWhileSpawned()->getMeshNodeManager().onSpawnedMeshNodeChangingVisibility(this, bVisible);
     }
 }
+
+void MeshNode::setDrawLayer(MeshDrawLayer layer) {
+    drawLayer = layer;
+
+    if (isSpawned()) {
+        unregisterFromRendering();
+        registerToRendering();
+    }
+}
+
+void MeshNode::setEnableSelfShadow(bool bEnable) { bEnableSelfShadow = bEnable; }
 
 Material& MeshNode::getMaterial() { return material; }
 
@@ -174,14 +202,11 @@ void MeshNode::registerToRendering() {
     // Request shader program.
     material.onNodeSpawning(
         this, getGameInstanceWhileSpawned()->getRenderer(), [this](ShaderProgram* pShaderProgram) {
+            // Prepare setter for the aquired shader program.
             shaderConstantsSetter->addSetterFunction([this](ShaderProgram* pShaderProgram) {
-                std::scoped_lock guard(mtxShaderConstants.first);
-                auto& uniforms = mtxShaderConstants.second;
-
-                pShaderProgram->setMatrix4ToShader(
-                    NAMEOF(mtxShaderConstants.second.worldMatrix).c_str(), uniforms.worldMatrix);
-                pShaderProgram->setMatrix3ToShader(
-                    NAMEOF(mtxShaderConstants.second.normalMatrix).c_str(), uniforms.normalMatrix);
+                pShaderProgram->setMatrix4ToShader("worldMatrix", cachedWorldMatrices.worldMatrix);
+                pShaderProgram->setMatrix3ToShader("normalMatrix", cachedWorldMatrices.normalMatrix);
+                pShaderProgram->setBoolToShader("bEnableSelfShadow", bEnableSelfShadow);
             });
         });
 
@@ -227,12 +252,8 @@ void MeshNode::onWorldLocationRotationScaleChanged() {
 
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-    // Update shader constants.
-    std::scoped_lock guard(mtxShaderConstants.first);
-
-    mtxShaderConstants.second.worldMatrix = getWorldMatrix();
-    mtxShaderConstants.second.normalMatrix =
-        glm::transpose(glm::inverse(mtxShaderConstants.second.worldMatrix));
+    cachedWorldMatrices.worldMatrix = getWorldMatrix();
+    cachedWorldMatrices.normalMatrix = glm::transpose(glm::inverse(cachedWorldMatrices.worldMatrix));
 }
 
 void MeshNode::onAfterMeshGeometryChanged() {

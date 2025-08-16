@@ -4,6 +4,7 @@
 #include <mutex>
 
 // Custom.
+#include "render/MeshDrawLayer.hpp"
 #include "math/GLMath.hpp"
 #include "game/node/SpatialNode.h"
 #include "game/geometry/MeshGeometry.h"
@@ -110,6 +111,22 @@ public:
     void setIsVisible(bool bVisible);
 
     /**
+     * Determine the layer in which a mesh is drawn. Meshes of layer 1 will be drawn first, then meshes of
+     * layer 2 and so on.
+     *
+     * @param layer Layer to use.
+     */
+    void setDrawLayer(MeshDrawLayer layer);
+
+    /**
+     * `true` (default) to enable shadows on the mesh according to the light sources and ambient light in the
+     * scene.
+     *
+     * @param bEnable `true` to enable.
+     */
+    void setEnableSelfShadow(bool bEnable);
+
+    /**
      * Returns material.
      *
      * @remark You can modify this material's properties even while the node is spawned.
@@ -159,11 +176,26 @@ public:
     MeshGeometry copyMeshData() const { return geometry; }
 
     /**
+     * Determine the layer in which a mesh is drawn.
+     *
+     * @return Layer.
+     */
+    MeshDrawLayer getDrawLayer() const { return drawLayer; }
+
+    /**
      * Tells whether this mesh is currently visible or not.
      *
      * @return Whether the mesh is visible or not.
      */
     bool isVisible();
+
+    /**
+     * Returns `true` to enable shadows on the mesh according to the light sources and ambient light in the
+     * scene.
+     *
+     * @return Self shadow state.
+     */
+    bool isSelfShadowEnabled() const { return bEnableSelfShadow; }
 
 protected:
     /**
@@ -198,8 +230,8 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
-    /** Groups variables that will be set to shader uniforms. */
-    struct ShaderConstants {
+    /** Matrices prepared to set to shaders. */
+    struct CachedWorldMatrices {
         /** World matrix. */
         glm::mat4 worldMatrix;
 
@@ -228,9 +260,15 @@ private:
     /** Only valid while spawned. */
     std::optional<ShaderConstantsSetter> shaderConstantsSetter;
 
-    /** Groups mutex guarded data. */
-    std::pair<std::mutex, ShaderConstants> mtxShaderConstants;
+    /** Matrices to set to shaders. */
+    CachedWorldMatrices cachedWorldMatrices;
 
     /** Whether mesh is visible or not. */
     std::pair<std::mutex, bool> mtxIsVisible;
+
+    /** Determine the layer in which a mesh is drawn. */
+    MeshDrawLayer drawLayer = MeshDrawLayer::LAYER1;
+
+    /** `true` to enable shadows on the mesh according to the light sources and ambient light in the scene. */
+    bool bEnableSelfShadow = true;
 };
