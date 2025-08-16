@@ -7,6 +7,7 @@
 #include "game/node/ui/TextUiNode.h"
 #include "misc/ReflectedTypeDatabase.h"
 #include "node/menu/SelectNodeTypeMenu.h"
+#include "node/menu/FileDialogMenu.h"
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "EditorTheme.h"
 #include "EditorGameInstance.h"
@@ -47,6 +48,17 @@ void NodeTreeInspector::onGameNodeTreeLoaded(Node* pGameRootNode) {
     addGameNodeRecursive(pGameRootNode);
 }
 
+bool NodeTreeInspector::isNodeExternalTreeRootNode(Node* pNode) {
+    if (pNode != pGameRootNode) {
+        const auto optDeserializeInfo = pNode->getPathDeserializedFromRelativeToRes();
+        if (optDeserializeInfo.has_value() && optDeserializeInfo->second == "0") {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void NodeTreeInspector::selectNodeById(size_t iNodeId) {
     const auto mtxChildNodes = pLayoutNode->getChildNodes();
     std::scoped_lock guard(*mtxChildNodes.first);
@@ -78,12 +90,18 @@ void NodeTreeInspector::refreshGameNodeName(Node* pGameNode) {
 }
 
 void NodeTreeInspector::addGameNodeRecursive(Node* pNode) {
+    // Don't display editor nodes.
     if (pNode->getNodeName().starts_with(EditorConstants::getHiddenNodeNamePrefix())) {
         return;
     }
 
-    const auto pItem = pLayoutNode->addChildNode(std::make_unique<NodeTreeInspectorItem>());
+    const auto pItem = pLayoutNode->addChildNode(std::make_unique<NodeTreeInspectorItem>(this));
     pItem->setNodeToDisplay(pNode);
+
+    // Don't display external node tree child nodes (only display root).
+    if (isNodeExternalTreeRootNode(pNode)) {
+        return;
+    }
 
     const auto mtxChildNodes = pNode->getChildNodes();
     std::scoped_lock guard(*mtxChildNodes.first);
@@ -156,6 +174,29 @@ void NodeTreeInspector::showNodeTypeChangeMenu(NodeTreeInspectorItem* pItem) {
 
         changeNodeType(pItem, sTypeGuid);
     });
+}
+
+void NodeTreeInspector::showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem) {
+    clearInspection();
+
+    // Show file dialog.
+    getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
+        [this, pItem](const std::filesystem::path& selectedPath) {
+            // Load selected tree.
+            auto result = Node::deserializeNodeTree(selectedPath);
+            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                auto error = std::get<Error>(std::move(result));
+                Logger::get().error(error.getInitialMessage());
+                return;
+            }
+            auto pRoot = std::get<std::unique_ptr<Node>>(std::move(result));
+
+            pItem->getDisplayedGameNode()->addChildNode(std::move(pRoot));
+
+            // Refresh tree.
+            onGameNodeTreeLoaded(pGameRootNode);
+        }));
 }
 
 void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {

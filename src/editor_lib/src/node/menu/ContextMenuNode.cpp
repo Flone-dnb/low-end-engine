@@ -98,6 +98,6 @@ void ContextMenuNode::openMenu(
         pButtonsLayout->addChildNode(std::move(pButton));
     }
 
-    setSize(glm::vec2(0.1F, totalSizeY));
+    setSize(glm::vec2(0.125F, totalSizeY));
     setIsVisible(true);
 }

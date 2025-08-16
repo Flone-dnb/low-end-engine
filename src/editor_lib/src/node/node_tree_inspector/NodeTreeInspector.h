@@ -65,6 +65,13 @@ public:
     void showNodeTypeChangeMenu(NodeTreeInspectorItem* pItem);
 
     /**
+     * Shows menu to add external node tree.
+     *
+     * @param pItem Item that holds the parent node.
+     */
+    void showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem);
+
+    /**
      * Deletes game node that is displayed by the specified node tree item.
      *
      * @param pItem Item that displays the node to delete.
@@ -77,6 +84,22 @@ public:
      * @param pItem Item that displays the game node.
      */
     void inspectGameNode(NodeTreeInspectorItem* pItem);
+
+    /**
+     * Returns root node of game's world.
+     *
+     * @return Node.
+     */
+    Node* getGameRootNode() const { return pGameRootNode; }
+
+    /**
+     * Tells if the specified node is a root node of external node tree.
+     *
+     * @param pNode Node.
+     *
+     * @return `true` if root of external tree.
+     */
+    bool isNodeExternalTreeRootNode(Node* pNode);
 
     /** Removes display of the reflected fields of a game node (if were displayed). */
     void clearInspection();

@@ -4,6 +4,7 @@
 #include "game/node/ui/ButtonUiNode.h"
 
 class TextUiNode;
+class NodeTreeInspector;
 
 /** Displays a single node from a node tree inspector. */
 class NodeTreeInspectorItem : public ButtonUiNode {
@@ -11,14 +12,14 @@ class NodeTreeInspectorItem : public ButtonUiNode {
     friend class NodeTreeInspector;
 
 public:
-    NodeTreeInspectorItem();
+    NodeTreeInspectorItem() = delete;
 
     /**
-     * Creates a new node with the specified name.
+     * Creates a new node.
      *
-     * @param sNodeName Name of this node.
+     * @param pInspector Inspector.
      */
-    NodeTreeInspectorItem(const std::string& sNodeName);
+    NodeTreeInspectorItem(NodeTreeInspector* pInspector);
 
     virtual ~NodeTreeInspectorItem() override = default;
 
@@ -65,4 +66,7 @@ private:
 
     /** Game node this item represents. */
     Node* pGameNode = nullptr;
+
+    /** Inspector that created this node. */
+    NodeTreeInspector* const pInspector = nullptr;
 };

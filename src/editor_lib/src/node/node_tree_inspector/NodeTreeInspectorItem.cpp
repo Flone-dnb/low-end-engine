@@ -10,8 +10,8 @@
 // External.
 #include "utf/utf.hpp"
 
-NodeTreeInspectorItem::NodeTreeInspectorItem() : NodeTreeInspectorItem("Node Tree Inspector Item") {}
-NodeTreeInspectorItem::NodeTreeInspectorItem(const std::string& sNodeName) : ButtonUiNode(sNodeName) {
+NodeTreeInspectorItem::NodeTreeInspectorItem(NodeTreeInspector* pInspector)
+    : ButtonUiNode("Node Tree Inspector Item"), pInspector(pInspector) {
     setSize(glm::vec2(getSize().x, EditorTheme::getButtonSizeY()));
     setPadding(EditorTheme::getPadding());
     setColor(EditorTheme::getButtonColor());
@@ -34,6 +34,11 @@ void NodeTreeInspectorItem::setNodeToDisplay(Node* pNode) {
         sText += "    ";
     }
     sText += pNode->getNodeName();
+
+    // Check if this is external tree root node.
+    if (pInspector->isNodeExternalTreeRootNode(pNode)) {
+        sText += " [ext tree]";
+    }
 
     pTextNode->setText(utf::as_u16(sText));
 }
@@ -61,7 +66,7 @@ bool NodeTreeInspectorItem::onMouseButtonReleasedOnUiNode(MouseButton button, Ke
     }
 
     if (button == MouseButton::LEFT) {
-        getParentNodeOfType<NodeTreeInspector>()->inspectGameNode(this);
+        pInspector->inspectGameNode(this);
         return true;
     }
 
@@ -79,29 +84,23 @@ bool NodeTreeInspectorItem::onMouseButtonReleasedOnUiNode(MouseButton button, Ke
 
         // Fill context menu options.
         {
-            // Add child node.
-            if (pUiNode == nullptr || pUiNode->getMaxChildCount() > 0) {
-                vOptions.push_back({u"Add child node", [this]() {
-                                        getParentNodeOfType<NodeTreeInspector>()->showChildNodeCreationMenu(
-                                            this);
-                                    }});
+            if ((pUiNode == nullptr || pUiNode->getMaxChildCount() > 0) &&
+                !pInspector->isNodeExternalTreeRootNode(pGameNode)) {
+                vOptions.push_back(
+                    {u"Add child node", [this]() { pInspector->showChildNodeCreationMenu(this); }});
             }
 
-            // Change name.
-            vOptions.push_back({u"Change name", [this]() {
-                                    getParentNodeOfType<NodeTreeInspector>()->showChangeNodeNameMenu(this);
-                                }});
+            if (!pInspector->isNodeExternalTreeRootNode(pGameNode)) {
+                vOptions.push_back({u"Change type", [this]() { pInspector->showNodeTypeChangeMenu(this); }});
+            }
 
-            // Change type.
-            vOptions.push_back({u"Change type", [this]() {
-                                    getParentNodeOfType<NodeTreeInspector>()->showNodeTypeChangeMenu(this);
-                                }});
+            if (!pInspector->isNodeExternalTreeRootNode(pGameNode)) {
+                vOptions.push_back(
+                    {u"Add external node tree", [this]() { pInspector->showAddExternalNodeTreeMenu(this); }});
+            }
 
-            // Delete node.
             if (pGameNode->getWorldRootNodeWhileSpawned() != pGameNode) {
-                vOptions.push_back({u"Delete node", [this]() {
-                                        getParentNodeOfType<NodeTreeInspector>()->deleteGameNode(this);
-                                    }});
+                vOptions.push_back({u"Delete node", [this]() { pInspector->deleteGameNode(this); }});
             }
         }
 
