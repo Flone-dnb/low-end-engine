@@ -86,9 +86,9 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pYAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
     pZAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
 
-    pXAxisGizmoNode->setEnableSelfShadow(false);
-    pYAxisGizmoNode->setEnableSelfShadow(false);
-    pZAxisGizmoNode->setEnableSelfShadow(false);
+    pXAxisGizmoNode->setIsAffectedByLightSources(false);
+    pYAxisGizmoNode->setIsAffectedByLightSources(false);
+    pZAxisGizmoNode->setIsAffectedByLightSources(false);
 
     addChildNode(std::move(pXAxisGizmoU));
     addChildNode(std::move(pYAxisMeshU));

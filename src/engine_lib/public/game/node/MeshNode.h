@@ -124,7 +124,7 @@ public:
      *
      * @param bEnable `true` to enable.
      */
-    void setEnableSelfShadow(bool bEnable);
+    void setIsAffectedByLightSources(bool bEnable);
 
     /**
      * Returns material.
@@ -193,9 +193,9 @@ public:
      * Returns `true` to enable shadows on the mesh according to the light sources and ambient light in the
      * scene.
      *
-     * @return Self shadow state.
+     * @return Light affect state.
      */
-    bool isSelfShadowEnabled() const { return bEnableSelfShadow; }
+    bool isAffectedByLightSources() const { return bIsAffectedByLightSources; }
 
 protected:
     /**
@@ -270,5 +270,5 @@ private:
     MeshDrawLayer drawLayer = MeshDrawLayer::LAYER1;
 
     /** `true` to enable shadows on the mesh according to the light sources and ambient light in the scene. */
-    bool bEnableSelfShadow = true;
+    bool bIsAffectedByLightSources = true;
 };

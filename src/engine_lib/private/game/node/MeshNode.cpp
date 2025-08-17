@@ -85,13 +85,13 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().isTransparencyEnabled();
         }};
 
-    variables.bools[NAMEOF_MEMBER(&MeshNode::bEnableSelfShadow).data()] = ReflectedVariableInfo<bool>{
+    variables.bools[NAMEOF_MEMBER(&MeshNode::bIsAffectedByLightSources).data()] = ReflectedVariableInfo<bool>{
         .setter =
             [](Serializable* pThis, const bool& bNewValue) {
-                reinterpret_cast<MeshNode*>(pThis)->setEnableSelfShadow(bNewValue);
+                reinterpret_cast<MeshNode*>(pThis)->setIsAffectedByLightSources(bNewValue);
             },
         .getter = [](Serializable* pThis) -> bool {
-            return reinterpret_cast<MeshNode*>(pThis)->isSelfShadowEnabled();
+            return reinterpret_cast<MeshNode*>(pThis)->isAffectedByLightSources();
         }};
 
     variables.unsignedInts[NAMEOF_MEMBER(&MeshNode::drawLayer).data()] = ReflectedVariableInfo<unsigned int>{
@@ -176,7 +176,7 @@ void MeshNode::setDrawLayer(MeshDrawLayer layer) {
     }
 }
 
-void MeshNode::setEnableSelfShadow(bool bEnable) { bEnableSelfShadow = bEnable; }
+void MeshNode::setIsAffectedByLightSources(bool bEnable) { bIsAffectedByLightSources = bEnable; }
 
 Material& MeshNode::getMaterial() { return material; }
 
@@ -206,7 +206,7 @@ void MeshNode::registerToRendering() {
             shaderConstantsSetter->addSetterFunction([this](ShaderProgram* pShaderProgram) {
                 pShaderProgram->setMatrix4ToShader("worldMatrix", cachedWorldMatrices.worldMatrix);
                 pShaderProgram->setMatrix3ToShader("normalMatrix", cachedWorldMatrices.normalMatrix);
-                pShaderProgram->setBoolToShader("bEnableSelfShadow", bEnableSelfShadow);
+                pShaderProgram->setBoolToShader("bIsAffectedByLightSources", bIsAffectedByLightSources);
             });
         });
 
