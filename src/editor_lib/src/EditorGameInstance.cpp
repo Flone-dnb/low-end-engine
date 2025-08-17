@@ -134,6 +134,9 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
         } else {
             Logger::get().info(
                 std::format("node tree saved to \"{}\"", lastOpenedNodeTree->filename().string()));
+            if (editorWorldNodes.pContentBrowser != nullptr) {
+                editorWorldNodes.pContentBrowser->rebuildFileTree();
+            }
         }
 
         return;

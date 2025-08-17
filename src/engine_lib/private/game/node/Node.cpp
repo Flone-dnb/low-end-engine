@@ -265,6 +265,17 @@ std::optional<Error> Node::serializeNodeTree(std::filesystem::path pathToFile, b
         pathToFile += ".toml";
     }
 
+    // Prepare path to the geometry directory.
+    const std::string sFilename = pathToFile.stem().string();
+    const auto pathToGeoDir =
+        pathToFile.parent_path() / (sFilename + std::string(Serializable::getNodeTreeGeometryDirSuffix()));
+    if (std::filesystem::exists(pathToGeoDir)) {
+        // Delete old geometry files.
+        // This will cleanup any no longer needed geometry files (for ex. if we saved a mesh node but
+        // then deleted and now saving again).
+        std::filesystem::remove_all(pathToGeoDir);
+    }
+
     lockChildren(); // make sure nothing is changed/deleted while we are serializing
     {
         // Collect information for serialization.

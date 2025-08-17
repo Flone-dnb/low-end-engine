@@ -108,6 +108,14 @@ public:
     virtual std::string getTypeGuid() const = 0;
 
     /**
+     * Returns ending of the name for the directory that stores geometry of a node tree.
+     * Full name of the directory consists of the node tree filename and this suffix.
+     *
+     * @return Directory name suffix.
+     */
+    static constexpr std::string_view getNodeTreeGeometryDirSuffix() { return sNodeTreeGeometryDirSuffix; }
+
+    /**
      * Deserializes object(s) from a file.
      *
      * @param pathToFile File to read reflected data from. The ".toml" extension will be added

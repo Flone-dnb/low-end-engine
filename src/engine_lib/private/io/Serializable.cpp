@@ -245,7 +245,7 @@ std::optional<Error> Serializable::serializeMultiple(
     return {};
 }
 
-std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
+std::variant<std::string, Error> Serializable::serialize(
     const std::filesystem::path& pathToFile,
     toml::value& tomlData,
     Serializable* pOriginalObject,
@@ -409,19 +409,19 @@ std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
 
         // MeshGeometry
         if (!typeInfo.reflectedVariables.meshGeometries.empty()) {
+            // Prepare path to the geometry directory.
             if (!pathToFile.has_parent_path()) [[unlikely]] {
                 return Error(std::format("expected a parent path to exist for \"{}\"", pathToFile.string()));
             }
-            if (!std::filesystem::exists(pathToFile.parent_path())) {
-                std::filesystem::create_directories(pathToFile.parent_path());
-            }
-
-            // Put all binary files in a separate directory.
             const std::string sFilename = pathToFile.stem().string();
             const auto pathToGeoDir =
                 pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
+
             if (!std::filesystem::exists(pathToGeoDir)) {
-                std::filesystem::create_directories(pathToGeoDir);
+                // Do not delete (clean) old (existing) geometry directory as we might delete previously
+                // serialized nodes in the node tree. Node class deletes (cleans) old geometry directory
+                // for us.
+                std::filesystem::create_directory(pathToGeoDir);
             }
 
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
