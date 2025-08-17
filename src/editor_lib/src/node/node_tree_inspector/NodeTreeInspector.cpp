@@ -199,6 +199,69 @@ void NodeTreeInspector::showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem
         }));
 }
 
+void NodeTreeInspector::moveGameNodeInChildArray(NodeTreeInspectorItem* pItem, bool bMoveUp) {
+    clearInspection();
+
+    const auto pNode = pItem->getDisplayedGameNode();
+    const auto mtxParentNode = pNode->getParentNode();
+    const auto mtxChildNodes = mtxParentNode.second->getChildNodes();
+    {
+        std::scoped_lock guard(*mtxParentNode.first, *mtxChildNodes.first);
+        if (mtxParentNode.second == nullptr) [[unlikely]] {
+            Logger::get().error(
+                std::format("expected to the node \"{}\" to have a parent node", pNode->getNodeName()));
+            return;
+        }
+
+        // Collect indices of non-hidden nodes.
+        std::vector<size_t> vNonHiddenNodeIndices;
+        vNonHiddenNodeIndices.reserve(mtxChildNodes.second.size());
+        for (size_t i = 0; i < mtxChildNodes.second.size(); i++) {
+            if (mtxChildNodes.second[i]->getNodeName().starts_with(
+                    EditorConstants::getHiddenNodeNamePrefix())) {
+                continue;
+            }
+
+            vNonHiddenNodeIndices.push_back(i);
+        }
+        if (vNonHiddenNodeIndices.empty() || vNonHiddenNodeIndices.size() == 1) {
+            return;
+        }
+
+        // Find current index.
+        size_t iCurrentIndex = 0;
+        for (size_t iIndex : vNonHiddenNodeIndices) {
+            if (mtxChildNodes.second[iIndex] != pNode) {
+                continue;
+            }
+            iCurrentIndex = iIndex;
+            break;
+        }
+
+        // Determine the target index.
+        size_t iTargetIndex = 0;
+        if (bMoveUp) {
+            if (iCurrentIndex == 0) {
+                iTargetIndex = vNonHiddenNodeIndices.size() - 1;
+            } else {
+                iTargetIndex = iCurrentIndex - 1;
+            }
+        } else {
+            if (iCurrentIndex == vNonHiddenNodeIndices.size() - 1) {
+                iTargetIndex = 0;
+            } else {
+                iTargetIndex = iCurrentIndex + 1;
+            }
+        }
+
+        mtxParentNode.second->changeChildNodePositionIndex(
+            vNonHiddenNodeIndices[iCurrentIndex], vNonHiddenNodeIndices[iTargetIndex]);
+    }
+
+    // Refresh tree.
+    onGameNodeTreeLoaded(pGameRootNode);
+}
+
 void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
     clearInspection();
 

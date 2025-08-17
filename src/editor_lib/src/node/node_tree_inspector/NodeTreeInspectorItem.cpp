@@ -99,6 +99,13 @@ bool NodeTreeInspectorItem::onMouseButtonReleasedOnUiNode(MouseButton button, Ke
                     {u"Add external node tree", [this]() { pInspector->showAddExternalNodeTreeMenu(this); }});
             }
 
+            if (pInspector->getGameRootNode() != pGameNode) {
+                vOptions.push_back(
+                    {u"Move up", [this]() { pInspector->moveGameNodeInChildArray(this, true); }});
+                vOptions.push_back(
+                    {u"Move down", [this]() { pInspector->moveGameNodeInChildArray(this, false); }});
+            }
+
             if (pGameNode->getWorldRootNodeWhileSpawned() != pGameNode) {
                 vOptions.push_back({u"Delete node", [this]() { pInspector->deleteGameNode(this); }});
             }

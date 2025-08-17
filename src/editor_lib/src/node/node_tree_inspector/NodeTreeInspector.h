@@ -72,6 +72,14 @@ public:
     void showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem);
 
     /**
+     * Moves a game node in the array of child nodes.
+     *
+     * @param pItem   Item that holds the parent node.
+     * @param bMoveUp `true` to move node to the left (in the array of child nodes), up in the UI.
+     */
+    void moveGameNodeInChildArray(NodeTreeInspectorItem* pItem, bool bMoveUp);
+
+    /**
      * Deletes game node that is displayed by the specified node tree item.
      *
      * @param pItem Item that displays the node to delete.
