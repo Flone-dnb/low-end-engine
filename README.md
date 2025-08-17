@@ -19,7 +19,7 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Post-processing effects
 - [X] GUI
 - [X] Audio (using [SFML](https://github.com/SFML/SFML))
-- [ ] Simple editor
+- [X] Simple editor
 - [ ] Skeletal animations
 - [ ] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
 - [ ] Occlusion culling using portals
