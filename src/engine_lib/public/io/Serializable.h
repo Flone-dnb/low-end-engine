@@ -308,6 +308,12 @@ private:
 
     /** Extension that all serialized binary files have (for example mesh geometry). */
     static constexpr std::string_view sBinaryFileExtension = "bin";
+
+    /**
+     * Ending of the name for the directory that stores geometry of a node tree.
+     * Full name of the directory consists of the node tree filename and this suffix.
+     */
+    static constexpr std::string_view sNodeTreeGeometryDirSuffix = "_geo";
 };
 
 template <typename T>
@@ -988,18 +994,28 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                 std::format("expected the parent path to exist for path \"{}\"", pathToFile.string()));
         }
 
-        for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
-            const auto pathToMeshGeometry = pathToFile.parent_path() / "bin" /
-                                            (pathToFile.stem().string() + "." + sEntityId + "." +
-                                             sVariableName + "." + std::string(sBinaryFileExtension));
-            if (!std::filesystem::exists(pathToMeshGeometry)) {
-                // This means that the geometry was empty during serialization so the file was not created.
-                continue;
+        // Construct path to the directory that stores geometry files.
+        const std::string sFilename = pathToFile.stem().string();
+        const auto pathToGeoDir =
+            pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
+        if (std::filesystem::exists(pathToGeoDir)) {
+            // Deserialize each geometry.
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
+                const auto pathToMeshGeometry = pathToGeoDir / (sEntityId + "." + sVariableName + "." +
+                                                                std::string(sBinaryFileExtension));
+                if (!std::filesystem::exists(pathToMeshGeometry)) {
+                    Logger::get().warn(std::format(
+                        "unable to find geometry file for variable \"{}\" for file \"{}\" (expected file "
+                        "\"{}\")",
+                        sVariableName,
+                        pathToFile.filename().string(),
+                        pathToMeshGeometry.filename().string()));
+                    continue;
+                }
+
+                auto meshGeometry = MeshGeometry::deserialize(pathToMeshGeometry);
+                variableInfo.setter(pDeserializedObject.get(), meshGeometry);
             }
-
-            auto meshGeometry = MeshGeometry::deserialize(pathToMeshGeometry);
-
-            variableInfo.setter(pDeserializedObject.get(), meshGeometry);
         }
     }
 

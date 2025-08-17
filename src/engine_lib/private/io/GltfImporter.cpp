@@ -14,7 +14,7 @@
 #include "tinygltf/tiny_gltf.h"
 
 namespace {
-    constexpr std::string_view sTexturesDirectoryName = "tex";
+    constexpr std::string_view sTexturesDirNameSuffix = "_tex";
     constexpr std::string_view sImportedImageExtension = "png";
     constexpr std::string_view sDiffuseTextureName = "diffuse";
 }
@@ -46,9 +46,10 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
     std::vector<std::unique_ptr<MeshNode>> vMeshNodes;
 
     // Prepare textures directory.
+    const std::string sFilename = pathToOutputFile.stem().string();
     const std::filesystem::path pathToTexturesDir =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToOutputDirRelativeRes /
-        sTexturesDirectoryName;
+        (sFilename + std::string(sTexturesDirNameSuffix));
     if (std::filesystem::exists(pathToTexturesDir)) {
         std::filesystem::remove_all(pathToTexturesDir);
     }

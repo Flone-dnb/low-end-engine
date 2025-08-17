@@ -417,34 +417,38 @@ std::variant<std::string, Error> Serializable::serialize( // NOLINT: too complex
             }
 
             // Put all binary files in a separate directory.
-            auto basePathToBinaryFile =
-                pathToFile.parent_path() / sBinaryFileExtension / pathToFile.stem().string();
-            if (!std::filesystem::exists(basePathToBinaryFile.parent_path())) {
-                std::filesystem::create_directories(basePathToBinaryFile.parent_path());
+            const std::string sFilename = pathToFile.stem().string();
+            const auto pathToGeoDir =
+                pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
+            if (!std::filesystem::exists(pathToGeoDir)) {
+                std::filesystem::create_directories(pathToGeoDir);
             }
 
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
                 const auto currentValue = variableInfo.getter(this);
                 if (currentValue.getIndices().empty() && currentValue.getVertices().empty()) {
+                    Logger::get().warn(std::format(
+                        "found empty geometry in variable \"{}\" for file \"{}\"",
+                        sVariableName,
+                        pathToFile.filename().string()));
                     continue;
                 }
                 if (pOriginalObject != nullptr && variableInfo.getter(pOriginalObject) == currentValue) {
+                    // Value didn't changed, no need to save.
                     continue;
                 }
 
-                currentValue.serialize(std::format(
-                    "{}.{}.{}.{}",
-                    basePathToBinaryFile.string(),
-                    sEntityId,
-                    sVariableName,
-                    std::string(sBinaryFileExtension)));
+                // Save to file.
+                const auto pathToGeometryFile = pathToGeoDir / (sEntityId + "." + sVariableName + "." +
+                                                                std::string(sBinaryFileExtension));
+                currentValue.serialize(pathToGeometryFile);
             }
         }
 
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here");
 #endif
     }
 
