@@ -37,6 +37,13 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
             EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT)] =
             [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.y = input; };
 
+        // Gamepad move up/down.
+        getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_UP)] =
+            [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.z = input; };
+        getAxisEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_DOWN)] =
+            [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.z = -input; };
+
         // Move up.
         getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP)] =
             [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.z = input; };

@@ -11,12 +11,14 @@ struct EditorInputEventIds {
 
     /** Groups axis events. */
     enum class Axis : unsigned char {
-        MOVE_CAMERA_FORWARD = 0, //< Move editor's camera forward/back.
-        MOVE_CAMERA_RIGHT,       //< Move editor's camera right/left.
+        MOVE_CAMERA_FORWARD = 0,
+        MOVE_CAMERA_RIGHT,
+        MOVE_CAMERA_UP,
         GAMEPAD_MOVE_CAMERA_FORWARD,
         GAMEPAD_MOVE_CAMERA_RIGHT,
-        MOVE_CAMERA_UP, //< Move editor's camera up/down.
+        GAMEPAD_MOVE_CAMERA_UP,
+        GAMEPAD_MOVE_CAMERA_DOWN,
         GAMEPAD_LOOK_RIGHT,
-        GAMEPAD_LOOK_UP
+        GAMEPAD_LOOK_UP,
     };
 };

@@ -518,6 +518,16 @@ void EditorGameInstance::registerEditorInputEvents() {
             {},
             {GamepadAxis::LEFT_STICK_X}));
 
+        // Gamepad move up/down.
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_UP),
+            {},
+            {GamepadAxis::RIGHT_TRIGGER}));
+        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_DOWN),
+            {},
+            {GamepadAxis::LEFT_TRIGGER}));
+
         // Move up.
         showErrorIfNotEmpty(getInputManager()->addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP),
