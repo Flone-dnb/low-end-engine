@@ -332,35 +332,21 @@ Note
 At this point you will be able to trigger registered action/axis events by pressing the specified keyboard/gamepad buttons. Now we need to write functions that will react to these input events. You can create these functions in your game instance or in nodes (the approach is the same). For this example we bind to input events in constructor of our camera node class like so:
 
 ```Cpp
-{
-    // Bind to registered action events.
-    auto& mtxActionEvents = getActionEventBindings();
-    std::scoped_lock guard(mtxActionEvents.first);
+// Bind to increase movement speed.
+getActionEventBindings()[static_cast<unsigned int>(GameInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] =
+    [this](KeyboardModifiers modifiers, bool bIsPressed) {
+        if (bIsPressed) {
+            currentMovementSpeedMultiplier = speedIncreaseMultiplier;
+        } else {
+            currentMovementSpeedMultiplier = 1.0F;
+        }
+    };
 
-    // Bind to increase movement speed.
-    mtxActionEvents
-        .second[static_cast<unsigned int>(GameInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] =
-        [this](KeyboardModifiers modifiers, bool bIsPressed) {
-            if (bIsPressed) {
-                currentMovementSpeedMultiplier = speedIncreaseMultiplier;
-            } else {
-                currentMovementSpeedMultiplier = 1.0F;
-            }
-        };
-}
-
-{
-    // Bind to registered axis events.
-    auto& mtxAxisEvents = getAxisEventBindings();
-    std::scoped_lock guard(mtxAxisEvents.first);
-
-    // Bind to move forward.
-    mtxAxisEvents
-        .second[static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
-        [this](KeyboardModifiers modifiers, float input) {
-            lastKeyboardInputDirection.x = input; // example code
-        };
-}
+// Bind to move forward.
+getAxisEventBindings()[static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
+    [this](KeyboardModifiers modifiers, float input) {
+        lastKeyboardInputDirection.x = input; // example code
+    };
 ```
 
 Note

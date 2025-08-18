@@ -595,20 +595,6 @@ GameInstance* Node::getGameInstanceWhileSpawned() {
     return pWorldWeSpawnedIn->pGameManager->getGameInstance();
 }
 
-std::pair<
-    std::recursive_mutex,
-    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&
-Node::getActionEventBindings() {
-    return mtxBindedActionEvents;
-}
-
-std::pair<
-    std::recursive_mutex,
-    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
-Node::getAxisEventBindings() {
-    return mtxBindedAxisEvents;
-}
-
 std::recursive_mutex& Node::getSpawnDespawnMutex() { return mtxIsSpawned.first; }
 
 World* Node::getWorldWhileSpawned() const {
@@ -743,24 +729,24 @@ void Node::notifyAboutDetachingFromParent(bool bThisNodeBeingDetached) {
 }
 
 void Node::onInputActionEvent(unsigned int iActionId, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    std::scoped_lock guard(mtxBindedActionEvents.first);
-
     // See if this action event is registered.
-    const auto it = mtxBindedActionEvents.second.find(iActionId);
-    if (it == mtxBindedActionEvents.second.end()) {
+    const auto it = boundActionEvents.find(iActionId);
+    if (it == boundActionEvents.end()) {
         return;
     }
 
     // Trigger user logic.
-    it->second(modifiers, bIsPressedDown);
+    if (bIsPressedDown && it->second.onPressed != nullptr) {
+        it->second.onPressed(modifiers);
+    } else if (it->second.onReleased != nullptr) {
+        it->second.onReleased(modifiers);
+    }
 }
 
 void Node::onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers modifiers, float input) {
-    std::scoped_lock guard(mtxBindedAxisEvents.first);
-
     // See if this axis event is registered.
-    const auto it = mtxBindedAxisEvents.second.find(iAxisEventId);
-    if (it == mtxBindedAxisEvents.second.end()) {
+    const auto it = boundAxisEvents.find(iAxisEventId);
+    if (it == boundAxisEvents.end()) {
         return;
     }
 

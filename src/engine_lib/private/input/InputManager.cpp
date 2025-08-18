@@ -18,8 +18,6 @@ std::optional<Error> InputManager::addActionEvent(
         return Error("vKeys is empty");
     }
 
-    std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
     // Check if an action with this name already exists.
     const auto vRegisteredActions = getAllActionEvents();
     const auto existingActionId = vRegisteredActions.find(iActionId);
@@ -46,8 +44,6 @@ std::optional<Error> InputManager::addAxisEvent(
         return Error("specified array of triggers is empty");
     }
 
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     // Check if an axis event with this name already exists.
     const auto vRegisteredAxisEvents = getAllAxisEvents();
     const auto action = vRegisteredAxisEvents.find(iAxisEventId);
@@ -68,8 +64,6 @@ std::optional<Error> InputManager::modifyActionEvent(
     unsigned int iActionId,
     std::variant<KeyboardButton, MouseButton, GamepadButton> oldButton,
     std::variant<KeyboardButton, MouseButton, GamepadButton> newButton) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
     // Get the specified action event buttons.
     const auto actions = getAllActionEvents();
     const auto it = actions.find(iActionId);
@@ -101,8 +95,6 @@ std::optional<Error> InputManager::modifyAxisEvent(
     unsigned int iAxisEventId,
     std::pair<KeyboardButton, KeyboardButton> oldPair,
     std::pair<KeyboardButton, KeyboardButton> newPair) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     // Get the specified axis event buttons.
     const auto axes = getAllAxisEvents();
     const auto it = axes.find(iAxisEventId);
@@ -137,8 +129,6 @@ std::optional<Error> InputManager::modifyAxisEvent(
 
 std::optional<Error>
 InputManager::modifyAxisEvent(unsigned int iAxisEventId, GamepadAxis oldAxis, GamepadAxis newAxis) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     // Get the specified axis event buttons.
     const auto axes = getAllAxisEvents();
     const auto it = axes.find(iAxisEventId);
@@ -288,8 +278,6 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
         // Get a copy of all registered action events.
         auto currentActionEvents = getAllActionEvents();
 
-        std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
         for (const auto& [iActionId, value] : currentActionEvents) {
             // Look if this registered event exists in the events from file.
             bool bFoundActionInFileActions = false;
@@ -395,8 +383,6 @@ InputManager::overwriteExistingEventsButtonsFromFile(std::string_view sFileName)
             }
         }
 
-        std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
         // Create a copy of all axis event IDs because we will modify axis event states in the loop below.
         std::vector<unsigned int> vCurrentAxisEventIds;
         vCurrentAxisEventIds.reserve(axisEventStates.size());
@@ -460,8 +446,6 @@ void InputManager::setGamepadDeadzone(float deadzone) { gamepadDeadzone = deadzo
 
 std::pair<std::vector<unsigned int>, std::vector<unsigned int>>
 InputManager::isButtonUsed(const std::variant<KeyboardButton, MouseButton, GamepadButton>& button) {
-    std::scoped_lock guard(mtxActionEvents, mtxAxisEvents);
-
     std::vector<unsigned int> vUsedActionEvents;
     std::vector<unsigned int> vUsedAxisEvents;
 
@@ -488,8 +472,6 @@ InputManager::isButtonUsed(const std::variant<KeyboardButton, MouseButton, Gamep
 
 std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>
 InputManager::getActionEventButtons(unsigned int iActionId) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
     std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>> vButtons;
 
     // Look if this action exists, get all keys.
@@ -506,8 +488,6 @@ InputManager::getActionEventButtons(unsigned int iActionId) {
 
 std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>
 InputManager::getAxisEventTriggers(unsigned int iAxisEventId) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     // Get event state.
     const auto eventIt = axisEventStates.find(iAxisEventId);
     if (eventIt == axisEventStates.end()) [[unlikely]] {
@@ -530,8 +510,6 @@ InputManager::getAxisEventTriggers(unsigned int iAxisEventId) {
 }
 
 float InputManager::getCurrentAxisEventState(unsigned int iAxisEventId) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     // Find the specified axis event by ID.
     const auto stateIt = axisEventStates.find(iAxisEventId);
     if (stateIt == axisEventStates.end()) {
@@ -542,8 +520,6 @@ float InputManager::getCurrentAxisEventState(unsigned int iAxisEventId) {
 }
 
 bool InputManager::removeActionEvent(unsigned int iActionId) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
     bool bFound = false;
 
     // Look if this action exists and remove all entries.
@@ -584,8 +560,6 @@ bool InputManager::removeActionEvent(unsigned int iActionId) {
 }
 
 bool InputManager::removeAxisEvent(unsigned int iAxisEventId) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     bool bFound = false;
 
     // Look for keyboard buttons that use this event.
@@ -658,8 +632,6 @@ bool InputManager::removeAxisEvent(unsigned int iAxisEventId) {
 
 std::unordered_map<unsigned int, std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>>
 InputManager::getAllActionEvents() {
-    std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
     std::unordered_map<unsigned int, std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>>
         actions;
 
@@ -674,8 +646,6 @@ std::unordered_map<
     unsigned int,
     std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>>
 InputManager::getAllAxisEvents() {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     std::unordered_map<
         unsigned int,
         std::pair<std::vector<std::pair<KeyboardButton, KeyboardButton>>, std::vector<GamepadAxis>>>
@@ -708,8 +678,6 @@ InputManager::splitString(const std::string& sStringToSplit, const std::string& 
 std::optional<Error> InputManager::overwriteActionEvent(
     unsigned int iActionId,
     const std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>>& vButtons) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxActionEvents);
-
     // Remove all buttons associated with this action event if it exists.
     removeActionEvent(iActionId);
 
@@ -739,8 +707,6 @@ std::optional<Error> InputManager::overwriteAxisEvent(
     unsigned int iAxisEventId,
     const std::vector<std::pair<KeyboardButton, KeyboardButton>>& vKeyboardTriggers,
     const std::vector<GamepadAxis>& vGamepadTriggers) {
-    std::scoped_lock<std::recursive_mutex> guard(mtxAxisEvents);
-
     // Remove all axis events with this name if exist.
     removeAxisEvent(iAxisEventId);
 

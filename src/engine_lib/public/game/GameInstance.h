@@ -36,6 +36,17 @@ class GameInstance {
     friend class Renderer;
 
 public:
+    /** Callbacks for a bound input action event. */
+    struct ActionEventCallbacks {
+        /** Optional. Called when the action event is triggered because one of the bound buttons is pressed.
+         */
+        std::function<void(KeyboardModifiers)> onPressed;
+
+        /** Optional. Called when the action event is stopped because all bound buttons are released (after
+         * some was pressed). */
+        std::function<void(KeyboardModifiers)> onReleased;
+    };
+
     GameInstance() = delete;
 
     GameInstance(const GameInstance&) = delete;
@@ -309,20 +320,19 @@ protected:
      * Example:
      * @code
      * const unsigned int iForwardActionId = 0;
-     * const auto pMtxActionEvents = getActionEventBindings();
-     *      * std::scoped_lock guard(pMtxActionEvents->first);
-     * pMtxActionEvents->second[iForwardActionId] = [&](KeyboardModifiers modifiers, bool
-     * bIsPressedDown) {
-     *     moveForward(modifiers, bIsPressedDown);
-     * };
+     * getActionEventBindings()[iForwardActionId] =
+     *     ActionEventCallbacks{
+     *         .onPressed = [&](KeyboardModifiers modifiers) {
+     *             moveForward(modifiers, bIsPressedDown);
+     *         }
+     *     }};
      * @endcode
      *
      * @return Bound action events.
      */
-    std::pair<
-        std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>&
-    getActionEventBindings();
+    std::unordered_map<unsigned int, ActionEventCallbacks>& getActionEventBindings() {
+        return boundActionEvents;
+    }
 
     /**
      * Returns map of axis events that this GameInstance is bound to (must be used with mutex).
@@ -337,19 +347,16 @@ protected:
      * Example:
      * @code
      * const auto iForwardAxisEventId = 0;
-     * const auto pMtxAxisEvents = getAxisEventBindings();
-     *      * std::scoped_lock guard(pMtxAxisEvents->first);
-     * pMtxAxisEvents->second[iForwardAxisEventId] = [&](KeyboardModifiers modifiers, float input) {
+     * getAxisEventBindings()[iForwardAxisEventId] = [&](KeyboardModifiers modifiers, float input) {
      *     moveForward(modifiers, input);
      * };
      * @endcode
      *
      * @return Bound action events.
      */
-    std::pair<
-        std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>&
-    getAxisEventBindings();
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>& getAxisEventBindings() {
+        return boundAxisEvents;
+    }
 
 private:
     /**
@@ -372,17 +379,11 @@ private:
      */
     void onInputAxisEvent(unsigned int iAxisEventId, KeyboardModifiers modifiers, float input);
 
-    /** Map of action events that this GameInstance is bound to. Must be used with mutex. */
-    std::pair<
-        std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, bool)>>>
-        mtxBindedActionEvents;
+    /** Map of action events that this GameInstance is bound to. */
+    std::unordered_map<unsigned int, ActionEventCallbacks> boundActionEvents;
 
-    /** Map of axis events that this GameInstance is bound to. Must be used with mutex. */
-    std::pair<
-        std::recursive_mutex,
-        std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>>>
-        mtxBindedAxisEvents;
+    /** Map of axis events that this GameInstance is bound to. */
+    std::unordered_map<unsigned int, std::function<void(KeyboardModifiers, float)>> boundAxisEvents;
 
     /** Do not delete. Always valid pointer to the game's window. */
     Window* const pWindow = nullptr;

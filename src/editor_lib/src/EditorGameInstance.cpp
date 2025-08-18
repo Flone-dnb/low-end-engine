@@ -460,16 +460,15 @@ void EditorGameInstance::registerEditorInputEvents() {
 
     // Bind to action events.
     {
-        auto& mtxActionEvents = getActionEventBindings();
-        std::scoped_lock guard(mtxActionEvents.first);
-
         // Capture mouse.
-        mtxActionEvents.second[static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                if (gameWorldNodes.pRoot == nullptr) {
-                    return;
-                }
-                if (bIsPressed) {
+        getActionEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR)] = ActionEventCallbacks{
+            .onPressed =
+                [this](KeyboardModifiers modifiers) {
+                    if (gameWorldNodes.pRoot == nullptr) {
+                        return;
+                    }
+
                     auto optCursorInGameViewport = gameWorldNodes.pRoot->getWorldWhileSpawned()
                                                        ->getCameraManager()
                                                        .getCursorPosOnViewport();
@@ -478,11 +477,16 @@ void EditorGameInstance::registerEditorInputEvents() {
                     }
                     getWindow()->setCursorVisibility(false);
                     gameWorldNodes.pViewportCamera->setIsMouseCaptured(true);
-                } else if (!getWindow()->isCursorVisible()) {
+                },
+            .onReleased =
+                [this](KeyboardModifiers modifiers) {
+                    if (gameWorldNodes.pRoot == nullptr) {
+                        return;
+                    }
+
                     getWindow()->setCursorVisibility(true);
                     gameWorldNodes.pViewportCamera->setIsMouseCaptured(false);
-                }
-            };
+                }};
     }
 
     // Register axis events.

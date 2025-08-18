@@ -512,8 +512,6 @@ void GameManager::triggerActionEvents(
     std::variant<KeyboardButton, MouseButton, GamepadButton> button,
     KeyboardModifiers modifiers,
     bool bIsPressedDown) {
-    std::scoped_lock guard(inputManager.mtxActionEvents);
-
     // Make sure this button is registered in some action.
     const auto it = inputManager.buttonToActionEvents.find(button);
     if (it == inputManager.buttonToActionEvents.end()) {
@@ -615,8 +613,6 @@ void GameManager::triggerActionEvents(
 }
 
 void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
-    std::scoped_lock<std::recursive_mutex> guard(inputManager.mtxAxisEvents);
-
     // Make sure this button is registered in some axis event.
     const auto axisEventsToTriggerIt = inputManager.keyboardButtonToAxisEvents.find(button);
     if (axisEventsToTriggerIt == inputManager.keyboardButtonToAxisEvents.end()) {
@@ -709,8 +705,6 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
 }
 
 void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
-    std::scoped_lock<std::recursive_mutex> guard(inputManager.mtxAxisEvents);
-
     // Make sure this axis is registered in some axis event.
     const auto axisEventsToTriggerIt = inputManager.gamepadAxisToAxisEvents.find(gamepadAxis);
     if (axisEventsToTriggerIt == inputManager.gamepadAxisToAxisEvents.end()) {

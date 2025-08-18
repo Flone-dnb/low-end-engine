@@ -19,40 +19,36 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
     // Bind axis events.
     {
-        // Get axis events.
-        auto& mtxAxisEvents = getAxisEventBindings();
-        std::scoped_lock guard(mtxAxisEvents.first);
-
         // Move forward.
-        mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
+        getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
             [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.x = input; };
 
         // Move right.
-        mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT)] =
+        getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT)] =
             [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.y = input; };
 
         // Gamepad move forward.
-        mtxAxisEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD)] =
+        getAxisEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD)] =
             [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.x = -input; };
 
         // Gamepad move right.
-        mtxAxisEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT)] =
+        getAxisEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT)] =
             [this](KeyboardModifiers modifiers, float input) { lastGamepadInputDirection.y = input; };
 
         // Move up.
-        mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP)] =
+        getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP)] =
             [this](KeyboardModifiers modifiers, float input) { lastKeyboardInputDirection.z = input; };
 
         // Gamepad look right.
-        mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT)] =
+        getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT)] =
             [this](KeyboardModifiers modifiers, float input) {
                 lastGamepadLookInput.x = input * gamepadLookInputMult;
             };
 
         // Gamepad look up.
-        mtxAxisEvents.second[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP)] =
+        getAxisEventBindings()[static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP)] =
             [this](KeyboardModifiers modifiers, float input) {
                 lastGamepadLookInput.y = input * gamepadLookInputMult;
             };
@@ -60,31 +56,23 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
 
     // Bind action events.
     {
-        // Get action events.
-        auto& mtxActionEvents = getActionEventBindings();
-        std::scoped_lock guard(mtxActionEvents.first);
-
         // Bind increase movement speed.
-        mtxActionEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                if (bIsPressed) {
+        getActionEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] = ActionEventCallbacks{
+            .onPressed =
+                [this](KeyboardModifiers modifiers) {
                     currentMovementSpeedMultiplier = speedIncreaseMultiplier;
-                } else {
-                    currentMovementSpeedMultiplier = 1.0F;
-                }
-            };
+                },
+            .onReleased = [this](KeyboardModifiers modifiers) { currentMovementSpeedMultiplier = 1.0F; }};
 
         // Bind decrease movement speed.
-        mtxActionEvents
-            .second[static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED)] =
-            [this](KeyboardModifiers modifiers, bool bIsPressed) {
-                if (bIsPressed) {
+        getActionEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED)] = ActionEventCallbacks{
+            .onPressed =
+                [this](KeyboardModifiers modifiers) {
                     currentMovementSpeedMultiplier = speedDecreaseMultiplier;
-                } else {
-                    currentMovementSpeedMultiplier = 1.0F;
-                }
-            };
+                },
+            .onReleased = [this](KeyboardModifiers modifiers) { currentMovementSpeedMultiplier = 1.0F; }};
     }
 }
 

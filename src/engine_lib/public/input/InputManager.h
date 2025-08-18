@@ -5,7 +5,6 @@
 #include <string>
 #include <variant>
 #include <optional>
-#include <mutex>
 #include <vector>
 
 // Custom.
@@ -417,12 +416,6 @@ private:
 
     /** Gamepad axis position that is lower than this value is ignored. Range for deadzone is [0.0; 1.0]. */
     float gamepadDeadzone = 0.1F;
-
-    /** Mutex for actions editing. */
-    std::recursive_mutex mtxActionEvents;
-
-    /** Mutex for axis editing. */
-    std::recursive_mutex mtxAxisEvents;
 
     /** Section name to store action events, used in .toml files. */
     static constexpr std::string_view sActionEventFileSectionName = "action event";
