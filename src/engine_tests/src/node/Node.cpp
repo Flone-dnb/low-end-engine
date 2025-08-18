@@ -403,9 +403,9 @@ TEST_CASE("input event callbacks in Node are triggered") {
             REQUIRE(isReceivingInput() == false); // disabled by default
             setIsReceivingInput(true);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
 
             getAxisEventBindings()[0] = [&](KeyboardModifiers modifiers, float input) {
                 axis1(modifiers, input);
@@ -530,9 +530,9 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
             setIsReceivingInput(true);
             setIsCalledEveryFrame(true);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
 
             getAxisEventBindings()[0] = [&](KeyboardModifiers modifiers, float input) {
                 axis1(modifiers, input);
@@ -971,9 +971,9 @@ TEST_CASE("disable receiving input while processing input") {
             REQUIRE(isReceivingInput() == false); // disabled by default
             setIsReceivingInput(true);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
         }
 
         size_t iAction1TriggerCount = 0;
@@ -1052,9 +1052,9 @@ TEST_CASE("disable receiving input and despawn") {
             REQUIRE(isReceivingInput() == false); // disabled by default
             setIsReceivingInput(true);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
         }
 
         void test() {
@@ -1125,9 +1125,9 @@ TEST_CASE("enable receiving input and despawn") {
         MyNode() {
             REQUIRE(isReceivingInput() == false); // disabled by default
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
         }
 
         void test() {
@@ -1196,9 +1196,9 @@ TEST_CASE("enable receiving input while spawned") {
         MyNode() {
             REQUIRE(isReceivingInput() == false);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
         }
 
         void test() {
@@ -1269,9 +1269,9 @@ TEST_CASE("quickly enable receiving input and disable while spawned") {
         MyNode() {
             REQUIRE(isReceivingInput() == false);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
         }
 
         void test() {
@@ -1344,9 +1344,9 @@ TEST_CASE("quickly disable receiving input and enable while spawned") {
             REQUIRE(isReceivingInput() == false); // disabled by default
             setIsReceivingInput(true);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
         }
 
         void test() {
@@ -1418,9 +1418,9 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
         MyNode() {
             setIsReceivingInput(true);
 
-            getActionEventBindings()[0] = [&](KeyboardModifiers modifiers, bool bIsPressedDown) {
-                action1(modifiers, bIsPressedDown);
-            };
+            getActionEventBindings()[0] = ActionEventCallbacks{
+                .onPressed = [&](KeyboardModifiers modifiers) { action1(modifiers, true); },
+                .onReleased = [&](KeyboardModifiers modifiers) { action1(modifiers, false); }};
 
             getAxisEventBindings()[0] = [&](KeyboardModifiers modifiers, float input) {
                 axis1(modifiers, input);
@@ -1756,7 +1756,10 @@ TEST_CASE("load node tree as world") {
                 }
 
                 REQUIRE(std::filesystem::exists(pathToDirectory / "test.toml"));
-                REQUIRE(std::filesystem::exists(pathToDirectory / "test.1.geometry.bin"));
+                REQUIRE(std::filesystem::exists(
+                    pathToDirectory /
+                    (std::string("test") + std::string(Serializable::getNodeTreeGeometryDirSuffix())) /
+                    "1.geometry.bin"));
 
                 loadNodeTreeAsWorld(pathToDirectory / "test", [this](Node* pRootNode) {
                     REQUIRE(pRootNode->getNodeName() == "my node");

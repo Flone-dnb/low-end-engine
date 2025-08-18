@@ -71,6 +71,12 @@ int main() {
         return iResult;
     }
 
+    // Check warnings/errors logged.
+    if (Logger::getTotalWarningsProduced() > 0 || Logger::getTotalErrorsProduced() > 0) {
+        Logger::get().info("all tests passed but some warnings/errors were logged");
+        return 1;
+    }
+
     // Cleanup temp files.
     std::filesystem::remove_all(pathToTempDir);
 

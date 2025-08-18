@@ -1012,12 +1012,14 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                 const auto pathToMeshGeometry = pathToGeoDir / (sEntityId + "." + sVariableName + "." +
                                                                 std::string(sBinaryFileExtension));
                 if (!std::filesystem::exists(pathToMeshGeometry)) {
-                    Logger::get().warn(std::format(
-                        "unable to find geometry file for variable \"{}\" for file \"{}\" (expected file "
-                        "\"{}\")",
-                        sVariableName,
-                        pathToFile.filename().string(),
-                        pathToMeshGeometry.filename().string()));
+                    if (!bUsedOriginalObject) {
+                        Logger::get().warn(std::format(
+                            "unable to find geometry file for variable \"{}\" for file \"{}\" (expected file "
+                            "\"{}\")",
+                            sVariableName,
+                            pathToFile.filename().string(),
+                            pathToMeshGeometry.filename().string()));
+                    }
                     continue;
                 }
 

@@ -322,6 +322,18 @@ TEST_CASE("serialize and deserialize a derived type") {
     pToSerialize->iInt = -42;
     pToSerialize->iDerivedInt = 123;
 
+    // Fill mesh so suppress empty geometry warning.
+    MeshVertex vertex;
+    vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
+    vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.5F, 0.5F);
+    pToSerialize->meshGeometry.getVertices().push_back(vertex);
+    vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+    pToSerialize->meshGeometry.getVertices().push_back(vertex);
+    vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+    pToSerialize->meshGeometry.getVertices().push_back(vertex);
+    pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
+
     // Serialize.
     const auto pathToFile =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / vUsedTestFileNames[1];
@@ -357,6 +369,22 @@ TEST_CASE("deserialize with original object") {
         // Create 2 objects to serialize in a single file.
         auto pToSerialize1 = std::make_unique<TestSerializable>();
         auto pToSerialize2 = std::make_unique<TestSerializable>();
+
+        // Fill mesh to suppress empty geometry warning.
+        MeshVertex vertex;
+        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
+        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+        vertex.uv = glm::vec2(0.5F, 0.5F);
+        pToSerialize1->meshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        pToSerialize1->meshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        pToSerialize1->meshGeometry.getVertices().push_back(vertex);
+        pToSerialize1->meshGeometry.getIndices() = {0, 1, 2};
+        {
+            pToSerialize2->meshGeometry = pToSerialize1->meshGeometry;
+            pToSerialize2->meshGeometry.getIndices() = {2, 1, 0}; // make different meshes
+        }
 
         pToSerialize1->iInt = 100;
         pToSerialize2->iInt = 200;
@@ -410,6 +438,11 @@ TEST_CASE("deserialize with original object") {
             REQUIRE(false);
         }
 
+        REQUIRE(pDeserialized2->meshGeometry.getIndices().size() == 3);
+        REQUIRE(pDeserialized2->meshGeometry.getIndices()[0] == 2);
+        REQUIRE(pDeserialized2->meshGeometry.getIndices()[1] == 1);
+        REQUIRE(pDeserialized2->meshGeometry.getIndices()[2] == 0);
+
         // Find reference to the original.
         ConfigManager modifiedToml;
         optionalError = modifiedToml.loadFile(pathToModifiedFile);
@@ -452,6 +485,18 @@ TEST_CASE("deserialize, change, serialize in the same file (no reference to the 
     {
         auto pToSerialize = std::make_unique<TestSerializable>();
         pToSerialize->iInt = 100;
+
+        // Fill mesh to suppress empty geometry warning.
+        MeshVertex vertex;
+        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
+        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+        vertex.uv = glm::vec2(0.5F, 0.5F);
+        pToSerialize->meshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        pToSerialize->meshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        pToSerialize->meshGeometry.getVertices().push_back(vertex);
+        pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
 
         // Serialize.
         auto optionalError = pToSerialize->serialize(pathToFile, false);

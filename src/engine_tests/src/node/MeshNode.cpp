@@ -57,8 +57,11 @@ TEST_CASE("serialize node tree with 2 mesh nodes") {
                 REQUIRE(std::filesystem::exists(pathToDirectory / "test.toml"));
 
                 // 2 geometry files must exist.
-                REQUIRE(std::filesystem::exists(pathToDirectory / "test.0.geometry.bin"));
-                REQUIRE(std::filesystem::exists(pathToDirectory / "test.1.geometry.bin"));
+                const auto pathToGeoDir =
+                    pathToDirectory /
+                    (std::string("test") + std::string(Serializable::getNodeTreeGeometryDirSuffix()));
+                REQUIRE(std::filesystem::exists(pathToGeoDir / "0.geometry.bin"));
+                REQUIRE(std::filesystem::exists(pathToGeoDir / "1.geometry.bin"));
 
                 getWindow()->close();
             });
