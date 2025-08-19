@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+﻿cmake_minimum_required(VERSION 3.16)
 
 project(editor)
 
@@ -70,19 +70,3 @@ else()
 endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC ${EDITOR_LIB_TARGET})
 add_dependencies(${PROJECT_NAME} ${EDITOR_LIB_TARGET})
-
-if (GAME_PROJECT_NAME)
-    add_compile_definitions(GAME_LIB_INCLUDED)
-
-    # Also include game lib target to allow using custom game types in the editor.
-    set(GAME_LIB_TARGET ${GAME_PROJECT_NAME}_lib)
-    if (NOT TARGET ${GAME_LIB_TARGET}) # define target only if not defined yet
-        message(STATUS "${PROJECT_NAME}: started adding ${GAME_LIB_TARGET}...\n----------------------------------------------\n")
-        add_subdirectory(../${GAME_LIB_TARGET} ${DEPENDENCY_BUILD_DIR_NAME}/${GAME_LIB_TARGET})
-        message(STATUS "\n\n----------------------------------------------\n${PROJECT_NAME}: finished adding ${GAME_LIB_TARGET}")
-    else()
-        message(STATUS "${PROJECT_NAME}: ${GAME_LIB_TARGET} already defined, just using it without redefining")
-    endif()
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${GAME_LIB_TARGET})
-    add_dependencies(${PROJECT_NAME} ${GAME_LIB_TARGET})
-endif()

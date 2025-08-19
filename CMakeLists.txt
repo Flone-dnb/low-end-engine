@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+﻿cmake_minimum_required(VERSION 3.16)
 
 project(low_end_engine)
 
@@ -29,8 +29,13 @@ endif()
 
 message(STATUS "Adding executable targets...")
 
+# Add editor target first (to allow editor target to include editor_lib and properly define editor macros).
+set(EDITOR_TARGET_DIR_NAME editor)
+message(STATUS "Adding target ${EDITOR_TARGET_DIR_NAME}...")
+add_subdirectory(src/${EDITOR_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${EDITOR_TARGET_DIR_NAME})
+
 set(TESTS_TARGET_DIR_NAME engine_tests)
-if (GAME_PROJECT_NAME) # <- comes from engine_settings.cmake
+if (DEFINED GAME_PROJECT_NAME) # <- comes from engine_settings.cmake
     # Game directories should have been generated using our project manager.
     set(TESTS_TARGET_DIR_NAME ${GAME_PROJECT_NAME}_tests)
 
@@ -39,11 +44,6 @@ if (GAME_PROJECT_NAME) # <- comes from engine_settings.cmake
     message(STATUS "Adding target ${GAME_TARGET_DIR_NAME}...")
     add_subdirectory(src/${GAME_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${GAME_TARGET_DIR_NAME})
 endif()
-
-# Add editor target.
-set(EDITOR_TARGET_DIR_NAME editor)
-message(STATUS "Adding target ${EDITOR_TARGET_DIR_NAME}...")
-add_subdirectory(src/${EDITOR_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${EDITOR_TARGET_DIR_NAME})
 
 # Add tests target.
 message(STATUS "Adding target ${TESTS_TARGET_DIR_NAME}...")
