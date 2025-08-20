@@ -277,9 +277,12 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
         const auto iAppRamMb = getCurrentRSS() / 1024 / 1024;
 
         sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
-        if (ratio >= 0.9F) { // NOLINT
+#if defined(ENGINE_ASAN_ENABLED)
+        sStatsText += " (big RAM usage due to ASan)";
+#endif
+        if (ratio >= 0.9F) {
             gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
-        } else if (ratio >= 0.75F) { // NOLINT
+        } else if (ratio >= 0.75F) {
             gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 1.0F, 0.0F, 1.0F));
         } else {
             gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));

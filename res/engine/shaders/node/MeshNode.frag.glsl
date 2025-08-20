@@ -1,12 +1,9 @@
 #include "../Base.glsl"
 #include "../Light.glsl"
 
-in vec3 fragmentPosition;
-in vec3 fragmentNormal;
-in vec2 fragmentUv;
+#include "../vertex_format/MeshNodeVertexFormat.glsl"
 
 uniform vec4 diffuseColor;
-
 uniform bool bIsAffectedByLightSources;
 
 uniform bool bIsUsingDiffuseTexture;

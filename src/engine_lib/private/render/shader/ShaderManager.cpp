@@ -10,6 +10,7 @@
 #include "misc/ProjectPaths.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "misc/Profiler.hpp"
+#include "io/Logger.h"
 
 // External.
 #include "glad/glad.h"
@@ -38,21 +39,6 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     }
     auto sSourceCode = std::get<std::string>(std::move(result));
 
-#if defined(ENGINE_EDITOR)
-    // Define editor macro.
-    const auto iVersionPos = sSourceCode.find("#version");
-    if (iVersionPos == std::string::npos) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "unable to find `#version` in source \"{}\" or any included files", pathToShader.string()));
-    }
-    const auto iVersionLineEndPos = sSourceCode.find('\n', iVersionPos);
-    if (iVersionLineEndPos == std::string::npos) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "expected to have a new line after `#version` in source \"{}\"", pathToShader.string()));
-    }
-    sSourceCode.insert(iVersionLineEndPos + 1, "#define ENGINE_EDITOR\n");
-#endif
-
     // Prepare GL shader type.
     int shaderType = 0;
     std::string sFilename = pathToShader.filename().string();
@@ -68,6 +54,36 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
             sPathToShaderRelativeRes));
     }
 
+    // Define some macros.
+    std::vector<std::string_view> vDefinedMacros;
+    if (shaderType == GL_VERTEX_SHADER) {
+        vDefinedMacros.push_back("VERTEX_SHADER");
+    } else if (shaderType == GL_FRAGMENT_SHADER) {
+        vDefinedMacros.push_back("FRAGMENT_SHADER");
+    }
+#if defined(ENGINE_EDITOR)
+    vDefinedMacros.push_back("ENGINE_EDITOR");
+#endif
+
+    if (!vDefinedMacros.empty()) {
+        // Insert macros into the source code.
+        const auto iVersionPos = sSourceCode.find("#version");
+        if (iVersionPos == std::string::npos) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "unable to find `#version` in source \"{}\" or any included files", pathToShader.string()));
+        }
+        const auto iVersionLineEndPos = sSourceCode.find('\n', iVersionPos);
+        if (iVersionLineEndPos == std::string::npos) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "expected to have a new line after `#version` in source \"{}\"", pathToShader.string()));
+        }
+        std::string sMacrosString;
+        for (const auto& sMacro : vDefinedMacros) {
+            sMacrosString += "#define " + std::string(sMacro) + "\n";
+        }
+        sSourceCode.insert(iVersionLineEndPos + 1, sMacrosString);
+    }
+
     const auto iShaderId = glCreateShader(shaderType);
 
     // Attach source code and compile.
@@ -81,8 +97,12 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     glGetShaderiv(iShaderId, GL_COMPILE_STATUS, &iSuccess);
     if (iSuccess == 0) [[unlikely]] {
         glGetShaderInfoLog(iShaderId, static_cast<int>(infoLog.size()), nullptr, infoLog.data());
+        Logger::get().info(
+            std::format("full source code of the shader:\n{}\n", sSourceCode)); // log source for debugging
         Error::showErrorAndThrowException(std::format(
-            "failed to compile shader from \"{}\", error: {}", sPathToShaderRelativeRes, infoLog.data()));
+            "failed to compile shader from \"{}\" (see log to view the full source code), error: {}",
+            sPathToShaderRelativeRes,
+            infoLog.data()));
     }
 
     return std::shared_ptr<Shader>(new Shader(this, sPathToShaderRelativeRes, iShaderId));

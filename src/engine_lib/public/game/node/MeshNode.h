@@ -7,16 +7,13 @@
 #include "render/MeshDrawLayer.hpp"
 #include "math/GLMath.hpp"
 #include "game/node/SpatialNode.h"
-#include "game/geometry/MeshGeometry.h"
+#include "game/geometry/MeshNodeGeometry.h"
 #include "material/Material.h"
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/ShaderConstantsSetter.hpp"
 
 /** Represents a node that can have 3D geometry to display (mesh). */
 class MeshNode : public SpatialNode {
-    // Guard is allowed to modify geometry.
-    friend class MeshGeometryGuard;
-
     // Notifies the mesh to re-register itself to rendering if material transparency mode changed.
     friend class Material;
 
@@ -92,7 +89,7 @@ public:
      *
      * @param meshGeometry Mesh geometry.
      */
-    void setMeshGeometryBeforeSpawned(const MeshGeometry& meshGeometry);
+    void setMeshGeometryBeforeSpawned(const MeshNodeGeometry& meshGeometry);
 
     /**
      * Sets mesh geometry to use.
@@ -101,7 +98,7 @@ public:
      *
      * @param meshGeometry Mesh geometry.
      */
-    void setMeshGeometryBeforeSpawned(MeshGeometry&& meshGeometry);
+    void setMeshGeometryBeforeSpawned(MeshNodeGeometry&& meshGeometry);
 
     /**
      * Sets whether this mesh is visible or not.
@@ -173,7 +170,7 @@ public:
      *
      * @return Geometry.
      */
-    MeshGeometry copyMeshData() const { return geometry; }
+    MeshNodeGeometry copyMeshData() const { return geometry; }
 
     /**
      * Determine the layer in which a mesh is drawn.
@@ -249,7 +246,7 @@ private:
     void unregisterFromRendering();
 
     /** Mesh geometry. */
-    MeshGeometry geometry;
+    MeshNodeGeometry geometry;
 
     /** Material. */
     Material material;

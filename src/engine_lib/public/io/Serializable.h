@@ -991,7 +991,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
     }
 
     // Deserialize mesh geometry.
-    if (!typeInfo.reflectedVariables.meshGeometries.empty()) {
+    if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
         if (!pathToFile.has_parent_path()) [[unlikely]] {
             Error::showErrorAndThrowException(
                 std::format("expected the path to have a parent path \"{}\"", pathToFile.string()));
@@ -1008,7 +1008,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
             pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
         if (std::filesystem::exists(pathToGeoDir)) {
             // Deserialize each geometry.
-            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshNodeGeometries) {
                 const auto pathToMeshGeometry = pathToGeoDir / (sEntityId + "." + sVariableName + "." +
                                                                 std::string(sBinaryFileExtension));
                 if (!std::filesystem::exists(pathToMeshGeometry)) {
@@ -1023,7 +1023,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                     continue;
                 }
 
-                auto meshGeometry = MeshGeometry::deserialize(pathToMeshGeometry);
+                auto meshGeometry = MeshNodeGeometry::deserialize(pathToMeshGeometry);
                 variableInfo.setter(pDeserializedObject.get(), meshGeometry);
             }
         }

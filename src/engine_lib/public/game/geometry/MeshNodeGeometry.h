@@ -11,19 +11,19 @@
  *
  * @remark Size and layout is equal to the vertex struct we use in shaders.
  */
-struct MeshVertex { // not using inheritance to avoid extra fields that are not related to vertex
-    MeshVertex() = default;
-    ~MeshVertex() = default;
+struct MeshNodeVertex { // not using inheritance to avoid extra fields that are not related to vertex
+    MeshNodeVertex() = default;
+    ~MeshNodeVertex() = default;
 
     /** Copy constructor. */
-    MeshVertex(const MeshVertex&) = default;
+    MeshNodeVertex(const MeshNodeVertex&) = default;
     /** Copy assignment. @return this. */
-    MeshVertex& operator=(const MeshVertex&) = default;
+    MeshNodeVertex& operator=(const MeshNodeVertex&) = default;
 
     /** Move constructor. */
-    MeshVertex(MeshVertex&&) noexcept = default;
+    MeshNodeVertex(MeshNodeVertex&&) noexcept = default;
     /** Move assignment. @return this. */
-    MeshVertex& operator=(MeshVertex&&) noexcept = default;
+    MeshNodeVertex& operator=(MeshNodeVertex&&) noexcept = default;
 
     /** Describes to OpenGL how vertex data should be interpreted. */
     static void setVertexAttributes();
@@ -35,7 +35,7 @@ struct MeshVertex { // not using inheritance to avoid extra fields that are not 
      *
      * @return Whether objects are equal or not.
      */
-    bool operator==(const MeshVertex& other) const;
+    bool operator==(const MeshNodeVertex& other) const;
 
     // --------------------------------------------------------------------------------------
 
@@ -57,23 +57,23 @@ struct MeshVertex { // not using inheritance to avoid extra fields that are not 
 };
 
 /** Stores mesh geometry (vertices and indices). */
-class MeshGeometry {
+class MeshNodeGeometry {
 public:
     /** Type of an index in the index buffer. */
     using MeshIndexType = unsigned short;
 
-    MeshGeometry() = default;
-    ~MeshGeometry() = default;
+    MeshNodeGeometry() = default;
+    ~MeshNodeGeometry() = default;
 
     /** Copy constructor. */
-    MeshGeometry(const MeshGeometry&) = default;
+    MeshNodeGeometry(const MeshNodeGeometry&) = default;
     /** Copy assignment. @return this. */
-    MeshGeometry& operator=(const MeshGeometry&) = default;
+    MeshNodeGeometry& operator=(const MeshNodeGeometry&) = default;
 
     /** Move constructor. */
-    MeshGeometry(MeshGeometry&&) noexcept = default;
+    MeshNodeGeometry(MeshNodeGeometry&&) noexcept = default;
     /** Move assignment. @return this. */
-    MeshGeometry& operator=(MeshGeometry&&) noexcept = default;
+    MeshNodeGeometry& operator=(MeshNodeGeometry&&) noexcept = default;
 
     /**
      * Deserializes the geometry from the file (also see @ref serialize).
@@ -82,7 +82,7 @@ public:
      *
      * @return Geometry.
      */
-    static MeshGeometry deserialize(const std::filesystem::path& pathToFile);
+    static MeshNodeGeometry deserialize(const std::filesystem::path& pathToFile);
 
     /**
      * Equality operator.
@@ -91,7 +91,7 @@ public:
      *
      * @return Whether the geometry is the same or not.
      */
-    bool operator==(const MeshGeometry& other) const;
+    bool operator==(const MeshNodeGeometry& other) const;
 
     /**
      * Serializes the geometry data into a file.
@@ -105,14 +105,14 @@ public:
      *
      * @return Mesh vertices.
      */
-    std::vector<MeshVertex>& getVertices() { return vVertices; }
+    std::vector<MeshNodeVertex>& getVertices() { return vVertices; }
 
     /**
      * Returns mesh vertices.
      *
      * @return Mesh vertices.
      */
-    const std::vector<MeshVertex>& getVertices() const { return vVertices; }
+    const std::vector<MeshNodeVertex>& getVertices() const { return vVertices; }
 
     /**
      * Returns mesh indices.
@@ -130,7 +130,7 @@ public:
 
 private:
     /** Vertices for mesh's vertex buffer. */
-    std::vector<MeshVertex> vVertices;
+    std::vector<MeshNodeVertex> vVertices;
 
     /** Indices for mesh's index buffer. */
     std::vector<MeshIndexType> vIndices;

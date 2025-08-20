@@ -107,7 +107,7 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
     ADD_VARIABLES_OF_TYPE(vectorInts);
     ADD_VARIABLES_OF_TYPE(vectorStrings);
     ADD_VARIABLES_OF_TYPE(vectorVec3s);
-    ADD_VARIABLES_OF_TYPE(meshGeometries);
+    ADD_VARIABLES_OF_TYPE(meshNodeGeometries);
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #elif defined(DEBUG)
@@ -168,7 +168,7 @@ TypeReflectionInfo::TypeReflectionInfo(
         ADD_PARENT_VARIABLES(vectorInts);
         ADD_PARENT_VARIABLES(vectorStrings);
         ADD_PARENT_VARIABLES(vectorVec3s);
-        ADD_PARENT_VARIABLES(meshGeometries);
+        ADD_PARENT_VARIABLES(meshNodeGeometries);
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #elif defined(DEBUG)
@@ -198,7 +198,7 @@ TypeReflectionInfo::TypeReflectionInfo(
     VARIABLE_TYPE_TO_MAP(vectorInts, ReflectedVariableType::VECTOR_INT);
     VARIABLE_TYPE_TO_MAP(vectorStrings, ReflectedVariableType::VECTOR_STRING);
     VARIABLE_TYPE_TO_MAP(vectorVec3s, ReflectedVariableType::VECTOR_VEC3);
-    VARIABLE_TYPE_TO_MAP(meshGeometries, ReflectedVariableType::MESH_GEOMETRY);
+    VARIABLE_TYPE_TO_MAP(meshNodeGeometries, ReflectedVariableType::MESH_GEOMETRY);
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
 #elif defined(DEBUG)

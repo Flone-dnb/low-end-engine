@@ -150,13 +150,13 @@ public:
                     return reinterpret_cast<TestSerializable*>(pThis)->vVectorVec3s;
                 }};
 
-        variables.meshGeometries[NAMEOF_MEMBER(&TestSerializable::meshGeometry).data()] =
-            ReflectedVariableInfo<MeshGeometry>{
+        variables.meshNodeGeometries[NAMEOF_MEMBER(&TestSerializable::meshGeometry).data()] =
+            ReflectedVariableInfo<MeshNodeGeometry>{
                 .setter =
-                    [](Serializable* pThis, const MeshGeometry& newValue) {
+                    [](Serializable* pThis, const MeshNodeGeometry& newValue) {
                         reinterpret_cast<TestSerializable*>(pThis)->meshGeometry = newValue;
                     },
-                .getter = [](Serializable* pThis) -> MeshGeometry {
+                .getter = [](Serializable* pThis) -> MeshNodeGeometry {
                     return reinterpret_cast<TestSerializable*>(pThis)->meshGeometry;
                 }};
 
@@ -189,7 +189,7 @@ public:
     std::vector<int> vVectorInts;
     std::vector<std::string> vVectorStrings;
     std::vector<glm::vec3> vVectorVec3s;
-    MeshGeometry meshGeometry;
+    MeshNodeGeometry meshGeometry;
 };
 bool TestSerializable::bDestructorCalled = false;
 bool TestSerializable::bOnAfterDeserializedCalled = false;
@@ -245,7 +245,7 @@ TEST_CASE("serialize and deserialize a sample type") {
     pToSerialize->vVectorInts = {-1, 0, 1, 2, 3};
     pToSerialize->vVectorStrings = {"Hello!", "今日は!"};
     pToSerialize->vVectorVec3s = {glm::vec3(1.0F, 2.0F, 3.0F), glm::vec3(3.0F, 2.0F, 1.0F)};
-    MeshVertex vertex;
+    MeshNodeVertex vertex;
     vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
     vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
     vertex.uv = glm::vec2(0.5F, 0.5F);
@@ -323,7 +323,7 @@ TEST_CASE("serialize and deserialize a derived type") {
     pToSerialize->iDerivedInt = 123;
 
     // Fill mesh so suppress empty geometry warning.
-    MeshVertex vertex;
+    MeshNodeVertex vertex;
     vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
     vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
     vertex.uv = glm::vec2(0.5F, 0.5F);
@@ -371,7 +371,7 @@ TEST_CASE("deserialize with original object") {
         auto pToSerialize2 = std::make_unique<TestSerializable>();
 
         // Fill mesh to suppress empty geometry warning.
-        MeshVertex vertex;
+        MeshNodeVertex vertex;
         vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
         vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
         vertex.uv = glm::vec2(0.5F, 0.5F);
@@ -487,7 +487,7 @@ TEST_CASE("deserialize, change, serialize in the same file (no reference to the 
         pToSerialize->iInt = 100;
 
         // Fill mesh to suppress empty geometry warning.
-        MeshVertex vertex;
+        MeshNodeVertex vertex;
         vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
         vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
         vertex.uv = glm::vec2(0.5F, 0.5F);

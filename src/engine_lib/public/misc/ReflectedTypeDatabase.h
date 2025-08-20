@@ -7,7 +7,7 @@
 #include <memory>
 
 // Custom.
-#include "game/geometry/MeshGeometry.h"
+#include "game/geometry/MeshNodeGeometry.h"
 #include "math/GLMath.hpp"
 
 // To suppress GCC's false-positive about dangling reference on `getTypeInfo`.
@@ -99,7 +99,7 @@ struct ReflectedVariables {
     std::unordered_map<std::string, ReflectedVariableInfo<std::vector<glm::vec3>>> vectorVec3s;
 
     /** Pairs of "variable name" - "variable info". */
-    std::unordered_map<std::string, ReflectedVariableInfo<MeshGeometry>> meshGeometries;
+    std::unordered_map<std::string, ReflectedVariableInfo<MeshNodeGeometry>> meshNodeGeometries;
 };
 
 /** Groups information about a reflected type. */

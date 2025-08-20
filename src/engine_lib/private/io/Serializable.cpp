@@ -407,8 +407,8 @@ std::variant<std::string, Error> Serializable::serialize(
             tomlData[sSectionName][sVariableName] = vArray;
         }
 
-        // MeshGeometry
-        if (!typeInfo.reflectedVariables.meshGeometries.empty()) {
+        // Mesh geometry
+        if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
             // Prepare path to the geometry directory.
             if (!pathToFile.has_parent_path()) [[unlikely]] {
                 return Error(std::format("expected a parent path to exist for \"{}\"", pathToFile.string()));
@@ -424,7 +424,7 @@ std::variant<std::string, Error> Serializable::serialize(
                 std::filesystem::create_directory(pathToGeoDir);
             }
 
-            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshGeometries) {
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshNodeGeometries) {
                 const auto currentValue = variableInfo.getter(this);
                 if (currentValue.getIndices().empty() && currentValue.getVertices().empty()) {
                     Logger::get().warn(std::format(

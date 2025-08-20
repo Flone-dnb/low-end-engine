@@ -95,8 +95,8 @@ set(PROJECT_SOURCES
     private/game/geometry/shapes/Plane.cpp
     public/game/geometry/shapes/Sphere.h
     private/game/geometry/shapes/Sphere.cpp
-    private/game/geometry/MeshGeometry.cpp
-    public/game/geometry/MeshGeometry.h
+    private/game/geometry/MeshNodeGeometry.cpp
+    public/game/geometry/MeshNodeGeometry.h
     public/game/geometry/PrimitiveMeshGenerator.h
     private/game/geometry/PrimitiveMeshGenerator.cpp
     private/game/geometry/ScreenQuadGeometry.cpp

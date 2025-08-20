@@ -77,7 +77,8 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
         vVertices, std::unique_ptr<VertexArrayObject>(new VertexArrayObject(iVao, iVbo))));
 }
 
-std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(const MeshGeometry& geometry) {
+std::unique_ptr<VertexArrayObject>
+GpuResourceManager::createVertexArrayObject(const MeshNodeGeometry& geometry) {
     PROFILE_FUNC
 
     std::scoped_lock guard(mtx);
@@ -98,7 +99,7 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(c
         geometry.getVertices().size() * sizeof(geometry.getVertices()[0]),
         geometry.getVertices().data(),
         GL_STATIC_DRAW));
-    MeshVertex::setVertexAttributes();
+    MeshNodeVertex::setVertexAttributes();
 
     // Before converting index count to int (for OpenGL) make sure the conversion will be safe.
     constexpr size_t iTypeLimit = std::numeric_limits<int>::max();

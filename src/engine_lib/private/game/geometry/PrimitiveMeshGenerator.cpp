@@ -1,11 +1,11 @@
 #include "game/geometry/PrimitiveMeshGenerator.h"
 
-MeshGeometry PrimitiveMeshGenerator::createCube(float size) {
-    MeshGeometry geometry;
-    MeshVertex vertex;
+MeshNodeGeometry PrimitiveMeshGenerator::createCube(float size) {
+    MeshNodeGeometry geometry;
+    MeshNodeVertex vertex;
     const auto halfSize = size * 0.5F;
 
-    static_assert(sizeof(MeshVertex) == 32, "properly generate new mesh data"); // NOLINT: current size
+    static_assert(sizeof(MeshNodeVertex) == 32, "properly generate new mesh data"); // NOLINT: current size
 
     // NOLINTBEGIN(readability-magic-numbers)
 

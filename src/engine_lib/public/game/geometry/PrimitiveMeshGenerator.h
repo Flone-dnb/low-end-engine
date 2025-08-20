@@ -1,7 +1,7 @@
 #pragma once
 
 // Custom.
-#include "game/geometry/MeshGeometry.h"
+#include "game/geometry/MeshNodeGeometry.h"
 
 /** Provides static functions for creating primitive shapes. */
 class PrimitiveMeshGenerator {
@@ -15,5 +15,5 @@ public:
      *
      * @return Cube mesh.
      */
-    static MeshGeometry createCube(float size);
+    static MeshNodeGeometry createCube(float size);
 };

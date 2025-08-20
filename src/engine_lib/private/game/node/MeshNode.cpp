@@ -107,14 +107,15 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return static_cast<unsigned int>(reinterpret_cast<MeshNode*>(pThis)->getDrawLayer());
         }};
 
-    variables.meshGeometries[NAMEOF_MEMBER(&MeshNode::geometry).data()] = ReflectedVariableInfo<MeshGeometry>{
-        .setter =
-            [](Serializable* pThis, const MeshGeometry& newValue) {
-                reinterpret_cast<MeshNode*>(pThis)->setMeshGeometryBeforeSpawned(newValue);
-            },
-        .getter = [](Serializable* pThis) -> MeshGeometry {
-            return reinterpret_cast<MeshNode*>(pThis)->copyMeshData();
-        }};
+    variables.meshNodeGeometries[NAMEOF_MEMBER(&MeshNode::geometry).data()] =
+        ReflectedVariableInfo<MeshNodeGeometry>{
+            .setter =
+                [](Serializable* pThis, const MeshNodeGeometry& newValue) {
+                    reinterpret_cast<MeshNode*>(pThis)->setMeshGeometryBeforeSpawned(newValue);
+                },
+            .getter = [](Serializable* pThis) -> MeshNodeGeometry {
+                return reinterpret_cast<MeshNode*>(pThis)->copyMeshData();
+            }};
 
     return TypeReflectionInfo(
         SpatialNode::getTypeGuidStatic(),
@@ -144,12 +145,12 @@ void MeshNode::setMaterialBeforeSpawned(Material&& material) {
     this->material = std::move(material);
 }
 
-void MeshNode::setMeshGeometryBeforeSpawned(const MeshGeometry& meshGeometry) {
+void MeshNode::setMeshGeometryBeforeSpawned(const MeshNodeGeometry& meshGeometry) {
     geometry = meshGeometry;
     onAfterMeshGeometryChanged();
 }
 
-void MeshNode::setMeshGeometryBeforeSpawned(MeshGeometry&& meshGeometry) {
+void MeshNode::setMeshGeometryBeforeSpawned(MeshNodeGeometry&& meshGeometry) {
     geometry = std::move(meshGeometry);
     onAfterMeshGeometryChanged();
 }

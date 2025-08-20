@@ -57,7 +57,7 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
 
     pXAxisMesh->setNodeName("Gizmo X");
 
-    MeshGeometry gizmoGeometry = pXAxisMesh->copyMeshData();
+    MeshNodeGeometry gizmoGeometry = pXAxisMesh->copyMeshData();
 
     auto pYAxisMeshU = std::make_unique<MeshNode>("Gizmo Y");
     pYAxisMeshU->setMeshGeometryBeforeSpawned(gizmoGeometry);

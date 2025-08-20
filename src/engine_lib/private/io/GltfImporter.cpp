@@ -66,7 +66,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             iPrimitive,
             mesh.primitives.size()));
 
-        MeshGeometry meshGeometry;
+        MeshNodeGeometry meshNodeGeometry;
 
         {
             // Add indices.
@@ -88,7 +88,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             auto pCurrentIndex =
                 indexBuffer.data.data() + indexBufferView.byteOffset + indexAccessor.byteOffset;
 
-            meshGeometry.getIndices().resize(indexAccessor.count);
+            meshNodeGeometry.getIndices().resize(indexAccessor.count);
 
             // Add indices depending on their type.
             if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
@@ -101,9 +101,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     indexBufferView.byteStride == 0 ? sizeof(index_t) : indexBufferView.byteStride;
 
                 // Set indices.
-                for (size_t i = 0; i < meshGeometry.getIndices().size(); i++) {
+                for (size_t i = 0; i < meshNodeGeometry.getIndices().size(); i++) {
                     // Set value.
-                    meshGeometry.getIndices()[i] = static_cast<MeshGeometry::MeshIndexType>(
+                    meshNodeGeometry.getIndices()[i] = static_cast<MeshNodeGeometry::MeshIndexType>(
                         reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
 
                     // Switch to the next item.
@@ -116,9 +116,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     indexBufferView.byteStride == 0 ? sizeof(index_t) : indexBufferView.byteStride;
 
                 // Set indices.
-                for (size_t i = 0; i < meshGeometry.getIndices().size(); i++) {
+                for (size_t i = 0; i < meshNodeGeometry.getIndices().size(); i++) {
                     // Set value.
-                    meshGeometry.getIndices()[i] = static_cast<MeshGeometry::MeshIndexType>(
+                    meshNodeGeometry.getIndices()[i] = static_cast<MeshNodeGeometry::MeshIndexType>(
                         reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
 
                     // Switch to the next item.
@@ -144,7 +144,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             const auto& positionAccessor = model.accessors[static_cast<size_t>(iPositionAccessorIndex)];
 
             // Allocate vertices.
-            meshGeometry.getVertices().resize(positionAccessor.count);
+            meshNodeGeometry.getVertices().resize(positionAccessor.count);
         }
 
         // Process attributes.
@@ -180,9 +180,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     attributeBufferView.byteStride == 0 ? sizeof(position_t) : attributeBufferView.byteStride;
 
                 // Set positions to mesh data.
-                for (size_t i = 0; i < meshGeometry.getVertices().size(); i++) {
+                for (size_t i = 0; i < meshNodeGeometry.getVertices().size(); i++) {
                     // Set value.
-                    meshGeometry.getVertices()[i].position =
+                    meshNodeGeometry.getVertices()[i].position =
                         reinterpret_cast<const position_t*>(pCurrentPosition)[0];
 
                     // Switch to the next item.
@@ -216,9 +216,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     attributeBufferView.byteStride == 0 ? sizeof(normal_t) : attributeBufferView.byteStride;
 
                 // Set normals to mesh data.
-                for (size_t i = 0; i < meshGeometry.getVertices().size(); i++) {
+                for (size_t i = 0; i < meshNodeGeometry.getVertices().size(); i++) {
                     // Set value.
-                    meshGeometry.getVertices()[i].normal =
+                    meshNodeGeometry.getVertices()[i].normal =
                         reinterpret_cast<const normal_t*>(pCurrentNormal)[0];
 
                     // Switch to the next item.
@@ -252,9 +252,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     attributeBufferView.byteStride == 0 ? sizeof(uv_t) : attributeBufferView.byteStride;
 
                 // Set UVs to mesh data.
-                for (size_t i = 0; i < meshGeometry.getVertices().size(); i++) {
+                for (size_t i = 0; i < meshNodeGeometry.getVertices().size(); i++) {
                     // Set value.
-                    meshGeometry.getVertices()[i].uv = reinterpret_cast<const uv_t*>(pCurrentUv)[0];
+                    meshNodeGeometry.getVertices()[i].uv = reinterpret_cast<const uv_t*>(pCurrentUv)[0];
 
                     // Switch to the next item.
                     pCurrentUv += iStride;
@@ -266,13 +266,13 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
         }
 
         // Make sure something generated.
-        if (meshGeometry.getVertices().empty() || meshGeometry.getIndices().empty()) {
+        if (meshNodeGeometry.getVertices().empty() || meshNodeGeometry.getIndices().empty()) {
             continue;
         }
 
         // Create a new mesh node with the specified data.
         auto pMeshNode = std::make_unique<MeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
-        pMeshNode->setMeshGeometryBeforeSpawned(std::move(meshGeometry));
+        pMeshNode->setMeshGeometryBeforeSpawned(std::move(meshNodeGeometry));
 
         if (primitive.material >= 0) {
             // Process material.

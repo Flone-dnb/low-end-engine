@@ -5,7 +5,7 @@
 #include <mutex>
 
 // Custom.
-#include "game/geometry/MeshGeometry.h"
+#include "game/geometry/MeshNodeGeometry.h"
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Buffer.h"
@@ -44,7 +44,7 @@ public:
      *
      * @return Created VAO.
      */
-    static std::unique_ptr<VertexArrayObject> createVertexArrayObject(const MeshGeometry& geometry);
+    static std::unique_ptr<VertexArrayObject> createVertexArrayObject(const MeshNodeGeometry& geometry);
 
     /**
      * Creates a new framebuffer with textures.
