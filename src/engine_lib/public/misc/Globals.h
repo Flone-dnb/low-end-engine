@@ -3,6 +3,7 @@
 // Standard.
 #include <string>
 #include <string_view>
+#include <filesystem>
 
 // Custom.
 #include "math/GLMath.hpp"
@@ -62,6 +63,13 @@ public:
      * @return Converted string.
      */
     static std::wstring stringToWstring(const std::string& sText);
+
+    /**
+     * Returns working directory of this process.
+     *
+     * @return Path to working directory.
+     */
+    static std::filesystem::path getProcessWorkingDirectory();
 
     /**
      * Returns a text that is typically added in the format "[{}]: ..." for logs that exist only

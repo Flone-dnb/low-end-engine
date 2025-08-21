@@ -127,6 +127,9 @@ private:
     /** Initial error message (string version). */
     std::string sMessage;
 
+    /** RAM usage when the error occurred. */
+    std::string sRamUsageString;
+
     /** Error stack. */
     std::vector<SourceLocationInfo> stack;
 };

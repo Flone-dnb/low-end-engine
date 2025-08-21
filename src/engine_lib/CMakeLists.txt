@@ -325,6 +325,21 @@ target_link_libraries(${PROJECT_NAME} PUBLIC utfconv)
 set_target_properties(utfconv PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 add_dependencies(${PROJECT_NAME} utfconv)
 
+# ozz-animation
+message(STATUS "${PROJECT_NAME}: adding external dependency \"ozz-animation\"...")
+set(ozz_build_fbx OFF CACHE BOOL "" FORCE)
+set(ozz_build_samples OFF CACHE BOOL "" FORCE)
+set(ozz_build_howtos OFF CACHE BOOL "" FORCE)
+set(ozz_build_tests OFF CACHE BOOL "" FORCE)
+add_subdirectory(${RELATIVE_EXT_PATH}/ozz-animation ${DEPENDENCY_BUILD_DIR_NAME}/ozz-animation SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC ozz_animation)
+set_target_properties(ozz_animation PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${PROJECT_NAME} ozz_animation)
+add_dependencies(${PROJECT_NAME} gltf2ozz)
+set(GLTF2OZZ_BIN_PATH ${PROJECT_BINARY_DIR}/${DEPENDENCY_BUILD_DIR_NAME}/ozz-animation/src/animation/offline/gltf/gltf2ozz${CMAKE_EXECUTABLE_SUFFIX})
+message(STATUS "gltf2ozz will be located at: ${GLTF2OZZ_BIN_PATH}")
+add_compile_definitions(GLTF2OZZ_BIN_PATH="${GLTF2OZZ_BIN_PATH}")
+
 if (NOT IS_RELEASE_BUILD)
     # Add tracy.
     message(STATUS "${PROJECT_NAME}: adding external dependency \"tracy\"...")

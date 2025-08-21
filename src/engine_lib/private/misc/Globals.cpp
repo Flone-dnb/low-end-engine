@@ -7,6 +7,9 @@
 // Custom.
 #include "misc/Error.h"
 #if defined(WIN32)
+#define NOMINMAX
+#include <windows.h>
+#include <stdio.h>
 #include <ShlObj.h>
 #include <Shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
@@ -17,6 +20,8 @@
 #include <cstddef>
 #include <cstdlib>
 #include <wchar.h>
+#include <stdio.h>
+#include <limits.h>
 #endif
 
 std::string Globals::getApplicationName() {
@@ -85,6 +90,31 @@ std::wstring Globals::stringToWstring(const std::string& sText) {
 #endif
 
     return sOutput;
+}
+
+std::filesystem::path Globals::getProcessWorkingDirectory() {
+    std::filesystem::path pathToWorkingDirectory;
+
+#if defined(WIN32)
+    char buffer[MAX_PATH];
+    DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
+    if (length != 0) {
+        pathToWorkingDirectory = buffer;
+    } else [[unlikely]] {
+        Error::showErrorAndThrowException("failed to get path to the working directory of the process");
+    }
+#elif __linux__
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        pathToWorkingDirectory = cwd;
+    } else [[unlikely]] {
+        Error::showErrorAndThrowException("failed to get path to the working directory of the process");
+    }
+#else
+    static_assert(false, "not implemented");
+#endif
+
+    return pathToWorkingDirectory;
 }
 
 std::string Globals::getDebugOnlyLoggingPrefix() { return std::string(sDebugOnlyLoggingPrefix); }

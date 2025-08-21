@@ -46,13 +46,14 @@ void checkLastGlError(const std::source_location location) {
 }
 
 Error::Error(std::string_view sMessage, const std::source_location location) {
-    // Also add RAM usage to the error message.
+    // Mark RAM usage.
     hwinfo::Memory memory;
-    const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;    // NOLINT
-    const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024; // NOLINT
+    const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;
+    const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024;
     const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
 
-    this->sMessage = std::string(sMessage) + std::format("\n\nRAM (MB): {}/{}\n", iRamUsedMb, iRamTotalMb);
+    sRamUsageString = std::format("\n\nRAM (MB): {}/{}\n", iRamUsedMb, iRamTotalMb);
+    this->sMessage = sMessage;
 
     stack.push_back(sourceLocationToInfo(location));
 }
@@ -97,7 +98,7 @@ void Error::addCurrentLocationToErrorStack(const std::source_location location) 
 
 std::string Error::getFullErrorMessage() const {
     std::string sErrorMessage = "An error occurred: ";
-    sErrorMessage += sMessage;
+    sErrorMessage += sMessage + "\n" + sRamUsageString;
     sErrorMessage += "\nError stack:\n";
 
     for (const auto& entry : stack) {

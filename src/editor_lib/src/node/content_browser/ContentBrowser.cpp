@@ -249,18 +249,18 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      }));
              }});
         if (!pathToDirectory.string().ends_with("res/game")) {
-            vOptions.push_back(
-                {u"Delete directory", [this, pathToDirectory]() {
-                     // Show confirmation.
-                     getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<ConfirmationMenu>(
-                         std::format("Delete directory \"{}\"?", pathToDirectory.stem().string()),
-                         [this, pathToDirectory]() {
-                             // Delete.
-                             openedDirectoryPaths.erase(pathToDirectory);
-                             std::filesystem::remove_all(pathToDirectory);
-                             rebuildFileTree();
-                         }));
-                 }});
+            vOptions.push_back({u"Delete directory", [this, pathToDirectory]() {
+                                    // Show confirmation.
+                                    getWorldRootNodeWhileSpawned()->addChildNode(
+                                        std::make_unique<ConfirmationMenu>(
+                                            std::format("Delete \"{}\"?", pathToDirectory.stem().string()),
+                                            [this, pathToDirectory]() {
+                                                // Delete.
+                                                openedDirectoryPaths.erase(pathToDirectory);
+                                                std::filesystem::remove_all(pathToDirectory);
+                                                rebuildFileTree();
+                                            }));
+                                }});
         }
     }
     dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())->openContextMenu(vOptions);
@@ -279,17 +279,16 @@ void ContentBrowser::showFileContextMenu(const std::filesystem::path& pathToFile
 
     std::vector<std::pair<std::u16string, std::function<void()>>> vOptions;
     {
-        vOptions.push_back({u"Delete file", [this, pathToFile]() {
-                                // Show confirmation.
-                                getWorldRootNodeWhileSpawned()->addChildNode(
-                                    std::make_unique<ConfirmationMenu>(
-                                        std::format("Delete file \"{}\"?", pathToFile.filename().string()),
-                                        [this, pathToFile]() {
-                                            // Delete.
-                                            std::filesystem::remove(pathToFile);
-                                            rebuildFileTree();
-                                        }));
-                            }});
+        vOptions.push_back(
+            {u"Delete file", [this, pathToFile]() {
+                 // Show confirmation.
+                 getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<ConfirmationMenu>(
+                     std::format("Delete \"{}\"?", pathToFile.filename().string()), [this, pathToFile]() {
+                         // Delete.
+                         std::filesystem::remove(pathToFile);
+                         rebuildFileTree();
+                     }));
+             }});
     }
     dynamic_cast<EditorGameInstance*>(getGameInstanceWhileSpawned())->openContextMenu(vOptions);
 }

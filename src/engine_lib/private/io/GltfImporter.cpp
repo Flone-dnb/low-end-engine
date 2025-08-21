@@ -12,6 +12,7 @@
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
+#include "subprocess.h/subprocess.h"
 
 namespace {
     constexpr std::string_view sTexturesDirNameSuffix = "_tex";
@@ -575,8 +576,107 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
         return optionalError;
     }
 
-    // Mark progress.
-    onProgress("finished");
+    onProgress("checking for animations to import...");
 
+#ifndef GLTF2OZZ_BIN_PATH
+    static_assert(false, "need path to gltf2ozz for importing animations");
+#endif
+    std::filesystem::path pathToGltf2Ozz = GLTF2OZZ_BIN_PATH;
+    if (!std::filesystem::exists(pathToGltf2Ozz)) [[unlikely]] {
+        return Error(std::format("expected the path to exist \"{}\"", pathToGltf2Ozz.string()));
+    }
+
+    // gltf2ozz will be invoked from the command line and will produce results in the working directory.
+    const auto pathToWorkingDirectory = Globals::getProcessWorkingDirectory();
+
+    // Clear any existing (old) .ozz files.
+    for (const auto& entry : std::filesystem::directory_iterator(pathToWorkingDirectory)) {
+        if (entry.is_directory()) {
+            continue;
+        }
+        if (entry.path().extension() != ".ozz") {
+            continue;
+        }
+        std::filesystem::remove(entry.path());
+    }
+
+    // Run gltf2ozz.
+    const std::string sPathToGltf2Ozz = pathToGltf2Ozz.string();
+    const std::string sArgPathToGltfFile = std::format("--file={}", pathToFile.string());
+    std::array<const char*, 3> vCommandLine = {sPathToGltf2Ozz.c_str(), sArgPathToGltfFile.c_str(), NULL};
+    struct subprocess_s subprocess;
+    int iSubprocessOpResult = subprocess_create(vCommandLine.data(), 0, &subprocess);
+    if (iSubprocessOpResult != 0) [[unlikely]] {
+        return Error(std::format(
+            "failed to start subprocess for \"{}\", error code: {}", sPathToGltf2Ozz, iSubprocessOpResult));
+    }
+
+    // Wait for it to finish.
+    int iProcessReturnCode = 0;
+    iSubprocessOpResult = subprocess_join(&subprocess, &iProcessReturnCode);
+    if (iSubprocessOpResult != 0) [[unlikely]] {
+        return Error(std::format(
+            "failed to wait for subprocess \"{}\", error code: {}", sPathToGltf2Ozz, iSubprocessOpResult));
+    }
+
+    // Destroy subprocess object.
+    iSubprocessOpResult = subprocess_destroy(&subprocess);
+    if (iSubprocessOpResult != 0) [[unlikely]] {
+        return Error(std::format(
+            "failed to destroy subprocess object \"{}\", error code: {}",
+            sPathToGltf2Ozz,
+            iSubprocessOpResult));
+    }
+
+    if (iProcessReturnCode != 0) {
+        // Delete any imported files.
+        for (const auto& entry : std::filesystem::directory_iterator(pathToWorkingDirectory)) {
+            if (entry.is_directory()) {
+                continue;
+            }
+            if (entry.path().extension() != ".ozz") {
+                continue;
+            }
+            std::filesystem::remove(entry.path());
+        }
+        return Error(std::format(
+            "failed to check for/import animations, gltf2ozz returned: {}, make sure the path is correct and "
+            "has no spaces or special characters \"{}\"",
+            iProcessReturnCode,
+            pathToFile.c_str()));
+    }
+
+    // See if any new .ozz files were created.
+    std::vector<std::filesystem::path> vPathsToOzzFiles;
+    for (const auto& entry : std::filesystem::directory_iterator(pathToWorkingDirectory)) {
+        if (entry.is_directory()) {
+            continue;
+        }
+        if (entry.path().extension() != ".ozz") {
+            continue;
+        }
+        vPathsToOzzFiles.push_back(entry.path());
+    }
+
+    if (!vPathsToOzzFiles.empty()) {
+        if (vPathsToOzzFiles.size() == 1 && vPathsToOzzFiles[0].filename() == "skeleton.ozz") {
+            // Only skeleton was imported (no animations).
+            // If gltf scene has no skeleton and animations gltf2ozz considers the whole scene as a skeleton
+            // (which is not what we want) so in this case we think that there is no skeleton/animations to
+            // import.
+            std::filesystem::remove(vPathsToOzzFiles[0]);
+            onProgress("no animations found");
+        } else {
+            // Move new .ozz files into the imported directory.
+            const auto pathToAnimDir = pathToOutputDirectory / (pathToFile.stem().string() + "_anim");
+            std::filesystem::create_directory(pathToAnimDir);
+            for (const auto& pathToOzzFile : vPathsToOzzFiles) {
+                std::filesystem::rename(pathToOzzFile, pathToAnimDir / pathToOzzFile.filename());
+            }
+            onProgress(std::format("found animations to import", vPathsToOzzFiles.size()));
+        }
+    }
+
+    onProgress("finished");
     return {};
 }
