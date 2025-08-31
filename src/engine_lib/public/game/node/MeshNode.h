@@ -58,7 +58,7 @@ public:
      *
      * @return Path to .glsl file relative `res` directory.
      */
-    static inline std::string_view getDefaultVertexShaderForMeshNode() {
+    virtual std::string_view getPathToDefaultVertexShader() {
         return "engine/shaders/node/MeshNode.vert.glsl";
     }
 
@@ -68,7 +68,7 @@ public:
      *
      * @return Path to .glsl file relative `res` directory.
      */
-    static inline std::string_view getDefaultFragmentShaderForMeshNode() {
+    static inline std::string_view getPathToDefaultFragmentShader() {
         return "engine/shaders/node/MeshNode.frag.glsl";
     }
 
@@ -170,7 +170,7 @@ public:
      *
      * @return Geometry.
      */
-    MeshNodeGeometry copyMeshData() const { return geometry; }
+    MeshNodeGeometry copyMeshData() const { return meshGeometry; }
 
     /**
      * Determine the layer in which a mesh is drawn.
@@ -226,6 +226,23 @@ protected:
      */
     virtual void onWorldLocationRotationScaleChanged() override;
 
+    /**
+     * Creates VAO for the node.
+     *
+     * @return Created VAO.
+     */
+    virtual std::unique_ptr<VertexArrayObject> createVertexArrayObject();
+
+    /**
+     * Because SkeletalMeshNode is a child type of MeshNode but uses a different type of a geometry,
+     * skeletal mesh overrides this function to make sure if the wrong function (to set the geometry) is
+     * called we will show an error message.
+     */
+    virtual bool isUsingSkeletalMeshGeometry() { return false; }
+
+    /** Makes sure mesh node geometry is empty (used by derived nodes with different type of geometry. */
+    void clearMeshNodeGeometry();
+
 private:
     /** Matrices prepared to set to shaders. */
     struct CachedWorldMatrices {
@@ -236,9 +253,6 @@ private:
         glm::mat3 normalMatrix;
     };
 
-    /** Must be called after @ref geometry was changed. */
-    void onAfterMeshGeometryChanged();
-
     /** Creates GPU resources and adds this object to be rendered. */
     void registerToRendering();
 
@@ -246,7 +260,7 @@ private:
     void unregisterFromRendering();
 
     /** Mesh geometry. */
-    MeshNodeGeometry geometry;
+    MeshNodeGeometry meshGeometry;
 
     /** Material. */
     Material material;

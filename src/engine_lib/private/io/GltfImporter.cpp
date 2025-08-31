@@ -6,6 +6,8 @@
 // Custom.
 #include "misc/ProjectPaths.h"
 #include "game/node/MeshNode.h"
+#include "game/node/SkeletonNode.h"
+#include "game/node/SkeletalMeshNode.h"
 #include "material/TextureManager.h"
 
 // External.
@@ -13,6 +15,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 #include "subprocess.h/subprocess.h"
+#include "ozz/base/io/stream.h"
+#include "ozz/base/io/archive.h"
+#include "ozz/animation/runtime/skeleton.h"
 
 namespace {
     constexpr std::string_view sTexturesDirNameSuffix = "_tex";
@@ -67,7 +72,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             iPrimitive,
             mesh.primitives.size()));
 
-        MeshNodeGeometry meshNodeGeometry;
+        MeshNodeGeometry geometry;
+        std::vector<std::array<SkeletalMeshNodeVertex::BoneIndexType, 4>> vMeshBoneIndices;
+        std::vector<std::array<float, 4>> vMeshBoneWeights;
 
         {
             // Add indices.
@@ -89,7 +96,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             auto pCurrentIndex =
                 indexBuffer.data.data() + indexBufferView.byteOffset + indexAccessor.byteOffset;
 
-            meshNodeGeometry.getIndices().resize(indexAccessor.count);
+            geometry.getIndices().resize(indexAccessor.count);
 
             // Add indices depending on their type.
             if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
@@ -102,10 +109,10 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     indexBufferView.byteStride == 0 ? sizeof(index_t) : indexBufferView.byteStride;
 
                 // Set indices.
-                for (size_t i = 0; i < meshNodeGeometry.getIndices().size(); i++) {
+                for (size_t i = 0; i < geometry.getIndices().size(); i++) {
                     // Set value.
-                    meshNodeGeometry.getIndices()[i] = static_cast<MeshNodeGeometry::MeshIndexType>(
-                        reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
+                    geometry.getIndices()[i] =
+                        static_cast<MeshIndexType>(reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
 
                     // Switch to the next item.
                     pCurrentIndex += iStride;
@@ -116,13 +123,10 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 const auto iStride =
                     indexBufferView.byteStride == 0 ? sizeof(index_t) : indexBufferView.byteStride;
 
-                // Set indices.
-                for (size_t i = 0; i < meshNodeGeometry.getIndices().size(); i++) {
-                    // Set value.
-                    meshNodeGeometry.getIndices()[i] = static_cast<MeshNodeGeometry::MeshIndexType>(
-                        reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
+                for (size_t i = 0; i < geometry.getIndices().size(); i++) {
+                    geometry.getIndices()[i] =
+                        static_cast<MeshIndexType>(reinterpret_cast<const index_t*>(pCurrentIndex)[0]);
 
-                    // Switch to the next item.
                     pCurrentIndex += iStride;
                 }
             } else {
@@ -145,7 +149,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             const auto& positionAccessor = model.accessors[static_cast<size_t>(iPositionAccessorIndex)];
 
             // Allocate vertices.
-            meshNodeGeometry.getVertices().resize(positionAccessor.count);
+            geometry.getVertices().resize(positionAccessor.count);
+            vMeshBoneIndices.reserve(positionAccessor.count);
+            vMeshBoneWeights.reserve(positionAccessor.count);
         }
 
         // Process attributes.
@@ -180,13 +186,10 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 const auto iStride =
                     attributeBufferView.byteStride == 0 ? sizeof(position_t) : attributeBufferView.byteStride;
 
-                // Set positions to mesh data.
-                for (size_t i = 0; i < meshNodeGeometry.getVertices().size(); i++) {
-                    // Set value.
-                    meshNodeGeometry.getVertices()[i].position =
+                for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                    geometry.getVertices()[i].position =
                         reinterpret_cast<const position_t*>(pCurrentPosition)[0];
 
-                    // Switch to the next item.
                     pCurrentPosition += iStride;
                 }
 
@@ -216,13 +219,9 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 const auto iStride =
                     attributeBufferView.byteStride == 0 ? sizeof(normal_t) : attributeBufferView.byteStride;
 
-                // Set normals to mesh data.
-                for (size_t i = 0; i < meshNodeGeometry.getVertices().size(); i++) {
-                    // Set value.
-                    meshNodeGeometry.getVertices()[i].normal =
-                        reinterpret_cast<const normal_t*>(pCurrentNormal)[0];
+                for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                    geometry.getVertices()[i].normal = reinterpret_cast<const normal_t*>(pCurrentNormal)[0];
 
-                    // Switch to the next item.
                     pCurrentNormal += iStride;
                 }
 
@@ -252,28 +251,173 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 const auto iStride =
                     attributeBufferView.byteStride == 0 ? sizeof(uv_t) : attributeBufferView.byteStride;
 
-                // Set UVs to mesh data.
-                for (size_t i = 0; i < meshNodeGeometry.getVertices().size(); i++) {
-                    // Set value.
-                    meshNodeGeometry.getVertices()[i].uv = reinterpret_cast<const uv_t*>(pCurrentUv)[0];
+                for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                    geometry.getVertices()[i].uv = reinterpret_cast<const uv_t*>(pCurrentUv)[0];
 
-                    // Switch to the next item.
                     pCurrentUv += iStride;
                 }
 
                 // Process next attribute.
                 continue;
             }
+
+            if (sAttributeName == "JOINTS_0") {
+                // Make sure value is stored as `vec4`.
+                if (attributeAccessor.type != TINYGLTF_TYPE_VEC4) [[unlikely]] {
+                    return Error(std::format(
+                        "expected JOINTS mesh attribute to be stored as `vec4`, actual type: {}",
+                        attributeAccessor.type));
+                }
+
+                auto pCurrentValue = attributeBuffer.data.data() + attributeBufferView.byteOffset +
+                                     attributeAccessor.byteOffset;
+
+                // Check component type.
+                if (attributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                    const auto iItemSize = sizeof(unsigned char) * 4;
+                    const auto iStride =
+                        attributeBufferView.byteStride == 0 ? iItemSize : attributeBufferView.byteStride;
+
+                    for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                        const auto& vIndices =
+                            reinterpret_cast<const std::array<unsigned char, 4>*>(pCurrentValue)[0];
+
+                        auto& vBoneIndices = vMeshBoneIndices.emplace_back();
+                        for (size_t i = 0; i < vBoneIndices.size(); i++) {
+                            if (vIndices[i] < 0) [[unlikely]] {
+                                return Error(std::format("found invalid bone index {}", vIndices[i]));
+                            }
+                            if (vIndices[i] >= SkeletonNode::getMaxBoneCountAllowed()) [[unlikely]] {
+                                return Error(std::format(
+                                    "found a vertex affected by bone #{} which is outside of the supported "
+                                    "limit of {} bones",
+                                    vIndices[i],
+                                    SkeletonNode::getMaxBoneCountAllowed()));
+                            }
+                            vBoneIndices[i] = vIndices[i];
+                        }
+
+                        pCurrentValue += iStride;
+                    }
+                } else if (attributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+                    Error::showErrorAndThrowException("found unsupported component type for bone indices");
+                    // const auto iItemSize = sizeof(unsigned short) * 4;
+                    // const auto iStride =
+                    //     attributeBufferView.byteStride == 0 ? iItemSize : attributeBufferView.byteStride;
+                    //
+                    // for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                    //   const auto& vIndices =
+                    //        reinterpret_cast<const std::array<unsigned short, 4>*>(pCurrentValue)[0];
+                    //
+                    //    auto& vBoneIndices = vMeshBoneIndices.emplace_back();
+                    //    for (size_t i = 0; i < vBoneIndices.size(); i++) {
+                    // if (vIndices[i] < 0) [[unlikely]] {
+                    //     return Error(std::format("found invalid bone index {}", vIndices[i]));
+                    //  }
+                    // if (vIndices[i] >= SkeletonNode::getMaxBoneCountAllowed()) [[unlikely]] {
+                    //      return Error(std::format(
+                    //       "found a vertex affected by bone #{} which is outside of the supported "
+                    //          "limit of {} bones",
+                    //       vIndices[i],
+                    //        SkeletonNode::getMaxBoneCountAllowed()));
+                    // }
+                    //         vBoneIndices[i] = vIndices[i];
+                    //     }
+                    //
+                    //   pCurrentValue += iStride;
+                    // }
+                } else [[unlikely]] {
+                    return Error(std::format(
+                        "unexpected component type for mesh attribute JOINTS, actual type: {}",
+                        attributeAccessor.componentType));
+                }
+
+                // Process next attribute.
+                continue;
+            } else if (sAttributeName == "JOINTS_1") [[unlikely]] {
+                return Error("found a mesh vertex that is affected by more than 4 skeleton bones - this is "
+                             "not supported");
+            }
+
+            if (sAttributeName == "WEIGHTS_0") {
+                // Make sure value is stored as `vec4`.
+                if (attributeAccessor.type != TINYGLTF_TYPE_VEC4) [[unlikely]] {
+                    return Error(std::format(
+                        "expected JOINTS mesh attribute to be stored as `vec4`, actual type: {}",
+                        attributeAccessor.type));
+                }
+
+                // Check component type.
+                if (attributeAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) [[unlikely]] {
+                    return Error(std::format(
+                        "expected JOINTS mesh attribute component type to be `float`, actual type: {}",
+                        attributeAccessor.componentType));
+                }
+
+                const auto iItemSize = sizeof(glm::vec4);
+
+                // Prepare variables.
+                auto pCurrentValue = attributeBuffer.data.data() + attributeBufferView.byteOffset +
+                                     attributeAccessor.byteOffset;
+                const auto iStride =
+                    attributeBufferView.byteStride == 0 ? iItemSize : attributeBufferView.byteStride;
+
+                for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                    const auto& vWeights = reinterpret_cast<const std::array<float, 4>*>(pCurrentValue)[0];
+
+                    auto& vBoneWeights = vMeshBoneWeights.emplace_back();
+                    for (size_t i = 0; i < vBoneWeights.size(); i++) {
+                        vBoneWeights[i] = vWeights[i];
+                    }
+
+                    pCurrentValue += iStride;
+                }
+
+                // Process next attribute.
+                continue;
+            } else if (sAttributeName == "WEIGHTS_1") [[unlikely]] {
+                return Error("found a mesh vertex that is affected by more than 4 skeleton bones - this is "
+                             "not supported");
+            }
         }
 
         // Make sure something generated.
-        if (meshNodeGeometry.getVertices().empty() || meshNodeGeometry.getIndices().empty()) {
+        if (geometry.getVertices().empty() || geometry.getIndices().empty()) {
             continue;
         }
 
         // Create a new mesh node with the specified data.
-        auto pMeshNode = std::make_unique<MeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
-        pMeshNode->setMeshGeometryBeforeSpawned(std::move(meshNodeGeometry));
+        std::unique_ptr<MeshNode> pMeshNode;
+        if (!vMeshBoneIndices.empty()) {
+            if (vMeshBoneIndices.size() != vMeshBoneWeights.size()) [[unlikely]] {
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between bone indices count {} and bone weights count {} which probably "
+                    "means we messed up importing the mesh",
+                    vMeshBoneIndices.size(),
+                    vMeshBoneWeights.size()));
+            }
+            // Convert geometry to skeletal geometry.
+            SkeletalMeshNodeGeometry skeletalGeometry;
+            skeletalGeometry.getIndices() = std::move(geometry.getIndices());
+            skeletalGeometry.getVertices().resize(geometry.getVertices().size());
+            for (size_t i = 0; i < geometry.getVertices().size(); i++) {
+                const auto& src = geometry.getVertices()[i];
+                auto& dst = skeletalGeometry.getVertices()[i];
+
+                dst.position = src.position;
+                dst.normal = src.normal;
+                dst.uv = src.uv;
+                dst.vBoneIndices = vMeshBoneIndices[i];
+                dst.vBoneWeights = vMeshBoneWeights[i];
+            }
+            auto pSkeletalMesh =
+                std::make_unique<SkeletalMeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
+            pSkeletalMesh->setSkeletalMeshGeometryBeforeSpawned(std::move(skeletalGeometry));
+            pMeshNode = std::move(pSkeletalMesh);
+        } else {
+            pMeshNode = std::make_unique<MeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
+            pMeshNode->setMeshGeometryBeforeSpawned(std::move(geometry));
+        }
 
         if (primitive.material >= 0) {
             // Process material.
@@ -670,13 +814,63 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
             // Move new .ozz files into the imported directory.
             const auto pathToAnimDir = pathToOutputDirectory / (pathToFile.stem().string() + "_anim");
             std::filesystem::create_directory(pathToAnimDir);
+
+            std::string sFullPathToSkeletonFile;
             for (const auto& pathToOzzFile : vPathsToOzzFiles) {
-                std::filesystem::rename(pathToOzzFile, pathToAnimDir / pathToOzzFile.filename());
+                const auto newPath = pathToAnimDir / pathToOzzFile.filename();
+                if (newPath.filename().string() == "skeleton.ozz") {
+                    sFullPathToSkeletonFile = newPath.string();
+                }
+                std::filesystem::rename(pathToOzzFile, newPath);
             }
             onProgress(std::format("found animations to import", vPathsToOzzFiles.size()));
+
+            // Do a few checks to make sure imported skeleton is valid.
+            if (sFullPathToSkeletonFile.empty()) [[unlikely]] {
+                return Error("expected to find a skeleton file to check bone count limit");
+            }
+
+            // Open file.
+            ozz::io::File file(sFullPathToSkeletonFile.c_str(), "rb");
+            if (!file.opened()) [[unlikely]] {
+                return Error(std::format("unable to open the skeleton file \"{}\"", sFullPathToSkeletonFile));
+            }
+            ozz::io::IArchive archive(&file);
+            if (!archive.TestTag<ozz::animation::Skeleton>()) [[unlikely]] {
+                return Error(std::format(
+                    "the skeleton file does not seem to store a skeleton \"{}\"", sFullPathToSkeletonFile));
+            }
+            auto pSkeleton = std::make_unique<ozz::animation::Skeleton>();
+            archive >> *pSkeleton;
+
+            // Check bone count.
+            if (static_cast<unsigned int>(pSkeleton->num_joints()) > SkeletonNode::getMaxBoneCountAllowed()) {
+                return Error(std::format(
+                    "skeleton bone count {} exceeds allowed limit of {} bones",
+                    pSkeleton->num_joints(),
+                    SkeletonNode::getMaxBoneCountAllowed()));
+            }
+            onProgress(std::format("imported skeleton has {} bones:", pSkeleton->num_joints()));
+            bool bArmatureAsBoneFound = false;
+            size_t iBoneNumber = 1;
+            for (const auto pName : pSkeleton->joint_names()) {
+                if (std::string_view(pName) == "Armature") [[unlikely]] {
+                    bArmatureAsBoneFound = true;
+                }
+                onProgress(std::format("{}. {}", iBoneNumber, pName));
+                iBoneNumber += 1;
+            }
+            onProgress(std::format(
+                "for future reference note that allowed bone limit is {}",
+                SkeletonNode::getMaxBoneCountAllowed()));
+            if (bArmatureAsBoneFound) {
+                return Error(std::format(
+                    "found bone named \"Armature\" imported by gltf2ozz, Armature should not be imported "
+                    "as a bone which means gltf2ozz has a bug that imports non-skin bones"));
+            }
         }
     }
 
-    onProgress("finished");
+    onProgress("finished importing");
     return {};
 }

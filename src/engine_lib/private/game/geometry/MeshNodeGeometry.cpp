@@ -60,7 +60,8 @@ void MeshNodeGeometry::serialize(const std::filesystem::path& pathToFile) const 
     file.write(reinterpret_cast<const char*>(vUvData.data()), static_cast<long>(vUvData.size()));
 
 #if defined(DEBUG)
-    static_assert(sizeof(MeshNodeGeometry) == 48, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(MeshNodeVertex) == 32, "add new variables here");
+    static_assert(sizeof(MeshNodeGeometry) == 48, "add new variables here");
 #endif
 }
 
@@ -86,11 +87,10 @@ MeshNodeGeometry MeshNodeGeometry::deserialize(const std::filesystem::path& path
     iReadByteCount += sizeof(iIndexCount);
 
     // Read indices.
-    if (iReadByteCount + iIndexCount * sizeof(MeshNodeGeometry::MeshIndexType) > iFileSizeInBytes)
-        [[unlikely]] {
+    if (iReadByteCount + iIndexCount * sizeof(MeshIndexType) > iFileSizeInBytes) [[unlikely]] {
         Error::showErrorAndThrowException(std::format("unexpected end of file \"{}\"", pathToFile.string()));
     }
-    std::vector<MeshNodeGeometry::MeshIndexType> vIndices(iIndexCount);
+    std::vector<MeshIndexType> vIndices(iIndexCount);
     file.read(
         reinterpret_cast<char*>(vIndices.data()), static_cast<long>(vIndices.size() * sizeof(vIndices[0])));
     iReadByteCount += vIndices.size() * sizeof(vIndices[0]);
@@ -148,7 +148,8 @@ MeshNodeGeometry MeshNodeGeometry::deserialize(const std::filesystem::path& path
     }
 
 #if defined(DEBUG)
-    static_assert(sizeof(MeshNodeGeometry) == 48, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(MeshNodeVertex) == 32, "add new variables here");
+    static_assert(sizeof(MeshNodeGeometry) == 48, "add new variables here");
 #endif
 
     MeshNodeGeometry geometry;
@@ -160,8 +161,7 @@ MeshNodeGeometry MeshNodeGeometry::deserialize(const std::filesystem::path& path
 
 void MeshNodeVertex::setVertexAttributes() {
     static_assert(
-        sizeof(MeshNodeGeometry::MeshIndexType) == sizeof(unsigned short),
-        "change index type in renderer's draw command");
+        sizeof(MeshIndexType) == sizeof(unsigned short), "change index type in renderer's draw command");
 
     // Prepare offsets of fields.
     const auto iPositionOffset = offsetof(MeshNodeVertex, position);

@@ -97,10 +97,13 @@ set(PROJECT_SOURCES
     private/game/geometry/shapes/Sphere.cpp
     private/game/geometry/MeshNodeGeometry.cpp
     public/game/geometry/MeshNodeGeometry.h
+    private/game/geometry/SkeletalMeshNodeGeometry.cpp
+    public/game/geometry/SkeletalMeshNodeGeometry.h
     public/game/geometry/PrimitiveMeshGenerator.h
     private/game/geometry/PrimitiveMeshGenerator.cpp
     private/game/geometry/ScreenQuadGeometry.cpp
     public/game/geometry/ScreenQuadGeometry.h
+    private/game/geometry/MeshIndexType.hpp
     public/math/GLMath.hpp
     public/math/MathHelpers.hpp
     public/io/Logger.h
@@ -126,10 +129,14 @@ set(PROJECT_SOURCES
     private/game/node/CameraNode.cpp
     public/game/node/MeshNode.h
     private/game/node/MeshNode.cpp
+    public/game/node/SkeletalMeshNode.h
+    private/game/node/SkeletalMeshNode.cpp
     public/game/node/Sound2dNode.h
     private/game/node/Sound2dNode.cpp
     public/game/node/Sound3dNode.h
     private/game/node/Sound3dNode.cpp
+    public/game/node/SkeletonNode.h
+    private/game/node/SkeletonNode.cpp
     public/game/node/light/DirectionalLightNode.h
     private/game/node/light/DirectionalLightNode.cpp
     public/game/node/light/SpotlightNode.h

@@ -5,6 +5,7 @@
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
+#include "game/node/SkeletonNode.h"
 #include "EditorTheme.h"
 #include "EditorGameInstance.h"
 #include "node/GizmoNode.h"
@@ -34,20 +35,7 @@ PropertyInspector::PropertyInspector(const std::string& sNodeName) : RectUiNode(
 void PropertyInspector::setNodeToInspect(Node* pNode) {
     pInspectedNode = pNode;
 
-    // Clear currently displayed properties.
-    {
-        const auto mtxChildNodes = pPropertyLayout->getChildNodes();
-        std::scoped_lock guard(*mtxChildNodes.first);
-        for (const auto& pNode : mtxChildNodes.second) {
-            pNode->unsafeDetachFromParentAndDespawn(true);
-        }
-    }
-
-    if (pInspectedNode == nullptr) {
-        return;
-    }
-
-    displayPropertiesForTypeRecursive(pNode->getTypeGuid(), pNode);
+    refreshInspectedProperties();
 }
 
 void PropertyInspector::onAfterInspectedNodeMoved() {
@@ -81,6 +69,51 @@ void PropertyInspector::refreshInspectedProperties() {
         for (const auto& pNode : mtxChildNodes.second) {
             pNode->unsafeDetachFromParentAndDespawn(true);
         }
+    }
+
+    if (pInspectedNode == nullptr) {
+        return;
+    }
+
+    if (auto pSkeletonNode = dynamic_cast<SkeletonNode*>(pInspectedNode)) {
+        auto pGroupBackground = std::make_unique<RectUiNode>();
+        pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+        pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
+        pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05F));
+
+        // Preview animations.
+        const auto pAnimLayout =
+            pGroupBackground->addChildNode(std::make_unique<LayoutUiNode>("anim preview layout"));
+        pAnimLayout->setChildNodeSpacing(EditorTheme::getSpacing());
+        pAnimLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+        {
+            const auto pAnimPreviewTitle = pAnimLayout->addChildNode(std::make_unique<TextUiNode>());
+            pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight());
+            pAnimPreviewTitle->setSize(
+                glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4F));
+            pAnimPreviewTitle->setText(u"Preview animation (path relative `res`):");
+
+            const auto pBackground = pAnimLayout->addChildNode(std::make_unique<RectUiNode>());
+            pBackground->setPadding(EditorTheme::getPadding());
+            pBackground->setColor(EditorTheme::getButtonColor());
+            {
+                const auto pAnimPathEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
+                pAnimPathEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+                pAnimPathEdit->setHandleNewLineChars(false);
+                pAnimPathEdit->setText(u"game/");
+                pAnimPathEdit->setOnTextChanged([pSkeletonNode](std::u16string_view sNewText) {
+                    const auto pathToAnimFile =
+                        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sNewText;
+                    if (!std::filesystem::exists(pathToAnimFile) ||
+                        std::filesystem::is_directory(pathToAnimFile)) {
+                        return;
+                    }
+                    pSkeletonNode->playAnimation(utf::as_str8(sNewText), true, true);
+                });
+            }
+        }
+
+        pPropertyLayout->addChildNode(std::move(pGroupBackground));
     }
 
     displayPropertiesForTypeRecursive(pInspectedNode->getTypeGuid(), pInspectedNode);
@@ -182,7 +215,7 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
 #if defined(WIN32) && defined(DEBUG)
             static_assert(sizeof(ReflectedVariables) == 896, "consider adding new variables here");
 #elif defined(DEBUG)
-            static_assert(sizeof(ReflectedVariables) == 784, "consider adding new variables here");
+            static_assert(sizeof(ReflectedVariables) == 840, "consider adding new variables here");
 #endif
         }
     }

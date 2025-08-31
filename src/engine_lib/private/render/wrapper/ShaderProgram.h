@@ -63,6 +63,16 @@ public:
      * Sets the specified value to a `uniform` with the specified name in shaders.
      *
      * @param sUniformName Name of the uniform variable from shader code.
+     * @param iArraySize   Size of the GLSL array.
+     * @param pArrayStart  Start of the array's data to copy.
+     */
+    inline void
+    setMatrix4ArrayToShader(const std::string& sUniformName, int iArraySize, const float* pArrayStart);
+
+    /**
+     * Sets the specified value to a `uniform` with the specified name in shaders.
+     *
+     * @param sUniformName Name of the uniform variable from shader code.
      * @param matrix       Matrix to set.
      */
     inline void setMatrix3ToShader(const std::string& sUniformName, const glm::mat3x3& matrix);
@@ -232,6 +242,11 @@ inline unsigned int ShaderProgram::getShaderUniformBlockBindingIndex(const std::
 
 inline void ShaderProgram::setMatrix4ToShader(const std::string& sUniformName, const glm::mat4x4& matrix) {
     glUniformMatrix4fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+inline void ShaderProgram::setMatrix4ArrayToShader(
+    const std::string& sUniformName, int iArraySize, const float* pArrayStart) {
+    glUniformMatrix4fv(getShaderUniformLocation(sUniformName), iArraySize, GL_FALSE, pArrayStart);
 }
 
 inline void ShaderProgram::setMatrix3ToShader(const std::string& sUniformName, const glm::mat3x3& matrix) {

@@ -81,6 +81,10 @@ std::unique_ptr<VertexArrayObject>
 GpuResourceManager::createVertexArrayObject(const MeshNodeGeometry& geometry) {
     PROFILE_FUNC
 
+    if (geometry.getVertices().empty() || geometry.getIndices().empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("expected mesh geometry to be not empty");
+    }
+
     std::scoped_lock guard(mtx);
 
     // Create VAO.
@@ -100,6 +104,61 @@ GpuResourceManager::createVertexArrayObject(const MeshNodeGeometry& geometry) {
         geometry.getVertices().data(),
         GL_STATIC_DRAW));
     MeshNodeVertex::setVertexAttributes();
+
+    // Before converting index count to int (for OpenGL) make sure the conversion will be safe.
+    constexpr size_t iTypeLimit = std::numeric_limits<int>::max();
+    if (geometry.getIndices().size() > iTypeLimit) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("index count {} exceeds type limit of {}", geometry.getIndices().size(), iTypeLimit));
+    }
+    int iIndexCount = static_cast<int>(geometry.getIndices().size());
+
+    // Create EBO.
+    unsigned int iIndexBufferObjectId = 0;
+    glGenBuffers(1, &iIndexBufferObjectId);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iIndexBufferObjectId);
+
+    // Copy indices to the buffer.
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        geometry.getIndices().size() * sizeof(geometry.getIndices()[0]),
+        geometry.getIndices().data(),
+        GL_STATIC_DRAW);
+
+    // Done.
+    glBindVertexArray(0);
+
+    return std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
+        iVertexArrayObjectId, iVertexBufferObjectId, iIndexBufferObjectId, iIndexCount));
+}
+
+std::unique_ptr<VertexArrayObject>
+GpuResourceManager::createVertexArrayObject(const SkeletalMeshNodeGeometry& geometry) {
+    PROFILE_FUNC
+
+    if (geometry.getVertices().empty() || geometry.getIndices().empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("expected mesh geometry to be not empty");
+    }
+
+    std::scoped_lock guard(mtx);
+
+    // Create VAO.
+    unsigned int iVertexArrayObjectId = 0;
+    glGenVertexArrays(1, &iVertexArrayObjectId);
+    glBindVertexArray(iVertexArrayObjectId);
+
+    // Create VBO.
+    unsigned int iVertexBufferObjectId = 0;
+    glGenBuffers(1, &iVertexBufferObjectId);
+    glBindBuffer(GL_ARRAY_BUFFER, iVertexBufferObjectId);
+
+    // Copy vertices to the vertex buffer.
+    GL_CHECK_ERROR(glBufferData(
+        GL_ARRAY_BUFFER,
+        geometry.getVertices().size() * sizeof(geometry.getVertices()[0]),
+        geometry.getVertices().data(),
+        GL_STATIC_DRAW));
+    SkeletalMeshNodeVertex::setVertexAttributes();
 
     // Before converting index count to int (for OpenGL) make sure the conversion will be safe.
     constexpr size_t iTypeLimit = std::numeric_limits<int>::max();

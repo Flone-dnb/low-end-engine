@@ -23,7 +23,7 @@ ShaderProgram::ShaderProgram(
     int iUniformCount = 0;
     GL_CHECK_ERROR(glGetProgramiv(iShaderProgramId, GL_ACTIVE_UNIFORMS, &iUniformCount));
 
-    std::array<char, 1024> vNameBuffer{}; // NOLINT: max name length
+    std::array<char, 1024> vNameBuffer{};
     for (int i = 0; i < iUniformCount; i++) {
         vNameBuffer = {};
 

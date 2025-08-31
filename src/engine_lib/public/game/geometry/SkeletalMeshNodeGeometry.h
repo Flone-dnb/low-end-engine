@@ -2,6 +2,7 @@
 
 // Standard.
 #include <filesystem>
+#include <array>
 
 // Custom.
 #include "math/GLMath.hpp"
@@ -12,19 +13,21 @@
  *
  * @remark Size and layout is equal to the vertex struct we use in shaders.
  */
-struct MeshNodeVertex { // not using inheritance to avoid extra fields that are not related to vertex
-    MeshNodeVertex() = default;
-    ~MeshNodeVertex() = default;
+struct SkeletalMeshNodeVertex { // not using inheritance to avoid extra fields that are not related to vertex
+    using BoneIndexType = unsigned char;
+
+    SkeletalMeshNodeVertex() = default;
+    ~SkeletalMeshNodeVertex() = default;
 
     /** Copy constructor. */
-    MeshNodeVertex(const MeshNodeVertex&) = default;
+    SkeletalMeshNodeVertex(const SkeletalMeshNodeVertex&) = default;
     /** Copy assignment. @return this. */
-    MeshNodeVertex& operator=(const MeshNodeVertex&) = default;
+    SkeletalMeshNodeVertex& operator=(const SkeletalMeshNodeVertex&) = default;
 
     /** Move constructor. */
-    MeshNodeVertex(MeshNodeVertex&&) noexcept = default;
+    SkeletalMeshNodeVertex(SkeletalMeshNodeVertex&&) noexcept = default;
     /** Move assignment. @return this. */
-    MeshNodeVertex& operator=(MeshNodeVertex&&) noexcept = default;
+    SkeletalMeshNodeVertex& operator=(SkeletalMeshNodeVertex&&) noexcept = default;
 
     /** Describes to OpenGL how vertex data should be interpreted. */
     static void setVertexAttributes();
@@ -36,7 +39,7 @@ struct MeshNodeVertex { // not using inheritance to avoid extra fields that are 
      *
      * @return Whether objects are equal or not.
      */
-    bool operator==(const MeshNodeVertex& other) const;
+    bool operator==(const SkeletalMeshNodeVertex& other) const;
 
     // --------------------------------------------------------------------------------------
 
@@ -49,6 +52,12 @@ struct MeshNodeVertex { // not using inheritance to avoid extra fields that are 
     /** UV coordinates of the vertex. */
     glm::vec2 uv = glm::vec2(0.0f, 0.0f);
 
+    /** Indices of bones on the skeleton that affect this vertex. */
+    std::array<BoneIndexType, 4> vBoneIndices;
+
+    /** Weights in range [0; 1] of bones from @ref vBoneIndices. */
+    std::array<float, 4> vBoneWeights;
+
     // --------------------------------------------------------------------------------------
 
     // ! only vertex related fields (same as in shader) can be added here !
@@ -57,21 +66,21 @@ struct MeshNodeVertex { // not using inheritance to avoid extra fields that are 
     // --------------------------------------------------------------------------------------
 };
 
-/** Stores geometry (vertices and indices) for MeshNode. */
-class MeshNodeGeometry {
+/** Stores geometry (vertices and indices) for SkeletalMeshNode. */
+class SkeletalMeshNodeGeometry {
 public:
-    MeshNodeGeometry() = default;
-    ~MeshNodeGeometry() = default;
+    SkeletalMeshNodeGeometry() = default;
+    ~SkeletalMeshNodeGeometry() = default;
 
     /** Copy constructor. */
-    MeshNodeGeometry(const MeshNodeGeometry&) = default;
+    SkeletalMeshNodeGeometry(const SkeletalMeshNodeGeometry&) = default;
     /** Copy assignment. @return this. */
-    MeshNodeGeometry& operator=(const MeshNodeGeometry&) = default;
+    SkeletalMeshNodeGeometry& operator=(const SkeletalMeshNodeGeometry&) = default;
 
     /** Move constructor. */
-    MeshNodeGeometry(MeshNodeGeometry&&) noexcept = default;
+    SkeletalMeshNodeGeometry(SkeletalMeshNodeGeometry&&) noexcept = default;
     /** Move assignment. @return this. */
-    MeshNodeGeometry& operator=(MeshNodeGeometry&&) noexcept = default;
+    SkeletalMeshNodeGeometry& operator=(SkeletalMeshNodeGeometry&&) noexcept = default;
 
     /**
      * Deserializes the geometry from the file (also see @ref serialize).
@@ -80,7 +89,7 @@ public:
      *
      * @return Geometry.
      */
-    static MeshNodeGeometry deserialize(const std::filesystem::path& pathToFile);
+    static SkeletalMeshNodeGeometry deserialize(const std::filesystem::path& pathToFile);
 
     /**
      * Equality operator.
@@ -89,7 +98,7 @@ public:
      *
      * @return Whether the geometry is the same or not.
      */
-    bool operator==(const MeshNodeGeometry& other) const;
+    bool operator==(const SkeletalMeshNodeGeometry& other) const;
 
     /**
      * Serializes the geometry data into a file.
@@ -103,14 +112,14 @@ public:
      *
      * @return Mesh vertices.
      */
-    std::vector<MeshNodeVertex>& getVertices() { return vVertices; }
+    std::vector<SkeletalMeshNodeVertex>& getVertices() { return vVertices; }
 
     /**
      * Returns mesh vertices.
      *
      * @return Mesh vertices.
      */
-    const std::vector<MeshNodeVertex>& getVertices() const { return vVertices; }
+    const std::vector<SkeletalMeshNodeVertex>& getVertices() const { return vVertices; }
 
     /**
      * Returns mesh indices.
@@ -128,7 +137,7 @@ public:
 
 private:
     /** Vertices for mesh's vertex buffer. */
-    std::vector<MeshNodeVertex> vVertices;
+    std::vector<SkeletalMeshNodeVertex> vVertices;
 
     /** Indices for mesh's index buffer. */
     std::vector<MeshIndexType> vIndices;

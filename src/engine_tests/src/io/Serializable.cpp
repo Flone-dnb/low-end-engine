@@ -160,10 +160,20 @@ public:
                     return reinterpret_cast<TestSerializable*>(pThis)->meshGeometry;
                 }};
 
+        variables.skeletalMeshNodeGeometries[NAMEOF_MEMBER(&TestSerializable::skeletalMeshGeometry).data()] =
+            ReflectedVariableInfo<SkeletalMeshNodeGeometry>{
+                .setter =
+                    [](Serializable* pThis, const SkeletalMeshNodeGeometry& newValue) {
+                        reinterpret_cast<TestSerializable*>(pThis)->skeletalMeshGeometry = newValue;
+                    },
+                .getter = [](Serializable* pThis) -> SkeletalMeshNodeGeometry {
+                    return reinterpret_cast<TestSerializable*>(pThis)->skeletalMeshGeometry;
+                }};
+
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(ReflectedVariables) == 784, "add new variables here");
+        static_assert(sizeof(ReflectedVariables) == 840, "add new variables here");
 #endif
 
         return TypeReflectionInfo(
@@ -190,6 +200,7 @@ public:
     std::vector<std::string> vVectorStrings;
     std::vector<glm::vec3> vVectorVec3s;
     MeshNodeGeometry meshGeometry;
+    SkeletalMeshNodeGeometry skeletalMeshGeometry;
 };
 bool TestSerializable::bDestructorCalled = false;
 bool TestSerializable::bOnAfterDeserializedCalled = false;
@@ -245,16 +256,34 @@ TEST_CASE("serialize and deserialize a sample type") {
     pToSerialize->vVectorInts = {-1, 0, 1, 2, 3};
     pToSerialize->vVectorStrings = {"Hello!", "今日は!"};
     pToSerialize->vVectorVec3s = {glm::vec3(1.0F, 2.0F, 3.0F), glm::vec3(3.0F, 2.0F, 1.0F)};
-    MeshNodeVertex vertex;
-    vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
-    vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
-    vertex.uv = glm::vec2(0.5F, 0.5F);
-    pToSerialize->meshGeometry.getVertices().push_back(vertex);
-    vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
-    pToSerialize->meshGeometry.getVertices().push_back(vertex);
-    vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
-    pToSerialize->meshGeometry.getVertices().push_back(vertex);
-    pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
+
+    {
+        MeshNodeVertex vertex;
+        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
+        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+        vertex.uv = glm::vec2(0.5F, 0.5F);
+        pToSerialize->meshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        pToSerialize->meshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        pToSerialize->meshGeometry.getVertices().push_back(vertex);
+        pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
+    }
+
+    {
+        SkeletalMeshNodeVertex vertex;
+        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
+        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+        vertex.uv = glm::vec2(0.5F, 0.5F);
+        vertex.vBoneIndices = {0, 1, 0, 0};
+        vertex.vBoneWeights = {0.5F, 0.5F, 0.0F, 0.0F};
+        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
+        pToSerialize->skeletalMeshGeometry.getIndices() = {0, 1, 2};
+    }
 
     // Serialize.
     const auto pathToFile =
@@ -303,7 +332,7 @@ TEST_CASE("serialize and deserialize a sample type") {
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(ReflectedVariables) == 784, "add new variables here");
+    static_assert(sizeof(ReflectedVariables) == 840, "add new variables here");
 #endif
 
     pDeserialized = nullptr;

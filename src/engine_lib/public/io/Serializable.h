@@ -984,41 +984,40 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         }
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
     }
 
-    // Deserialize mesh geometry.
-    if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
-        if (!pathToFile.has_parent_path()) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format("expected the path to have a parent path \"{}\"", pathToFile.string()));
-        }
+    // Deserialize geometry.
+    if (!pathToFile.has_parent_path()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the path to have a parent path \"{}\"", pathToFile.string()));
+    }
 
-        if (!std::filesystem::exists(pathToFile.parent_path())) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format("expected the parent path to exist for path \"{}\"", pathToFile.string()));
-        }
+    // Construct path to the directory that stores geometry files.
+    const std::string sFilename = pathToFile.stem().string();
+    const auto pathToGeoDir =
+        pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
 
-        // Construct path to the directory that stores geometry files.
-        const std::string sFilename = pathToFile.stem().string();
-        const auto pathToGeoDir =
-            pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
-        if (std::filesystem::exists(pathToGeoDir)) {
-            // Deserialize each geometry.
+    if (std::filesystem::exists(pathToGeoDir)) {
+        // Prepare a handle lambda.
+        const auto getPathToGeometryFile = [&](const std::string& sVariableName) {
+            return pathToGeoDir / (sEntityId + "." + sVariableName + "." + std::string(sBinaryFileExtension));
+        };
+
+        size_t iNotFoundMeshGeometryCount = 0;
+
+        // Mesh geometry.
+        if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshNodeGeometries) {
-                const auto pathToMeshGeometry = pathToGeoDir / (sEntityId + "." + sVariableName + "." +
-                                                                std::string(sBinaryFileExtension));
+                const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
                 if (!std::filesystem::exists(pathToMeshGeometry)) {
                     if (!bUsedOriginalObject) {
-                        Logger::get().warn(std::format(
-                            "unable to find geometry file for variable \"{}\" for file \"{}\" (expected file "
-                            "\"{}\")",
-                            sVariableName,
-                            pathToFile.filename().string(),
-                            pathToMeshGeometry.filename().string()));
+                        // There may be node geometry file in case this is a SkeletalMeshNode which has
+                        // skeletal mesh node geometry but empty mesh node geometry.
+                        iNotFoundMeshGeometryCount += 1; // make sure there will be a skeletal geometry
                     }
                     continue;
                 }
@@ -1026,6 +1025,40 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                 auto meshGeometry = MeshNodeGeometry::deserialize(pathToMeshGeometry);
                 variableInfo.setter(pDeserializedObject.get(), meshGeometry);
             }
+        }
+
+        // Skeletal mesh geometry.
+        if (!typeInfo.reflectedVariables.skeletalMeshNodeGeometries.empty()) {
+            for (const auto& [sVariableName, variableInfo] :
+                 typeInfo.reflectedVariables.skeletalMeshNodeGeometries) {
+                const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
+                if (!std::filesystem::exists(pathToMeshGeometry)) {
+                    if (!bUsedOriginalObject) {
+                        Logger::get().warn(std::format(
+                            "unable to find geometry file for variable \"{}\" for file \"{}\" (expected "
+                            "file \"{}\")",
+                            sVariableName,
+                            pathToFile.filename().string(),
+                            pathToMeshGeometry.filename().string()));
+                    }
+                    continue;
+                }
+
+                if (iNotFoundMeshGeometryCount > 0) {
+                    iNotFoundMeshGeometryCount -= 1;
+                }
+
+                auto meshGeometry = SkeletalMeshNodeGeometry::deserialize(pathToMeshGeometry);
+                variableInfo.setter(pDeserializedObject.get(), meshGeometry);
+            }
+        }
+
+        if (iNotFoundMeshGeometryCount > 0) {
+            Logger::get().warn(std::format(
+                "unable to find geometry file(s) for {} variable(s) for file \"{}\", make sure these files "
+                "exist and have correct names",
+                iNotFoundMeshGeometryCount,
+                pathToFile.filename().string()));
         }
     }
 

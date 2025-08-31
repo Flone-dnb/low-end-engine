@@ -8,6 +8,7 @@
 
 // Custom.
 #include "game/geometry/MeshNodeGeometry.h"
+#include "game/geometry/SkeletalMeshNodeGeometry.h"
 #include "math/GLMath.hpp"
 
 // To suppress GCC's false-positive about dangling reference on `getTypeInfo`.
@@ -48,6 +49,7 @@ enum class ReflectedVariableType {
     VECTOR_STRING,
     VECTOR_VEC3,
     MESH_GEOMETRY,
+    SKELETAL_MESH_GEOMETRY,
 };
 
 /** Groups info about reflected variables. */
@@ -100,6 +102,10 @@ struct ReflectedVariables {
 
     /** Pairs of "variable name" - "variable info". */
     std::unordered_map<std::string, ReflectedVariableInfo<MeshNodeGeometry>> meshNodeGeometries;
+
+    /** Pairs of "variable name" - "variable info". */
+    std::unordered_map<std::string, ReflectedVariableInfo<SkeletalMeshNodeGeometry>>
+        skeletalMeshNodeGeometries;
 };
 
 /** Groups information about a reflected type. */

@@ -97,8 +97,23 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
     glGetShaderiv(iShaderId, GL_COMPILE_STATUS, &iSuccess);
     if (iSuccess == 0) [[unlikely]] {
         glGetShaderInfoLog(iShaderId, static_cast<int>(infoLog.size()), nullptr, infoLog.data());
-        Logger::get().info(
-            std::format("full source code of the shader:\n{}\n", sSourceCode)); // log source for debugging
+        // Log source for debugging.
+        std::string sFormattedSourceCode;
+        size_t iLineNumber = 2; // start with 2 to match reporter lines
+        sFormattedSourceCode = "2. ";
+        for (const auto& ch : sSourceCode) {
+            if (ch == '\r') {
+                continue;
+            }
+            if (ch == '\n') {
+                sFormattedSourceCode += std::format("\n{}. ", iLineNumber);
+                iLineNumber += 1;
+                continue;
+            }
+
+            sFormattedSourceCode += ch;
+        }
+        Logger::get().info(std::format("full source code of the shader:\n{}\n", sFormattedSourceCode));
         Error::showErrorAndThrowException(std::format(
             "failed to compile shader from \"{}\" (see log to view the full source code), error: {}",
             sPathToShaderRelativeRes,

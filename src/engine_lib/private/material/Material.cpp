@@ -184,9 +184,9 @@ void Material::onNodeSpawning(
     // Get program.
     auto& shaderManager = pRenderer->getShaderManager();
     pShaderProgram = shaderManager.getShaderProgram(
-        sPathToCustomVertexShader.empty() ? MeshNode::getDefaultVertexShaderForMeshNode().data()
+        sPathToCustomVertexShader.empty() ? pNode->getPathToDefaultVertexShader().data()
                                           : sPathToCustomVertexShader,
-        sPathToCustomFragmentShader.empty() ? MeshNode::getDefaultFragmentShaderForMeshNode().data()
+        sPathToCustomFragmentShader.empty() ? MeshNode::getPathToDefaultFragmentShader().data()
                                             : sPathToCustomFragmentShader);
     onShaderProgramReceived(pShaderProgram.get());
 

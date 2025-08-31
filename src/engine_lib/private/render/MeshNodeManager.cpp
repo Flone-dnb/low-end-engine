@@ -77,6 +77,7 @@ void MeshNodeManager::drawMeshes(
 
         for (const auto& pMeshNode : meshNodes) {
 #if defined(ENGINE_EDITOR)
+            // For GPU picking.
             pShaderProgram->setUintToShader("iNodeId", static_cast<unsigned int>(*pMeshNode->getNodeId()));
 #endif
 

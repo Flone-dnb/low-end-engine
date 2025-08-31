@@ -407,8 +407,8 @@ std::variant<std::string, Error> Serializable::serialize(
             tomlData[sSectionName][sVariableName] = vArray;
         }
 
-        // Mesh geometry
-        if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
+        if (!typeInfo.reflectedVariables.meshNodeGeometries.empty() ||
+            !typeInfo.reflectedVariables.skeletalMeshNodeGeometries.empty()) {
             // Prepare path to the geometry directory.
             if (!pathToFile.has_parent_path()) [[unlikely]] {
                 return Error(std::format("expected a parent path to exist for \"{}\"", pathToFile.string()));
@@ -424,31 +424,64 @@ std::variant<std::string, Error> Serializable::serialize(
                 std::filesystem::create_directory(pathToGeoDir);
             }
 
-            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshNodeGeometries) {
-                const auto currentValue = variableInfo.getter(this);
-                if (currentValue.getIndices().empty() && currentValue.getVertices().empty()) {
-                    Logger::get().warn(std::format(
-                        "found empty geometry in variable \"{}\" for file \"{}\"",
-                        sVariableName,
-                        pathToFile.filename().string()));
-                    continue;
-                }
-                if (pOriginalObject != nullptr && variableInfo.getter(pOriginalObject) == currentValue) {
-                    // Value didn't changed, no need to save.
-                    continue;
-                }
+            // Prepare a handy lambda.
+            const auto getPathToGeometryFile =
+                [&](const std::string& sVariableName) -> std::filesystem::path {
+                return pathToGeoDir /
+                       (sEntityId + "." + sVariableName + "." + std::string(sBinaryFileExtension));
+            };
 
-                // Save to file.
-                const auto pathToGeometryFile = pathToGeoDir / (sEntityId + "." + sVariableName + "." +
-                                                                std::string(sBinaryFileExtension));
-                currentValue.serialize(pathToGeometryFile);
+            // Mesh geometry
+            if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
+                for (const auto& [sVariableName, variableInfo] :
+                     typeInfo.reflectedVariables.meshNodeGeometries) {
+                    // Get value.
+                    const auto currentValue = variableInfo.getter(this);
+                    if (currentValue.getIndices().empty() && currentValue.getVertices().empty()) {
+                        // This is a valid case when the type is SkeletalMeshNode - it has skeletal node
+                        // geometry and empty mesh node geometry.
+                        continue;
+                    }
+                    if (pOriginalObject != nullptr && variableInfo.getter(pOriginalObject) == currentValue) {
+                        // Value didn't changed, no need to save.
+                        continue;
+                    }
+
+                    // Save to file.
+                    const auto pathToGeometryFile = getPathToGeometryFile(sVariableName);
+                    currentValue.serialize(pathToGeometryFile);
+                }
+            }
+
+            // Skeletal mesh geometry
+            if (!typeInfo.reflectedVariables.skeletalMeshNodeGeometries.empty()) {
+                for (const auto& [sVariableName, variableInfo] :
+                     typeInfo.reflectedVariables.skeletalMeshNodeGeometries) {
+                    // Get value.
+                    const auto currentValue = variableInfo.getter(this);
+                    if (currentValue.getIndices().empty() && currentValue.getVertices().empty()) {
+                        Logger::get().warn(std::format(
+                            "found empty geometry in variable \"{}\" for file \"{}\"",
+                            sVariableName,
+                            pathToFile.filename().string()));
+                        continue;
+                    }
+                    if (pOriginalObject != nullptr && variableInfo.getter(pOriginalObject) == currentValue) {
+                        // Value didn't changed, no need to save.
+                        continue;
+                    }
+
+                    // Save to file.
+                    const auto pathToGeometryFile = getPathToGeometryFile(sVariableName);
+                    currentValue.serialize(pathToGeometryFile);
+                }
             }
         }
 
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
     }
 

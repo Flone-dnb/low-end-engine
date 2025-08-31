@@ -107,7 +107,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return static_cast<unsigned int>(reinterpret_cast<MeshNode*>(pThis)->getDrawLayer());
         }};
 
-    variables.meshNodeGeometries[NAMEOF_MEMBER(&MeshNode::geometry).data()] =
+    variables.meshNodeGeometries[NAMEOF_MEMBER(&MeshNode::meshGeometry).data()] =
         ReflectedVariableInfo<MeshNodeGeometry>{
             .setter =
                 [](Serializable* pThis, const MeshNodeGeometry& newValue) {
@@ -129,7 +129,7 @@ MeshNode::MeshNode() : MeshNode("Mesh Node") {}
 MeshNode::MeshNode(const std::string& sNodeName) : SpatialNode(sNodeName) {
     mtxIsVisible.second = true;
 
-    geometry = PrimitiveMeshGenerator::createCube(1.0F);
+    meshGeometry = PrimitiveMeshGenerator::createCube(1.0F);
 }
 
 void MeshNode::setMaterialBeforeSpawned(Material&& material) {
@@ -146,13 +146,47 @@ void MeshNode::setMaterialBeforeSpawned(Material&& material) {
 }
 
 void MeshNode::setMeshGeometryBeforeSpawned(const MeshNodeGeometry& meshGeometry) {
-    geometry = meshGeometry;
-    onAfterMeshGeometryChanged();
+    if (isUsingSkeletalMeshGeometry()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "use other function to set geometry because skeletal mesh node uses skeletal "
+            "geometry not the usual mesh node geometry, node: {}",
+            getNodeName()));
+    }
+
+    std::scoped_lock guard(getSpawnDespawnMutex());
+
+    // For simplicity we don't allow changing geometry while spawned.
+    if (isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "changing geometry of a spawned node is not allowed, if you need procedural/dynamic geometry "
+            "consider passing some additional data to the vertex shader and changing vertices there "
+            "(node \"{}\")",
+            getNodeName()));
+    }
+
+    this->meshGeometry = meshGeometry;
 }
 
 void MeshNode::setMeshGeometryBeforeSpawned(MeshNodeGeometry&& meshGeometry) {
-    geometry = std::move(meshGeometry);
-    onAfterMeshGeometryChanged();
+    if (isUsingSkeletalMeshGeometry()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "use other function to set geometry because skeletal mesh node uses skeletal "
+            "geometry not the usual mesh node geometry, node: {}",
+            getNodeName()));
+    }
+
+    std::scoped_lock guard(getSpawnDespawnMutex());
+
+    // For simplicity we don't allow changing geometry while spawned.
+    if (isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "changing geometry of a spawned node is not allowed, if you need procedural/dynamic geometry "
+            "consider passing some additional data to the vertex shader and changing vertices there "
+            "(node \"{}\")",
+            getNodeName()));
+    }
+
+    this->meshGeometry = std::move(meshGeometry);
 }
 
 void MeshNode::setIsVisible(bool bVisible) {
@@ -186,6 +220,19 @@ bool MeshNode::isVisible() {
     return mtxIsVisible.second;
 }
 
+std::unique_ptr<VertexArrayObject> MeshNode::createVertexArrayObject() {
+    // SpatialNode::createVertexArrayObject(); // <- commended out to silence our node super call checker
+
+    if (meshGeometry.getVertices().empty() || meshGeometry.getIndices().empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected node \"{}\" geometry to be not empty", getNodeName()));
+    }
+
+    return GpuResourceManager::createVertexArrayObject(meshGeometry);
+}
+
+void MeshNode::clearMeshNodeGeometry() { meshGeometry = {}; }
+
 void MeshNode::registerToRendering() {
     PROFILE_FUNC
 
@@ -195,7 +242,7 @@ void MeshNode::registerToRendering() {
     }
 
     // Create VAO.
-    pVao = GpuResourceManager::createVertexArrayObject(geometry);
+    pVao = createVertexArrayObject();
 
     // Create shader constants setter.
     shaderConstantsSetter = ShaderConstantsSetter();
@@ -255,18 +302,4 @@ void MeshNode::onWorldLocationRotationScaleChanged() {
 
     cachedWorldMatrices.worldMatrix = getWorldMatrix();
     cachedWorldMatrices.normalMatrix = glm::transpose(glm::inverse(cachedWorldMatrices.worldMatrix));
-}
-
-void MeshNode::onAfterMeshGeometryChanged() {
-    std::scoped_lock guard(getSpawnDespawnMutex());
-
-    // For simplicity we don't allow changing geometry while spawned.
-    if (isSpawned()) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "changing geometry of a spawned node is not allowed, if you need procedural/dynamic geometry "
-            "consider passing some additional data to the vertex shader and changing vertices there "
-            "(node "
-            "\"{}\")",
-            getNodeName()));
-    }
 }

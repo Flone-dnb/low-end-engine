@@ -45,7 +45,7 @@
 	url = https://github.com/mbits-libs/utfconv
 [submodule "ext/ozz-animation"]
 	path = ext/ozz-animation
-	url = https://github.com/guillaumeblanc/ozz-animation.git
+	url = https://github.com/Flone-dnb/ozz-animation.git
 [submodule "ext/subprocess.h"]
 	path = ext/subprocess.h
 	url = https://github.com/sheredom/subprocess.h.git

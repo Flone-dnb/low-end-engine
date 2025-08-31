@@ -207,10 +207,11 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             if (!bFoundSuperCall) [[unlikely]] {
                 logLine(std::format(
                     "file \"{}\", function \"{}\": expected to find a call to the parent's "
-                    "implementation "
-                    "like so: \"{}\"",
+                    "implementation like so: \"{}...\", most Node virtual functions require derived nodes to "
+                    "call parent's implementation, or write `// {}...` to silence this warning",
                     pathToCppFile.filename().string(),
                     sOverrideFunctionName,
+                    sSuperCallText,
                     sSuperCallText));
                 return 1;
             }

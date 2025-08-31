@@ -10,6 +10,8 @@
 #include "game/node/Sound3dNode.h"
 #include "game/node/SpatialNode.h"
 #include "game/node/MeshNode.h"
+#include "game/node/SkeletonNode.h"
+#include "game/node/SkeletalMeshNode.h"
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/PointLightNode.h"
 #include "game/node/light/SpotlightNode.h"
@@ -31,6 +33,8 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(SpatialNode::getTypeGuidStatic(), SpatialNode::getReflectionInfo());
     registerType(Sound3dNode::getTypeGuidStatic(), Sound3dNode::getReflectionInfo());
     registerType(MeshNode::getTypeGuidStatic(), MeshNode::getReflectionInfo());
+    registerType(SkeletalMeshNode::getTypeGuidStatic(), SkeletalMeshNode::getReflectionInfo());
+    registerType(SkeletonNode::getTypeGuidStatic(), SkeletonNode::getReflectionInfo());
 
     // Light.
     registerType(DirectionalLightNode::getTypeGuidStatic(), DirectionalLightNode::getReflectionInfo());
@@ -108,10 +112,11 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
     ADD_VARIABLES_OF_TYPE(vectorStrings);
     ADD_VARIABLES_OF_TYPE(vectorVec3s);
     ADD_VARIABLES_OF_TYPE(meshNodeGeometries);
+    ADD_VARIABLES_OF_TYPE(skeletalMeshNodeGeometries);
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
 
     return names;
@@ -169,10 +174,11 @@ TypeReflectionInfo::TypeReflectionInfo(
         ADD_PARENT_VARIABLES(vectorStrings);
         ADD_PARENT_VARIABLES(vectorVec3s);
         ADD_PARENT_VARIABLES(meshNodeGeometries);
+        ADD_PARENT_VARIABLES(skeletalMeshNodeGeometries);
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
+        static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
     }
 
@@ -199,9 +205,10 @@ TypeReflectionInfo::TypeReflectionInfo(
     VARIABLE_TYPE_TO_MAP(vectorStrings, ReflectedVariableType::VECTOR_STRING);
     VARIABLE_TYPE_TO_MAP(vectorVec3s, ReflectedVariableType::VECTOR_VEC3);
     VARIABLE_TYPE_TO_MAP(meshNodeGeometries, ReflectedVariableType::MESH_GEOMETRY);
+    VARIABLE_TYPE_TO_MAP(skeletalMeshNodeGeometries, ReflectedVariableType::SKELETAL_MESH_GEOMETRY);
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 936, "add new variables here"); // NOLINT: current size
+    static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
 }

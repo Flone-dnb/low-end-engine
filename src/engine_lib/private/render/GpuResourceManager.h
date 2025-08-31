@@ -6,6 +6,7 @@
 
 // Custom.
 #include "game/geometry/MeshNodeGeometry.h"
+#include "game/geometry/SkeletalMeshNodeGeometry.h"
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Buffer.h"
@@ -45,6 +46,16 @@ public:
      * @return Created VAO.
      */
     static std::unique_ptr<VertexArrayObject> createVertexArrayObject(const MeshNodeGeometry& geometry);
+
+    /**
+     * Creates a VAO from the specified geometry.
+     *
+     * @param geometry Geometry to load.
+     *
+     * @return Created VAO.
+     */
+    static std::unique_ptr<VertexArrayObject>
+    createVertexArrayObject(const SkeletalMeshNodeGeometry& geometry);
 
     /**
      * Creates a new framebuffer with textures.
