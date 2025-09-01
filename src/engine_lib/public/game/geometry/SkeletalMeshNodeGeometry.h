@@ -14,6 +14,7 @@
  * @remark Size and layout is equal to the vertex struct we use in shaders.
  */
 struct SkeletalMeshNodeVertex { // not using inheritance to avoid extra fields that are not related to vertex
+    /** Type for the index to a bone that influences a vertex. */
     using BoneIndexType = unsigned char;
 
     SkeletalMeshNodeVertex() = default;

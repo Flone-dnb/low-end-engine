@@ -166,7 +166,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     animationRatio += timeSincePrevFrameInSec * playbackSpeed / pPlayingAnimation->duration();
     if (bLoopAnimation) {
         // Wraps in [0; 1] interval.
-        const float loopCount = std::floorf(animationRatio);
+        const float loopCount = std::floor(animationRatio);
         animationRatio = animationRatio - loopCount;
     } else {
         // Clamp to [0; 1] interval.

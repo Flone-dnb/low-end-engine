@@ -74,6 +74,8 @@ public:
     /**
      * Adds a path to .ozz animation file relative to the `res` directory to load when spawning or (immediatly
      * if already spawned).
+     *
+     * @param sRelativePathToAnimation Path to the .ozz animation file relative to the `res` directory.
      */
     void addPathToAnimationToPreload(std::string& sRelativePathToAnimation);
 

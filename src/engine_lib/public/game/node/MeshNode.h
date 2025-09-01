@@ -237,6 +237,8 @@ protected:
      * Because SkeletalMeshNode is a child type of MeshNode but uses a different type of a geometry,
      * skeletal mesh overrides this function to make sure if the wrong function (to set the geometry) is
      * called we will show an error message.
+     *
+     * @return Type of this node.
      */
     virtual bool isUsingSkeletalMeshGeometry() { return false; }
 

@@ -284,9 +284,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
 
                         auto& vBoneIndices = vMeshBoneIndices.emplace_back();
                         for (size_t i = 0; i < vBoneIndices.size(); i++) {
-                            if (vIndices[i] < 0) [[unlikely]] {
-                                return Error(std::format("found invalid bone index {}", vIndices[i]));
-                            }
                             if (vIndices[i] >= SkeletonNode::getMaxBoneCountAllowed()) [[unlikely]] {
                                 return Error(std::format(
                                     "found a vertex affected by bone #{} which is outside of the supported "
@@ -311,9 +308,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                     //
                     //    auto& vBoneIndices = vMeshBoneIndices.emplace_back();
                     //    for (size_t i = 0; i < vBoneIndices.size(); i++) {
-                    // if (vIndices[i] < 0) [[unlikely]] {
-                    //     return Error(std::format("found invalid bone index {}", vIndices[i]));
-                    //  }
                     // if (vIndices[i] >= SkeletonNode::getMaxBoneCountAllowed()) [[unlikely]] {
                     //      return Error(std::format(
                     //       "found a vertex affected by bone #{} which is outside of the supported "
