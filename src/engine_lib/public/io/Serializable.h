@@ -984,7 +984,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         }
         }
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif

@@ -114,7 +114,7 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
     ADD_VARIABLES_OF_TYPE(meshNodeGeometries);
     ADD_VARIABLES_OF_TYPE(skeletalMeshNodeGeometries);
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
+    static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
@@ -176,7 +176,7 @@ TypeReflectionInfo::TypeReflectionInfo(
         ADD_PARENT_VARIABLES(meshNodeGeometries);
         ADD_PARENT_VARIABLES(skeletalMeshNodeGeometries);
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif
@@ -207,7 +207,7 @@ TypeReflectionInfo::TypeReflectionInfo(
     VARIABLE_TYPE_TO_MAP(meshNodeGeometries, ReflectedVariableType::MESH_GEOMETRY);
     VARIABLE_TYPE_TO_MAP(skeletalMeshNodeGeometries, ReflectedVariableType::SKELETAL_MESH_GEOMETRY);
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 1088, "add new variables here");
+    static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
 #endif

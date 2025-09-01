@@ -787,7 +787,7 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
             "failed to check for/import animations, gltf2ozz returned: {}, make sure the path is correct and "
             "has no spaces or special characters \"{}\"",
             iProcessReturnCode,
-            pathToFile.c_str()));
+            pathToFile.string()));
     }
 
     // See if any new .ozz files were created.
