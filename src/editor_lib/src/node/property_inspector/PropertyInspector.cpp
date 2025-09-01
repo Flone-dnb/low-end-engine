@@ -58,10 +58,6 @@ void PropertyInspector::onAfterInspectedNodeMoved() {
 }
 
 void PropertyInspector::refreshInspectedProperties() {
-    if (pInspectedNode == nullptr) {
-        return;
-    }
-
     // Clear currently displayed properties.
     {
         const auto mtxChildNodes = pPropertyLayout->getChildNodes();
@@ -88,14 +84,16 @@ void PropertyInspector::refreshInspectedProperties() {
         pAnimLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
         {
             const auto pAnimPreviewTitle = pAnimLayout->addChildNode(std::make_unique<TextUiNode>());
-            pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight());
+            pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight() * 0.92F);
             pAnimPreviewTitle->setSize(
                 glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4F));
-            pAnimPreviewTitle->setText(u"Preview animation (path relative `res`):");
+            pAnimPreviewTitle->setText(u"Preview animation (path relative `res`)");
+            pAnimPreviewTitle->setTextColor(glm::vec4(glm::vec3(pAnimPreviewTitle->getTextColor()), 0.5F));
 
             const auto pBackground = pAnimLayout->addChildNode(std::make_unique<RectUiNode>());
             pBackground->setPadding(EditorTheme::getPadding());
             pBackground->setColor(EditorTheme::getButtonColor());
+            pBackground->setSize(glm::vec2(pBackground->getSize().x, 0.045F));
             {
                 const auto pAnimPathEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                 pAnimPathEdit->setTextHeight(EditorTheme::getSmallTextHeight());
@@ -123,6 +121,8 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
     auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
+    pGroupBackground->setSize(
+        glm::vec2(pGroupBackground->getSize().x, 0.015F)); // initial height, will expand if needed
 
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
 
@@ -130,16 +130,19 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
         std::make_unique<LayoutUiNode>(std::format("type group {}", typeInfo.sTypeName)));
     pTypeGroupLayout->setChildNodeSpacing(EditorTheme::getSpacing());
     pTypeGroupLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+
     {
         const auto pGroupTitle = pTypeGroupLayout->addChildNode(std::make_unique<TextUiNode>());
-        pGroupTitle->setTextHeight(EditorTheme::getSmallTextHeight());
-        pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.4F));
+        pGroupTitle->setTextHeight(EditorTheme::getTextHeight());
+        pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.2F));
         pGroupTitle->setText(utf::as_u16(typeInfo.sTypeName));
-        pGroupTitle->setTextColor(glm::vec4(glm::vec3(pGroupTitle->getTextColor()), 0.5F));
+        pGroupTitle->setTextColor(EditorTheme::getAccentColor());
 
         const auto pTypePropertiesLayout = pTypeGroupLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pTypePropertiesLayout->setChildNodeSpacing(EditorTheme::getTypePropertySpacing());
         pTypePropertiesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+        pTypePropertiesLayout->setSize(
+            glm::vec2(pTypePropertiesLayout->getSize().x, pGroupBackground->getSize().y));
 
 #define CONTINUE_IF_PARENT_VAR(array)                                                                        \
     if (!typeInfo.sParentTypeGuid.empty()) {                                                                 \

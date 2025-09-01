@@ -66,19 +66,19 @@ float EditorTheme::getButtonSizeY() { return 0.025F; }
 
 float EditorTheme::getPadding() { return 0.0275F; }
 
-float EditorTheme::getSpacing() { return 0.015F; }
+float EditorTheme::getSpacing() { return 0.017F; }
 
 float EditorTheme::getTypePropertyNameValueSpacing() { return getSpacing() * 2.0F; }
 
 float EditorTheme::getTypePropertySpacing() { return getTypePropertyNameValueSpacing() * 2.0F; }
 
-float EditorTheme::getTypePropertyGroupSpacing() { return getSpacing() * 2.0F; }
+float EditorTheme::getTypePropertyGroupSpacing() { return getSpacing() * 4.0F; }
 
 glm::vec4 EditorTheme::getEditorBackgroundColor() { return glm::vec4(glm::vec3(0.12F), 1.0F); }
 
 glm::vec4 EditorTheme::getContainerBackgroundColor() { return glm::vec4(glm::vec3(0.15F), 1.0F); }
 
-glm::vec4 EditorTheme::getSelectedItemColor() { return glm::vec4(0.85F, 0.35F, 0.2F, 1.0F); }
+glm::vec4 EditorTheme::getAccentColor() { return glm::vec4(0.85F, 0.35F, 0.2F, 1.0F); }
 
 glm::vec4 EditorTheme::getButtonColor() { return getEditorBackgroundColor(); }
 

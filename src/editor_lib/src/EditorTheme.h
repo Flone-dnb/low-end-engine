@@ -65,11 +65,11 @@ public:
     static glm::vec4 getContainerBackgroundColor();
 
     /**
-     * Color of an activated (selected) button and similar items.
+     * Color for contrast elements.
      *
      * @return RGBA color.
      */
-    static glm::vec4 getSelectedItemColor();
+    static glm::vec4 getAccentColor();
 
     /**
      * Height for buttons.

@@ -288,7 +288,7 @@ void NodeTreeInspector::inspectGameNode(NodeTreeInspectorItem* pItem) {
         pInspectedItem->setColor(EditorTheme::getButtonColor());
     }
     pInspectedItem = pItem;
-    pInspectedItem->setColor(EditorTheme::getSelectedItemColor());
+    pInspectedItem->setColor(EditorTheme::getAccentColor());
 
     // Show gizmo.
     if (auto pSpatialNode = dynamic_cast<SpatialNode*>(pItem->getDisplayedGameNode())) {
