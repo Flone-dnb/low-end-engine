@@ -87,6 +87,9 @@ public:
      */
     void setAnimationPlaybackSpeed(float speed);
 
+    /** Stops currently playing animation (if an animation was playing). */
+    void stopAnimation();
+
     /**
      * Loads the specified animation (if it was not preloaded, see @ref addPathToAnimationToPreload)
      * and plays it.
@@ -218,6 +221,12 @@ private:
     /** Unloads everything that was loaded in @ref loadAnimationContextData (if it was loaded). */
     void unloadAnimationContextData();
 
+    /** Updates @ref vBoneMatrices to display a rest pose. */
+    void setRestPoseToBoneMatrices();
+
+    /** Converts @ref vLocalTransforms to @ref vBoneMatrices. */
+    void convertLocalTransformsToBoneMatrices();
+
     /** `nullptr` if the skeleton is not loaded. */
     std::unique_ptr<ozz::animation::Skeleton> pSkeleton;
 
@@ -239,7 +248,7 @@ private:
     /** Context for sampling animation state. */
     ozz::animation::SamplingJob::Context samplingJobContext;
 
-    /** Sampled local transforms, 1 soa transform can store multiple (4) bones. */
+    /** Sampled local transforms (relative to parent bone), 1 soa transform can store multiple (4) bones. */
     ozz::vector<ozz::math::SoaTransform> vLocalTransforms;
 
     /** Matrices that transform bone from local space to model space. */

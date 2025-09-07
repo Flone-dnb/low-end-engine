@@ -100,12 +100,15 @@ void PropertyInspector::refreshInspectedProperties() {
                 pAnimPathEdit->setHandleNewLineChars(false);
                 pAnimPathEdit->setText(u"game/");
                 pAnimPathEdit->setOnTextChanged([pSkeletonNode](std::u16string_view sNewText) {
+                    pSkeletonNode->stopAnimation();
+
                     const auto pathToAnimFile =
                         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sNewText;
                     if (!std::filesystem::exists(pathToAnimFile) ||
                         std::filesystem::is_directory(pathToAnimFile)) {
                         return;
                     }
+
                     pSkeletonNode->playAnimation(utf::as_str8(sNewText), true, true);
                 });
             }

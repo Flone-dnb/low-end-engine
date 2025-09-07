@@ -90,6 +90,16 @@ void SkeletonNode::addPathToAnimationToPreload(std::string& sRelativePathToAnima
 
 void SkeletonNode::setAnimationPlaybackSpeed(float speed) { playbackSpeed = speed; }
 
+void SkeletonNode::stopAnimation() {
+    if (pPlayingAnimation == nullptr) {
+        return;
+    }
+
+    pPlayingAnimation = nullptr;
+    animationRatio = 0.0F;
+    setRestPoseToBoneMatrices();
+}
+
 ozz::animation::Animation* SkeletonNode::findOrLoadAnimation(const std::string& sRelativePathToAnimation) {
     ozz::animation::Animation* pAnimation = nullptr;
 
@@ -156,6 +166,8 @@ void SkeletonNode::onDespawning() {
 }
 
 void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
+    PROFILE_FUNC
+
     SpatialNode::onBeforeNewFrame(timeSincePrevFrameInSec);
 
     if (pPlayingAnimation == nullptr) {
@@ -173,7 +185,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         animationRatio = std::clamp(animationRatio, 0.0F, 1.0F);
     }
 
-    // Sample animation.
+    // Sample bone local transforms.
     ozz::animation::SamplingJob samplingJob;
     samplingJob.animation = pPlayingAnimation;
     samplingJob.context = &samplingJobContext;
@@ -184,16 +196,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         return;
     }
 
-    // Convert local space matrices to model space.
-    ozz::animation::LocalToModelJob localToModelJob;
-    localToModelJob.skeleton = pSkeleton.get();
-    localToModelJob.input = ozz::make_span(vLocalTransforms);
-    localToModelJob.output = ozz::make_span(vBoneMatrices);
-    if (!localToModelJob.Run()) {
-        Logger::get().error(std::format(
-            "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
-        return;
-    }
+    convertLocalTransformsToBoneMatrices();
 }
 
 void SkeletonNode::loadAnimationContextData() {
@@ -232,12 +235,7 @@ void SkeletonNode::loadAnimationContextData() {
     // Allocate matrices.
     vLocalTransforms.resize(static_cast<size_t>(pSkeleton->num_soa_joints()));
     vBoneMatrices.resize(static_cast<size_t>(pSkeleton->num_joints()));
-
-    // Initialize model matrices as identity matrices to properly display geometry while no animation is
-    // started.
-    for (auto& matrix : vBoneMatrices) {
-        matrix = ozz::math::Float4x4::identity();
-    }
+    setRestPoseToBoneMatrices();
 
     // Create sampling job context.
     samplingJobContext.Resize(pSkeleton->num_joints());
@@ -254,6 +252,106 @@ void SkeletonNode::unloadAnimationContextData() {
 
     vBoneMatrices.clear();
     vBoneMatrices.shrink_to_fit();
+}
+
+void SkeletonNode::setRestPoseToBoneMatrices() {
+    if (pSkeleton == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the skeleton to be loaded while calling this function");
+    }
+
+    ozz::vector<ozz::math::Transform> transforms(static_cast<size_t>(pSkeleton->num_joints()));
+    for (size_t i = 0; i < vLocalTransforms.size(); ++i) {
+        vLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
+    }
+
+    convertLocalTransformsToBoneMatrices();
+}
+
+void SkeletonNode::convertLocalTransformsToBoneMatrices() {
+    PROFILE_FUNC
+
+    if (pSkeleton == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the skeleton to be loaded while calling this function");
+    }
+
+    // Convert bone local transform from ozz-animation space to ours.
+    for (auto& transform : vLocalTransforms) {
+        // Convert rotation.
+        {
+            // Read from __m128 SIMD vector using a store operation (don't access elements via .x or []).
+            glm::vec4 vec1, vec2, vec3, vec4;
+            ozz::math::StorePtrU(transform.rotation.x, glm::value_ptr(vec1));
+            ozz::math::StorePtrU(transform.rotation.y, glm::value_ptr(vec2));
+            ozz::math::StorePtrU(transform.rotation.z, glm::value_ptr(vec3));
+            ozz::math::StorePtrU(transform.rotation.w, glm::value_ptr(vec4));
+
+            glm::vec4 bone1Quat = glm::vec4(vec1.x, vec2.x, vec3.x, vec4.x);
+            glm::vec4 bone2Quat = glm::vec4(vec1.y, vec2.y, vec3.y, vec4.y);
+            glm::vec4 bone3Quat = glm::vec4(vec1.z, vec2.z, vec3.z, vec4.z);
+            glm::vec4 bone4Quat = glm::vec4(vec1.w, vec2.w, vec3.w, vec4.w);
+
+            // Transform.
+            const auto convertBoneQuat = [](const glm::vec4& quat) -> glm::vec4 {
+                return glm::vec4(quat.y, quat.z, quat.x, quat.w);
+            };
+            bone1Quat = convertBoneQuat(bone1Quat);
+            bone2Quat = convertBoneQuat(bone2Quat);
+            bone3Quat = convertBoneQuat(bone3Quat);
+            bone4Quat = convertBoneQuat(bone4Quat);
+
+            // Save.
+            transform.rotation.x =
+                ozz::math::simd_float4::Load(bone1Quat.x, bone2Quat.x, bone3Quat.x, bone4Quat.x);
+            transform.rotation.y =
+                ozz::math::simd_float4::Load(bone1Quat.y, bone2Quat.y, bone3Quat.y, bone4Quat.y);
+            transform.rotation.z =
+                ozz::math::simd_float4::Load(bone1Quat.z, bone2Quat.z, bone3Quat.z, bone4Quat.z);
+            transform.rotation.w =
+                ozz::math::simd_float4::Load(bone1Quat.w, bone2Quat.w, bone3Quat.w, bone4Quat.w);
+        }
+
+        // Convert translation.
+        {
+            // Read from __m128 SIMD vector using a store operation (don't access elements via .x or []).
+            glm::vec4 vec1, vec2, vec3;
+            ozz::math::StorePtrU(transform.translation.x, glm::value_ptr(vec1));
+            ozz::math::StorePtrU(transform.translation.y, glm::value_ptr(vec2));
+            ozz::math::StorePtrU(transform.translation.z, glm::value_ptr(vec3));
+
+            glm::vec3 bone1Pos = glm::vec3(vec1.x, vec2.x, vec3.x);
+            glm::vec3 bone2Pos = glm::vec3(vec1.y, vec2.y, vec3.y);
+            glm::vec3 bone3Pos = glm::vec3(vec1.z, vec2.z, vec3.z);
+            glm::vec3 bone4Pos = glm::vec3(vec1.w, vec2.w, vec3.w);
+
+            // Transform.
+            const auto convertBonePos = [](const glm::vec3& pos) -> glm::vec3 {
+                return glm::vec3(pos.x, pos.z, pos.y);
+            };
+            bone1Pos = convertBonePos(bone1Pos);
+            bone2Pos = convertBonePos(bone2Pos);
+            bone3Pos = convertBonePos(bone3Pos);
+            bone4Pos = convertBonePos(bone4Pos);
+
+            // Save.
+            transform.translation.x =
+                ozz::math::simd_float4::Load(bone1Pos.x, bone2Pos.x, bone3Pos.x, bone4Pos.x);
+            transform.translation.y =
+                ozz::math::simd_float4::Load(bone1Pos.y, bone2Pos.y, bone3Pos.y, bone4Pos.y);
+            transform.translation.z =
+                ozz::math::simd_float4::Load(bone1Pos.z, bone2Pos.z, bone3Pos.z, bone4Pos.z);
+        }
+    }
+
+    // Convert local space matrices to model space.
+    ozz::animation::LocalToModelJob localToModelJob;
+    localToModelJob.skeleton = pSkeleton.get();
+    localToModelJob.input = ozz::make_span(vLocalTransforms);
+    localToModelJob.output = ozz::make_span(vBoneMatrices);
+    if (!localToModelJob.Run()) {
+        Logger::get().error(std::format(
+            "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
+        return;
+    }
 }
 
 float SkeletonNode::getCurrentAnimationDurationSec() const {

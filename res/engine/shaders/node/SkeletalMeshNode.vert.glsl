@@ -20,16 +20,19 @@ uniform mat4 vBoneMatrices[MAX_BONE_COUNT_ALLOWED]; // they convert from local s
 
 /// Entry point.
 void main() {
-    vec4 posModelSpace = vec4(0.0F);
+    vec3 posModelSpace = vec3(0.0F);
     vec3 normalModelSpace = vec3(0.0F);
     for (int i = 0; i < 4; i++) {
         uint iBoneIndex = boneIndices[i];
-        posModelSpace += vBoneMatrices[iBoneIndex] * vec4(position, 1.0F) * boneWeights[i];
-        normalModelSpace += mat3(vBoneMatrices[iBoneIndex]) * normal * boneWeights[i];
+        mat3 boneMatrix = mat3(vBoneMatrices[iBoneIndex]);
+        vec3 boneLocalPos = vBoneMatrices[iBoneIndex][3].xyz;
+        float boneWeight = boneWeights[i];
+        posModelSpace += (boneMatrix * vec3(position - boneLocalPos) + boneLocalPos) * boneWeight;
+        normalModelSpace += boneMatrix * normal * boneWeight;
     }
 
     // Calculate world position.
-    vec4 posWorldSpace = worldMatrix * vec4(posModelSpace.xyz, 1.0F);
+    vec4 posWorldSpace = worldMatrix * vec4(posModelSpace, 1.0F);
     gl_Position = viewProjectionMatrix * posWorldSpace;
 
     // Set output parameters.

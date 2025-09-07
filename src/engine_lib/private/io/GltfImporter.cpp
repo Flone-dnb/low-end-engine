@@ -42,6 +42,7 @@ inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::stri
 
 inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMesh(
     const tinygltf::Model& model,
+    const tinygltf::Node& node,
     const tinygltf::Mesh& mesh,
     const std::filesystem::path& pathToOutputFile,
     const std::string& sPathToOutputDirRelativeRes,
@@ -404,14 +405,14 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                 dst.vBoneIndices = vMeshBoneIndices[i];
                 dst.vBoneWeights = vMeshBoneWeights[i];
             }
-            auto pSkeletalMesh =
-                std::make_unique<SkeletalMeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
+            auto pSkeletalMesh = std::make_unique<SkeletalMeshNode>();
             pSkeletalMesh->setSkeletalMeshGeometryBeforeSpawned(std::move(skeletalGeometry));
             pMeshNode = std::move(pSkeletalMesh);
         } else {
-            pMeshNode = std::make_unique<MeshNode>(!mesh.name.empty() ? mesh.name : "Mesh Node");
+            pMeshNode = std::make_unique<MeshNode>();
             pMeshNode->setMeshGeometryBeforeSpawned(std::move(geometry));
         }
+        pMeshNode->setNodeName(!node.name.empty() ? node.name : "Mesh Node");
 
         if (primitive.material >= 0) {
             // Process material.
@@ -498,6 +499,7 @@ inline std::optional<Error> processGltfNode(
         // Process mesh.
         auto result = processGltfMesh(
             model,
+            node,
             model.meshes[static_cast<size_t>(node.mesh)],
             pathToOutputFile,
             sPathToOutputDirRelativeRes,

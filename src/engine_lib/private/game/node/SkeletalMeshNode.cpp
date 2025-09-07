@@ -121,6 +121,25 @@ void SkeletalMeshNode::onSpawning() {
                 getNodeName()));
             return;
         }
+
+#if defined(DEBUG)
+        // Make sure our per-vertex bone indices won't reference bones out of bounds for the skeleton.
+        const auto iBoneCount = pSpawnedSkeleton->getSkeletonBoneMatrices().size();
+        for (const auto& vertex : skeletalMeshGeometry.getVertices()) {
+            for (SkeletalMeshNodeVertex::BoneIndexType iBoneIndex : vertex.vBoneIndices) {
+                if (iBoneIndex >= iBoneCount) [[unlikely]] {
+                    Logger::get().error(std::format(
+                        "skeletal mesh node \"{}\" has vertices that reference bone with index {} but parent "
+                        "skeleton node only has {} bones (index out of bounds - incompatible skeleton)",
+                        getNodeName(),
+                        iBoneIndex,
+                        iBoneCount));
+                    pSpawnedSkeleton = nullptr;
+                    return;
+                }
+            }
+        }
+#endif
     }
 
     getShaderConstantsSetterWhileSpawned().addSetterFunction([this](ShaderProgram* pShaderProgram) {
