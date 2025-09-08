@@ -2,11 +2,15 @@
 
 // Standard.
 #include <format>
+#include <sstream>
 
 std::string EditorTheme::floatToString(float value) {
     std::string sValue = std::format("{:.3F}", value);
 
-    const auto dotPos = sValue.find('.');
+    auto dotPos = sValue.find('.');
+    if (dotPos == std::string::npos) {
+        dotPos = sValue.find(',');
+    }
     if (dotPos != std::string::npos) {
         const int iCharCount = static_cast<int>(sValue.size()) - static_cast<int>(dotPos + 2);
         if (iCharCount > 0) {
@@ -20,6 +24,13 @@ std::string EditorTheme::floatToString(float value) {
     }
 
     return sValue;
+}
+
+float EditorTheme::stringToFloat(const std::string& sText) {
+    std::istringstream stream(sText);
+    float value = 0.0f;
+    stream >> value;
+    return value;
 }
 
 std::string EditorTheme::formatVariableName(const std::string& sName) {

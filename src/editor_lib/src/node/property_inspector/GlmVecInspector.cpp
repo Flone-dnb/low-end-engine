@@ -208,7 +208,7 @@ void GlmVecInspector::onValueChanged(
     float newComponentValue = 0.0F;
     if (!sText.empty()) {
         try {
-            newComponentValue = std::stof(sText);
+            newComponentValue = EditorTheme::stringToFloat(sText);
         } catch (...) {
             Logger::get().error("unable to convert string to float");
             return;

@@ -58,7 +58,7 @@ FloatInspector::FloatInspector(
                 float newValue = 0.0F;
                 if (!sText.empty()) {
                     try {
-                        newValue = std::stof(sText);
+                        newValue = EditorTheme::stringToFloat(sText);
                     } catch (...) {
                         Logger::get().error("unable to convert string to float");
                         return;

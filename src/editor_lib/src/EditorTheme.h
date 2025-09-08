@@ -51,6 +51,15 @@ public:
     static std::string floatToString(float value);
 
     /**
+     * Converts string to a float regarless of the decimal separator.
+     *
+     * @param sText Text to convert.
+     *
+     * @return Float.
+     */
+    static float stringToFloat(const std::string& sText);
+
+    /**
      * Color of the editor's background.
      *
      * @return RGBA color.
