@@ -5,6 +5,7 @@
 // Standard.
 #include <vector>
 #include <memory>
+#include <optional>
 
 // Custom.
 #include "render/wrapper/VertexArrayObject.h"
@@ -33,7 +34,7 @@ public:
         glm::mat4x4 worldMatrix = glm::identity<glm::mat4x4>();
 
         /** Time after which the mesh should no longer be rendered. */
-        float timeLeftSec = 3.0F;
+        float timeLeftSec = 0.0F;
     };
 
     /** Data used to draw text. */
@@ -44,10 +45,33 @@ public:
         /** Height of the text in range [0.0; 1.0] relative to screen height. */
         float textHeight = 0.1F;
 
+        /**
+         * If empty the text will appear in the corner of the screen and new
+         * text will be automatically displayed below already existing text (so multiple
+         * text object won't be drawn on top of each other), otherwise if specified describes
+         * the position of the top-left corner of the text in range [0.0; 1.0] relative to screen.
+         */
+        std::optional<glm::vec2> optForcePosition = {};
+
         /** Time after which the mesh should no longer be rendered. */
         float timeLeftSec = 3.0F;
 
         /** Color of the text. */
+        glm::vec3 color = glm::vec3(1.0F, 1.0F, 1.0F);
+    };
+
+    /** Data used to draw a rectangle on the screen. */
+    struct ScreenRect {
+        /** Position of the top-left corner in range [0.0; 1.0] relative to screen. */
+        glm::vec2 screenPos = glm::vec2(0.1F, 0.1F);
+
+        /** Width and height in range [0.0; 1.0] relative to screen. */
+        glm::vec2 screenSize = glm::vec2(0.25F, 0.25F);
+
+        /** Time after which the mesh should no longer be rendered. */
+        float timeLeftSec = 0.0F;
+
+        /** Color of the rectangle. */
         glm::vec3 color = glm::vec3(1.0F, 1.0F, 1.0F);
     };
 
@@ -116,13 +140,33 @@ public:
      * @param timeInSec  Time (in seconds) during which the text will be rendered
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      * @param color      Color of the text.
+     * @param optPos     If empty the text will appear in the corner of the screen and new
+     * text will be automatically displayed below already existing text (so multiple
+     * text object won't be drawn on top of each other), otherwise you can specify
+     * a position of the top-left corner of the text in range [0.0; 1.0] relative to screen.
      * @param textHeight Height of the text in range [0.0; 1.0] relative to screen height.
      */
     void drawText(
         const std::string& sText,
         float timeInSec = 3.0F,
         const glm::vec3& color = glm::vec3(1.0F, 1.0F, 1.0F),
-        float textHeight = 0.035F);
+        const std::optional<glm::vec2>& optForcePosition = {},
+        float textHeight = 0.0325F);
+
+    /**
+     * Draws a 2D rectangle on the screen.
+     *
+     * @param screenPos  Position of the top-left corner in range [0.0; 1.0] relative to screen.
+     * @param screenSize Width and height in range [0.0; 1.0] relative to screen.
+     * @param color      Color of the rectangle.
+     * @param timeInSec  Time (in seconds) during which the text will be rendered
+     * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
+     */
+    void drawScreenRect(
+        const glm::vec2& screenPos,
+        const glm::vec2& screenSize,
+        const glm::vec3& color = glm::vec3(0.25F, 0.25F, 0.25F),
+        float timeInSec = 0.0F);
 
 private:
     DebugDrawer();
@@ -141,6 +185,15 @@ private:
     /** Destroys used render resources such as @ref pMeshShaderProgram and removes any geometry to render. */
     void destroy();
 
+    /**
+     * Draws an quad in screen (window) coordinates.
+     *
+     * @param screenPos     Position of the top-left corner of the quad.
+     * @param screenSize    Size of the quad.
+     * @param iScreenHeight Height of the screen.
+     */
+    void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
+
     /** Precalculated positions to draw an icosphere. */
     std::vector<glm::vec3> vIcospherePositions;
 
@@ -153,14 +206,20 @@ private:
     /** Text to draw on the next frame. */
     std::vector<Text> vTextToDraw;
 
-    /** Shader program used to draw geometry. */
+    /** Screen rectangles to draw on the next frame. */
+    std::vector<ScreenRect> vRectsToDraw;
+
+    /** Shader program used to draw meshes. */
     std::shared_ptr<ShaderProgram> pMeshShaderProgram;
+
+    /** Shader program used to draw screen rectangles. */
+    std::shared_ptr<ShaderProgram> pRectShaderProgram;
 
     /** Shader program used to draw text. */
     std::shared_ptr<ShaderProgram> pTextShaderProgram;
 
-    /** VAO used for drawing. */
-    std::unique_ptr<VertexArrayObject> pVao;
+    /** VAO used for drawing meshes. */
+    std::unique_ptr<VertexArrayObject> pMeshVao;
 
     /** Quad used for rendering text. */
     std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;

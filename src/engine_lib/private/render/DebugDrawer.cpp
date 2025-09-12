@@ -85,7 +85,8 @@ void DebugDrawer::destroy() {
     pMeshShaderProgram = nullptr;
     pTextShaderProgram = nullptr;
     pScreenQuadGeometry = nullptr;
-    pVao = nullptr;
+    pRectShaderProgram = nullptr;
+    pMeshVao = nullptr;
 
     vMeshesToDraw.clear();
 
@@ -118,9 +119,48 @@ void DebugDrawer::drawMesh(
 }
 
 void DebugDrawer::drawText(
-    const std::string& sText, float timeInSec, const glm::vec3& color, float textHeight) {
-    vTextToDraw.push_back(
-        Text{.sText = sText, .textHeight = textHeight, .timeLeftSec = timeInSec, .color = color});
+    const std::string& sText,
+    float timeInSec,
+    const glm::vec3& color,
+    const std::optional<glm::vec2>& optForcePosition,
+    float textHeight) {
+    vTextToDraw.push_back(Text{
+        .sText = sText,
+        .textHeight = textHeight,
+        .optForcePosition = optForcePosition,
+        .timeLeftSec = timeInSec,
+        .color = color});
+}
+
+void DebugDrawer::drawScreenRect(
+    const glm::vec2& screenPos, const glm::vec2& screenSize, const glm::vec3& color, float timeInSec) {
+    vRectsToDraw.push_back(ScreenRect{
+        .screenPos = screenPos, .screenSize = screenSize, .timeLeftSec = timeInSec, .color = color});
+}
+
+void DebugDrawer::drawQuad(
+    const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const {
+    // Flip Y from our top-left origin to OpenGL's bottom-left origin.
+    const float posY = static_cast<float>(iScreenHeight) - screenPos.y;
+
+    // Update vertices.
+    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
+        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
+
+        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+    };
+
+    // Copy new vertex data to VBO.
+    glBindBuffer(GL_ARRAY_BUFFER, pScreenQuadGeometry->getVao().getVertexBufferObjectId());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Render quad.
+    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
 }
 
 void DebugDrawer::drawDebugObjects(
@@ -130,12 +170,15 @@ void DebugDrawer::drawDebugObjects(
     // Initialize resources if needed.
     if (pMeshShaderProgram == nullptr) {
         pMeshShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-            "engine/shaders/debug/DebugObject.vert.glsl", "engine/shaders/debug/DebugObject.frag.glsl");
+            "engine/shaders/debug/Mesh.vert.glsl", "engine/shaders/debug/Mesh.frag.glsl");
 
         pTextShaderProgram = pRenderer->getShaderManager().getShaderProgram(
             "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/TextNode.frag.glsl");
 
-        pVao = GpuResourceManager::createVertexArrayObject(
+        pRectShaderProgram = pRenderer->getShaderManager().getShaderProgram(
+            "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/RectUiNode.frag.glsl");
+
+        pMeshVao = GpuResourceManager::createVertexArrayObject(
             6,     // 2 vertices to draw an edge of a triangle
             true); // we will update positions
 
@@ -147,7 +190,7 @@ void DebugDrawer::drawDebugObjects(
         // Prepare for drawing meshes.
         GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, 0));
         glUseProgram(pMeshShaderProgram->getShaderProgramId());
-        glBindVertexArray(pVao->getVertexArrayObjectId());
+        glBindVertexArray(pMeshVao->getVertexArrayObjectId());
         pCameraProperties->getShaderConstantsSetter().setConstantsToShader(pMeshShaderProgram.get());
 
         for (auto it = vMeshesToDraw.begin(); it != vMeshesToDraw.end();) {
@@ -166,7 +209,7 @@ void DebugDrawer::drawDebugObjects(
                     mesh.vTrianglePositions[i + 2],
                     mesh.vTrianglePositions[i + 2],
                     mesh.vTrianglePositions[i]};
-                glBindBuffer(GL_ARRAY_BUFFER, pVao->getVertexBufferObjectId());
+                glBindBuffer(GL_ARRAY_BUFFER, pMeshVao->getVertexBufferObjectId());
                 glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vEdges[0]) * vEdges.size(), vEdges.data());
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -182,13 +225,39 @@ void DebugDrawer::drawDebugObjects(
             it++;
         }
 
-        // Prepare for drawing text.
-        auto& fontManager = pRenderer->getFontManager();
-        auto glyphGuard = fontManager.getGlyphs();
+        // Prepare for drawing screen rectangles.
         const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
         uiProjMatrix =
             glm::ortho(0.0F, static_cast<float>(iWindowWidth), 0.0F, static_cast<float>(iWindowHeight));
+        GL_CHECK_ERROR(glUseProgram(pRectShaderProgram->getShaderProgramId()));
+        GL_CHECK_ERROR(glBindVertexArray(pScreenQuadGeometry->getVao().getVertexArrayObjectId()));
+        pRectShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
 
+        for (auto it = vRectsToDraw.begin(); it != vRectsToDraw.end();) {
+            auto& rect = *it;
+            pRectShaderProgram->setVector4ToShader("color", glm::vec4(rect.color, 1.0F));
+            pRectShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+            glm::vec2 pos = rect.screenPos;
+            glm::vec2 size = rect.screenSize;
+
+            pos *= glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
+            size *= glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
+
+            drawQuad(pos, size, iWindowHeight);
+
+            // Update state.
+            rect.timeLeftSec -= timeSincePrevFrameInSec;
+            if (rect.timeLeftSec < 0.0f) {
+                it = vRectsToDraw.erase(it);
+                continue;
+            }
+            it++;
+        }
+
+        // Prepare for drawing text.
+        auto& fontManager = pRenderer->getFontManager();
+        auto glyphGuard = fontManager.getGlyphs();
         GL_CHECK_ERROR(glUseProgram(pTextShaderProgram->getShaderProgramId()));
         GL_CHECK_ERROR(glBindVertexArray(pScreenQuadGeometry->getVao().getVertexArrayObjectId()));
         pTextShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
@@ -201,9 +270,12 @@ void DebugDrawer::drawDebugObjects(
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         for (auto it = vTextToDraw.begin(); it != vTextToDraw.end();) {
-            float screenX = static_cast<float>(iWindowWidth) * 0.05F;
-
             auto& text = *it;
+
+            float screenX = static_cast<float>(iWindowWidth) * 0.05F;
+            if (text.optForcePosition.has_value()) {
+                screenX = static_cast<float>(iWindowWidth) * text.optForcePosition->x;
+            }
 
             pTextShaderProgram->setVector4ToShader("textColor", glm::vec4(text.color, 1.0F));
 
@@ -212,6 +284,10 @@ void DebugDrawer::drawDebugObjects(
                 static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * fontScale;
 
             // Switch to the first row of text.
+            const float autoScreenY = screenY; // save to restore later
+            if (text.optForcePosition.has_value()) {
+                screenY = static_cast<float>(iWindowHeight) * text.optForcePosition->y;
+            }
             screenY += textHeightInPixels;
 
             // Draw each character.
@@ -233,37 +309,20 @@ void DebugDrawer::drawDebugObjects(
                 // Space character has 0 width so don't submit any rendering.
                 if (glyph.size.x != 0) {
                     glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-
-                    // Flip Y from our top-left origin to OpenGL's bottom-left origin.
-                    const float posY = static_cast<float>(iWindowHeight) - screenPos.y;
-
-                    // Update vertices.
-                    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-                        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-                        glm::vec4(screenPos.x + width, posY - height, 1.0F, 1.0F),
-                        glm::vec4(screenPos.x, posY - height, 0.0F, 1.0F),
-
-                        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-                        glm::vec4(screenPos.x + width, posY, 1.0F, 0.0F),
-                        glm::vec4(screenPos.x + width, posY - height, 1.0F, 1.0F),
-                    };
-
-                    // Copy new vertex data to VBO.
-                    glBindBuffer(GL_ARRAY_BUFFER, pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-                    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                    // Render quad.
-                    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+                    drawQuad(screenPos, glm::vec2(width, height), iWindowHeight);
                 }
 
                 // Switch to next glyph.
                 screenX += distanceToNextGlyph;
             }
-            screenX =
 
-                // Update state.
-                text.timeLeftSec -= timeSincePrevFrameInSec;
+            // Restore auto Y.
+            if (text.optForcePosition.has_value()) {
+                screenY = autoScreenY;
+            }
+
+            // Update state.
+            text.timeLeftSec -= timeSincePrevFrameInSec;
             if (text.timeLeftSec < 0.0f) {
                 it = vTextToDraw.erase(it);
                 continue;
