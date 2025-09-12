@@ -103,7 +103,7 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
         pUsageHintText->setTextHeight(0.025F);
         pUsageHintText->setSize(
             glm::vec2(1.0F - pUsageHintText->getPosition().x, pUsageHintText->getTextHeight() * 1.25F));
-        pUsageHintText->setText(u"gizmo usage (keyboard): 1 - move, 2 - rotate, 3 - scale");
+        pUsageHintText->setText(u"gizmo usage (keyboard): W - move, E - rotate, R - scale");
     }
 }
 

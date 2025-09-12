@@ -142,14 +142,14 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
         return;
     }
 
-    if (gameWorldNodes.pGizmoNode != nullptr &&
-        (key == KeyboardButton::NUM_1 || key == KeyboardButton::NUM_2 || key == KeyboardButton::NUM_3) &&
+    if (gameWorldNodes.pGizmoNode != nullptr && getWindow()->isCursorVisible() &&
+        (key == KeyboardButton::W || key == KeyboardButton::E || key == KeyboardButton::R) &&
         !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasFocusedNode() &&
         !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasModalUiNodeTree()) {
         GizmoMode newMode = GizmoMode::MOVE;
-        if (key == KeyboardButton::NUM_2) {
+        if (key == KeyboardButton::E) {
             newMode = GizmoMode::ROTATE;
-        } else if (key == KeyboardButton::NUM_3) {
+        } else if (key == KeyboardButton::R) {
             newMode = GizmoMode::SCALE;
         }
 
