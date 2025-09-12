@@ -629,7 +629,8 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
             onAfterGameWorldCreated(pGameRootNode);
         },
-        false);
+        false,
+        "game"); // name needed for debug drawer to find game world
 }
 
 void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
@@ -703,7 +704,8 @@ void EditorGameInstance::openNodeTreeAsGameWorld(const std::filesystem::path& pa
                 onAfterGameWorldCreated(pRoot);
                 lastOpenedNodeTree = pathToNodeTree;
             },
-            false);
+            false,
+            "game"); // name needed for debug drawer to find game world
     });
 }
 

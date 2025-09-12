@@ -23,6 +23,18 @@ public:
     GpuResourceManager& operator=(const GpuResourceManager&) = delete;
     GpuResourceManager(GpuResourceManager&&) noexcept = delete;
     GpuResourceManager& operator=(GpuResourceManager&&) noexcept = delete;
+    /**
+     * Creates a new vertex array object for N positions (vec3) and optionally N indices.
+     *
+     * @param iPositionCount       Total number of vec3 items in the vertex buffer.
+     * @param bIsVertexDataDynamic Specify `true` if vertex positions will change, otherwise
+     * specify `false`.
+     * @param vIndices             Specify empty array to avoid creating index buffer.
+     *
+     * @return VAO.
+     */
+    static std::unique_ptr<VertexArrayObject> createVertexArrayObject(
+        unsigned int iPositionCount, bool bIsVertexDataDynamic, std::vector<unsigned short> vIndices = {});
 
     /**
      * Creates a new quad.

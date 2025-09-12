@@ -119,8 +119,13 @@ private:
     /** (Re)creates framebuffers used by the renderer. */
     void recreateFramebuffers();
 
-    /** Called by window that owns this renderer to draw a new frame. */
-    void drawNextFrame();
+    /**
+     * Called by window that owns this renderer to draw a new frame.
+     *
+     * @param timeSincePrevCallInSec Time in seconds that has passed since the last call
+     * to this function.
+     */
+    void drawNextFrame(float timeSincePrevCallInSec);
 
     /**
      * Does post processing on the rendered image.

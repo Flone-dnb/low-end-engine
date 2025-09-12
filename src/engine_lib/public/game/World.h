@@ -78,10 +78,12 @@ public:
      * Initializes world.
      *
      * @param pGameManager   Object that owns this world.
+     * @param sName          Name of the world, used for logging.
      * @param pRootNodeToUse Optionally specify a root node to use, if `nullptr` a new root node will be
      * created.
      */
-    World(GameManager* pGameManager, std::unique_ptr<Node> pRootNodeToUse = nullptr);
+    World(
+        GameManager* pGameManager, const std::string& sName, std::unique_ptr<Node> pRootNodeToUse = nullptr);
 
     /**
      * Despawns all nodes and attaches old root node's child nodes to the specified node then spawns root
@@ -166,6 +168,13 @@ public:
      * @return Amount of spawned nodes that should be called every frame.
      */
     size_t getCalledEveryFrameNodeCount();
+
+    /**
+     * Returns name of the world.
+     *
+     * @return Name.
+     */
+    std::string_view getName() const { return sName; }
 
 private:
     /** Represents arrays of nodes that are marked as "should be called every frame". */
@@ -304,6 +313,9 @@ private:
 
     /** Determines which camera is used as in-game eyes. */
     std::unique_ptr<CameraManager> pCameraManager;
+
+    /** Name of the world, used for logging. */
+    const std::string sName;
 
     /** Do not delete (free) this pointer. Always valid pointer to game manager. */
     GameManager* const pGameManager = nullptr;

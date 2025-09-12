@@ -6,15 +6,17 @@
 
 GameInstance::GameInstance(Window* pWindow) : pWindow(pWindow) {}
 
-void GameInstance::createWorld(const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds) {
-    pWindow->getGameManager()->createWorld(onCreated, bDestroyOldWorlds);
+void GameInstance::createWorld(
+    const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds, const std::string& sName) {
+    pWindow->getGameManager()->createWorld(onCreated, bDestroyOldWorlds, sName);
 }
 
 void GameInstance::loadNodeTreeAsWorld(
     const std::filesystem::path& pathToNodeTreeFile,
     const std::function<void(Node*)>& onLoaded,
-    bool bDestroyOldWorlds) {
-    pWindow->getGameManager()->loadNodeTreeAsWorld(pathToNodeTreeFile, onLoaded, bDestroyOldWorlds);
+    bool bDestroyOldWorlds,
+    const std::string& sName) {
+    pWindow->getGameManager()->loadNodeTreeAsWorld(pathToNodeTreeFile, onLoaded, bDestroyOldWorlds, sName);
 }
 
 void GameInstance::addTaskToThreadPool(const std::function<void()>& task) const {

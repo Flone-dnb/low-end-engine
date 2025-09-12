@@ -366,7 +366,7 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
             timeSinceLastTickSec = 0.0F;
 
             // Draw frame.
-            pRenderer->drawNextFrame();
+            pRenderer->drawNextFrame(deltaTimeInSec);
         }
 
         if (bRenderOnlyAfterInput) {

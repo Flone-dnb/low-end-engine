@@ -11,7 +11,7 @@ public:
     /**
      * Creates a cube mesh.
      *
-     * @param size Size of the cube.
+     * @param size Full size (both sides) of the cube on one axis.
      *
      * @return Cube mesh.
      */

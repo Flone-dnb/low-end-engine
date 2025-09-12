@@ -15,6 +15,65 @@
 
 std::recursive_mutex GpuResourceManager::mtx{};
 
+std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
+    unsigned int iPositionCount, bool bIsVertexDataDynamic, std::vector<unsigned short> vIndices) {
+    if (iPositionCount == 0) [[unlikely]] {
+        Error::showErrorAndThrowException("invalid position count specified");
+    }
+
+    std::scoped_lock guard(mtx);
+
+    unsigned int iVao = 0;
+    unsigned int iVbo = 0;
+    std::optional<unsigned int> optionalEbo;
+    std::optional<int> optionalIndexCount;
+    glGenVertexArrays(1, &iVao);
+    glGenBuffers(1, &iVbo);
+
+    glBindVertexArray(iVao);
+    glBindBuffer(GL_ARRAY_BUFFER, iVbo);
+    {
+        // Allocate vertices.
+        GL_CHECK_ERROR(glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<long long>(iPositionCount * sizeof(glm::vec3)),
+            nullptr,
+            bIsVertexDataDynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW));
+
+        // Describe vertex layout.
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(
+            0,                 // attribute index (layout location)
+            3,                 // number of components
+            GL_FLOAT,          // type of component
+            GL_FALSE,          // whether data should be normalized or not
+            sizeof(glm::vec3), // stride (size in bytes between elements)
+            0);                // beginning offset
+
+        if (!vIndices.empty()) {
+            // Create EBO.
+            unsigned int iEbo = 0;
+            glGenBuffers(1, &iEbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iEbo);
+            optionalEbo = iEbo;
+            optionalIndexCount = static_cast<int>(vIndices.size());
+
+            // Allocate indices.
+            GL_CHECK_ERROR(glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                vIndices.size() * sizeof(vIndices[0]),
+                vIndices.data(),
+                GL_STATIC_DRAW));
+        }
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return std::unique_ptr<VertexArrayObject>(
+        new VertexArrayObject(iVao, iVbo, optionalEbo, optionalIndexCount));
+}
+
 std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
     bool bIsVertexDataDynamic,
     std::optional<std::array<glm::vec3, ScreenQuadGeometry::iVertexCount>> vertexPositions) {
@@ -127,6 +186,7 @@ GpuResourceManager::createVertexArrayObject(const MeshNodeGeometry& geometry) {
 
     // Done.
     glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     return std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
         iVertexArrayObjectId, iVertexBufferObjectId, iIndexBufferObjectId, iIndexCount));

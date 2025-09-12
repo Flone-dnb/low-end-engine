@@ -69,6 +69,8 @@ set(PROJECT_SOURCES
     public/render/PostProcessManager.h
     public/render/UiLayer.hpp
     private/render/PostProcessManager.cpp
+    public/render/DebugDrawer.h
+    private/render/DebugDrawer.cpp
     private/misc/InitManager.hpp
     private/misc/Error.cpp
     public/misc/Error.h

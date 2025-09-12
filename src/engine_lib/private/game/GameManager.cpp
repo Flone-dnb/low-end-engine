@@ -92,7 +92,8 @@ GameManager::~GameManager() {
     Error::showErrorAndThrowException("unexpected state");
 }
 
-void GameManager::createWorld(const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds) {
+void GameManager::createWorld(
+    const std::function<void(Node*)>& onCreated, bool bDestroyOldWorlds, const std::string& sName) {
     std::scoped_lock guard(mtxWorldData.first);
     auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
@@ -106,12 +107,14 @@ void GameManager::createWorld(const std::function<void(Node*)>& onCreated, bool 
     pOptionalTask = std::unique_ptr<WorldCreationTask>(new WorldCreationTask());
     pOptionalTask->onCreated = onCreated;
     pOptionalTask->bDestroyOldWorlds = bDestroyOldWorlds;
+    pOptionalTask->sWorldName = sName;
 }
 
 void GameManager::loadNodeTreeAsWorld(
     const std::filesystem::path& pathToNodeTreeFile,
     const std::function<void(Node*)>& onLoaded,
-    bool bDestroyOldWorlds) {
+    bool bDestroyOldWorlds,
+    const std::string& sName) {
     std::scoped_lock guard(mtxWorldData.first);
     auto& pOptionalTask = mtxWorldData.second.pPendingWorldCreationTask;
 
@@ -128,6 +131,7 @@ void GameManager::loadNodeTreeAsWorld(
         std::unique_ptr<WorldCreationTask::LoadNodeTreeTask>(new WorldCreationTask::LoadNodeTreeTask());
     pOptionalTask->pOptionalNodeTreeLoadTask->pathToNodeTreeToLoad = pathToNodeTreeFile;
     pOptionalTask->bDestroyOldWorlds = bDestroyOldWorlds;
+    pOptionalTask->sWorldName = sName;
 }
 
 void GameManager::addTaskToThreadPool(const std::function<void()>& task) {
@@ -253,7 +257,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
                 }
                 Node* pRootNode = nullptr;
                 {
-                    auto pNewWorld = std::unique_ptr<World>(new World(this));
+                    auto pNewWorld = std::unique_ptr<World>(new World(this, pWorldCreationTask->sWorldName));
                     pRootNode = pNewWorld->getRootNode();
                     mtxWorldData.second.vWorlds.push_back(std::move(pNewWorld));
                 }
@@ -295,6 +299,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
                     {
                         auto pNewWorld = std::unique_ptr<World>(new World(
                             this,
+                            pWorldCreationTask->sWorldName,
                             std::move(pWorldCreationTask->pOptionalNodeTreeLoadTask->pLoadedNodeTreeRoot)));
                         pRootNode = pNewWorld->getRootNode();
                         mtxWorldData.second.vWorlds.push_back(std::move(pNewWorld));

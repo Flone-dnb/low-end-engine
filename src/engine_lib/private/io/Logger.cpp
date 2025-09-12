@@ -8,6 +8,9 @@
 // Custom.
 #include "misc/Globals.h"
 #include "misc/ProjectPaths.h"
+#if defined(DEBUG)
+#include "render/DebugDrawer.h"
+#endif
 
 // External.
 #include "spdlog/sinks/basic_file_sink.h"
@@ -66,6 +69,10 @@ void Logger::warn(std::string_view sText, const std::source_location location) c
     if (onLogMessage) {
         onLogMessage(LogMessageCategory::WARNING, sMessage);
     }
+
+#if defined(DEBUG)
+    DebugDrawer::get().drawText(sMessage, 5.0F, glm::vec3(1.0F, 1.0F, 0.0F));
+#endif
 }
 
 void Logger::error(std::string_view sText, const std::source_location location) const {
@@ -81,6 +88,10 @@ void Logger::error(std::string_view sText, const std::source_location location) 
     if (onLogMessage) {
         onLogMessage(LogMessageCategory::ERROR, sMessage);
     }
+
+#if defined(DEBUG)
+    DebugDrawer::get().drawText(sMessage, 5.0F, glm::vec3(1.0F, 0.0F, 0.0F));
+#endif
 }
 
 void Logger::flushToDisk() { pSpdLogger->flush(); }

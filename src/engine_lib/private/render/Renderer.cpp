@@ -15,6 +15,7 @@
 #include "misc/ProjectPaths.h"
 #include "material/TextureManager.h"
 #include "io/ConfigManager.h"
+#include "render/DebugDrawer.h"
 
 // External.
 #include "glad/glad.h"
@@ -108,7 +109,7 @@ void Renderer::recreateFramebuffers() {
 
 void Renderer::onWindowSizeChanged() { recreateFramebuffers(); }
 
-void Renderer::drawNextFrame() {
+void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     PROFILE_FUNC
 
     // Make sure there was no GL error during the last frame.
@@ -251,6 +252,23 @@ void Renderer::drawNextFrame() {
 
             copyFramebufferToWindowFramebuffer(*postProcessManager.pFramebuffer, viewportSize);
         }
+
+#if defined(DEBUG)
+        // Draw debug after all worlds.
+        auto pCameraProperties = vActiveCameras[0].second.pCameraNode->getCameraProperties();
+#ifdef ENGINE_EDITOR
+        if (vActiveCameras.size() > 1) {
+            // Find game world.
+            for (const auto& cameraInfo : vActiveCameras) {
+                if (cameraInfo.second.pWorld->getName() == "game") {
+                    pCameraProperties = cameraInfo.second.pCameraNode->getCameraProperties();
+                    break;
+                }
+            }
+        }
+#endif
+        DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
+#endif
     }
 
     // Unlock cameras.
@@ -385,6 +403,10 @@ void Renderer::calculateFrameStatistics() {
 }
 
 Renderer::~Renderer() {
+#if defined(DEBUG)
+    DebugDrawer::get().destroy(); // clear render resources
+#endif
+
     pFullscreenQuad = nullptr;
     pFontManager = nullptr;
 
