@@ -571,71 +571,9 @@ if (std::holds_alternative<Error>(result)) [[unlikely]] {
 auto pDeserializedSave = std::get<std::unique_ptr<PlayerSaveData>>(std::move(result));
 ```
 
-## Game asset file format
+## Debug drawer
 
-### General overview
-
-Most of the game assets are stored in the human-readable `TOML` format. This format is similar to `INI` format but has more features. This means that you can use any text editor to view or edit your asset files if you need to. Note that some assets (like mesh geometry) will be stored in a separate binary file next to the main TOML file that describes a MeshNode.
-
-When you serialize a serializable object (an object that derives from `Serializable`) the general TOML structure will look like this (comments start with #):
-
-```INI
-## <unique_id> is an integer, used to globally differentiate objects in the file
-## (in case objects have the same type (same GUID)), if you are serializing only 1 object the ID is 0 by default
-["<unique_id>.<type_guid>"]       ## section that describes an object with GUID
-<field_name> = <field_value>      ## not all fields will have their values stored like that
-<field_name> = <field_value>
-
-
-["<unique_id>.<type_guid>"]       ## some other object
-<field_name> = <field_value>      ## some other field
-".path_to_original" = <value>     ## keys that start with one dot are "internal attributes" they are used for storing 
-                                  ## internal info
-"..parent_node_id" = <unique_id>  ## keys that start with two dots are "custom attributes" (user-specified)
-                                  ## that you pass into `serialize`, they are used to store additional info
-                                  ## `Node` class uses custom attributes to save node hierarchy
-```
-
-### Storing only changed fields
-
-In a case where you have serialized some object and then deserialized it, modified and serialized in a different file. In this case only changed variables will be serialized and instead of saving unchanged variables we will save a path to the "original" object to deserialize other variables.
-
-```INI
-## res/game/my_new_data.toml
-
-["0.550ea9f9-dd8a-4089-a717-0fe4e351a687"]
-iLevel = 3
-".path_to_original" = ["game/my_data.toml", "0"]
-```
-
-If we open the file `res/game/my_data.toml` we will see something like this:
-
-```INI
-## res/game/my_data.toml
-
-["0.test-guid"]
-iLevel = 0
-iExperience = 50
-vAttributes = [32, 22, 31]
-```
-
-Now when we deserialize `res/game/my_new_data.toml` we will get and object with the following properties:
-
-```Cpp
-iLevel = 3
-iExperience = 50
-vAttributes = [32, 22, 31]
-```
-
-This will work only if the original object was previously deserialized from a file located in the `res` directory and a new object is serialized in a different path but still in the `res` directory (for more info see `Serializable::getPathDeserializedFromRelativeToRes`).
-
-### Referencing external node tree
-
-Imagine you had a serialized node tree (for example a character node tree that has character's mesh, camera and etc.) then you deserialize it and in the engine/editor add it to a node of some other node tree (for example a game level, we'll call it a parent node tree), thus the parent node tree is seeing your previously deserialized node tree (that you attached) as an extrenal node tree.
-
-During the serialization of the node tree that uses an external node tree this external node tree is saved in a special way, that is, only the root node of the external node tree is saved with the parent node tree and the information about external node tree's child nodes is stored as a path to the external node tree file.
-
-This means that when we reference an external node tree, only changes to external node tree's root node will be saved.
+In case you need to quickly draw some temporary objects/text in the game world in order to debug something you can use `DebugDrawer` to do so.
 
 ## Saving and loading config files
 
@@ -785,6 +723,8 @@ cmake --build profiler/build --config Release --parallel
 
 Then built tracy server will be located at `ext/tracy/profiler/build/Release/tracy-profiler.exe`, open it and connect to your game.
 
+# Advanced topics
+
 ## Writing custom shaders
 
 Materials can use custom GLSL shaders, here is an example of setting a custom fragment shader to a mesh.
@@ -810,6 +750,72 @@ getWindow()->onKeyboardInput(KeyboardKey::KEY_A, KeyboardModifiers(0), false); /
 Once such function is called it will trigger register input bindings in your game instance and nodes.
 
 There are also other `on...` function in `Window` that you might find handy in simulating user input.
+
+## Game asset file format
+
+### General overview
+
+Most of the game assets are stored in the human-readable `TOML` format. This format is similar to `INI` format but has more features. This means that you can use any text editor to view or edit your asset files if you need to. Note that some assets (like mesh geometry) will be stored in a separate binary file next to the main TOML file that describes a MeshNode.
+
+When you serialize a serializable object (an object that derives from `Serializable`) the general TOML structure will look like this (comments start with #):
+
+```INI
+## <unique_id> is an integer, used to globally differentiate objects in the file
+## (in case objects have the same type (same GUID)), if you are serializing only 1 object the ID is 0 by default
+["<unique_id>.<type_guid>"]       ## section that describes an object with GUID
+<field_name> = <field_value>      ## not all fields will have their values stored like that
+<field_name> = <field_value>
+
+
+["<unique_id>.<type_guid>"]       ## some other object
+<field_name> = <field_value>      ## some other field
+".path_to_original" = <value>     ## keys that start with one dot are "internal attributes" they are used for storing 
+                                  ## internal info
+"..parent_node_id" = <unique_id>  ## keys that start with two dots are "custom attributes" (user-specified)
+                                  ## that you pass into `serialize`, they are used to store additional info
+                                  ## `Node` class uses custom attributes to save node hierarchy
+```
+
+### Storing only changed fields
+
+In a case where you have serialized some object and then deserialized it, modified and serialized in a different file. In this case only changed variables will be serialized and instead of saving unchanged variables we will save a path to the "original" object to deserialize other variables.
+
+```INI
+## res/game/my_new_data.toml
+
+["0.550ea9f9-dd8a-4089-a717-0fe4e351a687"]
+iLevel = 3
+".path_to_original" = ["game/my_data.toml", "0"]
+```
+
+If we open the file `res/game/my_data.toml` we will see something like this:
+
+```INI
+## res/game/my_data.toml
+
+["0.test-guid"]
+iLevel = 0
+iExperience = 50
+vAttributes = [32, 22, 31]
+```
+
+Now when we deserialize `res/game/my_new_data.toml` we will get and object with the following properties:
+
+```Cpp
+iLevel = 3
+iExperience = 50
+vAttributes = [32, 22, 31]
+```
+
+This will work only if the original object was previously deserialized from a file located in the `res` directory and a new object is serialized in a different path but still in the `res` directory (for more info see `Serializable::getPathDeserializedFromRelativeToRes`).
+
+### Referencing external node tree
+
+Imagine you had a serialized node tree (for example a character node tree that has character's mesh, camera and etc.) then you deserialize it and in the engine/editor add it to a node of some other node tree (for example a game level, we'll call it a parent node tree), thus the parent node tree is seeing your previously deserialized node tree (that you attached) as an extrenal node tree.
+
+During the serialization of the node tree that uses an external node tree this external node tree is saved in a special way, that is, only the root node of the external node tree is saved with the parent node tree and the information about external node tree's child nodes is stored as a path to the external node tree file.
+
+This means that when we reference an external node tree, only changes to external node tree's root node will be saved.
 
 # Building your game for retro handhelds (ARM64 Linux devices)
 
