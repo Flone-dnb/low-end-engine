@@ -71,6 +71,7 @@ enum class KeyboardButton {
     MINUS = SDL_SCANCODE_MINUS,
     PERIOD = SDL_SCANCODE_PERIOD,
     SLASH = SDL_SCANCODE_SLASH,
+    TILDE = SDL_SCANCODE_GRAVE,
     NUM_0 = SDL_SCANCODE_0, //< Can't use 0 as name so adding a NUM here.
     NUM_1 = SDL_SCANCODE_1,
     NUM_2 = SDL_SCANCODE_2,

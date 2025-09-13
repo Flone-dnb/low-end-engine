@@ -122,6 +122,8 @@ set(PROJECT_SOURCES
     private/game/GameInstance.cpp
     private/game/World.cpp
     public/game/World.h
+    private/game/DebugConsole.cpp
+    public/game/DebugConsole.h
     private/game/node/Node.cpp
     public/game/node/Node.h
     private/game/node/SpatialNode.cpp

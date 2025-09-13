@@ -9,6 +9,7 @@
 #include "render/UiNodeManager.h"
 #include "game/Window.h"
 #include "sound/SoundManager.h"
+#include "game/DebugConsole.h"
 
 // External.
 #if defined(ENGINE_PROFILER_ENABLED)
@@ -345,10 +346,31 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
         break;
     }
+
+#if defined(DEBUG)
+    DebugConsole::get().onBeforeNewFrame(pRenderer.get());
+#endif
 }
 
 void GameManager::onKeyboardInput(
     KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) {
+#if defined(DEBUG)
+    if (DebugConsole::get().isShown() && key != KeyboardButton::TILDE) {
+        if (bIsRepeat || !bIsPressedDown) {
+            return;
+        }
+        DebugConsole::get().onKeyboardInput(key, modifiers, pGameInstance.get());
+        return;
+    }
+    if (!bIsRepeat && !bIsPressedDown && key == KeyboardButton::TILDE) {
+        if (DebugConsole::get().isShown()) {
+            DebugConsole::get().hide();
+        } else {
+            DebugConsole::get().show();
+        }
+    }
+#endif
+
     if (!bIsRepeat) {
         if (bIsPressedDown) {
             pGameInstance->onKeyboardButtonPressed(key, modifiers);
@@ -372,6 +394,13 @@ void GameManager::onKeyboardInput(
 }
 
 void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+#if defined(DEBUG)
+    if (DebugConsole::get().isShown()) {
+        DebugConsole::get().onKeyboardInputTextCharacter(sTextCharacter);
+        return;
+    }
+#endif
+
     std::scoped_lock guard(mtxWorldData.first);
 
     for (auto& pWorld : mtxWorldData.second.vWorlds) {

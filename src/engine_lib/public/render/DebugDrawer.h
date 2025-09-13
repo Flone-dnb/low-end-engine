@@ -84,7 +84,7 @@ public:
      * If no instance was created yet, this function will create it
      * and return a reference to it.
      *
-     * @return Reference to the logger instance.
+     * @return Reference to the instance.
      */
     static DebugDrawer& get();
 

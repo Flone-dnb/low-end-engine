@@ -573,7 +573,34 @@ auto pDeserializedSave = std::get<std::unique_ptr<PlayerSaveData>>(std::move(res
 
 ## Debug drawer
 
-In case you need to quickly draw some temporary objects/text in the game world in order to debug something you can use `DebugDrawer` to do so.
+In case you need to quickly draw some temporary objects/text in the game world in order to debug something you can use `DebugDrawer` to do so. Here is an example:
+
+```Cpp
+#include "render/DebugDrawer.h"
+
+// draw a cube of size 1 on coordinates (1, 1, 0) for a single frame
+DebugDrawer::get().drawCube(1.0F, glm::vec3(1.0F, 1.0F, 0.0F));
+```
+
+## Debug console
+
+Often during development developers need some cheats for debugging and/or testing. `DebugConsole` exists exactly for such things, it allows you to create custom commands that will only work in non-release builds. Here is an example:
+
+```Cpp
+#include "game/DebugConsole.h"
+
+#if defined(DEBUG) // DebugConsole is only available when DEBUG is defined
+
+DebugConsole::get().registerCommand("testCommand", [](GameInstance* pGameInstance) {
+    DebugDrawer::get().drawText("hello"); // <- example command logic
+});
+
+#endif
+```
+
+In order to show/hide the debug console press the tilde (~) button on your keyboard and write the desired command.
+
+When shown debug console will also print some useful stats such as FPS and RAM usage.
 
 ## Saving and loading config files
 

@@ -39,7 +39,7 @@
  *
  * @return Size in bytes.
  */
-size_t getCurrentRSS() {
+static size_t getCurrentRSS() {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
     PROCESS_MEMORY_COUNTERS info;
