@@ -4,6 +4,8 @@
 #include "game/node/ui/RectUiNode.h"
 
 class LayoutUiNode;
+class SkeletonNode;
+class CollisionNode;
 
 /** Displays reflected fields of an object. */
 class PropertyInspector : public RectUiNode {
@@ -42,13 +44,29 @@ public:
 
 private:
     /**
-     * Displays reflected fields of the specified type (ignoring inherited fields) by taking the current
+     * Displays reflected fields of the specified type by taking the current
      * values from the specified object.
      *
-     * @param sTypeGuid GUID of the type to display.
-     * @param pObject   Object to read/write fields.
+     * @param sTypeGuid  GUID of the type to display.
+     * @param pObject    Object to read/write fields.
+     * @param bRecursive `true` to display parent variables.
      */
-    void displayPropertiesForTypeRecursive(const std::string& sTypeGuid, Node* pObject);
+    void
+    displayPropertiesForType(const std::string& sTypeGuid, Serializable* pObject, bool bRecursive = true);
+
+    /**
+     * Adds special UI options to @ref pPropertyLayout for skeleton node.
+     *
+     * @param pSkeletonNode Node.
+     */
+    void addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNode);
+
+    /**
+     * Adds special UI options to @ref pPropertyLayout for collision node.
+     *
+     * @param pCollisionNode Node.
+     */
+    void addCollisionNodeSpecialOptions(CollisionNode* pCollisionNode);
 
     /** Layout to add properties. */
     LayoutUiNode* pPropertyLayout = nullptr;

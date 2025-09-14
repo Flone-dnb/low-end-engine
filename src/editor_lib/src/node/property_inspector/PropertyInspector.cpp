@@ -3,9 +3,12 @@
 // Custom.
 #include "misc/ReflectedTypeDatabase.h"
 #include "game/node/ui/LayoutUiNode.h"
+#include "game/node/ui/ButtonUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/SkeletonNode.h"
+#include "game/node/physics/CollisionNode.h"
+#include "game/geometry/shapes/CollisionShape.h"
 #include "EditorTheme.h"
 #include "EditorGameInstance.h"
 #include "node/GizmoNode.h"
@@ -72,55 +75,123 @@ void PropertyInspector::refreshInspectedProperties() {
     }
 
     if (auto pSkeletonNode = dynamic_cast<SkeletonNode*>(pInspectedNode)) {
-        auto pGroupBackground = std::make_unique<RectUiNode>();
-        pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
-        pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
-        pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05F));
-
-        // Preview animations.
-        const auto pAnimLayout =
-            pGroupBackground->addChildNode(std::make_unique<LayoutUiNode>("anim preview layout"));
-        pAnimLayout->setChildNodeSpacing(EditorTheme::getSpacing());
-        pAnimLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
-        {
-            const auto pAnimPreviewTitle = pAnimLayout->addChildNode(std::make_unique<TextUiNode>());
-            pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight() * 0.92F);
-            pAnimPreviewTitle->setSize(
-                glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4F));
-            pAnimPreviewTitle->setText(u"Preview animation (path relative `res`)");
-            pAnimPreviewTitle->setTextColor(glm::vec4(glm::vec3(pAnimPreviewTitle->getTextColor()), 0.5F));
-
-            const auto pBackground = pAnimLayout->addChildNode(std::make_unique<RectUiNode>());
-            pBackground->setPadding(EditorTheme::getPadding());
-            pBackground->setColor(EditorTheme::getButtonColor());
-            pBackground->setSize(glm::vec2(pBackground->getSize().x, 0.045F));
-            {
-                const auto pAnimPathEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                pAnimPathEdit->setTextHeight(EditorTheme::getSmallTextHeight());
-                pAnimPathEdit->setHandleNewLineChars(false);
-                pAnimPathEdit->setText(u"game/");
-                pAnimPathEdit->setOnTextChanged([pSkeletonNode](std::u16string_view sNewText) {
-                    pSkeletonNode->stopAnimation();
-
-                    const auto pathToAnimFile =
-                        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sNewText;
-                    if (!std::filesystem::exists(pathToAnimFile) ||
-                        std::filesystem::is_directory(pathToAnimFile)) {
-                        return;
-                    }
-
-                    pSkeletonNode->playAnimation(utf::as_str8(sNewText), true, true);
-                });
-            }
-        }
-
-        pPropertyLayout->addChildNode(std::move(pGroupBackground));
+        addSkeletonNodeSpecialOptions(pSkeletonNode);
+    }
+    if (auto pCollisionNode = dynamic_cast<CollisionNode*>(pInspectedNode)) {
+        addCollisionNodeSpecialOptions(pCollisionNode);
     }
 
-    displayPropertiesForTypeRecursive(pInspectedNode->getTypeGuid(), pInspectedNode);
+    displayPropertiesForType(pInspectedNode->getTypeGuid(), pInspectedNode);
 }
 
-void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTypeGuid, Node* pObject) {
+void PropertyInspector::addCollisionNodeSpecialOptions(CollisionNode* pCollisionNode) {
+    auto pGroupBackground = std::make_unique<RectUiNode>();
+    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+    pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
+    pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05F));
+
+    // Select shape.
+    const auto pShapeSelectLayout =
+        pGroupBackground->addChildNode(std::make_unique<LayoutUiNode>("shape select layout"));
+    pShapeSelectLayout->setChildNodeSpacing(EditorTheme::getSpacing());
+    pShapeSelectLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+    {
+        // Title.
+        const auto pSelectShapeText = pShapeSelectLayout->addChildNode(std::make_unique<TextUiNode>());
+        pSelectShapeText->setTextHeight(EditorTheme::getSmallTextHeight());
+        pSelectShapeText->setHandleNewLineChars(false);
+        pSelectShapeText->setText(u"Select shape:");
+
+        // Display derived shapes.
+        const auto& reflectedTypes = ReflectedTypeDatabase::getReflectedTypes();
+        for (const auto& [sTypeGuid, typeInfo] : reflectedTypes) {
+            if (typeInfo.sParentTypeGuid != CollisionShape::getTypeGuidStatic()) {
+                continue;
+            }
+
+            const auto pButton = pShapeSelectLayout->addChildNode(std::make_unique<ButtonUiNode>());
+            pButton->setPadding(EditorTheme::getPadding());
+            pButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
+            pButton->setColorWhilePressed(EditorTheme::getButtonPressedColor());
+            pButton->setColor(EditorTheme::getButtonColor());
+            if (pCollisionNode->getShape()->getTypeGuid() == sTypeGuid) {
+                pButton->setColor(EditorTheme::getAccentColor());
+            }
+            pButton->setSize(glm::vec2(pButton->getSize().x, 0.03F));
+            pButton->setOnClicked([this, pCollisionNode, sCollisionTypeGuid = sTypeGuid]() {
+                auto pNewShape = std::unique_ptr<CollisionShape>(dynamic_cast<CollisionShape*>(
+                    ReflectedTypeDatabase::getTypeInfo(sCollisionTypeGuid).createNewObject().release()));
+                pCollisionNode->setShape(std::move(pNewShape));
+                refreshInspectedProperties();
+            });
+            {
+                const auto pText = pButton->addChildNode(std::make_unique<TextUiNode>());
+                pText->setTextHeight(EditorTheme::getSmallTextHeight());
+                pText->setHandleNewLineChars(false);
+                pText->setText(utf::as_u16(typeInfo.sTypeName));
+            }
+        }
+    }
+
+    pPropertyLayout->addChildNode(std::move(pGroupBackground));
+
+    // Display shape settings.
+    displayPropertiesForType(pCollisionNode->getShape()->getTypeGuid(), pCollisionNode->getShape(), false);
+
+    // Add a spacer.
+    const auto pSpacer = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
+    pSpacer->setColor(EditorTheme::getAccentColor());
+    pSpacer->setSize(glm::vec2(pSpacer->getSize().x, 0.001F));
+}
+
+void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNode) {
+    auto pGroupBackground = std::make_unique<RectUiNode>();
+    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+    pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
+    pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05F));
+
+    // Preview animations.
+    const auto pAnimLayout =
+        pGroupBackground->addChildNode(std::make_unique<LayoutUiNode>("anim preview layout"));
+    pAnimLayout->setChildNodeSpacing(EditorTheme::getSpacing());
+    pAnimLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
+    {
+        const auto pAnimPreviewTitle = pAnimLayout->addChildNode(std::make_unique<TextUiNode>());
+        pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight() * 0.92F);
+        pAnimPreviewTitle->setSize(
+            glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4F));
+        pAnimPreviewTitle->setText(u"Preview animation (path relative `res`)");
+        pAnimPreviewTitle->setTextColor(glm::vec4(glm::vec3(pAnimPreviewTitle->getTextColor()), 0.5F));
+
+        const auto pBackground = pAnimLayout->addChildNode(std::make_unique<RectUiNode>());
+        pBackground->setPadding(EditorTheme::getPadding());
+        pBackground->setColor(EditorTheme::getButtonColor());
+        pBackground->setSize(glm::vec2(pBackground->getSize().x, 0.045F));
+        {
+            const auto pAnimPathEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
+            pAnimPathEdit->setTextHeight(EditorTheme::getSmallTextHeight());
+            pAnimPathEdit->setHandleNewLineChars(false);
+            pAnimPathEdit->setText(u"game/");
+            pAnimPathEdit->setOnTextChanged([pSkeletonNode](std::u16string_view sNewText) {
+                pSkeletonNode->stopAnimation();
+
+                const auto pathToAnimFile =
+                    ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sNewText;
+                if (!std::filesystem::exists(pathToAnimFile) ||
+                    std::filesystem::is_directory(pathToAnimFile)) {
+                    return;
+                }
+
+                pSkeletonNode->playAnimation(utf::as_str8(sNewText), true, true);
+            });
+        }
+    }
+
+    pPropertyLayout->addChildNode(std::move(pGroupBackground));
+}
+
+void PropertyInspector::displayPropertiesForType(
+    const std::string& sTypeGuid, Serializable* pObject, bool bRecursive) {
     auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
@@ -228,7 +299,7 @@ void PropertyInspector::displayPropertiesForTypeRecursive(const std::string& sTy
 
     pPropertyLayout->addChildNode(std::move(pGroupBackground));
 
-    if (!typeInfo.sParentTypeGuid.empty()) {
-        displayPropertiesForTypeRecursive(typeInfo.sParentTypeGuid, pObject);
+    if (bRecursive && !typeInfo.sParentTypeGuid.empty()) {
+        displayPropertiesForType(typeInfo.sParentTypeGuid, pObject);
     }
 }

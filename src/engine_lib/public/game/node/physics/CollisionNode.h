@@ -63,6 +63,13 @@ public:
      */
     void setShape(std::unique_ptr<CollisionShape> pNewShape);
 
+    /**
+     * Returns used collision shape.
+     *
+     * @return `nullptr` if not set.
+     */
+    CollisionShape* getShape() const { return pShape.get(); }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
