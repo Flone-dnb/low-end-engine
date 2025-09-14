@@ -20,6 +20,7 @@
 class Node;
 class CameraManager;
 class SoundManager;
+class PhysicsManager;
 
 /**
  * Controls main game objects: game instance, input manager, renderer,
@@ -237,6 +238,13 @@ public:
     SoundManager& getSoundManager() const;
 
     /**
+     * Returns physics manager.
+     *
+     * @return Physics manager.
+     */
+    PhysicsManager& getPhysicsManager() const { return *pPhysicsManager; }
+
+    /**
      * Returns info about existing worlds.
      *
      * @return Worlds info.
@@ -443,6 +451,9 @@ private:
 
     /** Manages sound and sound effects. */
     std::unique_ptr<SoundManager> pSoundManager;
+
+    /** Manages game physics. */
+    std::unique_ptr<PhysicsManager> pPhysicsManager;
 
     /** Game world, stores world's node tree. */
     std::pair<std::recursive_mutex, WorldData> mtxWorldData;

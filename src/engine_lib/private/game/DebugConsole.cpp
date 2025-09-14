@@ -28,6 +28,10 @@ DebugConsole& DebugConsole::get() {
 
 void DebugConsole::registerCommand(
     const std::string& sCommandName, const std::function<void(GameInstance*)>& callback) {
+    if (sCommandName.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("empty commands are not allowed");
+    }
+
     const auto it = registeredCommands.find(sCommandName);
     if (it != registeredCommands.end()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(

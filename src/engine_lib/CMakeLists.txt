@@ -27,6 +27,7 @@ set(PROJECT_SOURCES
     public/game/Window.h
     public/render/Renderer.h
     private/render/Renderer.cpp
+    private/render/PhysicsDebugDrawer.hpp
     private/material/Material.cpp
     public/material/Material.h
     private/material/TextureManager.cpp
@@ -97,6 +98,8 @@ set(PROJECT_SOURCES
     private/game/geometry/shapes/Plane.cpp
     public/game/geometry/shapes/Sphere.h
     private/game/geometry/shapes/Sphere.cpp
+    public/game/geometry/shapes/CollisionShape.h
+    private/game/geometry/shapes/CollisionShape.cpp
     private/game/geometry/MeshNodeGeometry.cpp
     public/game/geometry/MeshNodeGeometry.h
     private/game/geometry/SkeletalMeshNodeGeometry.cpp
@@ -124,6 +127,11 @@ set(PROJECT_SOURCES
     public/game/World.h
     private/game/DebugConsole.cpp
     public/game/DebugConsole.h
+    private/game/physics/CoordinateConversions.hpp
+    private/game/physics/PhysicsManager.cpp
+    private/game/physics/PhysicsManager.h
+    private/game/physics/PhysicsLayers.cpp
+    private/game/physics/PhysicsLayers.h
     private/game/node/Node.cpp
     public/game/node/Node.h
     private/game/node/SpatialNode.cpp
@@ -141,6 +149,8 @@ set(PROJECT_SOURCES
     private/game/node/Sound3dNode.cpp
     public/game/node/SkeletonNode.h
     private/game/node/SkeletonNode.cpp
+    private/game/node/physics/CollisionNode.cpp
+    public/game/node/physics/CollisionNode.h
     public/game/node/light/DirectionalLightNode.h
     private/game/node/light/DirectionalLightNode.cpp
     public/game/node/light/SpotlightNode.h
@@ -351,6 +361,40 @@ add_dependencies(${PROJECT_NAME} gltf2ozz)
 set(GLTF2OZZ_BIN_PATH ${PROJECT_BINARY_DIR}/${DEPENDENCY_BUILD_DIR_NAME}/ozz-animation/src/animation/offline/gltf/gltf2ozz${CMAKE_EXECUTABLE_SUFFIX})
 message(STATUS "gltf2ozz will be located at: ${GLTF2OZZ_BIN_PATH}")
 add_compile_definitions(GLTF2OZZ_BIN_PATH="${GLTF2OZZ_BIN_PATH}")
+
+# Add JoltPhysics.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"JoltPhysics\"...")
+set(PROFILER_IN_DEBUG_AND_RELEASE OFF CACHE BOOL "" FORCE)
+set(DISABLE_CUSTOM_ALLOCATOR ON CACHE BOOL "" FORCE)
+if (NOT IS_RELEASE_BUILD)
+    set(GENERATE_DEBUG_SYMBOLS ON CACHE BOOL "" FORCE)
+else()
+    set(GENERATE_DEBUG_SYMBOLS OFF CACHE BOOL "" FORCE)
+endif()
+set(DOUBLE_PRECISION OFF CACHE BOOL "" FORCE)
+set(CROSS_PLATFORM_DETERMINISTIC OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(FLOATING_POINT_EXCEPTIONS_ENABLED OFF CACHE BOOL "" FORCE)
+set(ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(CPP_EXCEPTIONS_ENABLED ON CACHE BOOL "" FORCE)
+set(CPP_RTTI_ENABLED ON CACHE BOOL "" FORCE)
+set(OBJECT_LAYER_BITS 16)
+set(USE_SSE4_1 ON CACHE BOOL "" FORCE)
+set(USE_SSE4_2 ON CACHE BOOL "" FORCE)
+set(USE_F16C ON CACHE BOOL "" FORCE)
+set(USE_LZCNT ON CACHE BOOL "" FORCE)
+set(USE_LZCNT ON CACHE BOOL "" FORCE)
+set(USE_FMADD ON CACHE BOOL "" FORCE)
+set(USE_AVX OFF CACHE BOOL "" FORCE)
+set(USE_AVX2 OFF CACHE BOOL "" FORCE)
+set(USE_AVX512 OFF CACHE BOOL "" FORCE)
+add_subdirectory(${RELATIVE_EXT_PATH}/JoltPhysics/Build ${DEPENDENCY_BUILD_DIR_NAME}/JoltPhysics/Build SYSTEM)
+target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
+set_target_properties(Jolt PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${PROJECT_NAME} Jolt)
+if (NOT IS_RELEASE_BUILD)
+    target_compile_definitions(Jolt PUBLIC JPH_DEBUG_RENDERER)    
+endif()
 
 if (NOT IS_RELEASE_BUILD)
     # Add tracy.

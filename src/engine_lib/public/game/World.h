@@ -156,6 +156,13 @@ public:
     LightSourceManager& getLightSourceManager() const;
 
     /**
+     * Returns game manager.
+     *
+     * @return Game manager.
+     */
+    GameManager& getGameManager() const { return *pGameManager; }
+
+    /**
      * Returns total amount of currently spawned nodes.
      *
      * @return Total nodes spawned right now.

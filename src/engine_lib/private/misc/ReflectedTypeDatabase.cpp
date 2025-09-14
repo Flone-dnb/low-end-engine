@@ -23,6 +23,8 @@
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/SliderUiNode.h"
 #include "game/node/ui/CheckboxUiNode.h"
+#include "game/geometry/shapes/CollisionShape.h"
+#include "game/node/physics/CollisionNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -50,6 +52,14 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(TextEditUiNode::getTypeGuidStatic(), TextEditUiNode::getReflectionInfo());
     registerType(SliderUiNode::getTypeGuidStatic(), SliderUiNode::getReflectionInfo());
     registerType(CheckboxUiNode::getTypeGuidStatic(), CheckboxUiNode::getReflectionInfo());
+
+    // Physics.
+    registerType(CollisionShape::getTypeGuidStatic(), CollisionShape::getReflectionInfo());
+    registerType(BoxCollisionShape::getTypeGuidStatic(), BoxCollisionShape::getReflectionInfo());
+    registerType(SphereCollisionShape::getTypeGuidStatic(), SphereCollisionShape::getReflectionInfo());
+    registerType(CapsuleCollisionShape::getTypeGuidStatic(), CapsuleCollisionShape::getReflectionInfo());
+    registerType(CylinderCollisionShape::getTypeGuidStatic(), CylinderCollisionShape::getReflectionInfo());
+    registerType(CollisionNode::getTypeGuidStatic(), CollisionNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

@@ -10,6 +10,9 @@
 #include "game/Window.h"
 #include "sound/SoundManager.h"
 #include "game/DebugConsole.h"
+#ifndef ENGINE_UI_ONLY
+#include "game/physics/PhysicsManager.h"
+#endif
 
 // External.
 #if defined(ENGINE_PROFILER_ENABLED)
@@ -35,6 +38,9 @@ GameManager::GameManager(
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
+#ifndef ENGINE_UI_ONLY
+    pPhysicsManager = std::unique_ptr<PhysicsManager>(new PhysicsManager());
+#endif
 
     ReflectedTypeDatabase::registerEngineTypes();
 }
@@ -76,6 +82,7 @@ void GameManager::destroy() {
 
     // Destroy game instance before renderer.
     pGameInstance = nullptr;
+    pPhysicsManager = nullptr;
 
     // After game instance, destroy the renderer.
     pRenderer = nullptr;
@@ -346,6 +353,10 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
         break;
     }
+
+#ifndef ENGINE_UI_ONLY
+    pPhysicsManager->onBeforeNewFrame(timeSincePrevCallInSec);
+#endif
 
 #if defined(DEBUG)
     DebugConsole::get().onBeforeNewFrame(pRenderer.get());

@@ -49,3 +49,6 @@
 [submodule "ext/subprocess.h"]
 	path = ext/subprocess.h
 	url = https://github.com/sheredom/subprocess.h.git
+[submodule "ext/JoltPhysics"]
+	path = ext/JoltPhysics
+	url = https://github.com/jrouwe/JoltPhysics.git
