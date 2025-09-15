@@ -28,8 +28,8 @@ function(enable_more_warnings)
         target_compile_options(${PROJECT_NAME} PUBLIC /utf-8)
     endif()
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	# False-positive in GCC for `ReflectedTypeDatabase::getTypeInfo`.
-	target_compile_options(${PROJECT_NAME} PUBLIC -Wno-dangling-reference)
+        # False-positive in GCC for `ReflectedTypeDatabase::getTypeInfo`.
+        target_compile_options(${PROJECT_NAME} PUBLIC -Wno-dangling-reference)
     endif()
 endfunction()
 
@@ -48,10 +48,19 @@ function(add_node_super_call_checker GLOBAL_PATH_TO_NODES_PRIVATE GLOBAL_PATH_TO
 endfunction()
 
 function(create_symlink_to_res)
-    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME})
-    file(CREATE_LINK
-        ${CMAKE_CURRENT_LIST_DIR}/../../res
-        ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME}/res
-        SYMBOLIC
-    )
+    set(PROJ_BIN_DIR ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME})
+    set(RES_SYMLINK_PATH ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME}/res)
+
+    if(NOT EXISTS ${PROJ_BIN_DIR})
+        file(MAKE_DIRECTORY ${PROJ_BIN_DIR})
+    endif()
+    
+    if(NOT EXISTS ${RES_SYMLINK_PATH})
+        message(STATUS "Creating symlink to `res` directory at ${RES_SYMLINK_PATH}")
+        file(CREATE_LINK
+            ${CMAKE_CURRENT_LIST_DIR}/../../res
+            ${RES_SYMLINK_PATH}
+            SYMBOLIC
+        )
+    endif()
 endfunction()
