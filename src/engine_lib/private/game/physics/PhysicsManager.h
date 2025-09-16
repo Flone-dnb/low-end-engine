@@ -71,7 +71,7 @@ private:
     /**
      * Checks if needs to run a physics tick and runs if needed.
      *
-     * @parma timeSincePrevFrameInSec Also known as deltatime - time in seconds that has passed since
+     * @param timeSincePrevFrameInSec Also known as deltatime - time in seconds that has passed since
      * the last frame was rendered.
      */
     void onBeforeNewFrame(float timeSincePrevFrameInSec);

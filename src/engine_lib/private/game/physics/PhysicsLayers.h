@@ -37,12 +37,24 @@ enum class ObjectLayer : JPH::ObjectLayer {
 /** Determines if two object layers can collide. */
 class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
 public:
+    /**
+     * @param layer1Index Layer 1.
+     * @param layer2Index Layer 2.
+     *
+     * @return Should collide.
+     */
     virtual bool ShouldCollide(JPH::ObjectLayer layer1Index, JPH::ObjectLayer layer2Index) const override;
 };
 
 /** Determines if an object layer can collide with a broadphase layer. */
 class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
 public:
+    /**
+     * @param objectLayer Object layer.
+     * @param broadPhaseLayer Broad phase layer.
+     *
+     * @return Should collide.
+     */
     virtual bool
     ShouldCollide(JPH::ObjectLayer objectLayer, JPH::BroadPhaseLayer broadPhaseLayer) const override;
 };
@@ -52,10 +64,18 @@ class BroadPhaseLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface 
 public:
     BroadPhaseLayerInterfaceImpl();
 
+    /**
+     * @return Total number of broad layers.
+     */
     virtual unsigned int GetNumBroadPhaseLayers() const override;
 
+    /**
+     * @param objectLayerIndex Object layer index.
+     * @return Layer.
+     */
     virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer objectLayerIndex) const override;
 
 private:
+    /** Object to broad phase layer mapping. */
     JPH::BroadPhaseLayer objectLayerToBroadPhaseLayer[static_cast<unsigned int>(ObjectLayer::COUNT)];
 };
