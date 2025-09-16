@@ -14,7 +14,7 @@ FileDialogMenu::FileDialogMenu(
     const std::filesystem::path& pathToDirectory,
     const std::vector<std::string>& vFileExtensions,
     const std::function<void(const std::filesystem::path& path)>& onSelected)
-    : RectUiNode("File Dialog"), vFileExtensions(vFileExtensions), onSelected(onSelected) {
+    : RectUiNode("File Dialog"), onSelected(onSelected), vFileExtensions(vFileExtensions) {
     setPosition(glm::vec2(0.0F, 0.0F));
     setSize(glm::vec2(1.0F, 1.0F));
     setColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.5F));
