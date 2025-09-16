@@ -32,7 +32,14 @@ CollisionNode::CollisionNode(const std::string& sNodeName) : SpatialNode(sNodeNa
 }
 
 void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
-    this->pShape = std::move(pNewShape);
+    pShape = std::move(pNewShape);
+    pShape->setOnChanged([this]() {
+        if (isSpawned()) {
+            auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+            physicsManager.destroyBodyForNode(this);
+            physicsManager.createBodyForNode(this);
+        }
+    });
 
     if (isSpawned()) {
         auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
@@ -50,12 +57,23 @@ void CollisionNode::onSpawning() {
     }
 
     getWorldWhileSpawned()->getGameManager().getPhysicsManager().createBodyForNode(this);
+
+    pShape->setOnChanged([this]() {
+        if (isSpawned()) {
+            auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+            physicsManager.destroyBodyForNode(this);
+            physicsManager.createBodyForNode(this);
+        }
+    });
 }
 
 void CollisionNode::onDespawning() {
     SpatialNode::onDespawning();
 
     getWorldWhileSpawned()->getGameManager().getPhysicsManager().destroyBodyForNode(this);
+
+    // Clear callback.
+    pShape->setOnChanged([]() {});
 }
 
 void CollisionNode::onWorldLocationRotationScaleChanged() {

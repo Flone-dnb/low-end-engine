@@ -182,6 +182,7 @@ void NodeTreeInspector::showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem
     // Show file dialog.
     getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
         ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
+        std::vector<std::string>{".toml"},
         [this, pItem](const std::filesystem::path& selectedPath) {
             // Load selected tree.
             auto result = Node::deserializeNodeTree(selectedPath);

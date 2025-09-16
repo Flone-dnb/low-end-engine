@@ -50,6 +50,8 @@ SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pPare
 
     // Rebuild list of types on search.
     pSearchTextEdit->setOnTextChanged([this](std::u16string_view sInputText) {
+        pTypesLayout->setScrollBarOffset(0);
+
         // Input to lower case for searching.
         auto sText = utf::as_str8(sInputText);
         std::transform(
@@ -73,6 +75,38 @@ SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pPare
 
             pUiNode->setIsVisible(sTypeName.find(sText) != std::string::npos);
         }
+    });
+    pSearchTextEdit->setOnEnterPressed([this](std::u16string_view sText) {
+        // If only 1 option (node type) is visible - select it.
+
+        auto mtxChildNodes = pTypesLayout->getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+        UiNode* pOnlyVisibleUiNode = nullptr;
+        for (const auto& pNode : mtxChildNodes.second) {
+            const auto pUiNode = dynamic_cast<UiNode*>(pNode);
+            if (pUiNode == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected a UI node");
+            }
+            if (pUiNode->isVisible()) {
+                if (pOnlyVisibleUiNode != nullptr) {
+                    return;
+                }
+                pOnlyVisibleUiNode = pUiNode;
+            }
+        }
+
+        if (onTypeSelected == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected the \"type selected\" callback to be set");
+        }
+
+        const auto pButton = dynamic_cast<ButtonUiNode*>(pOnlyVisibleUiNode);
+        if (pButton == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected types layout to have buttons");
+        }
+
+        bIsProcessingButtonClick = true;
+        onTypeSelected(std::string(pButton->getNodeName()));
+        unsafeDetachFromParentAndDespawn(true);
     });
 }
 

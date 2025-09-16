@@ -20,7 +20,11 @@
 // External.
 #ifndef IS_ARM64
 #include "immintrin.h"
+#if !defined(WIN32)
 #include "cpuid.h"
+#else
+#include "isa_availability.h"
+#endif
 #endif
 #include "Jolt/Jolt.h" // Always include Jolt.h before including any other Jolt header.
 #include "Jolt/Core/JobSystemThreadPool.h"

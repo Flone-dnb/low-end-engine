@@ -12,8 +12,9 @@
 
 FileDialogMenu::FileDialogMenu(
     const std::filesystem::path& pathToDirectory,
+    const std::vector<std::string>& vFileExtensions,
     const std::function<void(const std::filesystem::path& path)>& onSelected)
-    : RectUiNode("File Dialog"), onSelected(onSelected) {
+    : RectUiNode("File Dialog"), vFileExtensions(vFileExtensions), onSelected(onSelected) {
     setPosition(glm::vec2(0.0F, 0.0F));
     setSize(glm::vec2(1.0F, 1.0F));
     setColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.5F));
@@ -141,8 +142,23 @@ void FileDialogMenu::showDirectory(std::filesystem::path pathToDirectory) {
     }
 
     for (const auto& entry : std::filesystem::directory_iterator(pathToDirectory)) {
+        if (!entry.is_directory()) {
+            const auto sFileExtension = entry.path().extension().string();
+            bool bShowFile = vFileExtensions.empty();
+            for (const auto& sTargetExtension : vFileExtensions) {
+                if (sTargetExtension == sFileExtension) {
+                    bShowFile = true;
+                    break;
+                }
+            }
+            if (!bShowFile) {
+                continue;
+            }
+        }
+
         std::string sEntryName;
 
+        // Setup button.
         const auto pButton =
             pFilesystemLayout->addChildNode(std::make_unique<ButtonUiNode>(entry.path().filename().string()));
         pButton->setPadding(EditorTheme::getPadding());
@@ -160,6 +176,8 @@ void FileDialogMenu::showDirectory(std::filesystem::path pathToDirectory) {
                 unsafeDetachFromParentAndDespawn(true);
             });
         }
+
+        // Setup text.
         {
             const auto pText = pButton->addChildNode(std::make_unique<TextUiNode>());
             pText->setTextHeight(EditorTheme::getTextHeight());

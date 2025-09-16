@@ -22,6 +22,7 @@ namespace {
 
 std::string CollisionShape::getTypeGuidStatic() { return sCollisionShapeTypeGuid.data(); }
 std::string CollisionShape::getTypeGuid() const { return sCollisionShapeTypeGuid.data(); }
+
 TypeReflectionInfo CollisionShape::getReflectionInfo() {
     ReflectedVariables variables;
 
@@ -32,8 +33,16 @@ TypeReflectionInfo CollisionShape::getReflectionInfo() {
         std::move(variables));
 }
 
+void CollisionShape::setOnChanged(const std::function<void()>& callback) { onChanged = callback; }
+
 JPH::Result<JPH::Ref<JPH::Shape>> CollisionShape::createShape() {
     Error::showErrorAndThrowException("derived type not implemented this method");
+}
+
+void CollisionShape::propertyChanged() {
+    if (onChanged) {
+        onChanged();
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -61,6 +70,7 @@ TypeReflectionInfo BoxCollisionShape::getReflectionInfo() {
 
 void BoxCollisionShape::setHalfExtent(const glm::vec3& size) {
     halfExtent = glm::max(size, glm::vec3(0.01F));
+    propertyChanged();
 }
 
 JPH::Result<JPH::Ref<JPH::Shape>> BoxCollisionShape::createShape() {
@@ -91,7 +101,10 @@ TypeReflectionInfo SphereCollisionShape::getReflectionInfo() {
         std::move(variables));
 }
 
-void SphereCollisionShape::setRadius(float size) { radius = std::max(size, 0.01F); }
+void SphereCollisionShape::setRadius(float size) {
+    radius = std::max(size, 0.01F);
+    propertyChanged();
+}
 
 JPH::Result<JPH::Ref<JPH::Shape>> SphereCollisionShape::createShape() {
     JPH::SphereShapeSettings settings(radius);
@@ -130,8 +143,14 @@ TypeReflectionInfo CapsuleCollisionShape::getReflectionInfo() {
         std::move(variables));
 }
 
-void CapsuleCollisionShape::setRadius(float size) { radius = std::max(size, 0.01F); }
-void CapsuleCollisionShape::setHalfHeight(float size) { halfHeight = std::max(size, 0.01F); }
+void CapsuleCollisionShape::setRadius(float size) {
+    radius = std::max(size, 0.01F);
+    propertyChanged();
+}
+void CapsuleCollisionShape::setHalfHeight(float size) {
+    halfHeight = std::max(size, 0.01F);
+    propertyChanged();
+}
 
 JPH::Result<JPH::Ref<JPH::Shape>> CapsuleCollisionShape::createShape() {
     JPH::CapsuleShapeSettings settings(halfHeight, radius);
@@ -171,8 +190,14 @@ TypeReflectionInfo CylinderCollisionShape::getReflectionInfo() {
         std::move(variables));
 }
 
-void CylinderCollisionShape::setRadius(float size) { radius = std::max(size, 0.01F); }
-void CylinderCollisionShape::setHalfHeight(float size) { halfHeight = std::max(size, 0.01F); }
+void CylinderCollisionShape::setRadius(float size) {
+    radius = std::max(size, 0.01F);
+    propertyChanged();
+}
+void CylinderCollisionShape::setHalfHeight(float size) {
+    halfHeight = std::max(size, 0.01F);
+    propertyChanged();
+}
 
 JPH::Result<JPH::Ref<JPH::Shape>> CylinderCollisionShape::createShape() {
     JPH::CylinderShapeSettings settings(halfHeight, radius);

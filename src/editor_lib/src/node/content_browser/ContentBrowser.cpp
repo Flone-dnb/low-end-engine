@@ -197,6 +197,7 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
             {u"Import .gltf/.glb", [this, pathToDirectory]() {
                  getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
                      ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
+                     std::vector<std::string>{".gltf", ".glb"},
                      [this, pathToDirectory](const std::filesystem::path& selectedPath) {
                          // Do async import to view import progress (messages in the log).
                          getGameInstanceWhileSpawned()->addTaskToThreadPool(
@@ -229,6 +230,7 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
             {u"Import texture", [this, pathToDirectory]() {
                  getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
                      ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
+                     std::vector<std::string>{".png", ".jpg", ".jpeg"},
                      [this, pathToDirectory](const std::filesystem::path& selectedPath) {
                          const auto sRelativeOutputPath =
                              std::filesystem::relative(

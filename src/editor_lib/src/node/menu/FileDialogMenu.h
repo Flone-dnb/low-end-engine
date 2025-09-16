@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard.
+#include <vector>
 #include <string>
 #include <filesystem>
 #include <functional>
@@ -23,10 +24,13 @@ public:
      * Creates a new node.
      *
      * @param pathToDirectory Path to directory to show at start.
+     * @param vFileExtensions Specify empty to accept any files or extensions
+     * to only accept (for example ".gltf" for "*.gltf" files).
      * @param onSelected      Callback that will be called after the path is selected.
      */
     FileDialogMenu(
         const std::filesystem::path& pathToDirectory,
+        const std::vector<std::string>& vFileExtensions,
         const std::function<void(const std::filesystem::path& path)>& onSelected);
 
     virtual ~FileDialogMenu() override = default;
@@ -70,6 +74,9 @@ private:
 
     /** Path to the currently shown directory. */
     std::filesystem::path pathToCurrentDirectory;
+
+    /** Empty to accept any files or extensions to only accept (for example ".gltf" for "*.gltf" files). */
+    const std::vector<std::string> vFileExtensions;
 
     /** Text that displays the current path. */
     TextUiNode* pCurrentPathText = nullptr;

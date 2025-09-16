@@ -1,5 +1,8 @@
 #pragma once
 
+// Standard.
+#include <functional>
+
 // Custom.
 #include "math/GLMath.hpp"
 #include "io/Serializable.h"
@@ -18,6 +21,13 @@ class CollisionShape : public Serializable {
 public:
     CollisionShape() = default;
     virtual ~CollisionShape() = default;
+
+    /**
+     * Sets a callback that will be triggered after some property of the shape changed.
+     * 
+     * @param callback Callback.
+     */
+    void setOnChanged(const std::function<void()>& callback);
 
     /**
      * Returns reflection info about this type.
@@ -51,6 +61,13 @@ protected:
      * @return Shape.
      */
     virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape();
+
+    /** Must be called by derived classes after they change some property of the shape. */
+    void propertyChanged();
+
+private:
+    /** Called after some property of the shape was changed. */
+    std::function<void()> onChanged;
 };
 
 // ------------------------------------------------------------------------------------------------

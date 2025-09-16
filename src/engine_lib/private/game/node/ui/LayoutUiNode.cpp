@@ -164,6 +164,11 @@ void LayoutUiNode::setIsScrollBarEnabled(bool bEnable) {
     recalculatePosAndSizeForDirectChildNodes();
 }
 
+void LayoutUiNode::setScrollBarOffset(size_t iOffset) {
+    iCurrentScrollOffset = iOffset;
+    recalculatePosAndSizeForDirectChildNodes();
+}
+
 void LayoutUiNode::setAutoScrollToBottom(bool bEnable) { bAutoScrollToBottom = bEnable; }
 
 void LayoutUiNode::setScrollBarColor(const glm::vec4& color) { scrollBarColor = color; }
