@@ -242,7 +242,7 @@ public:
      *
      * @return Physics manager.
      */
-    PhysicsManager& getPhysicsManager() const { return *pPhysicsManager; }
+    PhysicsManager& getPhysicsManager() const;
 
     /**
      * Returns info about existing worlds.
@@ -452,8 +452,10 @@ private:
     /** Manages sound and sound effects. */
     std::unique_ptr<SoundManager> pSoundManager;
 
+#ifndef ENGINE_UI_ONLY
     /** Manages game physics. */
     std::unique_ptr<PhysicsManager> pPhysicsManager;
+#endif
 
     /** Game world, stores world's node tree. */
     std::pair<std::recursive_mutex, WorldData> mtxWorldData;

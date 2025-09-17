@@ -86,9 +86,10 @@ void DebugDrawer::destroy() {
     pTextShaderProgram = nullptr;
     pScreenQuadGeometry = nullptr;
     pRectShaderProgram = nullptr;
-    pMeshVao = nullptr;
 
     vMeshesToDraw.clear();
+    vTextToDraw.clear();
+    vRectsToDraw.clear();
 
     bIsDestroyed = true;
 }
@@ -111,11 +112,32 @@ void DebugDrawer::drawMesh(
     if (vTrianglePositions.size() % 3 != 0) [[unlikely]] {
         Error::showErrorAndThrowException("triangle positions array must store 3 positions per triangle");
     }
+
+    // Prepare vertex buffer.
+    std::vector<glm::vec3> vEdges;
+    vEdges.reserve(vTrianglePositions.size() * 2); // 2 vertices to draw an edge of a triangle
+    for (size_t i = 0; i < vTrianglePositions.size(); i += 3) {
+        vEdges.push_back(vTrianglePositions[i]);
+        vEdges.push_back(vTrianglePositions[i + 1]);
+
+        vEdges.push_back(vTrianglePositions[i + 1]);
+        vEdges.push_back(vTrianglePositions[i + 2]);
+
+        vEdges.push_back(vTrianglePositions[i + 2 ]);
+        vEdges.push_back(vTrianglePositions[i]);
+    }
+
+    auto pMeshVao = GpuResourceManager::createVertexArrayObject (
+        static_cast<unsigned int>(vEdges.size()),
+        false,
+        vEdges);
+
     vMeshesToDraw.push_back(Mesh{
         .vTrianglePositions = vTrianglePositions,
         .color = color,
         .worldMatrix = worldMatrix,
-        .timeLeftSec = timeInSec});
+        .timeLeftSec = timeInSec,
+        .pVao = std::move(pMeshVao)});
 }
 
 void DebugDrawer::drawText(
@@ -178,10 +200,6 @@ void DebugDrawer::drawDebugObjects(
         pRectShaderProgram = pRenderer->getShaderManager().getShaderProgram(
             "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/RectUiNode.frag.glsl");
 
-        pMeshVao = GpuResourceManager::createVertexArrayObject(
-            6,     // 2 vertices to draw an edge of a triangle
-            true); // we will update positions
-
         pScreenQuadGeometry = GpuResourceManager::createQuad(true);
     }
 
@@ -190,31 +208,17 @@ void DebugDrawer::drawDebugObjects(
         // Prepare for drawing meshes.
         GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, 0));
         glUseProgram(pMeshShaderProgram->getShaderProgramId());
-        glBindVertexArray(pMeshVao->getVertexArrayObjectId());
         pCameraProperties->getShaderConstantsSetter().setConstantsToShader(pMeshShaderProgram.get());
 
         for (auto it = vMeshesToDraw.begin(); it != vMeshesToDraw.end();) {
             auto& mesh = *it;
 
+            glBindVertexArray(mesh.pVao->getVertexArrayObjectId());
+
             pMeshShaderProgram->setMatrix4ToShader("worldMatrix", mesh.worldMatrix);
             pMeshShaderProgram->setVector3ToShader("meshColor", mesh.color);
 
-            // Draw each triangle the simple way.
-            for (size_t i = 0; i < mesh.vTrianglePositions.size(); i += 3) {
-                // Update vertices.
-                const std::array<glm::vec3, 6> vEdges = {
-                    mesh.vTrianglePositions[i],
-                    mesh.vTrianglePositions[i + 1],
-                    mesh.vTrianglePositions[i + 1],
-                    mesh.vTrianglePositions[i + 2],
-                    mesh.vTrianglePositions[i + 2],
-                    mesh.vTrianglePositions[i]};
-                glBindBuffer(GL_ARRAY_BUFFER, pMeshVao->getVertexBufferObjectId());
-                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vEdges[0]) * vEdges.size(), vEdges.data());
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                glDrawArrays(GL_LINES, 0, static_cast<int>(vEdges.size()));
-            }
+            glDrawArrays(GL_LINES, 0, static_cast<int>(mesh.pVao->getVertexCount()));
 
             // Update state.
             mesh.timeLeftSec -= timeSincePrevFrameInSec;

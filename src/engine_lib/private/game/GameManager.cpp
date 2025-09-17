@@ -82,7 +82,9 @@ void GameManager::destroy() {
 
     // Destroy game instance before renderer.
     pGameInstance = nullptr;
+#ifndef ENGINE_UI_ONLY
     pPhysicsManager = nullptr;
+#endif
 
     // After game instance, destroy the renderer.
     pRenderer = nullptr;
@@ -833,3 +835,10 @@ Renderer* GameManager::getRenderer() const { return pRenderer.get(); }
 GameInstance* GameManager::getGameInstance() const { return pGameInstance.get(); }
 
 SoundManager& GameManager::getSoundManager() const { return *pSoundManager; }
+
+PhysicsManager& GameManager::getPhysicsManager() const {
+#ifndef ENGINE_UI_ONLY
+    return *pPhysicsManager;
+#endif
+    Error::showErrorAndThrowException("physics manager is not available in UI only applications");
+}

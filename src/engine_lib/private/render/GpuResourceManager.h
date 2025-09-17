@@ -29,12 +29,16 @@ public:
      * @param iPositionCount       Total number of vec3 items in the vertex buffer.
      * @param bIsVertexDataDynamic Specify `true` if vertex positions will change, otherwise
      * specify `false`.
+     * @param vVertexPositions     Specify non-empty to copy the data to the vertex buffer.
      * @param vIndices             Specify empty array to avoid creating index buffer.
      *
      * @return VAO.
      */
     static std::unique_ptr<VertexArrayObject> createVertexArrayObject(
-        unsigned int iPositionCount, bool bIsVertexDataDynamic, std::vector<unsigned short> vIndices = {});
+        unsigned int iPositionCount,
+        bool bIsVertexDataDynamic,
+        const std::vector<glm::vec3>& vVertexPositions = {},
+        const std::vector<unsigned short>& vIndices = {});
 
     /**
      * Creates a new quad.

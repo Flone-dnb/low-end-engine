@@ -41,7 +41,14 @@ public:
     unsigned int getVertexBufferObjectId() const { return iVertexBufferObjectId; }
 
     /**
-     * Returns number of indices to draw.
+     * Returns the total number of vertices in the vertex buffer.
+     *
+     * @return Vertex count.
+     */
+    unsigned int getVertexCount() const { return iVertexCount; }
+
+    /**
+     * Returns the total number of indices to draw.
      *
      * @return Index count.
      */
@@ -60,12 +67,14 @@ private:
      *
      * @param iVertexArrayObjectId  ID of the vertex array object.
      * @param iVertexBufferObjectId ID of the vertex buffer object.
+     * @param iVertexCount          Number of vertices in the vertex buffer.
      * @param iIndexBufferObjectId  ID of the index buffer object (if used).
      * @param iIndexCount           Number of indices to draw (from used index buffer).
      */
     VertexArrayObject(
         unsigned int iVertexArrayObjectId,
         unsigned int iVertexBufferObjectId,
+        unsigned int iVertexCount,
         std::optional<unsigned int> iIndexBufferObjectId = {},
         std::optional<int> iIndexCount = {});
 
@@ -74,6 +83,9 @@ private:
 
     /** ID of the vertex buffer object. */
     unsigned int iVertexBufferObjectId = 0;
+
+    /** Number of vertices in the vertex buffer. */
+    unsigned int iVertexCount = 0;
 
     /** ID of the index buffer object. */
     std::optional<unsigned int> iIndexBufferObjectId;

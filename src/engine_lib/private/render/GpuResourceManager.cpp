@@ -16,9 +16,20 @@
 std::recursive_mutex GpuResourceManager::mtx{};
 
 std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
-    unsigned int iPositionCount, bool bIsVertexDataDynamic, std::vector<unsigned short> vIndices) {
+    unsigned int iPositionCount,
+    bool bIsVertexDataDynamic,
+    const std::vector<glm::vec3>& vVertexPositions,
+    const std::vector<unsigned short>& vIndices) {
     if (iPositionCount == 0) [[unlikely]] {
         Error::showErrorAndThrowException("invalid position count specified");
+    }
+    if (vVertexPositions.empty() && !bIsVertexDataDynamic) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "initial data must be specified because vertex data is not marked as dynamic");
+    }
+    if (vVertexPositions.size() != iPositionCount) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "the specified position count does not match the provided vertex position count");
     }
 
     std::scoped_lock guard(mtx);
@@ -36,8 +47,8 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
         // Allocate vertices.
         GL_CHECK_ERROR(glBufferData(
             GL_ARRAY_BUFFER,
-            static_cast<long long>(iPositionCount * sizeof(glm::vec3)),
-            nullptr,
+            static_cast<long long>(vVertexPositions.size() * sizeof(vVertexPositions[0])),
+            vVertexPositions.data(),
             bIsVertexDataDynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW));
 
         // Describe vertex layout.
@@ -71,7 +82,7 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
     glBindVertexArray(0);
 
     return std::unique_ptr<VertexArrayObject>(
-        new VertexArrayObject(iVao, iVbo, optionalEbo, optionalIndexCount));
+        new VertexArrayObject(iVao, iVbo, iPositionCount, optionalEbo, optionalIndexCount));
 }
 
 std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
@@ -133,7 +144,8 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
     glBindVertexArray(0);
 
     return std::unique_ptr<ScreenQuadGeometry>(new ScreenQuadGeometry(
-        vVertices, std::unique_ptr<VertexArrayObject>(new VertexArrayObject(iVao, iVbo))));
+        vVertices, std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
+            iVao, iVbo, static_cast<unsigned int>(vVertices.size())))));
 }
 
 std::unique_ptr<VertexArrayObject>
@@ -189,7 +201,11 @@ GpuResourceManager::createVertexArrayObject(const MeshNodeGeometry& geometry) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     return std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
-        iVertexArrayObjectId, iVertexBufferObjectId, iIndexBufferObjectId, iIndexCount));
+        iVertexArrayObjectId,
+        iVertexBufferObjectId,
+        static_cast<unsigned int>(geometry.getVertices().size()),
+        iIndexBufferObjectId,
+        iIndexCount));
 }
 
 std::unique_ptr<VertexArrayObject>
@@ -244,7 +260,11 @@ GpuResourceManager::createVertexArrayObject(const SkeletalMeshNodeGeometry& geom
     glBindVertexArray(0);
 
     return std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
-        iVertexArrayObjectId, iVertexBufferObjectId, iIndexBufferObjectId, iIndexCount));
+        iVertexArrayObjectId,
+        iVertexBufferObjectId,
+        static_cast<unsigned int>(geometry.getVertices().size()),
+        iIndexBufferObjectId,
+        iIndexCount));
 }
 
 std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(

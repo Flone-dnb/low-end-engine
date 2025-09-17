@@ -35,6 +35,9 @@ public:
 
         /** Time after which the mesh should no longer be rendered. */
         float timeLeftSec = 0.0F;
+
+        /** VAO used for drawing the mesh. */
+        std::unique_ptr<VertexArrayObject> pVao;
     };
 
     /** Data used to draw text. */
@@ -217,9 +220,6 @@ private:
 
     /** Shader program used to draw text. */
     std::shared_ptr<ShaderProgram> pTextShaderProgram;
-
-    /** VAO used for drawing meshes. */
-    std::unique_ptr<VertexArrayObject> pMeshVao;
 
     /** Quad used for rendering text. */
     std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;

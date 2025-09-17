@@ -38,11 +38,9 @@ public:
      */
     virtual void DrawTriangle(
         JPH::Vec3 v1, JPH::Vec3 v2, JPH::Vec3 v3, JPH::ColorArg color, ECastShadow castShadow) override {
-        DebugDrawer::get().drawMesh(
-            {convertFromJolt(v1), convertFromJolt(v2), convertFromJolt(v3)},
-            glm::identity<glm::mat4x4>(),
-            0.0F,
-            glm::vec3(color.r, color.g, color.b));
+        vTrianglePositions.push_back(convertFromJolt(v1));
+        vTrianglePositions.push_back(convertFromJolt(v2));
+        vTrianglePositions.push_back(convertFromJolt(v3));
     }
 
     /**
@@ -60,6 +58,24 @@ public:
         float height = 0.5f) override {
         Error::showErrorAndThrowException("not implemented");
     }
+
+    /** Submits prepared render data for drawing. */
+    void submitDrawData() {
+        if (vTrianglePositions.empty()) {
+            return;
+        }
+        // TODO: consider implementing DebugRenderer (not DebugRendererSimple)
+        DebugDrawer::get().drawMesh(
+            vTrianglePositions,
+            glm::identity<glm::mat4x4>(),
+            0.0F,
+            glm::vec3(1.0F));
+        vTrianglePositions.clear();
+    }
+
+private:
+    /** Triangle positions to draw. */
+    std::vector<glm::vec3> vTrianglePositions;
 };
 
 #endif

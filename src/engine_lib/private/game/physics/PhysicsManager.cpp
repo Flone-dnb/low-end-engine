@@ -186,6 +186,8 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     if (bEnableDebugRendering) {
         JPH::BodyManager::DrawSettings drawSettings;
         pPhysicsSystem->DrawBodies(drawSettings, pPhysicsDebugDrawer.get());
+
+        pPhysicsDebugDrawer->submitDrawData();
     }
 #endif
 }

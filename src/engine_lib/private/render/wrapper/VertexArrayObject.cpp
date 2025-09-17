@@ -20,7 +20,8 @@ VertexArrayObject::~VertexArrayObject() {
 VertexArrayObject::VertexArrayObject(
     unsigned int iVertexArrayObjectId,
     unsigned int iVertexBufferObjectId,
+    unsigned int iVertexCount,
     std::optional<unsigned int> iIndexBufferObjectId,
     std::optional<int> iIndexCount)
     : iVertexArrayObjectId(iVertexArrayObjectId), iVertexBufferObjectId(iVertexBufferObjectId),
-      iIndexBufferObjectId(iIndexBufferObjectId), iIndexCount(iIndexCount) {}
+      iVertexCount(iVertexCount), iIndexBufferObjectId(iIndexBufferObjectId), iIndexCount(iIndexCount) {}
