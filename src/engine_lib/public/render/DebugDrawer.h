@@ -24,9 +24,6 @@ class DebugDrawer {
 public:
     /** Data used to draw a mesh. */
     struct Mesh {
-        /** 3 positions per triangle. */
-        std::vector<glm::vec3> vTrianglePositions;
-
         /** Color of the mesh. */
         glm::vec3 color = glm::vec3(1.0F, 0.0F, 0.0F);
 
@@ -132,6 +129,21 @@ public:
      */
     void drawMesh(
         const std::vector<glm::vec3>& vTrianglePositions,
+        const glm::mat4x4& worldMatrix = glm::identity<glm::mat4x4>(),
+        float timeInSec = 0.0F,
+        const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
+
+    /**
+     * Draws a lines.
+     *
+     * @param vLines      2 positions per line.
+     * @param worldMatrix World matrix to transform lines.
+     * @param timeInSec   Time (in seconds) during which the lines will be rendered
+     * then they will be removed from rendering. Specify 0.0 to draw for a single frame.
+     * @param color       Color of the lines.
+     */
+    void drawLines(
+        const std::vector<glm::vec3>& vLines,
         const glm::mat4x4& worldMatrix = glm::identity<glm::mat4x4>(),
         float timeInSec = 0.0F,
         const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));

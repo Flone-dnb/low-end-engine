@@ -123,21 +123,31 @@ void DebugDrawer::drawMesh(
         vEdges.push_back(vTrianglePositions[i + 1]);
         vEdges.push_back(vTrianglePositions[i + 2]);
 
-        vEdges.push_back(vTrianglePositions[i + 2 ]);
+        vEdges.push_back(vTrianglePositions[i + 2]);
         vEdges.push_back(vTrianglePositions[i]);
     }
 
-    auto pMeshVao = GpuResourceManager::createVertexArrayObject (
-        static_cast<unsigned int>(vEdges.size()),
-        false,
-        vEdges);
+    auto pMeshVao =
+        GpuResourceManager::createVertexArrayObject(static_cast<unsigned int>(vEdges.size()), false, vEdges);
 
     vMeshesToDraw.push_back(Mesh{
-        .vTrianglePositions = vTrianglePositions,
-        .color = color,
-        .worldMatrix = worldMatrix,
-        .timeLeftSec = timeInSec,
-        .pVao = std::move(pMeshVao)});
+        .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pMeshVao)});
+}
+
+void DebugDrawer::drawLines(
+    const std::vector<glm::vec3>& vLines,
+    const glm::mat4x4& worldMatrix,
+    float timeInSec,
+    const glm::vec3& color) {
+    if (vLines.size() % 2 != 0) [[unlikely]] {
+        Error::showErrorAndThrowException("line positions array must store 2 positions per line");
+    }
+
+    auto pLinesVao =
+        GpuResourceManager::createVertexArrayObject(static_cast<unsigned int>(vLines.size()), false, vLines);
+
+    vMeshesToDraw.push_back(Mesh{
+        .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pLinesVao)});
 }
 
 void DebugDrawer::drawText(

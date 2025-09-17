@@ -38,9 +38,16 @@ public:
      */
     virtual void DrawTriangle(
         JPH::Vec3 v1, JPH::Vec3 v2, JPH::Vec3 v3, JPH::ColorArg color, ECastShadow castShadow) override {
-        vTrianglePositions.push_back(convertFromJolt(v1));
-        vTrianglePositions.push_back(convertFromJolt(v2));
-        vTrianglePositions.push_back(convertFromJolt(v3));
+        vLinesToDraw.reserve(vLinesToDraw.size() + 6);
+
+        vLinesToDraw.push_back(convertFromJolt(v1));
+        vLinesToDraw.push_back(convertFromJolt(v2));
+
+        vLinesToDraw.push_back(convertFromJolt(v2));
+        vLinesToDraw.push_back(convertFromJolt(v3));
+
+        vLinesToDraw.push_back(convertFromJolt(v3));
+        vLinesToDraw.push_back(convertFromJolt(v1));
     }
 
     /**
@@ -61,21 +68,18 @@ public:
 
     /** Submits prepared render data for drawing. */
     void submitDrawData() {
-        if (vTrianglePositions.empty()) {
+        if (vLinesToDraw.empty()) {
             return;
         }
-        // TODO: consider implementing DebugRenderer (not DebugRendererSimple)
-        DebugDrawer::get().drawMesh(
-            vTrianglePositions,
-            glm::identity<glm::mat4x4>(),
-            0.0F,
-            glm::vec3(1.0F));
-        vTrianglePositions.clear();
+
+        DebugDrawer::get().drawLines(vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0F, glm::vec3(1.0F));
+
+        vLinesToDraw.clear(); // clear but don't shrink
     }
 
 private:
-    /** Triangle positions to draw. */
-    std::vector<glm::vec3> vTrianglePositions;
+    /** 2 positions per line to draw. */
+    std::vector<glm::vec3> vLinesToDraw;
 };
 
 #endif
