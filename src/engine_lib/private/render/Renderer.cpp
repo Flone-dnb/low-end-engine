@@ -255,19 +255,22 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
 #if defined(DEBUG)
         // Draw debug after all worlds.
-        auto pCameraProperties = vActiveCameras[0].second.pCameraNode->getCameraProperties();
+        CameraProperties* pCameraProperties = nullptr;
 #ifdef ENGINE_EDITOR
-        if (vActiveCameras.size() > 1) {
-            // Find game world.
-            for (const auto& cameraInfo : vActiveCameras) {
-                if (cameraInfo.second.pWorld->getName() == "game") {
-                    pCameraProperties = cameraInfo.second.pCameraNode->getCameraProperties();
-                    break;
-                }
+        // Find game world. In the editor debug drawing should only be done for game world.
+        for (const auto& cameraInfo : vActiveCameras) {
+            if (cameraInfo.second.pWorld->getName() == "game") {
+                pCameraProperties = cameraInfo.second.pCameraNode->getCameraProperties();
+                break;
             }
         }
+#else
+        // In the game just use the first camera.
+        pCameraProperties = vActiveCameras[0].second.pCameraNode->getCameraProperties();
 #endif
-        DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
+        if (pCameraProperties != nullptr) {
+            DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
+        }
 #endif
     }
 
