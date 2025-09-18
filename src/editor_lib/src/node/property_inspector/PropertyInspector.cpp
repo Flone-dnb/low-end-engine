@@ -81,7 +81,7 @@ void PropertyInspector::refreshInspectedProperties() {
         addCollisionNodeSpecialOptions(pCollisionNode);
     }
 
-    displayPropertiesForType(pInspectedNode->getTypeGuid(), pInspectedNode);
+    displayPropertiesForType(pPropertyLayout, pInspectedNode->getTypeGuid(), pInspectedNode);
 }
 
 void PropertyInspector::addCollisionNodeSpecialOptions(CollisionNode* pCollisionNode) {
@@ -100,7 +100,9 @@ void PropertyInspector::addCollisionNodeSpecialOptions(CollisionNode* pCollision
         const auto pSelectShapeText = pShapeSelectLayout->addChildNode(std::make_unique<TextUiNode>());
         pSelectShapeText->setTextHeight(EditorTheme::getSmallTextHeight());
         pSelectShapeText->setHandleNewLineChars(false);
-        pSelectShapeText->setText(u"Select shape:");
+        pSelectShapeText->setText(u"Collision shape:");
+        pSelectShapeText->setSize(
+            glm::vec2(pSelectShapeText->getSize().x, pSelectShapeText->getTextHeight() * 1.25F));
 
         // Display derived shapes.
         const auto& reflectedTypes = ReflectedTypeDatabase::getReflectedTypes();
@@ -135,9 +137,6 @@ void PropertyInspector::addCollisionNodeSpecialOptions(CollisionNode* pCollision
 
     pPropertyLayout->addChildNode(std::move(pGroupBackground));
 
-    // Display shape settings.
-    displayPropertiesForType(pCollisionNode->getShape()->getTypeGuid(), pCollisionNode->getShape(), false);
-
     // Add a spacer.
     const auto pSpacer = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
     pSpacer->setColor(EditorTheme::getAccentColor());
@@ -161,7 +160,6 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
         pAnimPreviewTitle->setSize(
             glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4F));
         pAnimPreviewTitle->setText(u"Preview animation (path relative `res`)");
-        pAnimPreviewTitle->setTextColor(glm::vec4(glm::vec3(pAnimPreviewTitle->getTextColor()), 0.5F));
 
         const auto pBackground = pAnimLayout->addChildNode(std::make_unique<RectUiNode>());
         pBackground->setPadding(EditorTheme::getPadding());
@@ -188,10 +186,15 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
     }
 
     pPropertyLayout->addChildNode(std::move(pGroupBackground));
+
+    // Add a spacer.
+    const auto pSpacer = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
+    pSpacer->setColor(EditorTheme::getAccentColor());
+    pSpacer->setSize(glm::vec2(pSpacer->getSize().x, 0.001F));
 }
 
 void PropertyInspector::displayPropertiesForType(
-    const std::string& sTypeGuid, Serializable* pObject, bool bRecursive) {
+    LayoutUiNode* pLayoutToAddTo, const std::string& sTypeGuid, Serializable* pObject, bool bRecursive) {
     auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
@@ -288,18 +291,23 @@ void PropertyInspector::displayPropertiesForType(
                 pTypePropertiesLayout->addChildNode(std::make_unique<BoolInspector>(
                     std::format("inspector for variable \"{}\"", sVariableName), pObject, sVariableName));
             }
+            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.serializables) {
+                CONTINUE_IF_PARENT_VAR(serializables);
+                Serializable* pValue = variableInfo.getter(pObject);
+                displayPropertiesForType(pTypePropertiesLayout, pValue->getTypeGuid(), pValue, false);
+            }
 
 #if defined(WIN32) && defined(DEBUG)
             static_assert(sizeof(ReflectedVariables) == 960, "consider adding new variables here");
 #elif defined(DEBUG)
-            static_assert(sizeof(ReflectedVariables) == 840, "consider adding new variables here");
+            static_assert(sizeof(ReflectedVariables) == 896, "consider adding new variables here");
 #endif
         }
     }
 
-    pPropertyLayout->addChildNode(std::move(pGroupBackground));
+    pLayoutToAddTo->addChildNode(std::move(pGroupBackground));
 
     if (bRecursive && !typeInfo.sParentTypeGuid.empty()) {
-        displayPropertiesForType(typeInfo.sParentTypeGuid, pObject);
+        displayPropertiesForType(pLayoutToAddTo, typeInfo.sParentTypeGuid, pObject);
     }
 }

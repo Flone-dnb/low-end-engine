@@ -33,6 +33,15 @@ template <typename VariableType> struct ReflectedVariableInfo {
     std::function<VariableType(Serializable* pThis)> getter;
 };
 
+/** Variable info specialization for serializable. */
+template <> struct ReflectedVariableInfo<std::unique_ptr<Serializable>> {
+    /** Function to set a new value. */
+    std::function<void(Serializable* pThis, std::unique_ptr<Serializable> value)> setter;
+
+    /** Function to get the value. */
+    std::function<Serializable*(Serializable* pThis)> getter;
+};
+
 /** Supported types of reflected variables. */
 enum class ReflectedVariableType {
     BOOL,
@@ -42,6 +51,7 @@ enum class ReflectedVariableType {
     UNSIGNED_LONG_LONG,
     FLOAT,
     STRING,
+    SERIALIZABLE,
     VEC2,
     VEC3,
     VEC4,
@@ -81,6 +91,9 @@ struct ReflectedVariables {
 
     /** Pairs of "variable name" - "variable info". */
     std::unordered_map<std::string, ReflectedVariableInfo<std::string>> strings;
+
+    /** Pairs of "variable name" - "variable info". */
+    std::unordered_map<std::string, ReflectedVariableInfo<std::unique_ptr<Serializable>>> serializables;
 
     /** Pairs of "variable name" - "variable info". */
     std::unordered_map<std::string, ReflectedVariableInfo<glm::vec2>> vec2s;

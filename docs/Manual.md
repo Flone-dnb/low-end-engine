@@ -438,7 +438,9 @@ You can configure post processing parameters such as sky, ambient light color, d
 
 Reflection comes down to writing additional code to your class, this additional code allows other systems to see/analyze your class/objects (see functions/fields).
 
-Let's consider an example: you want to have a save file for your game where you store player's progress. For this you can use `ConfigManager` but we won't cover it in this section instead we will handle the config data using reflection:
+If you want to be able to create objects of your custom type in the editor or you want to see and edit properties of your custom type in the editor you should use reflection for your type and make desired variables reflected.
+
+Let's consider another example: you want to have a save file for your game where you store player's progress. For this you can use `ConfigManager` but we won't cover it in this section instead we will handle the config data using reflection:
 
 ```Cpp
 // PlayerSaveData.h
@@ -447,6 +449,7 @@ Let's consider an example: you want to have a save file for your game where you 
 class PlayerSaveData
 {
 public:
+    // Setter/getter functions are not required but recommended.
     void setExperience(unsigned int iExperience) { this->iExperience = iExperience; }
     unsigned int getExperience() const { return iExperience; }
 
@@ -459,7 +462,7 @@ private:
 };
 ```
 
-In order to save player's data we need to derive this class from `Serializable` and add a few functions:
+In order to reflect this type we need to derive this class from `Serializable` and add a few functions:
 
 ```Cpp
 // PlayerSaveData.h
@@ -554,7 +557,7 @@ As you can see all you need is to provide a getter and a setter for a variable. 
 ```Cpp
 // have `std::unique_ptr<PlayerSaveData> pPlayerSaveData` somewhere, then:
 
-// to save the current state of the player data (and its variables):
+// to save the current state of the player data (and its reflected variables):
 auto optionalError = pPlayerSaveData->serialize(
     ProjectPaths::getPathToPlayerProgressDirectory() / "save1", // file will be created/overwritten
     true); // also create a backup file
@@ -569,6 +572,69 @@ if (std::holds_alternative<Error>(result)) [[unlikely]] {
     // handle error
 }
 auto pDeserializedSave = std::get<std::unique_ptr<PlayerSaveData>>(std::move(result));
+```
+
+There are quite a few supported variable types for reflection. You can even have inner `Serializable` variables to serialize, in this case getter/setter for reflection is slightly different, here is a small example:
+
+```Cpp
+// This will be the "inner serializable".
+class SimpleSerializable : public Serializable {
+public:
+    static TypeReflectionInfo getReflectionInfo() {
+        ReflectedVariables variables;
+
+        variables.strings[NAMEOF_MEMBER(&SimpleSerializable::sText).data()] =
+            ReflectedVariableInfo<std::string>{
+                .setter =
+                    [](Serializable* pThis, const std::string& sNewValue) {
+                        reinterpret_cast<SimpleSerializable*>(pThis)->sText = sNewValue;
+                    },
+                .getter = [](Serializable* pThis) -> std::string {
+                    return reinterpret_cast<SimpleSerializable*>(pThis)->sText;
+                }};
+
+        return TypeReflectionInfo(
+            "",
+            NAMEOF_SHORT_TYPE(SimpleSerializable).data(),
+            []() -> std::unique_ptr<Serializable> { return std::make_unique<SimpleSerializable>(); },
+            std::move(variables));
+    }
+
+private:
+    std::string sText = "";
+};
+
+// This is object that owns the inner.
+class TestSerializable : public Serializable {
+public:
+    static TypeReflectionInfo getReflectionInfo() {
+        ReflectedVariables variables;
+
+        variables.serializables[NAMEOF_MEMBER(&TestSerializable::pSimpleSerializable).data()] =
+            ReflectedVariableInfo<std::unique_ptr<Serializable>>{
+                .setter =
+                    [](Serializable* pThis, std::unique_ptr<Serializable> pNewValue) {
+                        auto pNew = std::unique_ptr<SimpleSerializable>(
+                            dynamic_cast<SimpleSerializable*>(pNewValue.release()));
+                        if (pNew == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException("invalid type for variable");
+                        }
+                        reinterpret_cast<TestSerializable*>(pThis)->pSimpleSerializable = std::move(pNew);
+                    },
+                .getter = [](Serializable* pThis) -> Serializable* {
+                    return reinterpret_cast<TestSerializable*>(pThis)->pSimpleSerializable.get();
+                }};
+
+        return TypeReflectionInfo(
+            "",
+            NAMEOF_SHORT_TYPE(TestSerializable).data(),
+            []() -> std::unique_ptr<Serializable> { return std::make_unique<TestSerializable>(); },
+            std::move(variables));
+    }
+
+private:
+    std::unique_ptr<SimpleSerializable> pSimpleSerializable;
+};
 ```
 
 ## Debug drawer

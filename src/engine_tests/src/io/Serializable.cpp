@@ -9,6 +9,56 @@
 #include "nameof.hpp"
 #include "catch2/catch_test_macros.hpp"
 
+class EmptySerializable : public Serializable {
+public:
+    virtual ~EmptySerializable() override = default;
+
+    static std::string getTypeGuidStatic() { return "test-empty-serializable-guid"; }
+    virtual std::string getTypeGuid() const override { return "test-empty-serializable-guid"; }
+
+    static TypeReflectionInfo getReflectionInfo() {
+        ReflectedVariables variables;
+
+        // DON'T PUT ANYTHING HERE, it should be empty (no reflected variables)
+
+        return TypeReflectionInfo(
+            "",
+            NAMEOF_SHORT_TYPE(EmptySerializable).data(),
+            []() -> std::unique_ptr<Serializable> { return std::make_unique<EmptySerializable>(); },
+            std::move(variables));
+    }
+};
+
+class SimpleSerializable : public Serializable {
+public:
+    virtual ~SimpleSerializable() override = default;
+
+    static std::string getTypeGuidStatic() { return "test-simple-serializable-guid"; }
+    virtual std::string getTypeGuid() const override { return "test-simple-serializable-guid"; }
+
+    static TypeReflectionInfo getReflectionInfo() {
+        ReflectedVariables variables;
+
+        variables.strings[NAMEOF_MEMBER(&SimpleSerializable::sText).data()] =
+            ReflectedVariableInfo<std::string>{
+                .setter =
+                    [](Serializable* pThis, const std::string& sNewValue) {
+                        reinterpret_cast<SimpleSerializable*>(pThis)->sText = sNewValue;
+                    },
+                .getter = [](Serializable* pThis) -> std::string {
+                    return reinterpret_cast<SimpleSerializable*>(pThis)->sText;
+                }};
+
+        return TypeReflectionInfo(
+            "",
+            NAMEOF_SHORT_TYPE(SimpleSerializable).data(),
+            []() -> std::unique_ptr<Serializable> { return std::make_unique<SimpleSerializable>(); },
+            std::move(variables));
+    }
+
+    std::string sText = "";
+};
+
 class TestSerializable : public Serializable {
 public:
     static bool bDestructorCalled;
@@ -93,6 +143,50 @@ public:
                     return reinterpret_cast<TestSerializable*>(pThis)->sString;
                 }};
 
+        variables.serializables[NAMEOF_MEMBER(&TestSerializable::pSimpleSerializable).data()] =
+            ReflectedVariableInfo<std::unique_ptr<Serializable>>{
+                .setter =
+                    [](Serializable* pThis, std::unique_ptr<Serializable> pNewValue) {
+                        auto pNew = std::unique_ptr<SimpleSerializable>(
+                            dynamic_cast<SimpleSerializable*>(pNewValue.release()));
+                        if (pNew == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException("invalid type for variable");
+                        }
+                        reinterpret_cast<TestSerializable*>(pThis)->pSimpleSerializable = std::move(pNew);
+                    },
+                .getter = [](Serializable* pThis) -> Serializable* {
+                    return reinterpret_cast<TestSerializable*>(pThis)->pSimpleSerializable.get();
+                }};
+        variables.serializables[NAMEOF_MEMBER(&TestSerializable::pNullptrSimpleSerializable).data()] =
+            ReflectedVariableInfo<std::unique_ptr<Serializable>>{
+                .setter =
+                    [](Serializable* pThis, std::unique_ptr<Serializable> pNewValue) {
+                        auto pNew = std::unique_ptr<SimpleSerializable>(
+                            dynamic_cast<SimpleSerializable*>(pNewValue.release()));
+                        if (pNew == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException("invalid type for variable");
+                        }
+                        reinterpret_cast<TestSerializable*>(pThis)->pNullptrSimpleSerializable =
+                            std::move(pNew);
+                    },
+                .getter = [](Serializable* pThis) -> Serializable* {
+                    return reinterpret_cast<TestSerializable*>(pThis)->pNullptrSimpleSerializable.get();
+                }};
+        variables.serializables[NAMEOF_MEMBER(&TestSerializable::pEmptySerializable).data()] =
+            ReflectedVariableInfo<std::unique_ptr<Serializable>>{
+                .setter =
+                    [](Serializable* pThis, std::unique_ptr<Serializable> pNewValue) {
+                        auto pNew = std::unique_ptr<EmptySerializable>(
+                            dynamic_cast<EmptySerializable*>(pNewValue.release()));
+                        if (pNew == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException("invalid type for variable");
+                        }
+                        reinterpret_cast<TestSerializable*>(pThis)->pEmptySerializable = std::move(pNew);
+                    },
+                .getter = [](Serializable* pThis) -> Serializable* {
+                    return reinterpret_cast<TestSerializable*>(pThis)->pEmptySerializable.get();
+                }};
+
         variables.vec2s[NAMEOF_MEMBER(&TestSerializable::vec2).data()] = ReflectedVariableInfo<glm::vec2>{
             .setter =
                 [](Serializable* pThis, const glm::vec2& newValue) {
@@ -173,7 +267,7 @@ public:
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(ReflectedVariables) == 960, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(ReflectedVariables) == 840, "add new variables here");
+        static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
 #endif
 
         return TypeReflectionInfo(
@@ -193,6 +287,9 @@ public:
     float float_ = 0.0f;
     double double_ = 0.0;
     std::string sString;
+    std::unique_ptr<SimpleSerializable> pSimpleSerializable;
+    std::unique_ptr<SimpleSerializable> pNullptrSimpleSerializable;
+    std::unique_ptr<EmptySerializable> pEmptySerializable;
     glm::vec2 vec2 = glm::vec2(0.0F, 0.0F);
     glm::vec3 vec3 = glm::vec3(0.0F, 0.0F, 0.0F);
     glm::vec4 vec4 = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
@@ -237,7 +334,11 @@ public:
 };
 
 TEST_CASE("serialize and deserialize a sample type") {
-    // Register type.
+    // Register types.
+    ReflectedTypeDatabase::registerType(
+        EmptySerializable::getTypeGuidStatic(), EmptySerializable::getReflectionInfo());
+    ReflectedTypeDatabase::registerType(
+        SimpleSerializable::getTypeGuidStatic(), SimpleSerializable::getReflectionInfo());
     ReflectedTypeDatabase::registerType(
         TestSerializable::getTypeGuidStatic(), TestSerializable::getReflectionInfo());
 
@@ -250,6 +351,10 @@ TEST_CASE("serialize and deserialize a sample type") {
     pToSerialize->iUnsignedLongLong = std::numeric_limits<unsigned long long>::max();
     pToSerialize->float_ = 3.1415926535f;
     pToSerialize->sString = "Hello! 今日は!";
+    pToSerialize->pSimpleSerializable = std::make_unique<SimpleSerializable>();
+    pToSerialize->pSimpleSerializable->sText = "hmm...";
+    pToSerialize->pNullptrSimpleSerializable = nullptr;
+    pToSerialize->pEmptySerializable = std::make_unique<EmptySerializable>(); // empty but not nullptr
     pToSerialize->vec2 = glm::vec2(1.0F, 2.0F);
     pToSerialize->vec3 = glm::vec3(1.0F, 2.0F, 3.0F);
     pToSerialize->vec4 = glm::vec4(1.0F, 2.0F, 3.0F, 4.0F);
@@ -268,21 +373,6 @@ TEST_CASE("serialize and deserialize a sample type") {
         vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
         pToSerialize->meshGeometry.getVertices().push_back(vertex);
         pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
-    }
-
-    {
-        SkeletalMeshNodeVertex vertex;
-        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
-        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
-        vertex.uv = glm::vec2(0.5F, 0.5F);
-        vertex.vBoneIndices = {0, 1, 0, 0};
-        vertex.vBoneWeights = {0.5F, 0.5F, 0.0F, 0.0F};
-        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
-        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
-        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
-        pToSerialize->skeletalMeshGeometry.getIndices() = {0, 1, 2};
     }
 
     // Serialize.
@@ -317,6 +407,10 @@ TEST_CASE("serialize and deserialize a sample type") {
     REQUIRE(pDeserialized->iUnsignedLongLong == pToSerialize->iUnsignedLongLong);
     REQUIRE(glm::epsilonEqual(pDeserialized->float_, pToSerialize->float_, floatEpsilon));
     REQUIRE(pDeserialized->sString == pToSerialize->sString);
+    REQUIRE(pDeserialized->pNullptrSimpleSerializable == nullptr);
+    REQUIRE(pDeserialized->pEmptySerializable != nullptr); // empty but was not nullptr
+    REQUIRE(pDeserialized->pSimpleSerializable != nullptr);
+    REQUIRE(pDeserialized->pSimpleSerializable->sText == "hmm...");
     REQUIRE(glm::all(glm::epsilonEqual(pDeserialized->vec2, pToSerialize->vec2, floatEpsilon)));
     REQUIRE(glm::all(glm::epsilonEqual(pDeserialized->vec3, pToSerialize->vec3, floatEpsilon)));
     REQUIRE(glm::all(glm::epsilonEqual(pDeserialized->vec4, pToSerialize->vec4, floatEpsilon)));
@@ -332,7 +426,7 @@ TEST_CASE("serialize and deserialize a sample type") {
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(ReflectedVariables) == 960, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(ReflectedVariables) == 840, "add new variables here");
+    static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
 #endif
 
     pDeserialized = nullptr;
@@ -362,6 +456,21 @@ TEST_CASE("serialize and deserialize a derived type") {
     vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
     pToSerialize->meshGeometry.getVertices().push_back(vertex);
     pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
+
+    {
+        SkeletalMeshNodeVertex vertex;
+        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
+        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+        vertex.uv = glm::vec2(0.5F, 0.5F);
+        vertex.vBoneIndices = {0, 1, 0, 0};
+        vertex.vBoneWeights = {0.5F, 0.5F, 0.0F, 0.0F};
+        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
+        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
+        pToSerialize->skeletalMeshGeometry.getIndices() = {0, 1, 2};
+    }
 
     // Serialize.
     const auto pathToFile =
@@ -399,7 +508,7 @@ TEST_CASE("deserialize with original object") {
         auto pToSerialize1 = std::make_unique<TestSerializable>();
         auto pToSerialize2 = std::make_unique<TestSerializable>();
 
-        // Fill mesh to suppress empty geometry warning.
+        // Fill mesh.
         MeshNodeVertex vertex;
         vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
         vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);

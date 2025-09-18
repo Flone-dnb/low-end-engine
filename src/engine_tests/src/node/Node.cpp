@@ -1759,7 +1759,7 @@ TEST_CASE("load node tree as world") {
                 REQUIRE(std::filesystem::exists(
                     pathToDirectory /
                     (std::string("test") + std::string(Serializable::getNodeTreeGeometryDirSuffix())) /
-                    "1.geometry.bin"));
+                    "1.meshGeometry.bin"));
 
                 loadNodeTreeAsWorld(pathToDirectory / "test", [this](Node* pRootNode) {
                     REQUIRE(pRootNode->getNodeName() == "my node");

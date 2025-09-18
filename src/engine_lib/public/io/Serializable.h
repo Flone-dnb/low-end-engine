@@ -226,6 +226,26 @@ protected:
 
 private:
     /**
+     * Deserializes object(s) from a toml value.
+     *
+     * @param tomlData         TOML data to read.
+     * @param sObjectUniqueId  Unique ID (that was previously specified in @ref serializeMultiple) of an
+     * object to deserialize (and ignore others).
+     * @param customAttributes Pairs of values that were associated with this object.
+     * @param pathToFile       Path to file that the TOML data was deserialized from
+     * (used for variables that are stores as separate binary files).
+     *
+     * @return Error if something went wrong, otherwise first deserialized object.
+     */
+    template <typename T>
+        requires std::derived_from<T, Serializable>
+    static std::variant<std::unique_ptr<T>, Error> deserialize(
+        const toml::value& tomlData,
+        const std::string& sObjectUniqueId,
+        std::unordered_map<std::string, std::string>& customAttributes,
+        const std::filesystem::path& pathToFile);
+
+    /**
      * Deserializes an object and all reflected fields (including inherited) from a TOML data.
      * Specify the type of an object (that is located in the file) as the T template parameter, which
      * can be entity's actual type or entity's parent (up to Serializable).
@@ -237,7 +257,8 @@ private:
      * @param customAttributes Pairs of values that were associated with this object.
      * @param sSectionName     Name of the TOML section to deserialize.
      * @param sTypeGuid        GUID of the type to deserialize (taken from section name).
-     * @param sEntityId        Entity ID chain string.
+     * @param sEntityId        Entity ID chain string. This is a unique ID of the object to deserialize (and
+     * ignore others).
      * @param pathToFile       Path to file that the TOML data was deserialized from
      * (used for variables that are stores as separate binary files).
      *
@@ -265,11 +286,11 @@ private:
     [[nodiscard]] static std::optional<Error> resolvePathToToml(std::filesystem::path& pathToFile);
 
     /**
-     * Serializes the object and all reflected fields (including inherited) into a file.
+     * Serializes the object and all reflected fields (including inherited) into the toml data.
      * Serialized object can later be deserialized using @ref deserialize.
      *
      * @param pathToFile         Path to the file that this TOML data will be serialized.
-     * Used for fields marked as `Serialize(AsExternal)`.
+     * Used for fields that will be stored in a separate file (such as geometry).
      * @param tomlData           Toml value to append this object to.
      * @param pOriginalObject    Optional. Original object of the same type as the object being
      * serialized, this object is a deserialized version of the object being serialized,
@@ -327,30 +348,16 @@ private:
 template <typename T>
     requires std::derived_from<T, Serializable>
 inline std::variant<std::unique_ptr<T>, Error> Serializable::deserialize(
-    std::filesystem::path pathToFile,
+    const toml::value& tomlData,
     const std::string& sObjectUniqueId,
-    std::unordered_map<std::string, std::string>& customAttributes) {
-    // Resolve path.
-    auto optionalError = resolvePathToToml(pathToFile);
-    if (optionalError.has_value()) [[unlikely]] {
-        auto error = std::move(optionalError.value());
-        error.addCurrentLocationToErrorStack();
-        return error;
-    }
-
-    // Parse file.
-    toml::value tomlData;
-    try {
-        tomlData = toml::parse(pathToFile);
-    } catch (std::exception& exception) {
-        return Error(std::format(
-            "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
-    }
-
+    std::unordered_map<std::string, std::string>& customAttributes,
+    const std::filesystem::path& pathToFile) {
     // Get TOML as table.
-    const auto fileTable = tomlData.as_table();
+    const auto& fileTable = tomlData.as_table();
     if (fileTable.empty()) [[unlikely]] {
-        return Error("provided toml value has 0 sections while expected at least 1 section");
+        return Error(std::format(
+            "provided toml value has 0 sections while expected at least 1 section (file path {})",
+            pathToFile.string()));
     }
 
     // Find a section that starts with the specified entity ID.
@@ -397,6 +404,32 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserialize(
 
     return deserializeFromSection<T>(
         tomlData, customAttributes, sTargetSection, sTypeGuid, sObjectUniqueId, pathToFile);
+}
+
+template <typename T>
+    requires std::derived_from<T, Serializable>
+inline std::variant<std::unique_ptr<T>, Error> Serializable::deserialize(
+    std::filesystem::path pathToFile,
+    const std::string& sObjectUniqueId,
+    std::unordered_map<std::string, std::string>& customAttributes) {
+    // Resolve path.
+    auto optionalError = resolvePathToToml(pathToFile);
+    if (optionalError.has_value()) [[unlikely]] {
+        auto error = std::move(optionalError.value());
+        error.addCurrentLocationToErrorStack();
+        return error;
+    }
+
+    // Parse file.
+    toml::value tomlData;
+    try {
+        tomlData = toml::parse(pathToFile);
+    } catch (std::exception& exception) {
+        return Error(std::format(
+            "failed to parse TOML file at \"{}\", error: {}", pathToFile.string(), exception.what()));
+    }
+
+    return deserialize<T>(tomlData, sObjectUniqueId, customAttributes, pathToFile);
 }
 
 template <typename T>
@@ -449,7 +482,9 @@ Serializable::deserializeMultiple(std::filesystem::path pathToFile) {
     // Get TOML as table.
     const auto fileTable = tomlData.as_table();
     if (fileTable.empty()) [[unlikely]] {
-        return Error("provided toml value has 0 sections while expected at least 1 section");
+        return Error(std::format(
+            "provided toml value has 0 sections while expected at least 1 section (file path {})",
+            pathToFile.string()));
     }
 
     // Deserialize.
@@ -747,6 +782,29 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
 
             break;
         }
+        case (ReflectedVariableType::SERIALIZABLE): {
+            std::unordered_map<std::string, std::string> tempCustomAttributes;
+            // TODO: specifying empty path to file for now because it might not work as intended
+            auto result = deserialize<Serializable>(*pFieldTomlValue, "0", tempCustomAttributes, "");
+            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                auto error = std::get<Error>(std::move(result));
+                error.addCurrentLocationToErrorStack();
+                return error;
+            }
+            auto pDeserializedValue = std::get<std::unique_ptr<Serializable>>(std::move(result));
+
+            const auto variableInfoIt = typeInfo.reflectedVariables.serializables.find(sFieldName.data());
+            if (variableInfoIt == typeInfo.reflectedVariables.serializables.end()) [[unlikely]] {
+                Error::showErrorAndThrowException(std::format(
+                    "found mismatch between internal structured on variable \"{}\" from \"{}\"",
+                    sFieldName,
+                    typeInfo.sTypeName));
+            }
+            variableInfoIt->second.setter(pDeserializedObject.get(), std::move(pDeserializedValue));
+
+            break;
+        }
+
         case (ReflectedVariableType::VEC2): {
             if (!pFieldTomlValue->is_array()) [[unlikely]] {
                 Error::showErrorAndThrowException(std::format(
@@ -986,79 +1044,84 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
 #endif
     }
 
     // Deserialize geometry.
-    if (!pathToFile.has_parent_path()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("expected the path to have a parent path \"{}\"", pathToFile.string()));
-    }
-
-    // Construct path to the directory that stores geometry files.
-    const std::string sFilename = pathToFile.stem().string();
-    const auto pathToGeoDir =
-        pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
-
-    if (std::filesystem::exists(pathToGeoDir)) {
-        // Prepare a handle lambda.
-        const auto getPathToGeometryFile = [&](const std::string& sVariableName) {
-            return pathToGeoDir / (sEntityId + "." + sVariableName + "." + std::string(sBinaryFileExtension));
-        };
-
-        size_t iNotFoundMeshGeometryCount = 0;
-
-        // Mesh geometry.
-        if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
-            for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.meshNodeGeometries) {
-                const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
-                if (!std::filesystem::exists(pathToMeshGeometry)) {
-                    if (!bUsedOriginalObject) {
-                        // There may be node geometry file in case this is a SkeletalMeshNode which has
-                        // skeletal mesh node geometry but empty mesh node geometry.
-                        iNotFoundMeshGeometryCount += 1; // make sure there will be a skeletal geometry
-                    }
-                    continue;
-                }
-
-                auto meshGeometry = MeshNodeGeometry::deserialize(pathToMeshGeometry);
-                variableInfo.setter(pDeserializedObject.get(), meshGeometry);
-            }
+    if (std::filesystem::exists(pathToFile)) {
+        if (!pathToFile.has_parent_path()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected the path to have a parent path \"{}\"", pathToFile.string()));
         }
 
-        // Skeletal mesh geometry.
-        if (!typeInfo.reflectedVariables.skeletalMeshNodeGeometries.empty()) {
-            for (const auto& [sVariableName, variableInfo] :
-                 typeInfo.reflectedVariables.skeletalMeshNodeGeometries) {
-                const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
-                if (!std::filesystem::exists(pathToMeshGeometry)) {
-                    if (!bUsedOriginalObject) {
-                        Logger::get().warn(std::format(
-                            "unable to find geometry file for variable \"{}\" for file \"{}\" (expected "
-                            "file \"{}\")",
-                            sVariableName,
-                            pathToFile.filename().string(),
-                            pathToMeshGeometry.filename().string()));
+        // Construct path to the directory that stores geometry files.
+        const std::string sFilename = pathToFile.stem().string();
+        const auto pathToGeoDir =
+            pathToFile.parent_path() / (sFilename + std::string(sNodeTreeGeometryDirSuffix));
+
+        if (std::filesystem::exists(pathToGeoDir)) {
+            // Prepare a handle lambda.
+            const auto getPathToGeometryFile = [&](const std::string& sVariableName) {
+                return pathToGeoDir /
+                       (sEntityId + "." + sVariableName + "." + std::string(sBinaryFileExtension));
+            };
+
+            size_t iNotFoundMeshGeometryCount = 0;
+
+            // Mesh geometry.
+            if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
+                for (const auto& [sVariableName, variableInfo] :
+                     typeInfo.reflectedVariables.meshNodeGeometries) {
+                    const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
+                    if (!std::filesystem::exists(pathToMeshGeometry)) {
+                        if (!bUsedOriginalObject) {
+                            // There may be node geometry file in case this is a SkeletalMeshNode which has
+                            // skeletal mesh node geometry but empty mesh node geometry.
+                            iNotFoundMeshGeometryCount += 1; // make sure there will be a skeletal geometry
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                if (iNotFoundMeshGeometryCount > 0) {
-                    iNotFoundMeshGeometryCount -= 1;
+                    auto meshGeometry = MeshNodeGeometry::deserialize(pathToMeshGeometry);
+                    variableInfo.setter(pDeserializedObject.get(), meshGeometry);
                 }
-
-                auto meshGeometry = SkeletalMeshNodeGeometry::deserialize(pathToMeshGeometry);
-                variableInfo.setter(pDeserializedObject.get(), meshGeometry);
             }
-        }
 
-        if (iNotFoundMeshGeometryCount > 0) {
-            Logger::get().warn(std::format(
-                "unable to find geometry file(s) for {} variable(s) for file \"{}\", make sure these files "
-                "exist and have correct names",
-                iNotFoundMeshGeometryCount,
-                pathToFile.filename().string()));
+            // Skeletal mesh geometry.
+            if (!typeInfo.reflectedVariables.skeletalMeshNodeGeometries.empty()) {
+                for (const auto& [sVariableName, variableInfo] :
+                     typeInfo.reflectedVariables.skeletalMeshNodeGeometries) {
+                    const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
+                    if (!std::filesystem::exists(pathToMeshGeometry)) {
+                        if (!bUsedOriginalObject) {
+                            Logger::get().warn(std::format(
+                                "unable to find geometry file for variable \"{}\" for file \"{}\" (expected "
+                                "file \"{}\")",
+                                sVariableName,
+                                pathToFile.filename().string(),
+                                pathToMeshGeometry.filename().string()));
+                        }
+                        continue;
+                    }
+
+                    if (iNotFoundMeshGeometryCount > 0) {
+                        iNotFoundMeshGeometryCount -= 1;
+                    }
+
+                    auto meshGeometry = SkeletalMeshNodeGeometry::deserialize(pathToMeshGeometry);
+                    variableInfo.setter(pDeserializedObject.get(), meshGeometry);
+                }
+            }
+
+            if (iNotFoundMeshGeometryCount > 0) {
+                Logger::get().warn(std::format(
+                    "unable to find geometry file(s) for {} variable(s) for file \"{}\", make sure these "
+                    "files "
+                    "exist and have correct names",
+                    iNotFoundMeshGeometryCount,
+                    pathToFile.filename().string()));
+            }
         }
     }
 

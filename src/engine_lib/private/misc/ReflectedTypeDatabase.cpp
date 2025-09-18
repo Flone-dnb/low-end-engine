@@ -115,6 +115,7 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
     ADD_VARIABLES_OF_TYPE(unsignedLongLongs);
     ADD_VARIABLES_OF_TYPE(floats);
     ADD_VARIABLES_OF_TYPE(strings);
+    ADD_VARIABLES_OF_TYPE(serializables);
     ADD_VARIABLES_OF_TYPE(vec2s);
     ADD_VARIABLES_OF_TYPE(vec3s);
     ADD_VARIABLES_OF_TYPE(vec4s);
@@ -126,7 +127,7 @@ std::unordered_set<std::string> ReflectedVariables::collectVariableNames() const
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
+    static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
 #endif
 
     return names;
@@ -177,6 +178,7 @@ TypeReflectionInfo::TypeReflectionInfo(
         ADD_PARENT_VARIABLES(unsignedLongLongs);
         ADD_PARENT_VARIABLES(floats);
         ADD_PARENT_VARIABLES(strings);
+        ADD_PARENT_VARIABLES(serializables);
         ADD_PARENT_VARIABLES(vec2s);
         ADD_PARENT_VARIABLES(vec3s);
         ADD_PARENT_VARIABLES(vec4s);
@@ -188,7 +190,7 @@ TypeReflectionInfo::TypeReflectionInfo(
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
 #endif
     }
 
@@ -208,6 +210,7 @@ TypeReflectionInfo::TypeReflectionInfo(
     VARIABLE_TYPE_TO_MAP(unsignedLongLongs, ReflectedVariableType::UNSIGNED_LONG_LONG);
     VARIABLE_TYPE_TO_MAP(floats, ReflectedVariableType::FLOAT);
     VARIABLE_TYPE_TO_MAP(strings, ReflectedVariableType::STRING);
+    VARIABLE_TYPE_TO_MAP(serializables, ReflectedVariableType::SERIALIZABLE);
     VARIABLE_TYPE_TO_MAP(vec2s, ReflectedVariableType::VEC2);
     VARIABLE_TYPE_TO_MAP(vec3s, ReflectedVariableType::VEC3);
     VARIABLE_TYPE_TO_MAP(vec4s, ReflectedVariableType::VEC4);
@@ -219,6 +222,6 @@ TypeReflectionInfo::TypeReflectionInfo(
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
+    static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
 #endif
 }

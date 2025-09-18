@@ -19,6 +19,21 @@ std::string CollisionNode::getTypeGuid() const { return sTypeGuid.data(); }
 TypeReflectionInfo CollisionNode::getReflectionInfo() {
     ReflectedVariables variables;
 
+    variables.serializables[NAMEOF_MEMBER(&CollisionNode::pShape).data()] =
+        ReflectedVariableInfo<std::unique_ptr<Serializable>>{
+            .setter =
+                [](Serializable* pThis, std::unique_ptr<Serializable> pNewValue) {
+                    auto pNewShape =
+                        std::unique_ptr<CollisionShape>(dynamic_cast<CollisionShape*>(pNewValue.release()));
+                    if (pNewShape == nullptr) [[unlikely]] {
+                        Error::showErrorAndThrowException("invalid type for variable");
+                    }
+                    reinterpret_cast<CollisionNode*>(pThis)->pShape = std::move(pNewShape);
+                },
+            .getter = [](Serializable* pThis) -> Serializable* {
+                return reinterpret_cast<CollisionNode*>(pThis)->pShape.get();
+            }};
+
     return TypeReflectionInfo(
         SpatialNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(CollisionNode).data(),

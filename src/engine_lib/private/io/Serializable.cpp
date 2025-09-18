@@ -69,8 +69,7 @@ std::optional<Error> Serializable::serialize(
                 const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(getTypeGuid());
                 return Error(std::format(
                     "object of type \"{}\" has the path it was deserialized from ({}, ID {}) but "
-                    "this "
-                    "file \"{}\" does not exist",
+                    "this file \"{}\" does not exist",
                     typeInfo.sTypeName,
                     sPathDeserializedFromRelativeRes,
                     sObjectIdInDeserializedFile,
@@ -121,7 +120,14 @@ std::optional<Error> Serializable::serialize(
         return Error(std::format(
             "failed to open the file \"{}\" (maybe because it's marked as read-only)", pathToFile.string()));
     }
-    file << toml::format(tomlData);
+    try {
+        file << toml::format(tomlData);
+    } catch (std::exception& exception) {
+        return Error(std::format(
+            "failed to serialize TOML data to file \"{}\", error: {}",
+            pathToFile.string(),
+            exception.what()));
+    }
     file.close();
 
     if (bEnableBackup) {
@@ -232,7 +238,14 @@ std::optional<Error> Serializable::serializeMultiple(
         return Error(std::format(
             "failed to open the file \"{}\" (maybe because it's marked as read-only)", pathToFile.string()));
     }
-    file << toml::format(tomlData);
+    try {
+        file << toml::format(tomlData);
+    } catch (std::exception& exception) {
+        return Error(std::format(
+            "failed to serialize TOML data to file \"{}\", error: {}",
+            pathToFile.string(),
+            exception.what()));
+    }
     file.close();
 
     if (bEnableBackup) {
@@ -322,6 +335,39 @@ std::variant<std::string, Error> Serializable::serialize(
                 continue;
             }
             tomlData[sSectionName][sVariableName] = currentValue;
+        }
+
+        // Serializables.
+        for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.serializables) {
+            Serializable* pCurrentValue = variableInfo.getter(this);
+            if (pCurrentValue == nullptr) {
+                continue;
+            }
+
+            // TODO:
+            // if (pOriginalObject != nullptr && variableInfo.getter(pOriginalObject)->isEqual(pCurrentValue))
+            // {
+            //    continue;
+            //}
+
+            // Serialize into toml data.
+            // TODO: specifying empty path to file for now because it might not work as intended
+            toml::value serializedData;
+            auto result = pCurrentValue->serialize("", serializedData, nullptr);
+            if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                auto error = std::get<Error>(std::move(result));
+                error.addCurrentLocationToErrorStack();
+                return error;
+            }
+            if (serializedData.is_empty()) {
+                // There was nothing to serialize (no reflected variables).
+                // Put an empty table so that this non `nullptr` variable will be at least created when
+                // deserialized to not be `nullptr` after deserialization.
+                serializedData = toml::table{};
+                serializedData[std::format("0.{}", pCurrentValue->getTypeGuid())] = toml::table{};
+            }
+
+            tomlData[sSectionName][sVariableName] = serializedData;
         }
 
         // Vec2.
@@ -432,6 +478,7 @@ std::variant<std::string, Error> Serializable::serialize(
             };
 
             // Mesh geometry
+            bool bFoundNonEmptyMesh = false;
             if (!typeInfo.reflectedVariables.meshNodeGeometries.empty()) {
                 for (const auto& [sVariableName, variableInfo] :
                      typeInfo.reflectedVariables.meshNodeGeometries) {
@@ -442,6 +489,8 @@ std::variant<std::string, Error> Serializable::serialize(
                         // geometry and empty mesh node geometry.
                         continue;
                     }
+                    bFoundNonEmptyMesh = true;
+
                     if (pOriginalObject != nullptr && variableInfo.getter(pOriginalObject) == currentValue) {
                         // Value didn't changed, no need to save.
                         continue;
@@ -459,7 +508,8 @@ std::variant<std::string, Error> Serializable::serialize(
                      typeInfo.reflectedVariables.skeletalMeshNodeGeometries) {
                     // Get value.
                     const auto currentValue = variableInfo.getter(this);
-                    if (currentValue.getIndices().empty() && currentValue.getVertices().empty()) {
+                    if (currentValue.getIndices().empty() && currentValue.getVertices().empty() &&
+                        !bFoundNonEmptyMesh) {
                         Logger::get().warn(std::format(
                             "found empty geometry in variable \"{}\" for file \"{}\"",
                             sVariableName,
@@ -481,7 +531,7 @@ std::variant<std::string, Error> Serializable::serialize(
 #if defined(WIN32) && defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
 #elif defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 992, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
 #endif
     }
 

@@ -60,8 +60,8 @@ TEST_CASE("serialize node tree with 2 mesh nodes") {
                 const auto pathToGeoDir =
                     pathToDirectory /
                     (std::string("test") + std::string(Serializable::getNodeTreeGeometryDirSuffix()));
-                REQUIRE(std::filesystem::exists(pathToGeoDir / "0.geometry.bin"));
-                REQUIRE(std::filesystem::exists(pathToGeoDir / "1.geometry.bin"));
+                REQUIRE(std::filesystem::exists(pathToGeoDir / "0.meshGeometry.bin"));
+                REQUIRE(std::filesystem::exists(pathToGeoDir / "1.meshGeometry.bin"));
 
                 getWindow()->close();
             });

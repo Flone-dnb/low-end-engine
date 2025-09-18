@@ -47,12 +47,16 @@ private:
      * Displays reflected fields of the specified type by taking the current
      * values from the specified object.
      *
-     * @param sTypeGuid  GUID of the type to display.
+     * @param pLayoutToAddTo Layout ot add new properties to.
+     * @param sTypeGuid  GUID of the type to display. This is used to display only specific type's variables.
      * @param pObject    Object to read/write fields.
-     * @param bRecursive `true` to display parent variables.
+     * @param bRecursive `true` to display parent variables (of the specified GUID).
      */
-    void
-    displayPropertiesForType(const std::string& sTypeGuid, Serializable* pObject, bool bRecursive = true);
+    static void displayPropertiesForType(
+        LayoutUiNode* pLayoutToAddTo,
+        const std::string& sTypeGuid,
+        Serializable* pObject,
+        bool bRecursive = true);
 
     /**
      * Adds special UI options to @ref pPropertyLayout for skeleton node.
