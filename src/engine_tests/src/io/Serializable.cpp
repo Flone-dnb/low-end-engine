@@ -265,7 +265,7 @@ public:
                 }};
 
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(ReflectedVariables) == 960, "add new variables here");
+        static_assert(sizeof(ReflectedVariables) == 1024, "add new variables here");
 #elif defined(DEBUG)
         static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
 #endif
@@ -424,7 +424,7 @@ TEST_CASE("serialize and deserialize a sample type") {
     REQUIRE(pDeserialized->meshGeometry == pToSerialize->meshGeometry);
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(ReflectedVariables) == 960, "add new variables here");
+    static_assert(sizeof(ReflectedVariables) == 1024, "add new variables here");
 #elif defined(DEBUG)
     static_assert(sizeof(ReflectedVariables) == 896, "add new variables here");
 #endif

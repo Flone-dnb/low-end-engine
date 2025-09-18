@@ -529,7 +529,7 @@ std::variant<std::string, Error> Serializable::serialize(
         }
 
 #if defined(WIN32) && defined(DEBUG)
-        static_assert(sizeof(TypeReflectionInfo) == 1152, "add new variables here");
+        static_assert(sizeof(TypeReflectionInfo) == 1216, "add new variables here");
 #elif defined(DEBUG)
         static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
 #endif

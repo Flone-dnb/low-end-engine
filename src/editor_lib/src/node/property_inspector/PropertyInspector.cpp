@@ -298,7 +298,7 @@ void PropertyInspector::displayPropertiesForType(
             }
 
 #if defined(WIN32) && defined(DEBUG)
-            static_assert(sizeof(ReflectedVariables) == 960, "consider adding new variables here");
+            static_assert(sizeof(ReflectedVariables) == 1024, "consider adding new variables here");
 #elif defined(DEBUG)
             static_assert(sizeof(ReflectedVariables) == 896, "consider adding new variables here");
 #endif
