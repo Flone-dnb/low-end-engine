@@ -59,6 +59,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(SphereCollisionShape::getTypeGuidStatic(), SphereCollisionShape::getReflectionInfo());
     registerType(CapsuleCollisionShape::getTypeGuidStatic(), CapsuleCollisionShape::getReflectionInfo());
     registerType(CylinderCollisionShape::getTypeGuidStatic(), CylinderCollisionShape::getReflectionInfo());
+    registerType(ConvexCollisionShape::getTypeGuidStatic(), ConvexCollisionShape::getReflectionInfo());
     registerType(CollisionNode::getTypeGuidStatic(), CollisionNode::getReflectionInfo());
 }
 

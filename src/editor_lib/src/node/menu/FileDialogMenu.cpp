@@ -31,6 +31,7 @@ FileDialogMenu::FileDialogMenu(
         pVerticalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
         pVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
         {
+            // Current path + buttons.
             const auto pHorizontalLayout = pVerticalLayout->addChildNode(std::make_unique<LayoutUiNode>());
             pHorizontalLayout->setIsHorizontal(true);
             pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
@@ -55,6 +56,7 @@ FileDialogMenu::FileDialogMenu(
                     pText->setText(u"go up");
                 }
 
+                // Current path.
                 const auto pCurrentPathBackground =
                     pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
                 pCurrentPathBackground->setExpandPortionInLayout(18);
@@ -67,6 +69,7 @@ FileDialogMenu::FileDialogMenu(
                     pCurrentPathText->setTextHeight(EditorTheme::getTextHeight());
                 }
 
+                // Close button.
                 const auto pCloseButton = pHorizontalLayout->addChildNode(std::make_unique<ButtonUiNode>());
                 pCloseButton->setPadding(EditorTheme::getPadding() * 2.0F);
                 pCloseButton->setExpandPortionInLayout(2);
@@ -82,6 +85,20 @@ FileDialogMenu::FileDialogMenu(
                 }
             }
 
+            // Allowed file extensions.
+            const auto pExtensionsText = pVerticalLayout->addChildNode(std::make_unique<TextUiNode>());
+            pExtensionsText->setTextHeight(EditorTheme::getTextHeight());
+            std::string sExtensions = "Allowed file extensions: ";
+            if (vFileExtensions.empty()) {
+                sExtensions += "any";
+            } else {
+                for (const auto& sFileExtension : vFileExtensions) {
+                    sExtensions += sFileExtension + " ";
+                }
+            }
+            pExtensionsText->setText(utf::as_u16(sExtensions));
+
+            // Filesystem.
             const auto pFilesystemBackground = pVerticalLayout->addChildNode(std::make_unique<RectUiNode>());
             pFilesystemBackground->setColor(EditorTheme::getContainerBackgroundColor());
             pFilesystemBackground->setExpandPortionInLayout(16);

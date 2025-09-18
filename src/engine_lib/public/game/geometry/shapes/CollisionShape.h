@@ -24,7 +24,7 @@ public:
 
     /**
      * Sets a callback that will be triggered after some property of the shape changed.
-     * 
+     *
      * @param callback Callback.
      */
     void setOnChanged(const std::function<void()>& callback);
@@ -334,4 +334,62 @@ private:
 
     /** Radius of the cylinder. */
     float radius = 0.25F;
+};
+
+// ------------------------------------------------------------------------------------------------
+
+/** Convex collision. */
+class ConvexCollisionShape : public CollisionShape {
+public:
+    ConvexCollisionShape() = default;
+    virtual ~ConvexCollisionShape() override = default;
+
+    /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    static std::string getTypeGuidStatic();
+
+    /**
+     * Returns GUID of the type, this GUID is used to retrieve reflection information from the reflected type
+     * database.
+     *
+     * @return GUID.
+     */
+    virtual std::string getTypeGuid() const override;
+
+    /**
+     * Sets path (relative to the `res` directory) to the file that stores convex shape geometry.
+     *
+     * @param sRelativePath New path.
+     */
+    void setPathToGeometryRelativeRes(const std::string& sRelativePath);
+
+    /**
+     * Returns path (relative to the `res` directory) to the file that stores convex shape geometry.
+     *
+     * @return Relative path.
+     */
+    std::string getPathToGeometryRelativeRes() const { return sPathToGeometryRelativeRes; }
+
+protected:
+    /**
+     * Creates a shape for Jolt physics.
+     *
+     * @return Shape.
+     */
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape() override;
+
+private:
+    /** Path (relative to the `res` directory) to the file that stores convex shape geometry. */
+    std::string sPathToGeometryRelativeRes;
 };

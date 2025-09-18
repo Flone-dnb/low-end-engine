@@ -199,7 +199,8 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
                      std::vector<std::string>{".gltf", ".glb"},
                      [this, pathToDirectory](const std::filesystem::path& selectedPath) {
-                         // Do async import to view import progress (messages in the log).
+                         // Do async import to view import progress (messages in the log)
+                         // and don't block the whole UI while importing large files.
                          getGameInstanceWhileSpawned()->addTaskToThreadPool(
                              [this, selectedPath, pathToDirectory]() {
                                  const auto sRelativeOutputPath =
@@ -250,6 +251,26 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                          }
                      }));
              }});
+        vOptions.push_back(
+            {u"Import collision shape", [this, pathToDirectory]() {
+                 getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
+                     ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
+                     std::vector<std::string>{".gltf", ".glb"},
+                     [this, pathToDirectory](const std::filesystem::path& selectedPath) {
+                         const auto optionalError = GltfImporter::importFileAsConvexShapeGeometry(
+                             selectedPath, pathToDirectory, [](std::string_view sMessage) {
+                                 Logger::get().info(sMessage);
+                             });
+                         if (optionalError.has_value()) [[unlikely]] {
+                             Logger::get().error(std::format(
+                                 "failed to import the file, error: {}", optionalError->getInitialMessage()));
+                         } else {
+                             Logger::get().info(std::format(
+                                 "file \"{}\" was successfully imported", selectedPath.filename().string()));
+                             rebuildFileTree();
+                         }
+                     }));
+             }});
         if (!pathToDirectory.string().ends_with("res/game")) {
             vOptions.push_back({u"Delete directory", [this, pathToDirectory]() {
                                     // Show confirmation.
@@ -281,6 +302,20 @@ void ContentBrowser::showFileContextMenu(const std::filesystem::path& pathToFile
 
     std::vector<std::pair<std::u16string, std::function<void()>>> vOptions;
     {
+        vOptions.push_back({u"Rename file", [this, pathToFile]() {
+                                const auto pSetNameMenu = getWorldRootNodeWhileSpawned()->addChildNode(
+                                    std::make_unique<SetNameMenu>());
+                                pSetNameMenu->setOnNameChanged([this, pathToFile](std::u16string_view sText) {
+                                    const auto pathToNewFile = pathToFile.parent_path() / utf::as_str8(sText);
+                                    try {
+                                        std::filesystem::rename(pathToFile, pathToNewFile);
+                                    } catch (std::exception& exception) {
+                                        Logger::get().error(std::format(
+                                            "unable to rename file, error: {}", exception.what()));
+                                    }
+                                    rebuildFileTree();
+                                });
+                            }});
         vOptions.push_back(
             {u"Delete file", [this, pathToFile]() {
                  // Show confirmation.

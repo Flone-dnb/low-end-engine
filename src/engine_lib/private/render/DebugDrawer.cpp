@@ -286,7 +286,7 @@ void DebugDrawer::drawDebugObjects(
         for (auto it = vTextToDraw.begin(); it != vTextToDraw.end();) {
             auto& text = *it;
 
-            float screenX = static_cast<float>(iWindowWidth) * 0.05F;
+            float screenX = static_cast<float>(iWindowWidth) * 0.025F;
             if (text.optForcePosition.has_value()) {
                 screenX = static_cast<float>(iWindowWidth) * text.optForcePosition->x;
             }

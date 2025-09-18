@@ -36,4 +36,20 @@ public:
         const std::string& sPathToOutputDirRelativeRes,
         const std::string& sOutputDirectoryName,
         const std::function<void(std::string_view)>& onProgress);
+
+    /**
+     * Imports a file in a special format (such as GTLF/GLB) and converts information
+     * from the file to a single convex shape geometry file.
+     *
+     * @param pathToFile      Path to the file to import.
+     * @param pathToOutputDir Path to the output directory (must exist).
+     * @param onProgress      Callback that will be called to report some text description of
+     * the current import stage.
+     *
+     * @return Error if something went wrong.
+     */
+    [[nodiscard]] static std::optional<Error> importFileAsConvexShapeGeometry(
+        const std::filesystem::path& pathToFile,
+        const std::filesystem::path& pathToOutputDir,
+        const std::function<void(std::string_view)>& onProgress);
 };

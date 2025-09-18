@@ -3,6 +3,8 @@
 // Custom.
 #include "misc/Error.h"
 #include "game/physics/CoordinateConversions.hpp"
+#include "game/geometry/ConvexShapeGeometry.h"
+#include "game/geometry/PrimitiveMeshGenerator.h"
 
 // External.
 #include "nameof.hpp"
@@ -11,6 +13,7 @@
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 #include "Jolt/Physics/Collision/Shape/CylinderShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
+#include "Jolt/Physics/Collision/Shape/ConvexHullShape.h"
 
 namespace {
     constexpr std::string_view sCollisionShapeTypeGuid = "ced888f6-24f5-425b-a600-ad78f8868593";
@@ -18,6 +21,7 @@ namespace {
     constexpr std::string_view sSphereCollisionShapeTypeGuid = "6da8ba64-ade4-4be2-bc53-e9de3f88d60f";
     constexpr std::string_view sCapsuleCollisionShapeTypeGuid = "5383bd42-6857-45e2-a45e-8bc799abc387";
     constexpr std::string_view sCylinderCollisionShapeTypeGuid = "a9dca02e-4283-4d62-bed7-85de22c9af7e";
+    constexpr std::string_view sConvexCollisionShapeTypeGuid = "f7961b43-393a-43df-bf8c-07d5bf0148a0";
 }
 
 std::string CollisionShape::getTypeGuidStatic() { return sCollisionShapeTypeGuid.data(); }
@@ -201,5 +205,73 @@ void CylinderCollisionShape::setHalfHeight(float size) {
 
 JPH::Result<JPH::Ref<JPH::Shape>> CylinderCollisionShape::createShape() {
     JPH::CylinderShapeSettings settings(halfHeight, radius);
+    return settings.Create();
+}
+
+// ------------------------------------------------------------------------------------------------
+
+std::string ConvexCollisionShape::getTypeGuidStatic() { return sConvexCollisionShapeTypeGuid.data(); }
+std::string ConvexCollisionShape::getTypeGuid() const { return sConvexCollisionShapeTypeGuid.data(); }
+TypeReflectionInfo ConvexCollisionShape::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    variables.strings[NAMEOF_MEMBER(&ConvexCollisionShape::sPathToGeometryRelativeRes).data()] =
+        ReflectedVariableInfo<std::string>{
+            .setter =
+                [](Serializable* pThis, const std::string& sNewValue) {
+                    reinterpret_cast<ConvexCollisionShape*>(pThis)->setPathToGeometryRelativeRes(sNewValue);
+                },
+            .getter = [](Serializable* pThis) -> std::string {
+                return reinterpret_cast<ConvexCollisionShape*>(pThis)->getPathToGeometryRelativeRes();
+            }};
+
+    return TypeReflectionInfo(
+        CollisionShape::getTypeGuidStatic(),
+        NAMEOF_SHORT_TYPE(ConvexCollisionShape).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<ConvexCollisionShape>(); },
+        std::move(variables));
+}
+
+void ConvexCollisionShape::setPathToGeometryRelativeRes(const std::string& sRelativePath) {
+    sPathToGeometryRelativeRes = sRelativePath;
+    propertyChanged();
+}
+
+JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape() {
+    // Construct full path.
+    const auto pathToFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToGeometryRelativeRes;
+    bool bIsPathInvalid = false;
+    if (!std::filesystem::exists(pathToFile)) {
+        Logger::get().error(
+            std::format("the path to convex shape geometry does not exist ({})", pathToFile.string()));
+        bIsPathInvalid = true;
+    } else if (std::filesystem::is_directory(pathToFile)) {
+        Logger::get().error(std::format(
+            "expected the path to convex shape geometry to point to a file ({})", pathToFile.string()));
+        bIsPathInvalid = true;
+    }
+
+    JPH::Array<JPH::Vec3> vVertices;
+    if (!bIsPathInvalid) {
+        const auto geometry = ConvexShapeGeometry::deserialize(pathToFile);
+        const auto& positions = geometry.getPositions();
+
+        vVertices.resize(positions.size());
+        for (size_t i = 0; i < positions.size(); i++) {
+            vVertices[i] = convertToJolt(positions[i]);
+        }
+    } else {
+        // Use a placeholder geometry.
+        const auto geometry = PrimitiveMeshGenerator::createCube(1.0F);
+        const auto& positions = geometry.getVertices();
+
+        vVertices.resize(positions.size());
+        for (size_t i = 0; i < positions.size(); i++) {
+            vVertices[i] = convertToJolt(positions[i].position);
+        }
+    }
+
+    JPH::ConvexHullShapeSettings settings(vVertices);
     return settings.Create();
 }

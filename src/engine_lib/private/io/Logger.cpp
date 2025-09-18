@@ -16,6 +16,13 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+#if defined(DEBUG)
+namespace {
+    constexpr float debugTextHeight = 0.025F;
+    constexpr float debugTextTimeSec = 6.0F;
+}
+#endif
+
 LoggerCallbackGuard::~LoggerCallbackGuard() { Logger::get().onLogMessage = {}; }
 
 Logger::~Logger() {
@@ -70,8 +77,8 @@ void Logger::warn(std::string_view sText, const std::source_location location) c
         onLogMessage(LogMessageCategory::WARNING, sMessage);
     }
 
-#if defined(DEBUG)
-    DebugDrawer::get().drawText(sMessage, 5.0F, glm::vec3(1.0F, 1.0F, 0.0F));
+#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+    DebugDrawer::get().drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 1.0F, 0.0F), {}, debugTextHeight);
 #endif
 }
 
@@ -89,8 +96,8 @@ void Logger::error(std::string_view sText, const std::source_location location) 
         onLogMessage(LogMessageCategory::ERROR, sMessage);
     }
 
-#if defined(DEBUG)
-    DebugDrawer::get().drawText(sMessage, 5.0F, glm::vec3(1.0F, 0.0F, 0.0F));
+#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+    DebugDrawer::get().drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 0.0F, 0.0F), {}, debugTextHeight);
 #endif
 }
 

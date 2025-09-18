@@ -8,6 +8,7 @@
 #include "game/node/MeshNode.h"
 #include "game/node/SkeletonNode.h"
 #include "game/node/SkeletalMeshNode.h"
+#include "game/geometry/ConvexShapeGeometry.h"
 #include "material/TextureManager.h"
 
 // External.
@@ -866,6 +867,161 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
             }
         }
     }
+
+    onProgress("finished importing");
+    return {};
+}
+
+std::optional<Error> GltfImporter::importFileAsConvexShapeGeometry(
+    const std::filesystem::path& pathToFile,
+    const std::filesystem::path& pathToOutputDir,
+    const std::function<void(std::string_view)>& onProgress) {
+    if (!std::filesystem::exists(pathToFile)) [[unlikely]] {
+        return Error(std::format("expected the path \"{}\" to exist", pathToFile.string()));
+    }
+    if (std::filesystem::is_directory(pathToFile)) [[unlikely]] {
+        return Error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
+    }
+
+    if (!std::filesystem::exists(pathToOutputDir)) [[unlikely]] {
+        return Error(std::format("expected the path \"{}\" to exist", pathToOutputDir.string()));
+    }
+    if (!std::filesystem::is_directory(pathToOutputDir)) [[unlikely]] {
+        return Error(
+            std::format("expected the path \"{}\" to point to a directory", pathToOutputDir.string()));
+    }
+
+    // See if we have a binary GTLF file or not.
+    bool bIsGlb = false;
+    if (pathToFile.extension() == ".GLB" || pathToFile.extension() == ".glb") {
+        bIsGlb = true;
+    }
+
+    // Prepare variables for storing results.
+    tinygltf::Model model;
+    tinygltf::TinyGLTF loader;
+    std::string sError;
+    std::string sWarning;
+    bool bIsSuccess = false;
+
+    // Don't make all images to be in RGBA format.
+    loader.SetPreserveImageChannels(true);
+
+    // Mark progress.
+    onProgress("parsing file");
+
+    // Load data from file.
+    if (bIsGlb) {
+        bIsSuccess = loader.LoadBinaryFromFile(&model, &sError, &sWarning, pathToFile.string());
+    } else {
+        bIsSuccess = loader.LoadASCIIFromFile(&model, &sError, &sWarning, pathToFile.string());
+    }
+
+    // See if there were any warnings/errors.
+    if (!sWarning.empty()) {
+        // Treat warnings as errors.
+        return Error(std::format("there was an error during the import process: {}", sWarning));
+    }
+    if (!sError.empty()) {
+        return Error(std::format("there was an error during the import process: {}", sError));
+    }
+    if (!bIsSuccess) {
+        return Error("there was an error during the import process but no error message was received");
+    }
+
+    // Get default scene.
+    const auto& scene = model.scenes[static_cast<size_t>(model.defaultScene)];
+
+    ConvexShapeGeometry geometry;
+
+    // Now process GLTF nodes.
+    for (const auto& iNode : scene.nodes) {
+        // Make sure this node index is valid.
+        if (iNode < 0) [[unlikely]] {
+            return Error(std::format("found a negative node index of {} in default scene", iNode));
+        }
+        if (iNode >= static_cast<int>(model.nodes.size())) [[unlikely]] {
+            return Error(std::format(
+                "found an out of bounds node index of {} while model nodes only has {} entries",
+                iNode,
+                model.nodes.size()));
+        }
+
+        const auto& node = model.nodes[static_cast<size_t>(iNode)];
+
+        // See if this node stores a mesh.
+        if (node.mesh < 0 || node.mesh >= static_cast<int>(model.meshes.size())) {
+            continue;
+        }
+
+        if (!geometry.getPositions().empty()) [[unlikely]] {
+            return Error("expected to find a single mesh node instead found multiple");
+        }
+
+        const auto& mesh = model.meshes[static_cast<size_t>(node.mesh)];
+
+        // Get primitive.
+        if (mesh.primitives.size() > 1) {
+            return Error(std::format(
+                "expected to find a single mesh primitive instead found {} primitives in the mesh \"{}\"",
+                mesh.primitives.size(),
+                mesh.name));
+        }
+        const auto& primitive = mesh.primitives[0];
+
+        // Find a position attribute.
+        const auto it = primitive.attributes.find("POSITION");
+        if (it == primitive.attributes.end()) [[unlikely]] {
+            return Error("a GLTF mesh node does not have any positions defined");
+        }
+        const auto iPositionAccessorIndex = it->second;
+
+        // Get accessor and buffer view.
+        const auto& positionAccessor = model.accessors[static_cast<size_t>(iPositionAccessorIndex)];
+        const auto& attributeBufferView = model.bufferViews[static_cast<size_t>(positionAccessor.bufferView)];
+        const auto& attributeBuffer = model.buffers[static_cast<size_t>(attributeBufferView.buffer)];
+
+        using position_t = glm::vec3;
+
+        // Make sure position is stored as `vec3`.
+        if (positionAccessor.type != TINYGLTF_TYPE_VEC3) [[unlikely]] {
+            return Error(std::format(
+                "expected POSITION mesh attribute to be stored as `vec3`, actual type: {}",
+                positionAccessor.type));
+        }
+        // Make sure that component type is `float`.
+        if (positionAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) [[unlikely]] {
+            return Error(std::format(
+                "expected POSITION mesh attribute component type to be `float`, actual type: {}",
+                positionAccessor.componentType));
+        }
+
+        // Prepare some variables.
+        auto pCurrentPosition =
+            attributeBuffer.data.data() + attributeBufferView.byteOffset + positionAccessor.byteOffset;
+        const auto iStride =
+            attributeBufferView.byteStride == 0 ? sizeof(position_t) : attributeBufferView.byteStride;
+
+        // Copy positions.
+        geometry.getPositions().resize(positionAccessor.count);
+        for (size_t i = 0; i < geometry.getPositions().size(); i++) {
+            geometry.getPositions()[i] = reinterpret_cast<const position_t*>(pCurrentPosition)[0];
+            pCurrentPosition += iStride;
+        }
+    }
+
+    if (geometry.getPositions().empty()) {
+        return Error("unable to find a single mesh node in the file");
+    }
+
+    // Construct resulting path.
+    const auto pathToOutputFile = pathToOutputDir / (pathToFile.stem().string() + "." +
+                                                     std::string(Serializable::getBinaryFileExtension()));
+    if (std::filesystem::exists(pathToOutputFile)) [[unlikely]] {
+        return Error(std::format("path to the output file already exists: {}", pathToOutputFile.string()));
+    }
+
+    geometry.serialize(pathToOutputFile);
 
     onProgress("finished importing");
     return {};

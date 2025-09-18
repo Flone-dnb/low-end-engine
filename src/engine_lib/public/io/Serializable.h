@@ -116,6 +116,14 @@ public:
     static constexpr std::string_view getNodeTreeGeometryDirSuffix() { return sNodeTreeGeometryDirSuffix; }
 
     /**
+     * Returns file extension (without the dot) that all serialized binary files have (for example mesh
+     * geometry).
+     *
+     * @return File extension.
+     */
+    static constexpr std::string_view getBinaryFileExtension() { return sBinaryFileExtension; }
+
+    /**
      * Deserializes object(s) from a file.
      *
      * @param pathToFile File to read reflected data from. The ".toml" extension will be added

@@ -104,6 +104,8 @@ set(PROJECT_SOURCES
     public/game/geometry/MeshNodeGeometry.h
     private/game/geometry/SkeletalMeshNodeGeometry.cpp
     public/game/geometry/SkeletalMeshNodeGeometry.h
+    private/game/geometry/ConvexShapeGeometry.cpp
+    public/game/geometry/ConvexShapeGeometry.h
     public/game/geometry/PrimitiveMeshGenerator.h
     private/game/geometry/PrimitiveMeshGenerator.cpp
     private/game/geometry/ScreenQuadGeometry.cpp
