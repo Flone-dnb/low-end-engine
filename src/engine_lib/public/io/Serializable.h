@@ -124,6 +124,13 @@ public:
     static constexpr std::string_view getBinaryFileExtension() { return sBinaryFileExtension; }
 
     /**
+     * Creates a duplicate object that copies all reflected variables (including inherited).
+     *
+     * @return Duplicate object.
+     */
+    std::unique_ptr<Serializable> createDuplicate();
+
+    /**
      * Deserializes object(s) from a file.
      *
      * @param pathToFile File to read reflected data from. The ".toml" extension will be added

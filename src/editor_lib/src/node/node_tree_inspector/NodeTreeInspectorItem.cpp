@@ -99,6 +99,11 @@ bool NodeTreeInspectorItem::onMouseButtonReleasedOnUiNode(MouseButton button, Ke
                     {u"Add external node tree", [this]() { pInspector->showAddExternalNodeTreeMenu(this); }});
             }
 
+            if (pGameNode->getWorldRootNodeWhileSpawned() != pGameNode) {
+                vOptions.push_back(
+                    {u"Duplicate node (Ctrl + D)", [this]() { pInspector->duplicateGameNode(this); }});
+            }
+
             if (pInspector->getGameRootNode() != pGameNode) {
                 vOptions.push_back(
                     {u"Move up", [this]() { pInspector->moveGameNodeInChildArray(this, true); }});

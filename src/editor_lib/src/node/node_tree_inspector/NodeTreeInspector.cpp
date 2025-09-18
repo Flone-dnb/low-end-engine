@@ -263,6 +263,30 @@ void NodeTreeInspector::moveGameNodeInChildArray(NodeTreeInspectorItem* pItem, b
     onGameNodeTreeLoaded(pGameRootNode);
 }
 
+void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
+    clearInspection();
+
+    const auto pOriginalNode = pItem->getDisplayedGameNode();
+    const auto sNodeName = std::string(pOriginalNode->getNodeName());
+    auto pDuplicateNode = std::unique_ptr<Node>(
+        dynamic_cast<Node*>(pItem->getDisplayedGameNode()->createDuplicate().release()));
+    if (pDuplicateNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("failed to duplicate node");
+    }
+
+    {
+        const auto& mtxParent = pOriginalNode->getParentNode();
+        std::scoped_lock guard(*mtxParent.first);
+
+        mtxParent.second->addChildNode(std::move(pDuplicateNode));
+    }
+
+    // Refresh tree.
+    onGameNodeTreeLoaded(pGameRootNode);
+
+    Logger::get().info(std::format("duplicated node \"{}\"", sNodeName));
+}
+
 void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {
     clearInspection();
 

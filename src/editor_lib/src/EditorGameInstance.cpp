@@ -18,6 +18,7 @@
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
 #include "node/node_tree_inspector/NodeTreeInspector.h"
+#include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "node/property_inspector/PropertyInspector.h"
 #include "node/content_browser/ContentBrowser.h"
 #include "node/LogViewNode.h"
@@ -117,6 +118,8 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
     }
 
     if (modifiers.isControlPressed() && key == KeyboardButton::S) {
+        // Save node tree.
+
         if (!lastOpenedNodeTree.has_value()) {
             return;
         }
@@ -146,6 +149,8 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
         (key == KeyboardButton::W || key == KeyboardButton::E || key == KeyboardButton::R) &&
         !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasFocusedNode() &&
         !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasModalUiNodeTree()) {
+        // Change gizmo mode.
+
         GizmoMode newMode = GizmoMode::MOVE;
         if (key == KeyboardButton::E) {
             newMode = GizmoMode::ROTATE;
@@ -157,6 +162,17 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
             const auto pNode = gameWorldNodes.pGizmoNode->getControlledNode();
             showGizmoToControlNode(pNode, newMode);
         }
+    }
+
+    if (modifiers.isControlPressed() && key == KeyboardButton::D) {
+        // Duplicate the current node.
+        const auto pCurrentItem = editorWorldNodes.pNodeTreeInspector->getInspectedItem();
+        if (pCurrentItem == nullptr) {
+            return;
+        }
+        const auto sNodeName = std::string(pCurrentItem->getDisplayedGameNode()->getNodeName());
+
+        editorWorldNodes.pNodeTreeInspector->duplicateGameNode(pCurrentItem);
     }
 }
 

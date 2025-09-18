@@ -6,6 +6,45 @@
 // Custom.
 #include "io/Logger.h"
 #include "misc/Error.h"
+#include "misc/ReflectedTypeDatabase.h"
+
+std::unique_ptr<Serializable> Serializable::createDuplicate() {
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(getTypeGuid());
+    auto pNewObject = typeInfo.createNewObject();
+
+#define COPY_VARIABLES(array)                                                                                \
+    for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.array) {                    \
+        variableInfo.setter(pNewObject.get(), variableInfo.getter(this));                                    \
+    }
+
+    COPY_VARIABLES(bools);
+    COPY_VARIABLES(ints);
+    COPY_VARIABLES(unsignedInts);
+    COPY_VARIABLES(longLongs);
+    COPY_VARIABLES(unsignedLongLongs);
+    COPY_VARIABLES(floats);
+    COPY_VARIABLES(strings);
+    COPY_VARIABLES(vec2s);
+    COPY_VARIABLES(vec3s);
+    COPY_VARIABLES(vec4s);
+    COPY_VARIABLES(vectorInts);
+    COPY_VARIABLES(vectorStrings);
+    COPY_VARIABLES(vectorVec3s);
+    COPY_VARIABLES(meshNodeGeometries);
+    COPY_VARIABLES(skeletalMeshNodeGeometries);
+    for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.serializables) {
+        Serializable* pValue = variableInfo.getter(this);
+        variableInfo.setter(pNewObject.get(), pValue->createDuplicate());
+    }
+
+#if defined(WIN32) && defined(DEBUG)
+    static_assert(sizeof(TypeReflectionInfo) == 1216, "add new variables here");
+#elif defined(DEBUG)
+    static_assert(sizeof(TypeReflectionInfo) == 1048, "add new variables here");
+#endif
+
+    return pNewObject;
+}
 
 std::optional<Error> Serializable::serialize(
     std::filesystem::path pathToFile,

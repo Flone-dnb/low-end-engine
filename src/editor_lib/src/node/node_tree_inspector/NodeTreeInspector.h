@@ -80,6 +80,13 @@ public:
     void moveGameNodeInChildArray(NodeTreeInspectorItem* pItem, bool bMoveUp);
 
     /**
+     * Duplicates game node that is displayed by the specified node tree item.
+     *
+     * @param pItem Item that displays the node to duplicate.
+     */
+    void duplicateGameNode(NodeTreeInspectorItem* pItem);
+
+    /**
      * Deletes game node that is displayed by the specified node tree item.
      *
      * @param pItem Item that displays the node to delete.
@@ -99,6 +106,13 @@ public:
      * @return Node.
      */
     Node* getGameRootNode() const { return pGameRootNode; }
+
+    /**
+     * Node that is currently being displayed in the inspector (if exists).
+     *
+     * @return Item.
+     */
+    NodeTreeInspectorItem* getInspectedItem() const { return pInspectedItem; }
 
     /**
      * Tells if the specified node is a root node of external node tree.
