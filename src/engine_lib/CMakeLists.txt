@@ -153,6 +153,8 @@ set(PROJECT_SOURCES
     private/game/node/SkeletonNode.cpp
     private/game/node/physics/CollisionNode.cpp
     public/game/node/physics/CollisionNode.h
+    private/game/node/physics/CompoundCollisionNode.cpp
+    public/game/node/physics/CompoundCollisionNode.h
     public/game/node/light/DirectionalLightNode.h
     private/game/node/light/DirectionalLightNode.cpp
     public/game/node/light/SpotlightNode.h

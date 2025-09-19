@@ -29,6 +29,7 @@
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
+#include "game/physics/PhysicsManager.h"
 #include "EditorResourcePaths.hpp"
 #include "EditorTheme.h"
 #include "EditorConstants.hpp"
@@ -309,6 +310,14 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
             "\nFPS: {} (limit: {})",
             getRenderer()->getRenderStatistics().getFramesPerSecond(),
             getRenderer()->getFpsLimit());
+
+        // Physics.
+        sStatsText += std::format(
+            "\nPhysics bodies: {}",
+            gameWorldNodes.pRoot->getWorldWhileSpawned()
+                ->getGameManager()
+                .getPhysicsManager()
+                .getCurrentPhysicsBodyCount());
 
         // Done.
         gameWorldNodes.pStatsText->setText(utf::as_u16(sStatsText));

@@ -9,6 +9,7 @@
 #include "game/physics/PhysicsLayers.h"
 #include "game/physics/CoordinateConversions.hpp"
 #include "game/node/physics/CollisionNode.h"
+#include "game/node/physics/CompoundCollisionNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "render/PhysicsDebugDrawer.hpp"
 #include "game/DebugConsole.h"
@@ -34,6 +35,7 @@
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/PhysicsSettings.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
+#include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 
 static void checkJoltInstructionSupport() {
 #ifndef IS_ARM64
@@ -161,6 +163,12 @@ PhysicsManager::PhysicsManager() {
 }
 
 PhysicsManager::~PhysicsManager() {
+    const auto iBodyCount = iTotalBodyCount.load();
+    if (iBodyCount != 0) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "physics manager is being destroyed but body counter is not zero (its {})", iBodyCount));
+    }
+
     JPH::UnregisterTypes();
 
     delete JPH::Factory::sInstance;
@@ -171,8 +179,6 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     PROFILE_FUNC
 
     constexpr float JOLT_UPDATE_DELTA_TIME = 1.0F / 60.0F;
-
-    // TODO: run physics tick
 
     // Simulate Jolt.
     timeSinceLastJoltUpdate += timeSincePrevFrameInSec;
@@ -192,11 +198,15 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 #endif
 }
 
+size_t PhysicsManager::getCurrentPhysicsBodyCount() { return iTotalBodyCount.load(); }
+
 #if defined(DEBUG)
 void PhysicsManager::setEnableDebugRendering(bool bEnable) { bEnableDebugRendering = bEnable; }
 #endif
 
 void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
+    PROFILE_FUNC
+
     if (pNode->pShape == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("expected the node \"{}\" to have a valid shape setup", pNode->getNodeName()));
@@ -228,12 +238,15 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
 
     // Add to physics world.
     pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
+    iTotalBodyCount.fetch_add(1);
 
     // Save created body.
     pNode->pBody = pCreatedBody;
 }
 
 void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
+    PROFILE_FUNC
+
     if (pNode->pBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "the node \"{}\" requested its physics body to be destroyed but this node has no physics body",
@@ -251,11 +264,137 @@ void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
 
     // Destroy body.
     pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    iTotalBodyCount.fetch_sub(1);
+    pNode->pBody = nullptr;
+}
+
+void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
+    PROFILE_FUNC
+
+    const auto mtxChildNodes = pNode->getChildNodes();
+    std::scoped_lock guard(*mtxChildNodes.first);
+
+    if (mtxChildNodes.second.empty()) {
+        Logger::get().warn(std::format(
+            "expected the compound collision node \"{}\" to have child collision nodes",
+            pNode->getNodeName()));
+        return;
+    }
+    if (mtxChildNodes.second.size() == 1) {
+        Logger::get().warn(std::format(
+            "compound collision node \"{}\" has only 1 child collision node, in this case it's better to "
+            "create a single collision node instead of using a compound",
+            pNode->getNodeName()));
+    }
+
+    JPH::Array<JPH::Ref<JPH::Shape>> vShapes;
+    vShapes.reserve(mtxChildNodes.second.size());
+    JPH::StaticCompoundShapeSettings compoundSettings;
+    for (const auto& pChildNode : mtxChildNodes.second) {
+#if defined(DEBUG)
+        if (!pChildNode->getChildNodes().second.empty()) [[unlikely]] {
+            Logger::get().warn(std::format(
+                "child node \"{}\" of a compound node \"{}\" has child nodes, these child nodes will not be "
+                "grouped into a compound, only direct child nodes of a compound node will be grouped into a "
+                "compound",
+                pChildNode->getNodeName(),
+                pNode->getNodeName()));
+        }
+#endif
+
+        // Cast type.
+        const auto pCollisionNode = dynamic_cast<CollisionNode*>(pChildNode);
+        if (pCollisionNode == nullptr) [[unlikely]] {
+            Logger::get().error(std::format(
+                "expected the child node \"{}\" of a compound node \"{}\" to be a collision node",
+                pChildNode->getNodeName(),
+                pNode->getNodeName()));
+            continue;
+        }
+
+        // Create shape.
+        const auto shapeResult = pCollisionNode->pShape->createShape();
+        if (!shapeResult.IsValid()) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "failed to create a physics shape for the node \"{}\" which is child node of a compound node "
+                "\"{}\", error: {}",
+                pCollisionNode->getNodeName(),
+                pNode->getNodeName(),
+                shapeResult.GetError().data()));
+        }
+        const auto pShape = shapeResult.Get();
+        vShapes.push_back(pShape);
+
+        compoundSettings.AddShape(
+            convertToJolt(pCollisionNode->getRelativeLocation()),
+            convertToJolt(glm::quat(pCollisionNode->getRelativeRotation())),
+            pShape);
+    }
+
+    if (vShapes.empty()) {
+        return;
+    }
+
+    // Create compound shape.
+    const auto shapeResult = compoundSettings.Create();
+    if (!shapeResult.IsValid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics shape for the compound collision node \"{}\", error: {}",
+            pNode->getNodeName(),
+            shapeResult.GetError().data()));
+    }
+
+    // Create body.
+    JPH::BodyCreationSettings bodySettings(
+        shapeResult.Get(),
+        convertToJolt(pNode->getWorldLocation()),
+        convertToJolt(glm::quat(pNode->getWorldRotation())),
+        JPH::EMotionType::Static,
+        static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING));
+
+    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    if (pCreatedBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics body for the node \"{}\", probably run out of bodies",
+            pNode->getNodeName()));
+    }
+
+    // Add to physics world.
+    pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
+    iTotalBodyCount.fetch_add(1);
+
+    // Save created body.
+    pNode->pBody = pCreatedBody;
+}
+
+void PhysicsManager::destroyBodyForNode(CompoundCollisionNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node has no physics body",
+            pNode->getNodeName()));
+    }
+    if (pNode->pBody->GetID().IsInvalid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node's physics body ID is "
+            "invalid",
+            pNode->getNodeName()));
+    }
+
+    // Remove from physics world.
+    pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
+
+    // Destroy body.
+    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    iTotalBodyCount.fetch_sub(1);
     pNode->pBody = nullptr;
 }
 
 void PhysicsManager::setBodyLocationRotation(
     JPH::Body* pBody, const glm::vec3& location, const glm::vec3& rotation) {
+    PROFILE_FUNC
+
     pPhysicsSystem->GetBodyInterface().SetPositionAndRotation(
         pBody->GetID(),
         convertToJolt(location),

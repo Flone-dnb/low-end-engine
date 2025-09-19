@@ -446,7 +446,7 @@ protected:
      *
      * @remark Generally you might want to prefer to use @ref onSpawning, this function
      * is mostly used to do some logic related to child nodes after all child nodes were spawned
-     * (for example if you have a camera child node you can make it active in this function).=
+     * (for example if you have a camera child node you can make it active in this function).
      */
     virtual void onChildNodesSpawned() {}
 

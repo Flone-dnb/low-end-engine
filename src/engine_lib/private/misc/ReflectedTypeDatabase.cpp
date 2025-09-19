@@ -25,6 +25,7 @@
 #include "game/node/ui/CheckboxUiNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "game/node/physics/CollisionNode.h"
+#include "game/node/physics/CompoundCollisionNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -61,6 +62,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(CylinderCollisionShape::getTypeGuidStatic(), CylinderCollisionShape::getReflectionInfo());
     registerType(ConvexCollisionShape::getTypeGuidStatic(), ConvexCollisionShape::getReflectionInfo());
     registerType(CollisionNode::getTypeGuidStatic(), CollisionNode::getReflectionInfo());
+    registerType(CompoundCollisionNode::getTypeGuidStatic(), CompoundCollisionNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

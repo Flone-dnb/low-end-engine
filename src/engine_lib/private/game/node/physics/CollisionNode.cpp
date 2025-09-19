@@ -5,6 +5,7 @@
 #include "game/GameManager.h"
 #include "game/physics/PhysicsManager.h"
 #include "game/geometry/shapes/CollisionShape.h"
+#include "game/node/physics/CompoundCollisionNode.h"
 
 // External.
 #include "nameof.hpp"
@@ -48,19 +49,49 @@ CollisionNode::CollisionNode(const std::string& sNodeName) : SpatialNode(sNodeNa
 
 void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
     pShape = std::move(pNewShape);
-    pShape->setOnChanged([this]() {
-        if (isSpawned()) {
-            auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
-            physicsManager.destroyBodyForNode(this);
-            physicsManager.createBodyForNode(this);
-        }
-    });
+    setOnShapeChangedCallback();
 
-    if (isSpawned()) {
+    if (!isSpawned()) {
+        return;
+    }
+
+    {
+        const auto mtxParentNode = getParentNode();
+        std::scoped_lock guard(*mtxParentNode.first);
+        if (auto pCompound = dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second)) {
+            pCompound->onChildCollisionChangedShape();
+            return;
+        }
+    }
+
+    if (pBody != nullptr) {
         auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
         physicsManager.destroyBodyForNode(this);
         physicsManager.createBodyForNode(this);
     }
+}
+
+void CollisionNode::setOnShapeChangedCallback() {
+    if (pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shape to be valid");
+    }
+
+    pShape->setOnChanged([this]() {
+        if (!isSpawned()) {
+            return;
+        }
+
+        const auto mtxParentNode = getParentNode();
+        std::scoped_lock guard(*mtxParentNode.first);
+        if (auto pCompound = dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second)) {
+            pCompound->onChildCollisionChangedShape();
+            return;
+        }
+
+        auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+        physicsManager.destroyBodyForNode(this);
+        physicsManager.createBodyForNode(this);
+    });
 }
 
 void CollisionNode::onSpawning() {
@@ -70,34 +101,74 @@ void CollisionNode::onSpawning() {
         Error::showErrorAndThrowException(
             std::format("expected collision node \"{}\" to have a valid shape when spawning", getNodeName()));
     }
+    setOnShapeChangedCallback();
+
+    {
+        const auto mtxParentNode = getParentNode();
+        std::scoped_lock guard(*mtxParentNode.first);
+        if (dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second) != nullptr) {
+            // Don't create collision, compound will create group collision after we spawned.
+            return;
+        }
+    }
 
     getWorldWhileSpawned()->getGameManager().getPhysicsManager().createBodyForNode(this);
-
-    pShape->setOnChanged([this]() {
-        if (isSpawned()) {
-            auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
-            physicsManager.destroyBodyForNode(this);
-            physicsManager.createBodyForNode(this);
-        }
-    });
 }
 
 void CollisionNode::onDespawning() {
     SpatialNode::onDespawning();
 
-    getWorldWhileSpawned()->getGameManager().getPhysicsManager().destroyBodyForNode(this);
-
     // Clear callback.
     pShape->setOnChanged([]() {});
+
+    if (pBody != nullptr) {
+        getWorldWhileSpawned()->getGameManager().getPhysicsManager().destroyBodyForNode(this);
+    }
 }
 
 void CollisionNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
+    if (!isSpawned()) {
+        return;
+    }
+
+    {
+        const auto mtxParentNode = getParentNode();
+        std::scoped_lock guard(*mtxParentNode.first);
+        if (auto pCompound = dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second)) {
+            // We need to adjust subshape position/rotation which means we need to recreate the compound.
+            pCompound->onChildCollisionChangedShape();
+            return;
+        }
+    }
+
     if (pBody == nullptr) {
+        // Not created yet.
         return;
     }
 
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
     physicsManager.setBodyLocationRotation(pBody, getWorldLocation(), getWorldRotation());
+}
+
+void CollisionNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
+    SpatialNode::onAfterAttachedToNewParent(bThisNodeBeingAttached);
+
+    if (!isSpawned()) {
+        return;
+    }
+
+    {
+        const auto mtxParentNode = getParentNode();
+        std::scoped_lock guard(*mtxParentNode.first);
+        if (dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second) != nullptr) {
+            // Compound will create group collision.
+            if (pBody != nullptr) {
+                auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+                physicsManager.destroyBodyForNode(this);
+            }
+            return;
+        }
+    }
 }

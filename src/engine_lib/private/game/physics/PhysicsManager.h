@@ -2,6 +2,7 @@
 
 // Standard.
 #include <memory>
+#include <atomic>
 
 // Custom.
 #include "math/GLMath.hpp"
@@ -17,6 +18,7 @@ class BroadPhaseLayerInterfaceImpl;
 class ObjectVsBroadPhaseLayerFilterImpl;
 class ObjectLayerPairFilterImpl;
 class CollisionNode;
+class CompoundCollisionNode;
 
 #if defined(DEBUG)
 class PhysicsDebugDrawer;
@@ -32,6 +34,13 @@ public:
 
     PhysicsManager(const PhysicsManager&) = delete;
     PhysicsManager& operator=(const PhysicsManager) = delete;
+
+    /**
+     * Returns the current total number of physics body in the simulation.
+     *
+     * @return Body count.
+     */
+    size_t getCurrentPhysicsBodyCount();
 
 #if defined(DEBUG)
     /**
@@ -55,6 +64,20 @@ public:
      * @param pNode Node to destroy collision.
      */
     void destroyBodyForNode(CollisionNode* pNode);
+
+    /**
+     * Creates a physics body for the specified node.
+     *
+     * @param pNode Node to create collision for.
+     */
+    void createBodyForNode(CompoundCollisionNode* pNode);
+
+    /**
+     * Destroys previously created body (see @ref createBodyForNode).
+     *
+     * @param pNode Node to destroy collision.
+     */
+    void destroyBodyForNode(CompoundCollisionNode* pNode);
 
     /**
      * Sets new location and rotation to the specified physics body.
@@ -98,6 +121,9 @@ private:
     /** Debug rendering of the physics. */
     std::unique_ptr<PhysicsDebugDrawer> pPhysicsDebugDrawer;
 #endif
+
+    /** Current total number of physical bodies in the simulation. */
+    std::atomic<size_t> iTotalBodyCount{0};
 
     /** Time in seconds that has passed since the last time we updated Jolt physics. */
     float timeSinceLastJoltUpdate = 0.0F;
