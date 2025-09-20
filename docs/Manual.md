@@ -352,19 +352,6 @@ getAxisEventBindings()[static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_C
 Note
 > Although you can bind to registered input events in `GameInstance` it's not really recommended because input events should generally be processed in nodes such as in your character node.
 
-## Loading font
-
-In order to load a font you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:
-
-```Cpp
-void MyGameInstance::onGameStarted() {
-    getRenderer()->getFontManager().loadFont(
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf");
-
-    // ... create world, nodes, etc. ...
-}
-```
-
 ## Importing meshes
 
 Note
@@ -430,9 +417,28 @@ void MyGameInstance::onGameStarted() {
 }
 ```
 
+## Physics
+
+`CollisionNode` is the main way to create walls, floors and other solid objects that do not allow to move through them.
+
+`CompoundCollisionNode` groups multiple `CollisionNode`s - you create a compound node and attach collision nodes as child nodes. This is used to group multiple collision objects to speed up collision detection and thus improve performance. It's a good idea to group your level's static CollisionNodes under a compound. Note that when collision nodes are grouped under a compound moving or rotating such collision nodes is not recommended as it causes the whole compound to be recreated under the hood. Moving or rotating the compound node is perfectly fine though.
+
 ## Post-processing
 
 You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the camera manager: `Node::getWorldWhileSpawned()->getCameraManager().getPostProcessManager()`.
+
+## Loading font
+
+In order to load a font you need to have a .ttf file to load (there is a default .ttf in the res/engine/font). To load the font file you need to do the following at the start of your game:
+
+```Cpp
+void MyGameInstance::onGameStarted() {
+    getRenderer()->getFontManager().loadFont(
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf");
+
+    // ... create world, nodes, etc. ...
+}
+```
 
 ## Reflection basics
 
