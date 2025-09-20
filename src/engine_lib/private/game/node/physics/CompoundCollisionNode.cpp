@@ -65,6 +65,11 @@ void CompoundCollisionNode::onChildCollisionChangedShape() {
         return;
     }
 
+    if (pBody == nullptr) {
+        // Not created yet.
+        return;
+    }
+
     destroyPhysicsBody();
     createPhysicsBody();
 

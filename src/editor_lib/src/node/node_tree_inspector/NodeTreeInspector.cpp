@@ -10,6 +10,8 @@
 #include "node/menu/FileDialogMenu.h"
 #include "node/node_tree_inspector/NodeTreeInspectorItem.h"
 #include "EditorTheme.h"
+#include "game/node/physics/CompoundCollisionNode.h"
+#include "game/node/physics/CollisionNode.h"
 #include "EditorGameInstance.h"
 #include "node/menu/SetNameMenu.h"
 #include "game/node/Sound2dNode.h"
@@ -264,6 +266,13 @@ void NodeTreeInspector::moveGameNodeInChildArray(NodeTreeInspectorItem* pItem, b
 }
 
 void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
+    if (pItem->getDisplayedGameNode() == pGameRootNode) {
+        return;
+    }
+    if (isNodeExternalTreeRootNode(pItem->getDisplayedGameNode())) {
+        return;
+    }
+
     clearInspection();
 
     const auto pOriginalNode = pItem->getDisplayedGameNode();
@@ -278,7 +287,20 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
         const auto& mtxParent = pOriginalNode->getParentNode();
         std::scoped_lock guard(*mtxParent.first);
 
-        mtxParent.second->addChildNode(std::move(pDuplicateNode));
+        if (dynamic_cast<CollisionNode*>(pOriginalNode) != nullptr &&
+            dynamic_cast<CompoundCollisionNode*>(mtxParent.second) == nullptr) {
+            // Duplicating a collision node but the parent is not a compound.
+            // Create a new parent to group collisions into a compound.
+            auto pCompound = std::make_unique<CompoundCollisionNode>();
+            pCompound->addChildNode(pOriginalNode);
+            pCompound->addChildNode(std::move(pDuplicateNode));
+            mtxParent.second->addChildNode(std::move(pCompound));
+            Logger::get().info(
+                "created a compound node and grouped your collision nodes to speed up collision "
+                "detection and thus improve performance");
+        } else {
+            mtxParent.second->addChildNode(std::move(pDuplicateNode));
+        }
     }
 
     // Refresh tree.
