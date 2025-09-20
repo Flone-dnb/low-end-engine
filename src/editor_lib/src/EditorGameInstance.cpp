@@ -311,14 +311,6 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
             getRenderer()->getRenderStatistics().getFramesPerSecond(),
             getRenderer()->getFpsLimit());
 
-        // Physics.
-        sStatsText += std::format(
-            "\nPhysics bodies: {}",
-            gameWorldNodes.pRoot->getWorldWhileSpawned()
-                ->getGameManager()
-                .getPhysicsManager()
-                .getCurrentPhysicsBodyCount());
-
         // Done.
         gameWorldNodes.pStatsText->setText(utf::as_u16(sStatsText));
         timeBeforeStatsUpdate = 1.0F;

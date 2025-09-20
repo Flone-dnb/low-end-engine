@@ -9,6 +9,7 @@
 #include "game/physics/PhysicsLayers.h"
 #include "game/physics/CoordinateConversions.hpp"
 #include "game/node/physics/CollisionNode.h"
+#include "game/node/physics/DynamicBodyNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "render/PhysicsDebugDrawer.hpp"
@@ -163,12 +164,6 @@ PhysicsManager::PhysicsManager() {
 }
 
 PhysicsManager::~PhysicsManager() {
-    const auto iBodyCount = iTotalBodyCount.load();
-    if (iBodyCount != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "physics manager is being destroyed but body counter is not zero (its {})", iBodyCount));
-    }
-
     JPH::UnregisterTypes();
 
     delete JPH::Factory::sInstance;
@@ -197,8 +192,6 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     }
 #endif
 }
-
-size_t PhysicsManager::getCurrentPhysicsBodyCount() { return iTotalBodyCount.load(); }
 
 #if defined(DEBUG)
 void PhysicsManager::setEnableDebugRendering(bool bEnable) { bEnableDebugRendering = bEnable; }
@@ -238,7 +231,6 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
 
     // Add to physics world.
     pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
-    iTotalBodyCount.fetch_add(1);
 
     // Save created body.
     pNode->pBody = pCreatedBody;
@@ -264,7 +256,70 @@ void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
 
     // Destroy body.
     pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
-    iTotalBodyCount.fetch_sub(1);
+    pNode->pBody = nullptr;
+}
+
+void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have a valid shape setup", pNode->getNodeName()));
+    }
+
+    // Create shape.
+    const auto shapeResult = pNode->pShape->createShape();
+    if (!shapeResult.IsValid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics shape for the node \"{}\", error: {}",
+            pNode->getNodeName(),
+            shapeResult.GetError().data()));
+    }
+
+    // Create body.
+    JPH::BodyCreationSettings bodySettings(
+        shapeResult.Get(),
+        convertToJolt(pNode->getWorldLocation()),
+        convertToJolt(glm::quat(pNode->getWorldRotation())),
+        JPH::EMotionType::Dynamic,
+        static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+
+    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    if (pCreatedBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics body for the node \"{}\", probably run out of bodies",
+            pNode->getNodeName()));
+    }
+
+    // Add to physics world.
+    pPhysicsSystem->GetBodyInterface().AddBody(
+        pCreatedBody->GetID(), JPH::EActivation::DontActivate); // don't activate here if node is simulated to
+                                                                // keep all editor-related logic in the node
+
+    // Save created body.
+    pNode->pBody = pCreatedBody;
+}
+
+void PhysicsManager::destroyBodyForNode(DynamicBodyNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node has no physics body",
+            pNode->getNodeName()));
+    }
+    if (pNode->pBody->GetID().IsInvalid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node's physics body ID is "
+            "invalid",
+            pNode->getNodeName()));
+    }
+
+    // Remove from physics world.
+    pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
+
+    // Destroy body.
+    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
 }
 
@@ -361,7 +416,6 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
 
     // Add to physics world.
     pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
-    iTotalBodyCount.fetch_add(1);
 
     // Save created body.
     pNode->pBody = pCreatedBody;
@@ -387,7 +441,6 @@ void PhysicsManager::destroyBodyForNode(CompoundCollisionNode* pNode) {
 
     // Destroy body.
     pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
-    iTotalBodyCount.fetch_sub(1);
     pNode->pBody = nullptr;
 }
 
@@ -400,4 +453,14 @@ void PhysicsManager::setBodyLocationRotation(
         convertToJolt(location),
         convertToJolt(glm::quat(rotation)),
         JPH::EActivation::DontActivate);
+}
+
+void PhysicsManager::setBodyActiveState(JPH::Body* pBody, bool bActivate) {
+    PROFILE_FUNC
+
+    if (bActivate) {
+        pPhysicsSystem->GetBodyInterface().ActivateBody(pBody->GetID());
+    } else {
+        pPhysicsSystem->GetBodyInterface().DeactivateBody(pBody->GetID());
+    }
 }

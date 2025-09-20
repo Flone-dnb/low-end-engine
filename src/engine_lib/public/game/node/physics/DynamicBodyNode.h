@@ -12,26 +12,22 @@ namespace JPH {
 
 class CollisionShape;
 
-/**
- * Used to create walls, floors and other solid objects that do not allow to move
- * through them. Note that moving or rotating such nodes is perfectly fine even when they are spawned
- * (unless they are part of a CompoundCollisionNode, then moving/rotating them is not recommended).
- */
-class CollisionNode : public SpatialNode {
+/** Physically simulated body that is moved by forces. */
+class DynamicBodyNode : public SpatialNode {
     // Manages internal physics body.
     friend class PhysicsManager;
 
 public:
-    CollisionNode();
+    DynamicBodyNode();
 
     /**
      * Creates a new node with the specified name.
      *
      * @param sNodeName Name of this node.
      */
-    CollisionNode(const std::string& sNodeName);
+    DynamicBodyNode(const std::string& sNodeName);
 
-    virtual ~CollisionNode() override = default;
+    virtual ~DynamicBodyNode() override = default;
 
     /**
      * Returns reflection info about this type.
@@ -64,11 +60,28 @@ public:
     void setShape(std::unique_ptr<CollisionShape> pNewShape);
 
     /**
+     * Specify `true` if this body should be simulated, `false` if the simulation should be paused for this
+     * body.
+     *
+     * @remark Note that the body will not be simulated while despawned.
+     *
+     * @param bActivate New state.
+     */
+    void setIsSimulated(bool bActivate);
+
+    /**
      * Returns used collision shape.
      *
      * @return `nullptr` if not set.
      */
     CollisionShape* getShape() const { return pShape.get(); }
+
+    /**
+     * `true` if this body is simulated, `false` if the simulation is paused for this body.
+     *
+     * @return State.
+     */
+    bool isSimulated() const { return bIsSimulated; }
 
 protected:
     /**
@@ -108,21 +121,6 @@ protected:
      */
     virtual void onWorldLocationRotationScaleChanged() override;
 
-    /**
-     * Called after this node or one of the node's parents (in the parent hierarchy)
-     * was attached to a new parent node.
-     *
-     * @warning If overriding you must call the parent's version of this function first
-     * (before executing your logic) to execute parent's logic.
-     *
-     * @remark This function will also be called on all child nodes after this function
-     * is finished.
-     *
-     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
-     * `false` if some node in the parent hierarchy was attached to a parent.
-     */
-    virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) override;
-
 private:
     /** Sets `onChanged` callback to @ref pShape. */
     void setOnShapeChangedCallback();
@@ -132,4 +130,12 @@ private:
 
     /** Not `nullptr` when spawned. */
     JPH::Body* pBody = nullptr;
+
+    /** `false` to pause simulation for this body. */
+    bool bIsSimulated = true;
+
+#if defined(DEBUG)
+    /** `true` if we produced a warning in case the body fell out of the world. */
+    bool bWarnedAboutFallingOutOfWorld = false;
+#endif
 };

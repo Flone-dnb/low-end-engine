@@ -18,6 +18,7 @@ class BroadPhaseLayerInterfaceImpl;
 class ObjectVsBroadPhaseLayerFilterImpl;
 class ObjectLayerPairFilterImpl;
 class CollisionNode;
+class DynamicBodyNode;
 class CompoundCollisionNode;
 
 #if defined(DEBUG)
@@ -34,13 +35,6 @@ public:
 
     PhysicsManager(const PhysicsManager&) = delete;
     PhysicsManager& operator=(const PhysicsManager) = delete;
-
-    /**
-     * Returns the current total number of physics body in the simulation.
-     *
-     * @return Body count.
-     */
-    size_t getCurrentPhysicsBodyCount();
 
 #if defined(DEBUG)
     /**
@@ -70,6 +64,20 @@ public:
      *
      * @param pNode Node to create collision for.
      */
+    void createBodyForNode(DynamicBodyNode* pNode);
+
+    /**
+     * Destroys previously created body (see @ref createBodyForNode).
+     *
+     * @param pNode Node to destroy collision.
+     */
+    void destroyBodyForNode(DynamicBodyNode* pNode);
+
+    /**
+     * Creates a physics body for the specified node.
+     *
+     * @param pNode Node to create collision for.
+     */
     void createBodyForNode(CompoundCollisionNode* pNode);
 
     /**
@@ -87,6 +95,14 @@ public:
      * @param rotation New rotation of the body.
      */
     void setBodyLocationRotation(JPH::Body* pBody, const glm::vec3& location, const glm::vec3& rotation);
+
+    /**
+     * Activates or deactivates a body.
+     *
+     * @param pBody Body to update.
+     * @param bActivate New state.
+     */
+    void setBodyActiveState(JPH::Body* pBody, bool bActivate);
 
 private:
     PhysicsManager();
@@ -121,9 +137,6 @@ private:
     /** Debug rendering of the physics. */
     std::unique_ptr<PhysicsDebugDrawer> pPhysicsDebugDrawer;
 #endif
-
-    /** Current total number of physical bodies in the simulation. */
-    std::atomic<size_t> iTotalBodyCount{0};
 
     /** Time in seconds that has passed since the last time we updated Jolt physics. */
     float timeSinceLastJoltUpdate = 0.0F;

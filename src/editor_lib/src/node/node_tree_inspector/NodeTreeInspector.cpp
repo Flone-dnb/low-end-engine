@@ -12,6 +12,7 @@
 #include "EditorTheme.h"
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/node/physics/CollisionNode.h"
+#include "game/node/physics/DynamicBodyNode.h"
 #include "EditorGameInstance.h"
 #include "node/menu/SetNameMenu.h"
 #include "game/node/Sound2dNode.h"
@@ -195,7 +196,11 @@ void NodeTreeInspector::showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem
             }
             auto pRoot = std::get<std::unique_ptr<Node>>(std::move(result));
 
-            pItem->getDisplayedGameNode()->addChildNode(std::move(pRoot));
+            pItem->getDisplayedGameNode()->addChildNode(
+                std::move(pRoot),
+                AttachmentRule::KEEP_RELATIVE,
+                AttachmentRule::KEEP_RELATIVE,
+                AttachmentRule::KEEP_RELATIVE);
 
             // Refresh tree.
             onGameNodeTreeLoaded(pGameRootNode);
@@ -375,10 +380,18 @@ void NodeTreeInspector::addChildNodeToNodeTree(
     }
 
     // Add child.
-    pParent->getDisplayedGameNode()->addChildNode(std::move(pNewNode));
+    pParent->getDisplayedGameNode()->addChildNode(
+        std::move(pNewNode),
+        AttachmentRule::KEEP_RELATIVE,
+        AttachmentRule::KEEP_RELATIVE,
+        AttachmentRule::KEEP_RELATIVE);
 
     // Refresh tree.
     onGameNodeTreeLoaded(pGameRootNode);
+
+    if (sTypeGuid == DynamicBodyNode::getTypeGuidStatic()) {
+        Logger::get().info("note: dynamic bodies are not simulated in the editor");
+    }
 }
 
 void NodeTreeInspector::changeNodeType(
@@ -404,7 +417,11 @@ void NodeTreeInspector::changeNodeType(
 
         pItem->pGameNode->unsafeDetachFromParentAndDespawn(true);
 
-        const auto pNode = pParentNode->addChildNode(std::move(pNewNode));
+        const auto pNode = pParentNode->addChildNode(
+            std::move(pNewNode),
+            AttachmentRule::KEEP_RELATIVE,
+            AttachmentRule::KEEP_RELATIVE,
+            AttachmentRule::KEEP_RELATIVE);
     }
 
     // Refresh tree.

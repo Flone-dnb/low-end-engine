@@ -26,6 +26,7 @@
 #include "game/geometry/shapes/CollisionShape.h"
 #include "game/node/physics/CollisionNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
+#include "game/node/physics/DynamicBodyNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -63,6 +64,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(ConvexCollisionShape::getTypeGuidStatic(), ConvexCollisionShape::getReflectionInfo());
     registerType(CollisionNode::getTypeGuidStatic(), CollisionNode::getReflectionInfo());
     registerType(CompoundCollisionNode::getTypeGuidStatic(), CompoundCollisionNode::getReflectionInfo());
+    registerType(DynamicBodyNode::getTypeGuidStatic(), DynamicBodyNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

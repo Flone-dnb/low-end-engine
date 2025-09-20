@@ -75,9 +75,6 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
 #if defined(ENGINE_ASAN_ENABLED)
         sStatsText += " (big RAM usage due to ASan)";
 #endif
-        sStatsText += std::format(
-            " | physics bodies: {}",
-            pRenderer->getWindow()->getGameManager()->getPhysicsManager().getCurrentPhysicsBodyCount());
 
         DebugDrawer::get().drawText(
             "type a command...               | " + sStatsText,

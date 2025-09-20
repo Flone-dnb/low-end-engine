@@ -70,7 +70,7 @@ private:
      *
      * @param pCollisionNode Node.
      */
-    void addCollisionNodeSpecialOptions(CollisionNode* pCollisionNode);
+    void addCollisionShapeSelection(Node* pCollisionNode);
 
     /** Layout to add properties. */
     LayoutUiNode* pPropertyLayout = nullptr;

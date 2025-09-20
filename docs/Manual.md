@@ -419,9 +419,11 @@ void MyGameInstance::onGameStarted() {
 
 ## Physics
 
-`CollisionNode` is the main way to create walls, floors and other solid objects that do not allow to move through them.
+`CollisionNode` is the main way to create walls, floors and other solid objects that do not allow to move through them. Note that moving or rotating such nodes is perfectly fine even when they are spawned.
 
 `CompoundCollisionNode` groups multiple `CollisionNode`s - you create a compound node and attach collision nodes as child nodes. This is used to group multiple collision objects to speed up collision detection and thus improve performance. It's a good idea to group your level's static CollisionNodes under a compound. Note that when collision nodes are grouped under a compound moving or rotating such collision nodes is not recommended as it causes the whole compound to be recreated under the hood. Moving or rotating the compound node is perfectly fine though.
+
+`DynamicBodyNode` is a simulated body that is moved by forces. For example it may be used to create a rolling ball that is affected by gravity and similar forces.
 
 ## Post-processing
 

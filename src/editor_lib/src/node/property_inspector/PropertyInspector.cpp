@@ -9,6 +9,7 @@
 #include "game/node/SkeletonNode.h"
 #include "game/node/physics/CollisionNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
+#include "game/node/physics/DynamicBodyNode.h"
 #include "EditorTheme.h"
 #include "EditorGameInstance.h"
 #include "node/GizmoNode.h"
@@ -74,17 +75,40 @@ void PropertyInspector::refreshInspectedProperties() {
         return;
     }
 
+    // Display special UI elements for some nodes.
     if (auto pSkeletonNode = dynamic_cast<SkeletonNode*>(pInspectedNode)) {
         addSkeletonNodeSpecialOptions(pSkeletonNode);
     }
-    if (auto pCollisionNode = dynamic_cast<CollisionNode*>(pInspectedNode)) {
-        addCollisionNodeSpecialOptions(pCollisionNode);
+    if (dynamic_cast<CollisionNode*>(pInspectedNode) != nullptr ||
+        dynamic_cast<DynamicBodyNode*>(pInspectedNode) != nullptr) {
+        addCollisionShapeSelection(pInspectedNode);
     }
 
+    // Display node properties.
     displayPropertiesForType(pPropertyLayout, pInspectedNode->getTypeGuid(), pInspectedNode);
 }
 
-void PropertyInspector::addCollisionNodeSpecialOptions(CollisionNode* pCollisionNode) {
+void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
+    // Prepare handy lambdas.
+    const auto getShape = [pCollisionNode]() -> CollisionShape* {
+        if (auto pTargetNode = dynamic_cast<CollisionNode*>(pCollisionNode)) {
+            return pTargetNode->getShape();
+        } else if (auto pTargetNode = dynamic_cast<DynamicBodyNode*>(pCollisionNode)) {
+            return pTargetNode->getShape();
+        } else [[unlikely]] {
+            Error::showErrorAndThrowException("unhandled case");
+        }
+    };
+    const auto setShape = [pCollisionNode](std::unique_ptr<CollisionShape> pShape) {
+        if (auto pTargetNode = dynamic_cast<CollisionNode*>(pCollisionNode)) {
+            pTargetNode->setShape(std::move(pShape));
+        } else if (auto pTargetNode = dynamic_cast<DynamicBodyNode*>(pCollisionNode)) {
+            pTargetNode->setShape(std::move(pShape));
+        } else [[unlikely]] {
+            Error::showErrorAndThrowException("unhandled case");
+        }
+    };
+
     auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
@@ -116,14 +140,14 @@ void PropertyInspector::addCollisionNodeSpecialOptions(CollisionNode* pCollision
             pButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
             pButton->setColorWhilePressed(EditorTheme::getButtonPressedColor());
             pButton->setColor(EditorTheme::getButtonColor());
-            if (pCollisionNode->getShape()->getTypeGuid() == sTypeGuid) {
+            if (getShape()->getTypeGuid() == sTypeGuid) {
                 pButton->setColor(EditorTheme::getAccentColor());
             }
             pButton->setSize(glm::vec2(pButton->getSize().x, 0.03F));
-            pButton->setOnClicked([this, pCollisionNode, sCollisionTypeGuid = sTypeGuid]() {
+            pButton->setOnClicked([this, setShape, sCollisionTypeGuid = sTypeGuid]() {
                 auto pNewShape = std::unique_ptr<CollisionShape>(dynamic_cast<CollisionShape*>(
                     ReflectedTypeDatabase::getTypeInfo(sCollisionTypeGuid).createNewObject().release()));
-                pCollisionNode->setShape(std::move(pNewShape));
+                setShape(std::move(pNewShape));
                 refreshInspectedProperties();
             });
             {

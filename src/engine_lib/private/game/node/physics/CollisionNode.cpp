@@ -45,6 +45,7 @@ TypeReflectionInfo CollisionNode::getReflectionInfo() {
 CollisionNode::CollisionNode() : CollisionNode("Collision Node") {}
 CollisionNode::CollisionNode(const std::string& sNodeName) : SpatialNode(sNodeName) {
     pShape = std::make_unique<BoxCollisionShape>();
+    setOnShapeChangedCallback();
 }
 
 void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
