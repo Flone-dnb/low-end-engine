@@ -75,7 +75,7 @@ endif()
 add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
 
 # Define editor macro.
-target_compile_definitions(${PROJECT_NAME} PRIVATE ENGINE_EDITOR)
+add_compile_definitions(ENGINE_EDITOR)
 
 # -------------------------------------------------------------------------------------------------
 #                                         CONFIGURE TARGET
