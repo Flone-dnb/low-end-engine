@@ -118,7 +118,7 @@ namespace {
 PhysicsManager::PhysicsManager() {
     checkJoltInstructionSupport();
 
-    pTempAllocator = std::make_unique<JPH::TempAllocatorImpl>(1024 * 512); // 512 KB
+    pTempAllocator = std::make_unique<JPH::TempAllocatorImpl>(1024 * 1024); // 1 MB
 
     pJobSystem = std::make_unique<JPH::JobSystemThreadPool>(
         JPH::cMaxPhysicsJobs,

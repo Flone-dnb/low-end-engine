@@ -71,11 +71,11 @@ if (DEFINED GAME_PROJECT_NAME)
     add_compile_definitions(GAME_LIB_INCLUDED)
 endif()
 
-# Define editor macro.
-add_compile_definitions(ENGINE_EDITOR)
-
 # Define target.
 add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
+
+# Define editor macro.
+target_compile_definitions(${PROJECT_NAME} PRIVATE ENGINE_EDITOR)
 
 # -------------------------------------------------------------------------------------------------
 #                                         CONFIGURE TARGET

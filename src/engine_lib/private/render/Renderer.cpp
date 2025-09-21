@@ -195,7 +195,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
     const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
 
-    {
+    if (!vActiveCameras.empty()) {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
