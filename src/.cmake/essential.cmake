@@ -27,6 +27,7 @@ if(WIN32)
 endif()
 
 # Define some names.
+set(BUILD_DIRECTORY_NAME OUTPUT)
 set(DEPENDENCY_BUILD_DIR_NAME dep)
 set(SUPER_CALL_CHECKER_NAME node_super_call_checker)
 

@@ -16,7 +16,8 @@ else()
     message(STATUS "ENGINE_UI_ONLY disabled.")
 endif()
 
-set(BUILD_DIRECTORY_NAME OUTPUT)
+# Include essential stuff.
+include(src/.cmake/essential.cmake)
 
 # Set default build mode.
 if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
@@ -27,24 +28,46 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-message(STATUS "Adding executable targets...")
+# Add node_super_call_checker.
+set(NODE_SUPER_CALL_CHECKER_DIR node_super_call_checker)
+message(STATUS "Adding ${NODE_SUPER_CALL_CHECKER_DIR}...")
+add_subdirectory(src/${NODE_SUPER_CALL_CHECKER_DIR} ${BUILD_DIRECTORY_NAME}/${NODE_SUPER_CALL_CHECKER_DIR} SYSTEM)
 
-# Add editor target first (to allow editor target to include editor_lib and properly define editor macros).
+# Add engine_lib.
+set(ENGINE_LIB_DIR engine_lib)
+message(STATUS "Adding ${ENGINE_LIB_DIR}...")
+add_subdirectory(src/${ENGINE_LIB_DIR} ${BUILD_DIRECTORY_NAME}/${ENGINE_LIB_DIR})
+
+# Add editor_lib.
+set(EDITOR_LIB_DIR editor_lib)
+message(STATUS "Adding ${EDITOR_LIB_DIR}...")
+add_subdirectory(src/${EDITOR_LIB_DIR} ${BUILD_DIRECTORY_NAME}/${EDITOR_LIB_DIR})
+
+# Add editor.
 set(EDITOR_TARGET_DIR_NAME editor)
-message(STATUS "Adding target ${EDITOR_TARGET_DIR_NAME}...")
+message(STATUS "Adding ${EDITOR_TARGET_DIR_NAME}...")
 add_subdirectory(src/${EDITOR_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${EDITOR_TARGET_DIR_NAME})
 
+# Add engine tests.
 set(TESTS_TARGET_DIR_NAME engine_tests)
+message(STATUS "Adding ${TESTS_TARGET_DIR_NAME}...")
+add_subdirectory(src/${TESTS_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${TESTS_TARGET_DIR_NAME})
+
+# Add game targets.
 if (DEFINED GAME_PROJECT_NAME) # <- comes from engine_settings.cmake
     # Game directories should have been generated using our project manager.
-    set(TESTS_TARGET_DIR_NAME ${GAME_PROJECT_NAME}_tests)
 
-    # Add game target.
-    set(GAME_TARGET_DIR_NAME ${GAME_PROJECT_NAME})
-    message(STATUS "Adding target ${GAME_TARGET_DIR_NAME}...")
-    add_subdirectory(src/${GAME_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${GAME_TARGET_DIR_NAME})
+    # Add game_lib.
+    set(GAME_LIB_DIR ${GAME_PROJECT_NAME}_lib)
+    message(STATUS "Adding ${GAME_LIB_DIR}...")
+    add_subdirectory(src/${GAME_LIB_DIR} ${BUILD_DIRECTORY_NAME}/${GAME_LIB_DIR})
+
+    # Add game.
+    message(STATUS "Adding ${GAME_PROJECT_NAME}...")
+    add_subdirectory(src/${GAME_PROJECT_NAME} ${BUILD_DIRECTORY_NAME}/${GAME_PROJECT_NAME})
+
+    # Add game_tests.
+    set(GAME_TESTS_DIR ${GAME_PROJECT_NAME}_tests)
+    message(STATUS "Adding ${GAME_TESTS_DIR}...")
+    add_subdirectory(src/${GAME_TESTS_DIR} ${BUILD_DIRECTORY_NAME}/${GAME_TESTS_DIR})
 endif()
-
-# Add tests target.
-message(STATUS "Adding target ${TESTS_TARGET_DIR_NAME}...")
-add_subdirectory(src/${TESTS_TARGET_DIR_NAME} ${BUILD_DIRECTORY_NAME}/${TESTS_TARGET_DIR_NAME})

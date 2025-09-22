@@ -33,7 +33,7 @@ add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
 
 # Enable more warnings and warnings as errors.
-enable_more_warnings()
+enable_more_warnings_for_target(${PROJECT_NAME})
 
 # Set C++ standard.
 set(PROJECT_CXX_STANDARD_VERSION 20)
@@ -52,7 +52,7 @@ create_symlink_to_res()
 
 # asan
 if(NOT IS_RELEASE_BUILD AND NOT WIN32)
-    enable_address_sanitizer()
+    enable_address_sanitizer_for_target(${PROJECT_NAME})
 endif()
 
 # -------------------------------------------------------------------------------------------------
@@ -61,12 +61,5 @@ endif()
 
 # Add editor library.
 set(EDITOR_LIB_TARGET editor_lib)
-if (NOT TARGET ${EDITOR_LIB_TARGET}) # define target only if not defined yet
-    message(STATUS "${PROJECT_NAME}: started adding ${EDITOR_LIB_TARGET}...\n----------------------------------------------\n")
-    add_subdirectory(../${EDITOR_LIB_TARGET} ${DEPENDENCY_BUILD_DIR_NAME}/${EDITOR_LIB_TARGET})
-    message(STATUS "\n\n----------------------------------------------\n${PROJECT_NAME}: finished adding ${EDITOR_LIB_TARGET}")
-else()
-    message(STATUS "${PROJECT_NAME}: ${EDITOR_LIB_TARGET} already defined, just using it without redefining")
-endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC ${EDITOR_LIB_TARGET})
 add_dependencies(${PROJECT_NAME} ${EDITOR_LIB_TARGET})

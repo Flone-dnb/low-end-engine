@@ -25,7 +25,7 @@ namespace {
 
 // Helper function for consistent log messages.
 void logLine(std::string_view sText) {
-    std::cout << std::format("[{}] {}\n", NODE_SUPER_CALL_CHECKER_NAME, sText);
+    std::cout << std::format("[node_super_call_checker] {}\n", sText);
 }
 
 int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesystem::path& pathToCppFile) {

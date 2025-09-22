@@ -191,37 +191,52 @@ set(PROJECT_SOURCES
     # add your .h/.cpp files here
 )
 
-# Define target.
-add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
+# Define targets (one without any specific macros and another for compilation with editor).
+set(ENGINE_LIB_TARGET engine_lib)
+set(ENGINE_LIB_TARGET_FOR_EDITOR engine_lib_for_editor)
+add_library(${ENGINE_LIB_TARGET} STATIC ${PROJECT_SOURCES})
+add_library(${ENGINE_LIB_TARGET_FOR_EDITOR} STATIC ${PROJECT_SOURCES})
+
+# Define editor macro for editor's version of the engine_lib.
+target_compile_definitions(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC ENGINE_EDITOR)
 
 # -------------------------------------------------------------------------------------------------
 #                                         CONFIGURE TARGET
 # -------------------------------------------------------------------------------------------------
 
 # Set target folder.
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
+set_target_properties(${ENGINE_LIB_TARGET} PROPERTIES FOLDER ${PROJECT_FOLDER})
+set_target_properties(${ENGINE_LIB_TARGET_FOR_EDITOR} PROPERTIES FOLDER ${PROJECT_FOLDER})
 
 # Enable more warnings and warnings as errors.
-enable_more_warnings()
+enable_more_warnings_for_target(${ENGINE_LIB_TARGET})
+enable_more_warnings_for_target(${ENGINE_LIB_TARGET_FOR_EDITOR})
 
 # Set C++ standard.
 set(PROJECT_CXX_STANDARD_VERSION 20)
 set(CMAKE_CXX_STANDARD ${PROJECT_CXX_STANDARD_VERSION})
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_${PROJECT_CXX_STANDARD_VERSION})
+target_compile_features(${ENGINE_LIB_TARGET} PUBLIC cxx_std_${PROJECT_CXX_STANDARD_VERSION})
+target_compile_features(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC cxx_std_${PROJECT_CXX_STANDARD_VERSION})
 message(STATUS "${PROJECT_NAME}: using the following C++ standard: ${CMAKE_CXX_STANDARD}")
 
 # Add includes.
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH})
-target_include_directories(${PROJECT_NAME} PUBLIC public)
-target_include_directories(${PROJECT_NAME} PUBLIC private)
+target_include_directories(${ENGINE_LIB_TARGET} SYSTEM PUBLIC ${RELATIVE_EXT_PATH})
+target_include_directories(${ENGINE_LIB_TARGET} PUBLIC public)
+target_include_directories(${ENGINE_LIB_TARGET} PUBLIC private)
+
+target_include_directories(${ENGINE_LIB_TARGET_FOR_EDITOR} SYSTEM PUBLIC ${RELATIVE_EXT_PATH})
+target_include_directories(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC public)
+target_include_directories(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC private)
 
 # Debug helper.
 if (NOT IS_RELEASE_BUILD AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/debug.cmake")
     message(STATUS "Disabling optimizations because the file \"debug.cmake\" exists.")
     if (MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE -Od)
+        target_compile_options(${ENGINE_LIB_TARGET} PRIVATE -Od)
+        target_compile_options(${ENGINE_LIB_TARGET_FOR_EDITOR} PRIVATE -Od)
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -O0)
+        target_compile_options(${ENGINE_LIB_TARGET} PRIVATE -O0)
+        target_compile_options(${ENGINE_LIB_TARGET_FOR_EDITOR} PRIVATE -O0)
     endif()
 endif()
 
@@ -231,14 +246,21 @@ endif()
 
 # asan
 if(NOT IS_RELEASE_BUILD AND NOT WIN32)
-    enable_address_sanitizer()
+    enable_address_sanitizer_for_target(${ENGINE_LIB_TARGET})
+    enable_address_sanitizer_for_target(${ENGINE_LIB_TARGET_FOR_EDITOR})
 endif()
 
-add_node_super_call_checker(${CMAKE_CURRENT_LIST_DIR}/public/game/node ${CMAKE_CURRENT_LIST_DIR}/private/game/node)
+add_node_super_call_checker_for_target(${ENGINE_LIB_TARGET} ${CMAKE_CURRENT_LIST_DIR}/public/game/node ${CMAKE_CURRENT_LIST_DIR}/private/game/node)
+add_node_super_call_checker_for_target(${ENGINE_LIB_TARGET_FOR_EDITOR} ${CMAKE_CURRENT_LIST_DIR}/public/game/node ${CMAKE_CURRENT_LIST_DIR}/private/game/node)
 
 # -------------------------------------------------------------------------------------------------
 #                                       DEPENDENCIES
 # -------------------------------------------------------------------------------------------------
+
+# Group all dependencies into a single interface library, later we will link it to 2 version of the engine_lib
+# one for the editor (with some editor macros) and one for the game.
+set(ENGINE_LIB_DEPS_TARGET engine_lib_deps)
+add_library(${ENGINE_LIB_DEPS_TARGET} INTERFACE)
 
 # Add SDL.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"SDL\"...")
@@ -246,9 +268,9 @@ set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_TEST OFF CACHE BOOL "" FORCE)
 set(SDL_AUDIO OFF CACHE BOOL "" FORCE) # we don't use SDL audio
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/SDL/include)
+target_include_directories(${ENGINE_LIB_DEPS_TARGET} SYSTEM INTERFACE ${RELATIVE_EXT_PATH}/SDL/include)
 add_subdirectory(${RELATIVE_EXT_PATH}/SDL ${DEPENDENCY_BUILD_DIR_NAME}/SDL EXCLUDE_FROM_ALL)
-target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE SDL2::SDL2)
 set_target_properties(SDL2-static PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add GLAD.
@@ -260,14 +282,14 @@ add_library(${GLAD_TARGET_NAME} STATIC
     ${RELATIVE_EXT_PATH}/glad_gles31/include/glad/glad.h
 )
 target_include_directories(${GLAD_TARGET_NAME} SYSTEM PUBLIC ${RELATIVE_EXT_PATH}/glad_gles31/include)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${GLAD_TARGET_NAME})
-add_dependencies(${PROJECT_NAME} ${GLAD_TARGET_NAME})
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE ${GLAD_TARGET_NAME})
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} ${GLAD_TARGET_NAME})
 set_target_properties(${GLAD_TARGET_NAME} PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add GLM.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"GLM\"...")
 add_subdirectory(${RELATIVE_EXT_PATH}/glm ${DEPENDENCY_BUILD_DIR_NAME}/glm SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC glm)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE glm)
 set_target_properties(glm PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add spdlog.
@@ -275,26 +297,26 @@ message(STATUS "${PROJECT_NAME}: adding external dependency \"SPDLOG\"...")
 set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "" FORCE)
 set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/spdlog ${DEPENDENCY_BUILD_DIR_NAME}/spdlog SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE spdlog::spdlog)
 set_target_properties(spdlog PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add toml11.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"TOML11\"...")
 if (MSVC)
-    target_compile_options(${PROJECT_NAME} PUBLIC /Zc:__cplusplus)
+    target_compile_options(${ENGINE_LIB_DEPS_TARGET} INTERFACE /Zc:__cplusplus)
 endif()
 add_subdirectory(${RELATIVE_EXT_PATH}/toml11 ${DEPENDENCY_BUILD_DIR_NAME}/toml11 SYSTEM)
 set_target_properties(toml11 PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add nameof.
-target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/nameof/include)
+target_include_directories(${ENGINE_LIB_DEPS_TARGET} INTERFACE ${RELATIVE_EXT_PATH}/nameof/include)
 
 # Add FreeType.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"FreeType\"...")
 set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/freetype ${DEPENDENCY_BUILD_DIR_NAME}/freetype SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC freetype)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE freetype)
 set_target_properties(freetype PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add hwinfo.
@@ -304,7 +326,7 @@ set(HWINFO_STATIC ON CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/hwinfo ${DEPENDENCY_BUILD_DIR_NAME}/hwinfo SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC lfreist-hwinfo::hwinfo)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE lfreist-hwinfo::hwinfo)
 set_target_properties(hwinfo PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add tinygltf.
@@ -313,9 +335,9 @@ set(TINYGLTF_HEADER_ONLY ON CACHE BOOL "" FORCE)
 set(TINYGLTF_INSTALL OFF CACHE BOOL "" FORCE)
 set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/tinygltf ${DEPENDENCY_BUILD_DIR_NAME}/tinygltf SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE tinygltf)
 set_target_properties(tinygltf PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${PROJECT_NAME} tinygltf)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} tinygltf)
 
 # Add fpng.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"fpng\"...")
@@ -329,10 +351,10 @@ if (NOT MSVC)
     target_compile_options(fpng PRIVATE -msse4.1 -mpclmul)
     target_compile_definitions(fpng PRIVATE FPNG_NO_SSE=0)
 endif()
-target_include_directories(${PROJECT_NAME} PUBLIC ${RELATIVE_EXT_PATH}/fpng/src/)
-target_link_libraries(${PROJECT_NAME} PUBLIC fpng)
+target_include_directories(${ENGINE_LIB_DEPS_TARGET} INTERFACE ${RELATIVE_EXT_PATH}/fpng/src/)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE fpng)
 set_target_properties(fpng PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${PROJECT_NAME} fpng)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} fpng)
 
 # Add SFML.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"SFML\"...")
@@ -341,16 +363,16 @@ set(SFML_BUILD_GRAPHICS OFF CACHE BOOL "" FORCE)
 set(SFML_BUILD_NETWORK OFF CACHE BOOL "" FORCE)
 set(SFML_STATIC_LIBRARIES ON CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/SFML ${DEPENDENCY_BUILD_DIR_NAME}/SFML SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC sfml-audio)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE sfml-audio)
 set_target_properties(sfml-audio PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${PROJECT_NAME} sfml-audio)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} sfml-audio)
 
 # Add utfconv.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"utfconv\"...")
 add_subdirectory(${RELATIVE_EXT_PATH}/utfconv ${DEPENDENCY_BUILD_DIR_NAME}/utfconv SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC utfconv)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE utfconv)
 set_target_properties(utfconv PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${PROJECT_NAME} utfconv)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} utfconv)
 
 # ozz-animation
 message(STATUS "${PROJECT_NAME}: adding external dependency \"ozz-animation\"...")
@@ -360,10 +382,10 @@ set(ozz_build_howtos OFF CACHE BOOL "" FORCE)
 set(ozz_build_tests OFF CACHE BOOL "" FORCE)
 set(ozz_build_msvc_rt_dll ON CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/ozz-animation ${DEPENDENCY_BUILD_DIR_NAME}/ozz-animation SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC ozz_animation)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE ozz_animation)
 set_target_properties(ozz_animation PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${PROJECT_NAME} ozz_animation)
-add_dependencies(${PROJECT_NAME} gltf2ozz)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} ozz_animation)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} gltf2ozz)
 set(GLTF2OZZ_BIN_PATH ${PROJECT_BINARY_DIR}/${DEPENDENCY_BUILD_DIR_NAME}/ozz-animation/src/animation/offline/gltf/gltf2ozz${CMAKE_EXECUTABLE_SUFFIX})
 message(STATUS "gltf2ozz will be located at: ${GLTF2OZZ_BIN_PATH}")
 add_compile_definitions(GLTF2OZZ_BIN_PATH="${GLTF2OZZ_BIN_PATH}")
@@ -399,9 +421,9 @@ set(USE_AVX OFF CACHE BOOL "" FORCE)
 set(USE_AVX2 OFF CACHE BOOL "" FORCE)
 set(USE_AVX512 OFF CACHE BOOL "" FORCE)
 add_subdirectory(${RELATIVE_EXT_PATH}/JoltPhysics/Build ${DEPENDENCY_BUILD_DIR_NAME}/JoltPhysics/Build SYSTEM)
-target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE Jolt)
 set_target_properties(Jolt PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${PROJECT_NAME} Jolt)
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} Jolt)
 if (NOT IS_RELEASE_BUILD)
     target_compile_definitions(Jolt PUBLIC JPH_DEBUG_RENDERER)    
 endif()
@@ -413,9 +435,13 @@ if (NOT IS_RELEASE_BUILD)
     set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
     set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "" FORCE)
     add_subdirectory(${RELATIVE_EXT_PATH}/tracy ${DEPENDENCY_BUILD_DIR_NAME}/tracy SYSTEM)
-    target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
+    target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE TracyClient)
     set_target_properties(TracyClient PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-    add_dependencies(${PROJECT_NAME} TracyClient)
+    add_dependencies(${ENGINE_LIB_DEPS_TARGET} TracyClient)
 
     add_compile_definitions(ENGINE_PROFILER_ENABLED)
 endif()
+
+# Link engine library to dependencies.
+target_link_libraries(${ENGINE_LIB_TARGET} PUBLIC ${ENGINE_LIB_DEPS_TARGET})
+target_link_libraries(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC ${ENGINE_LIB_DEPS_TARGET})

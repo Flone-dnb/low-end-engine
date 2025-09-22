@@ -1,47 +1,45 @@
 # Enable address sanitizer (gcc/clang only).
-function(enable_address_sanitizer)
+function(enable_address_sanitizer_for_target TARGET_NAME)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(FATAL_ERROR "Address sanitizer is only supported for GCC/Clang.")
     endif()
     message(STATUS "Address sanitizer is enabled.")
-    add_compile_definitions(ENGINE_ASAN_ENABLED)
-    target_compile_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer)
-    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-    target_link_libraries(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer)
-    target_link_libraries(${PROJECT_NAME} PRIVATE -fsanitize=address)
+    target_compile_definitions(${TARGET_NAME} PRIVATE ENGINE_ASAN_ENABLED)
+    target_compile_options(${TARGET_NAME} PRIVATE -fno-omit-frame-pointer)
+    target_compile_options(${TARGET_NAME} PRIVATE -fsanitize=address)
+    target_link_libraries(${TARGET_NAME} PRIVATE -fno-omit-frame-pointer)
+    target_link_libraries(${TARGET_NAME} PRIVATE -fsanitize=address)
     if (CMAKE_COMPILER_IS_GNUCC)
-        target_compile_options(${PROJECT_NAME} PRIVATE -static-libasan)
+        target_compile_options(${TARGET_NAME} PRIVATE -static-libasan)
     endif()
 endfunction()
 
 # Enable more warnings and warnings as errors.
-function(enable_more_warnings)
+function(enable_more_warnings_for_target TARGET_NAME)
     # More warnings.
     if(MSVC)
-        target_compile_options(${PROJECT_NAME} PUBLIC /W3 /WX)
+        target_compile_options(${TARGET_NAME} PUBLIC /W3 /WX)
     else()
-        target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter -Wno-unused-variable)
+        target_compile_options(${TARGET_NAME} PUBLIC -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter -Wno-unused-variable)
     endif()
 
     # Compiler specific flags.
     if(MSVC)
-        target_compile_options(${PROJECT_NAME} PUBLIC /utf-8)
+        target_compile_options(${TARGET_NAME} PUBLIC /utf-8)
     endif()
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # False-positive in GCC for `ReflectedTypeDatabase::getTypeInfo`.
-        target_compile_options(${PROJECT_NAME} PUBLIC -Wno-dangling-reference)
+        target_compile_options(${TARGET_NAME} PUBLIC -Wno-dangling-reference)
     endif()
 endfunction()
 
 # Adds a program as a post build step to check that all Node derived types in override functions are "calling super"
 # (base class implementation of the function being overridden). So that the programmer does not need to remember that.
-function(add_node_super_call_checker GLOBAL_PATH_TO_NODES_PRIVATE GLOBAL_PATH_TO_NODES_PUBLIC)
-    add_subdirectory("../${SUPER_CALL_CHECKER_NAME}" ${DEPENDENCY_BUILD_DIR_NAME}/${SUPER_CALL_CHECKER_NAME} SYSTEM)
-    add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUPER_CALL_CHECKER_NAME})
+function(add_node_super_call_checker_for_target TARGET_NAME GLOBAL_PATH_TO_NODES_PRIVATE GLOBAL_PATH_TO_NODES_PUBLIC)
+    add_dependencies(${TARGET_NAME} ${SUPER_CALL_CHECKER_NAME})
     add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        WORKING_DIRECTORY "${DEPENDENCY_BUILD_DIR_NAME}/${SUPER_CALL_CHECKER_NAME}"
-        COMMAND ${PROJECT_NAME}_${SUPER_CALL_CHECKER_NAME}
+        TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${SUPER_CALL_CHECKER_NAME}
             "${GLOBAL_PATH_TO_NODES_PRIVATE}"
             "${GLOBAL_PATH_TO_NODES_PUBLIC}"
     )
