@@ -156,9 +156,9 @@ PhysicsManager::PhysicsManager() {
     bEnableDebugRendering = true;
 #else
     DebugConsole::get().registerCommand(
-        "showPhysicsBodies", [this](GameInstance* pGameInstance) { bEnableDebugRendering = true; });
+        "showCollision", [this](GameInstance* pGameInstance) { bEnableDebugRendering = true; });
     DebugConsole::get().registerCommand(
-        "hidePhysicsBodies", [this](GameInstance* pGameInstance) { bEnableDebugRendering = false; });
+        "hideCollision", [this](GameInstance* pGameInstance) { bEnableDebugRendering = false; });
 #endif
 #endif
 }

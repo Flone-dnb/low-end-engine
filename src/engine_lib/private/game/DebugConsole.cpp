@@ -35,9 +35,10 @@ void DebugConsole::registerCommand(
     }
 
     const auto it = registeredCommands.find(sCommandName);
-    if (it != registeredCommands.end()) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "the name \"{}\" for a new command is already being used by some other command", sCommandName));
+    if (it != registeredCommands.end()) {
+        // Probably already registered since DebugConsole is a singleton.
+        // This often happens in automated tests.
+        return;
     }
 
     registeredCommands[sCommandName] = callback;
@@ -128,11 +129,18 @@ void DebugConsole::onKeyboardInput(
                 sErrorMessage.pop_back();
             }
 
-            DebugDrawer::get().drawText(
+            constexpr float messageTimeSec = 5.0F;
+            DebugDrawer::get().drawScreenRect( // <- message background
+                glm::vec2(consoleScreenPos.x, consoleScreenPos.y - consoleScreenSize.y),
+                glm::vec2(consoleScreenSize.x, consoleScreenSize.y),
+                glm::vec3(0.25F),
+                messageTimeSec);
+            DebugDrawer::get().drawText( // <- message
                 sErrorMessage,
-                5.0F,
+                messageTimeSec,
                 glm::vec3(1.0F),
-                glm::vec2(consoleScreenPos.x + textPadding, consoleScreenPos.y - textHeight - textPadding),
+                glm::vec2(
+                    consoleScreenPos.x + textPadding, consoleScreenPos.y - consoleScreenSize.y + textPadding),
                 textHeight);
             return;
         }
