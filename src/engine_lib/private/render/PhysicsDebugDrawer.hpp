@@ -40,14 +40,14 @@ public:
         JPH::Vec3 v1, JPH::Vec3 v2, JPH::Vec3 v3, JPH::ColorArg color, ECastShadow castShadow) override {
         vLinesToDraw.reserve(vLinesToDraw.size() + 6);
 
-        vLinesToDraw.push_back(convertFromJolt(v1));
-        vLinesToDraw.push_back(convertFromJolt(v2));
+        vLinesToDraw.push_back(convertPosDirFromJolt(v1));
+        vLinesToDraw.push_back(convertPosDirFromJolt(v2));
 
-        vLinesToDraw.push_back(convertFromJolt(v2));
-        vLinesToDraw.push_back(convertFromJolt(v3));
+        vLinesToDraw.push_back(convertPosDirFromJolt(v2));
+        vLinesToDraw.push_back(convertPosDirFromJolt(v3));
 
-        vLinesToDraw.push_back(convertFromJolt(v3));
-        vLinesToDraw.push_back(convertFromJolt(v1));
+        vLinesToDraw.push_back(convertPosDirFromJolt(v3));
+        vLinesToDraw.push_back(convertPosDirFromJolt(v1));
     }
 
     /**

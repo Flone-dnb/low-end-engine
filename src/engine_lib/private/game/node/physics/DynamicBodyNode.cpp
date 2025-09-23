@@ -148,12 +148,21 @@ void DynamicBodyNode::onDespawning() {
     }
 }
 
+void DynamicBodyNode::setPhysicsSimulationResults(
+    const glm::vec3& worldLocation, const glm::vec3& worldRotation) {
+    bIsApplyingSimulationResults = true;
+
+    setWorldLocation(worldLocation);
+    setWorldRotation(worldRotation);
+
+    bIsApplyingSimulationResults = false;
+}
+
 void DynamicBodyNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-#if !defined(ENGINE_EDITOR)
-    if (bIsSimulated) {
-#if defined(DEBUG)
+    if (bIsApplyingSimulationResults) {
+#if defined(DEBUG) && !defined(ENGINE_EDITOR)
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
             if (worldLocation.z < -1000.0F) {
@@ -170,13 +179,8 @@ void DynamicBodyNode::onWorldLocationRotationScaleChanged() {
 #endif
         return;
     }
-#endif
 
-    if (!isSpawned()) {
-        return;
-    }
-
-    if (pBody == nullptr) {
+    if (!isSpawned() || pBody == nullptr) {
         // Not created yet.
         return;
     }

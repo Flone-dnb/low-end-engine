@@ -78,7 +78,7 @@ void BoxCollisionShape::setHalfExtent(const glm::vec3& size) {
 }
 
 JPH::Result<JPH::Ref<JPH::Shape>> BoxCollisionShape::createShape() {
-    JPH::BoxShapeSettings settings(convertToJolt(halfExtent));
+    JPH::BoxShapeSettings settings(convertPosDirToJolt(halfExtent));
     return settings.Create();
 }
 
@@ -259,7 +259,7 @@ JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape() {
 
         vVertices.resize(positions.size());
         for (size_t i = 0; i < positions.size(); i++) {
-            vVertices[i] = convertToJolt(positions[i]);
+            vVertices[i] = convertPosDirToJolt(positions[i]);
         }
     } else {
         // Use a placeholder geometry.
@@ -268,7 +268,7 @@ JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape() {
 
         vVertices.resize(positions.size());
         for (size_t i = 0; i < positions.size(); i++) {
-            vVertices[i] = convertToJolt(positions[i].position);
+            vVertices[i] = convertPosDirToJolt(positions[i].position);
         }
     }
 

@@ -122,6 +122,14 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
+    /**
+     * Called by physics manager to apply simulation tick results.
+     *
+     * @param worldLocation World location of the body.
+     * @param worldRotation World rotation of the body.
+     */
+    void setPhysicsSimulationResults(const glm::vec3& worldLocation, const glm::vec3& worldRotation);
+
     /** Sets `onChanged` callback to @ref pShape. */
     void setOnShapeChangedCallback();
 
@@ -133,6 +141,9 @@ private:
 
     /** `false` to pause simulation for this body. */
     bool bIsSimulated = true;
+
+    /** `true` if we are in the @ref setPhysicsSimulationResults. */
+    bool bIsApplyingSimulationResults = false;
 
 #if defined(DEBUG)
     /** `true` if we produced a warning in case the body fell out of the world. */

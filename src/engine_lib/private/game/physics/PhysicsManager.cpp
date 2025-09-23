@@ -147,7 +147,7 @@ PhysicsManager::PhysicsManager() {
     settings.mAllowSleeping =
         false; // disable because sleeping bodies don't notify contact callbacks which can be inconvenient
     pPhysicsSystem->SetPhysicsSettings(settings);
-    pPhysicsSystem->SetGravity(convertToJolt(glm::vec3(0.0F, 0.0F, -9.81F)));
+    pPhysicsSystem->SetGravity(convertPosDirToJolt(glm::vec3(0.0F, 0.0F, -9.81F)));
 
 #if defined(DEBUG)
     pPhysicsDebugDrawer = std::make_unique<PhysicsDebugDrawer>();
@@ -164,6 +164,11 @@ PhysicsManager::PhysicsManager() {
 }
 
 PhysicsManager::~PhysicsManager() {
+    if (!dynamicBodies.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "physics manager is being destroyed but there are still some dynamic bodies registered");
+    }
+
     JPH::UnregisterTypes();
 
     delete JPH::Factory::sInstance;
@@ -176,15 +181,38 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     constexpr float JOLT_UPDATE_DELTA_TIME = 1.0F / 60.0F;
 
     // Simulate Jolt.
-    timeSinceLastJoltUpdate += timeSincePrevFrameInSec;
-    while (timeSinceLastJoltUpdate >= JOLT_UPDATE_DELTA_TIME) {
-        timeSinceLastJoltUpdate -= JOLT_UPDATE_DELTA_TIME;
+    bool bUpdateHappened = false;
+    {
+        PROFILE_SCOPE("update Jolt")
 
-        pPhysicsSystem->Update(JOLT_UPDATE_DELTA_TIME, 1, pTempAllocator.get(), pJobSystem.get());
-    };
+        timeSinceLastJoltUpdate += timeSincePrevFrameInSec;
+        while (timeSinceLastJoltUpdate >= JOLT_UPDATE_DELTA_TIME) {
+            timeSinceLastJoltUpdate -= JOLT_UPDATE_DELTA_TIME;
+
+            pPhysicsSystem->Update(JOLT_UPDATE_DELTA_TIME, 1, pTempAllocator.get(), pJobSystem.get());
+            bUpdateHappened = true;
+        };
+    }
+
+    // Update nodes according to simulation results.
+    if (bUpdateHappened && !dynamicBodies.empty()) {
+        PROFILE_SCOPE("update dynamic bodies")
+
+        for (const auto& pDynamicBodyNode : dynamicBodies) {
+            JPH::Vec3 position{};
+            JPH::Quat rotation{};
+            pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
+                pDynamicBodyNode->pBody->GetID(), position, rotation);
+
+            pDynamicBodyNode->setPhysicsSimulationResults(
+                convertPosDirFromJolt(position), convertRotationFromJolt(rotation));
+        }
+    }
 
 #if defined(DEBUG)
     if (bEnableDebugRendering) {
+        PROFILE_SCOPE("draw collision")
+
         JPH::BodyManager::DrawSettings drawSettings;
         pPhysicsSystem->DrawBodies(drawSettings, pPhysicsDebugDrawer.get());
 
@@ -217,8 +245,8 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
     // Create body.
     JPH::BodyCreationSettings bodySettings(
         shapeResult.Get(),
-        convertToJolt(pNode->getWorldLocation()),
-        convertToJolt(glm::quat(pNode->getWorldRotation())),
+        convertPosDirToJolt(pNode->getWorldLocation()),
+        convertRotationToJolt(pNode->getWorldRotation()),
         JPH::EMotionType::Static,
         static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING));
 
@@ -279,8 +307,8 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
     // Create body.
     JPH::BodyCreationSettings bodySettings(
         shapeResult.Get(),
-        convertToJolt(pNode->getWorldLocation()),
-        convertToJolt(glm::quat(pNode->getWorldRotation())),
+        convertPosDirToJolt(pNode->getWorldLocation()),
+        convertRotationToJolt(pNode->getWorldRotation()),
         JPH::EMotionType::Dynamic,
         static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
 
@@ -298,6 +326,12 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
 
     // Save created body.
     pNode->pBody = pCreatedBody;
+
+    // Register.
+    if (!dynamicBodies.insert(pNode).second) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" was already registered as a dynamic body", pNode->getNodeName()));
+    }
 }
 
 void PhysicsManager::destroyBodyForNode(DynamicBodyNode* pNode) {
@@ -321,6 +355,14 @@ void PhysicsManager::destroyBodyForNode(DynamicBodyNode* pNode) {
     // Destroy body.
     pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
+
+    // Unregister.
+    const auto it = dynamicBodies.find(pNode);
+    if (it == dynamicBodies.end()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" was not registered as a dynamic body", pNode->getNodeName()));
+    }
+    dynamicBodies.erase(it);
 }
 
 void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
@@ -377,12 +419,12 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
                 pNode->getNodeName(),
                 shapeResult.GetError().data()));
         }
-        const auto pShape = shapeResult.Get();
+        const auto& pShape = shapeResult.Get();
         vShapes.push_back(pShape);
 
         compoundSettings.AddShape(
-            convertToJolt(pCollisionNode->getRelativeLocation()),
-            convertToJolt(glm::quat(pCollisionNode->getRelativeRotation())),
+            convertPosDirToJolt(pCollisionNode->getRelativeLocation()),
+            convertRotationToJolt(pCollisionNode->getRelativeRotation()),
             pShape);
     }
 
@@ -402,8 +444,8 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
     // Create body.
     JPH::BodyCreationSettings bodySettings(
         shapeResult.Get(),
-        convertToJolt(pNode->getWorldLocation()),
-        convertToJolt(glm::quat(pNode->getWorldRotation())),
+        convertPosDirToJolt(pNode->getWorldLocation()),
+        convertRotationToJolt(pNode->getWorldRotation()),
         JPH::EMotionType::Static,
         static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING));
 
@@ -450,8 +492,8 @@ void PhysicsManager::setBodyLocationRotation(
 
     pPhysicsSystem->GetBodyInterface().SetPositionAndRotation(
         pBody->GetID(),
-        convertToJolt(location),
-        convertToJolt(glm::quat(rotation)),
+        convertPosDirToJolt(location),
+        convertRotationToJolt(rotation),
         JPH::EActivation::DontActivate);
 }
 

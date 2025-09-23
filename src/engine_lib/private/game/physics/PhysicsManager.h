@@ -3,6 +3,7 @@
 // Standard.
 #include <memory>
 #include <atomic>
+#include <unordered_set>
 
 // Custom.
 #include "math/GLMath.hpp"
@@ -114,6 +115,12 @@ private:
      * the last frame was rendered.
      */
     void onBeforeNewFrame(float timeSincePrevFrameInSec);
+
+    /**
+     * Dynamic bodies in the simulation. Used to update node position/rotation according
+     * to the simulated body.
+     */
+    std::unordered_set<DynamicBodyNode*> dynamicBodies;
 
     /** Broad phase layers. */
     std::unique_ptr<BroadPhaseLayerInterfaceImpl> pBroadPhaseLayerInterfaceImpl;
