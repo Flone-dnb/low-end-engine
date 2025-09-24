@@ -53,31 +53,31 @@ static void checkJoltInstructionSupport() {
 #endif
 
     // LZCNT
-#if defined(WIN32)
-    __cpuid(cpuInfo, 0x80000001);
-    const bool lzcntSupported = (cpuInfo[2] & (1 << 5)) != 0;
-#else
-    __cpuid_count(0x80000001, 0, eax, ebx, ecx, edx);
-    const bool lzcntSupported = (ecx & (1 << 5)) != 0;
-#endif
+    // #if defined(WIN32)
+    //     __cpuid(cpuInfo, 0x80000001);
+    //     const bool lzcntSupported = (cpuInfo[2] & (1 << 5)) != 0;
+    // #else
+    //     __cpuid_count(0x80000001, 0, eax, ebx, ecx, edx);
+    //     const bool lzcntSupported = (ecx & (1 << 5)) != 0;
+    // #endif
 
     // TZCNT
-#if defined(WIN32)
-    __cpuidex(cpuInfo, 7, 0);
-    const bool tzcntSupported = (cpuInfo[1] & (1 << 3)) != 0;
-#else
-    __cpuid_count(7, 0, eax, ebx, ecx, edx);
-    const bool tzcntSupported = (ebx & (1 << 3)) != 0;
-#endif
+    // #if defined(WIN32)
+    //     __cpuidex(cpuInfo, 7, 0);
+    //     const bool tzcntSupported = (cpuInfo[1] & (1 << 3)) != 0;
+    // #else
+    //     __cpuid_count(7, 0, eax, ebx, ecx, edx);
+    //     const bool tzcntSupported = (ebx & (1 << 3)) != 0;
+    // #endif
 
     // F16C
-#if defined(WIN32)
-    __cpuid(cpuInfo, 1);
-    const bool f16cSupported = (cpuInfo[2] & (1 << 29)) != 0;
-#else
-    __cpuid_count(1, 0, eax, ebx, ecx, edx);
-    const bool f16cSupported = (ecx & (1 << 29)) != 0;
-#endif
+    // #if defined(WIN32)
+    //     __cpuid(cpuInfo, 1);
+    //     const bool f16cSupported = (cpuInfo[2] & (1 << 29)) != 0;
+    // #else
+    //     __cpuid_count(1, 0, eax, ebx, ecx, edx);
+    //     const bool f16cSupported = (ecx & (1 << 29)) != 0;
+    // #endif
 
     // SSE4.2
 #if defined(WIN32)
@@ -87,7 +87,8 @@ static void checkJoltInstructionSupport() {
     const bool sse42Supported = (ecx & (1 << 20)) != 0;
 #endif
 
-    if (!sse42Supported || !lzcntSupported || !tzcntSupported || !f16cSupported) {
+    // if (!sse42Supported || !lzcntSupported || !tzcntSupported || !f16cSupported) {
+    if (!sse42Supported) {
         Error::showErrorAndThrowException(
             "the CPU does not support some of the required processor instructions");
     }
@@ -340,8 +341,7 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
 
     // Add to physics world.
     // don't activate here if node is simulated to keep all editor-related logic in the node
-    pPhysicsSystem->GetBodyInterface().AddBody(
-        pCreatedBody->GetID(), JPH::EActivation::DontActivate); 
+    pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
 
     // Save created body.
     pNode->pBody = pCreatedBody;
