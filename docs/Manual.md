@@ -819,7 +819,7 @@ In order to view profiled data you need to build and launch the tracy server app
 
 ```
 cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release
-cmake --build profiler/build --config Release --parallel
+cmake --build profiler/build --config=Release --parallel
 ```
 
 Then built tracy server will be located at `ext/tracy/profiler/build/Release/tracy-profiler.exe`, open it and connect to your game.
@@ -981,7 +981,7 @@ cd tmp/game
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release
-cmake --build . --config Release --target game
+cmake --build . --config=Release --target game
 ```
 Then copy the resulting binary (from `build/OUTPUT/game`) to your ARM64 Linux device. We don't worry about installing SDL2 libraries because we link SDL statically. Inside of your ARM64 Linux device launch the game using some file explorer or a console.
 
