@@ -27,7 +27,7 @@ public:
      */
     DynamicBodyNode(const std::string& sNodeName);
 
-    virtual ~DynamicBodyNode() override = default;
+    virtual ~DynamicBodyNode() override;
 
     /**
      * Returns reflection info about this type.
@@ -60,6 +60,35 @@ public:
     void setShape(std::unique_ptr<CollisionShape> pNewShape);
 
     /**
+     * Sets uniform density of the interior of the object (kg / m^3).
+     *
+     * @warning Causes the physics body to be recreated.
+     *
+     * @param newDensity Density.
+     */
+    void setDensity(float newDensity);
+
+    /**
+     * Sets mass of the shape (kg). 0.0 (default) to automatically calculate based on the shape and its
+     * density.
+     *
+     * @warning Causes the physics body to be recreated.
+     *
+     * @param newMassKg New mass.
+     */
+    void setMass(float newMassKg);
+
+    /**
+     * Sets dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that
+     * presses the two bodies together.
+     * 
+     * @warning Causes the physics body to be recreated.
+     * 
+     * @param newFriction Friction.
+     */
+    void setFriction(float newFriction);
+
+    /**
      * Specify `true` if this body should be simulated, `false` if the simulation should be paused for this
      * body.
      *
@@ -70,11 +99,60 @@ public:
     void setIsSimulated(bool bActivate);
 
     /**
+     * Applies impulse to the body. Used for one-time pushes, if you need to constantly (every tick)
+     * apply a specific force to the body use @ref setForceForNextTick.
+     * 
+     * @remark Does nothing if the node is not spawned.
+     * 
+     * @param impulse Impulse.
+     */
+    void applyOneTimeImpulse(const glm::vec3& impulse);
+
+    /**
+     * Adds angular impulse to the body.
+     *
+     * @remark Does nothing if the node is not spawned.
+     *
+     * @param impulse Impulse.
+     */
+    void applyOneTimeAngularImpulse(const glm::vec3& impulse);
+
+    /**
+     * Sets a force that will be applied during the next physics tick and will be reset after that.
+     * Used to apply force that's acting over time (not a single one-time impulse).
+     * 
+     * @param force Force.
+     */
+    void setForceForNextTick(const glm::vec3& force);
+
+    /**
      * Returns used collision shape.
      *
      * @return `nullptr` if not set.
      */
     CollisionShape* getShape() const { return pShape.get(); }
+
+    /**
+     * Returns uniform density of the interior of the object (kg / m^3).
+     *
+     * @return Density.
+     */
+    float getDensity() const { return density; }
+
+    /**
+     * Returns mass of the shape (kg). 0.0 to automatically calculate based on the shape and its density.
+     *
+     * @return Mass.
+     */
+    float getMass() const { return massKg; }
+
+    /**
+     * Returns dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that
+     * presses the two bodies together.
+     * 
+     * @return Friction.
+     */
+    float getFriction() const { return friction; }
 
     /**
      * `true` if this body is simulated, `false` if the simulation is paused for this body.
@@ -121,6 +199,21 @@ protected:
      */
     virtual void onWorldLocationRotationScaleChanged() override;
 
+    /**
+     * Called before a physics update is executed.
+     * Can be used to update game specific physics parameters of the body (such as force for example).
+     * 
+     * @param deltaTime Time (in seconds) that has passed since the last physics update.
+     */
+    virtual void onBeforePhysicsUpdate(float deltaTime) {}
+
+    /**
+     * Returns physics body.
+     * 
+     * @return `nullptr` if not created yet.
+     */
+    JPH::Body* getBody() const { return pBody; }
+
 private:
     /**
      * Called by physics manager to apply simulation tick results.
@@ -133,11 +226,26 @@ private:
     /** Sets `onChanged` callback to @ref pShape. */
     void setOnShapeChangedCallback();
 
+    /** Generally called after some property is changed to recreate the body. */
+    void recreateBodyIfSpawned();
+
     /** Collision shape. */
     std::unique_ptr<CollisionShape> pShape;
 
     /** Not `nullptr` when spawned. */
     JPH::Body* pBody = nullptr;
+
+    /** Uniform density of the interior of the convex object (kg / m^3). */
+    float density = 1000.0F;
+
+    /** Mass of the shape (kg). 0.0 to automatically calculate based on the shape and its density. */
+    float massKg = 0.0F;
+
+    /**
+     * Dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that
+     * presses the two bodies together.
+     */
+    float friction = 0.2F;
 
     /** `false` to pause simulation for this body. */
     bool bIsSimulated = true;
@@ -148,5 +256,11 @@ private:
 #if defined(DEBUG)
     /** `true` if we produced a warning in case the body fell out of the world. */
     bool bWarnedAboutFallingOutOfWorld = false;
+
+    /** The total number of times the body was re-created after spawning. */
+    size_t iBodyRecreateCountAfterSpawn = 0;
+
+    /** `true` if we produced a warning about a body being recreated often. */
+    bool bWarnedAboutBodyRecreatingOften = false;
 #endif
 };

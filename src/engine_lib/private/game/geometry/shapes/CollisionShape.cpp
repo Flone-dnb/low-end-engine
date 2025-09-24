@@ -39,7 +39,7 @@ TypeReflectionInfo CollisionShape::getReflectionInfo() {
 
 void CollisionShape::setOnChanged(const std::function<void()>& callback) { onChanged = callback; }
 
-JPH::Result<JPH::Ref<JPH::Shape>> CollisionShape::createShape() {
+JPH::Result<JPH::Ref<JPH::Shape>> CollisionShape::createShape(float density) {
     Error::showErrorAndThrowException("derived type not implemented this method");
 }
 
@@ -77,8 +77,9 @@ void BoxCollisionShape::setHalfExtent(const glm::vec3& size) {
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> BoxCollisionShape::createShape() {
+JPH::Result<JPH::Ref<JPH::Shape>> BoxCollisionShape::createShape(float density) {
     JPH::BoxShapeSettings settings(convertPosDirToJolt(halfExtent));
+    settings.SetDensity(density);
     return settings.Create();
 }
 
@@ -110,8 +111,9 @@ void SphereCollisionShape::setRadius(float size) {
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> SphereCollisionShape::createShape() {
+JPH::Result<JPH::Ref<JPH::Shape>> SphereCollisionShape::createShape(float density) {
     JPH::SphereShapeSettings settings(radius);
+    settings.SetDensity(density);
     return settings.Create();
 }
 
@@ -156,8 +158,9 @@ void CapsuleCollisionShape::setHalfHeight(float size) {
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> CapsuleCollisionShape::createShape() {
+JPH::Result<JPH::Ref<JPH::Shape>> CapsuleCollisionShape::createShape(float density) {
     JPH::CapsuleShapeSettings settings(halfHeight, radius);
+    settings.SetDensity(density);
     return settings.Create();
 }
 
@@ -203,8 +206,9 @@ void CylinderCollisionShape::setHalfHeight(float size) {
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> CylinderCollisionShape::createShape() {
+JPH::Result<JPH::Ref<JPH::Shape>> CylinderCollisionShape::createShape(float density) {
     JPH::CylinderShapeSettings settings(halfHeight, radius);
+    settings.SetDensity(density);
     return settings.Create();
 }
 
@@ -237,7 +241,7 @@ void ConvexCollisionShape::setPathToGeometryRelativeRes(const std::string& sRela
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape() {
+JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape(float density) {
     // Construct full path.
     const auto pathToFile =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToGeometryRelativeRes;
@@ -273,5 +277,6 @@ JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape() {
     }
 
     JPH::ConvexHullShapeSettings settings(vVertices);
+    settings.SetDensity(density);
     return settings.Create();
 }

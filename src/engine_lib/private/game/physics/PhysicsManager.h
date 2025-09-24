@@ -20,6 +20,7 @@ class ObjectVsBroadPhaseLayerFilterImpl;
 class ObjectLayerPairFilterImpl;
 class CollisionNode;
 class DynamicBodyNode;
+class KinematicBodyNode;
 class CompoundCollisionNode;
 
 #if defined(DEBUG)
@@ -45,6 +46,10 @@ public:
      */
     void setEnableDebugRendering(bool bEnable);
 #endif
+
+    /** Optimizes broad phase if added a lot of bodies before a physics update. Don't call this every frame.
+     */
+    void optimizeBroadPhase();
 
     /**
      * Creates a physics body for the specified node.
@@ -104,6 +109,64 @@ public:
      * @param bActivate New state.
      */
     void setBodyActiveState(JPH::Body* pBody, bool bActivate);
+
+    /**
+     * Adds impulse to the body.
+     *
+     * @param pBody  Body to update.
+     * @param impulse Impulse.
+     */
+    void addImpulseToBody(JPH::Body* pBody, const glm::vec3& impulse);
+
+    /**
+     * Adds angular impulse to the body.
+     *
+     * @param pBody  Body to update.
+     * @param impulse Impulse.
+     */
+    void addAngularImpulseToBody(JPH::Body* pBody, const glm::vec3& impulse);
+
+    /**
+     * Adds force to the body.
+     *
+     * @param pBody Body to update.
+     * @param force Force.
+     */
+    void addForce(JPH::Body* pBody, const glm::vec3& force);
+
+    /**
+     * Sets linear velocity to a body.
+     *
+     * @param pBody    Body to update.
+     * @param velocity Velocity.
+     */
+    void setLinearVelocity(JPH::Body* pBody, const glm::vec3& velocity);
+
+    /**
+     * Sets angular velocity to a body.
+     *
+     * @param pBody    Body to update.
+     * @param velocity Velocity.
+     */
+    void setAngularVelocity(JPH::Body* pBody, const glm::vec3& velocity);
+
+    /**
+     * Returns linear velocity to a body.
+     *
+     * @param pBody Body to check.
+     *
+     * @return Velocity.
+     */
+    glm::vec3 getLinearVelocity(JPH::Body* pBody);
+
+    /**
+     * Returns angular velocity to a body.
+     *
+     * @param pBody Body to check.
+     *
+     * @return Velocity.
+     */
+    glm::vec3 getAngularVelocity(JPH::Body* pBody);
 
 private:
     PhysicsManager();

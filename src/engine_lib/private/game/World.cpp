@@ -10,6 +10,9 @@
 #include "game/GameManager.h"
 #include "render/MeshNodeManager.h"
 #include "render/LightSourceManager.h"
+#if !defined(ENGINE_UI_ONLY)
+#include "game/physics/PhysicsManager.h"
+#endif
 
 World::~World() {
     std::scoped_lock gaurd(mtxRootNode.first);
@@ -41,6 +44,11 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
     }
     mtxRootNode.second->pWorldWeSpawnedIn = this;
     mtxRootNode.second->spawn();
+
+#if !defined(ENGINE_UI_ONLY)
+    // After we spawned all nodes (maybe from a big node tree) all physics bodies should've been created.
+    getGameManager().getPhysicsManager().optimizeBroadPhase();
+#endif
 }
 
 void World::destroyWorld() {

@@ -10,6 +10,7 @@
 #include "game/physics/CoordinateConversions.hpp"
 #include "game/node/physics/CollisionNode.h"
 #include "game/node/physics/DynamicBodyNode.h"
+#include "game/node/physics/KinematicBodyNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "render/PhysicsDebugDrawer.hpp"
@@ -113,6 +114,9 @@ namespace {
     // This determines how many mutexes to allocate to protect rigid bodies from concurrent access. Set it to
     // 0 for the default settings. Should be a power of 2 in the range [1, 64], use 0 to auto detect.
     constexpr unsigned int MAX_BODY_MUTEXES = 0;
+
+    // Uniform density of the interior of the convex object (kg / m^3).
+    constexpr float defaultDensity = 1000.0f;
 }
 
 PhysicsManager::PhysicsManager() {
@@ -182,21 +186,28 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
     // Simulate Jolt.
     bool bUpdateHappened = false;
-    {
-        PROFILE_SCOPE("update Jolt")
+    timeSinceLastJoltUpdate += timeSincePrevFrameInSec;
+    while (timeSinceLastJoltUpdate >= JOLT_UPDATE_DELTA_TIME) {
+        timeSinceLastJoltUpdate -= JOLT_UPDATE_DELTA_TIME;
 
-        timeSinceLastJoltUpdate += timeSincePrevFrameInSec;
-        while (timeSinceLastJoltUpdate >= JOLT_UPDATE_DELTA_TIME) {
-            timeSinceLastJoltUpdate -= JOLT_UPDATE_DELTA_TIME;
+        {
+            PROFILE_SCOPE("onBeforePhysicsUpdate")
+            for (const auto& pDynamicNode : dynamicBodies) {
+                pDynamicNode->onBeforePhysicsUpdate(JOLT_UPDATE_DELTA_TIME);
+            }
+        }
 
+        {
+            PROFILE_SCOPE("JPH::PhysicsSystem::Update")
             pPhysicsSystem->Update(JOLT_UPDATE_DELTA_TIME, 1, pTempAllocator.get(), pJobSystem.get());
-            bUpdateHappened = true;
-        };
-    }
+        }
+
+        bUpdateHappened = true;
+    };
 
     // Update nodes according to simulation results.
     if (bUpdateHappened && !dynamicBodies.empty()) {
-        PROFILE_SCOPE("update dynamic bodies")
+        PROFILE_SCOPE("update dynamic bodies after simulation")
 
         for (const auto& pDynamicBodyNode : dynamicBodies) {
             JPH::Vec3 position{};
@@ -234,7 +245,7 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
     }
 
     // Create shape.
-    const auto shapeResult = pNode->pShape->createShape();
+    const auto shapeResult = pNode->pShape->createShape(defaultDensity);
     if (!shapeResult.IsValid()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics shape for the node \"{}\", error: {}",
@@ -296,7 +307,7 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
     }
 
     // Create shape.
-    const auto shapeResult = pNode->pShape->createShape();
+    const auto shapeResult = pNode->pShape->createShape(pNode->density);
     if (!shapeResult.IsValid()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics shape for the node \"{}\", error: {}",
@@ -304,13 +315,21 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
             shapeResult.GetError().data()));
     }
 
+    const auto bIsKinematic = dynamic_cast<KinematicBodyNode*>(pNode) != nullptr;
+
     // Create body.
     JPH::BodyCreationSettings bodySettings(
         shapeResult.Get(),
         convertPosDirToJolt(pNode->getWorldLocation()),
         convertRotationToJolt(pNode->getWorldRotation()),
-        JPH::EMotionType::Dynamic,
+        bIsKinematic ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic,
         static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+
+    bodySettings.mFriction = pNode->friction;
+    if (pNode->massKg > 0.0F) {
+        bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+        bodySettings.mMassPropertiesOverride.mMass = pNode->massKg;
+    }
 
     JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
@@ -320,9 +339,9 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
     }
 
     // Add to physics world.
+    // don't activate here if node is simulated to keep all editor-related logic in the node
     pPhysicsSystem->GetBodyInterface().AddBody(
-        pCreatedBody->GetID(), JPH::EActivation::DontActivate); // don't activate here if node is simulated to
-                                                                // keep all editor-related logic in the node
+        pCreatedBody->GetID(), JPH::EActivation::DontActivate); 
 
     // Save created body.
     pNode->pBody = pCreatedBody;
@@ -410,7 +429,7 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
         }
 
         // Create shape.
-        const auto shapeResult = pCollisionNode->pShape->createShape();
+        const auto shapeResult = pCollisionNode->pShape->createShape(defaultDensity);
         if (!shapeResult.IsValid()) [[unlikely]] {
             Error::showErrorAndThrowException(std::format(
                 "failed to create a physics shape for the node \"{}\" which is child node of a compound node "
@@ -505,4 +524,38 @@ void PhysicsManager::setBodyActiveState(JPH::Body* pBody, bool bActivate) {
     } else {
         pPhysicsSystem->GetBodyInterface().DeactivateBody(pBody->GetID());
     }
+}
+
+void PhysicsManager::addImpulseToBody(JPH::Body* pBody, const glm::vec3& impulse) {
+    pPhysicsSystem->GetBodyInterface().AddImpulse(pBody->GetID(), convertPosDirToJolt(impulse));
+}
+
+void PhysicsManager::addAngularImpulseToBody(JPH::Body* pBody, const glm::vec3& impulse) {
+    pPhysicsSystem->GetBodyInterface().AddAngularImpulse(pBody->GetID(), convertPosDirToJolt(impulse));
+}
+
+void PhysicsManager::addForce(JPH::Body* pBody, const glm::vec3& force) {
+    pPhysicsSystem->GetBodyInterface().AddForce(pBody->GetID(), convertPosDirToJolt(force));
+}
+
+void PhysicsManager::setLinearVelocity(JPH::Body* pBody, const glm::vec3& velocity) {
+    pPhysicsSystem->GetBodyInterface().SetLinearVelocity(pBody->GetID(), convertPosDirToJolt(velocity));
+}
+
+void PhysicsManager::setAngularVelocity(JPH::Body* pBody, const glm::vec3& velocity) {
+    pPhysicsSystem->GetBodyInterface().SetAngularVelocity(pBody->GetID(), convertPosDirToJolt(velocity));
+}
+
+glm::vec3 PhysicsManager::getLinearVelocity(JPH::Body* pBody) {
+    return convertPosDirFromJolt(pPhysicsSystem->GetBodyInterface().GetLinearVelocity(pBody->GetID()));
+}
+
+glm::vec3 PhysicsManager::getAngularVelocity(JPH::Body* pBody) {
+    return convertPosDirFromJolt(pPhysicsSystem->GetBodyInterface().GetAngularVelocity(pBody->GetID()));
+}
+
+void PhysicsManager::optimizeBroadPhase() {
+    PROFILE_FUNC
+
+    pPhysicsSystem->OptimizeBroadPhase();
 }

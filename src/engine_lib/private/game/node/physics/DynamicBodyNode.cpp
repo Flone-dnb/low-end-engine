@@ -28,6 +28,31 @@ TypeReflectionInfo DynamicBodyNode::getReflectionInfo() {
             return reinterpret_cast<DynamicBodyNode*>(pThis)->isSimulated();
         }};
 
+    variables.floats[NAMEOF_MEMBER(&DynamicBodyNode::massKg).data()] = ReflectedVariableInfo<float>{
+        .setter = [](Serializable* pThis,
+                     const float& newValue) { reinterpret_cast<DynamicBodyNode*>(pThis)->setMass(newValue); },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<DynamicBodyNode*>(pThis)->getMass();
+        }};
+
+    variables.floats[NAMEOF_MEMBER(&DynamicBodyNode::friction).data()] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<DynamicBodyNode*>(pThis)->setFriction(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<DynamicBodyNode*>(pThis)->getFriction();
+        }};
+
+    variables.floats[NAMEOF_MEMBER(&DynamicBodyNode::density).data()] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<DynamicBodyNode*>(pThis)->setDensity(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<DynamicBodyNode*>(pThis)->getDensity();
+        }};
+
     variables.serializables[NAMEOF_MEMBER(&DynamicBodyNode::pShape).data()] =
         ReflectedVariableInfo<std::unique_ptr<Serializable>>{
             .setter =
@@ -56,26 +81,9 @@ DynamicBodyNode::DynamicBodyNode(const std::string& sNodeName) : SpatialNode(sNo
     setOnShapeChangedCallback();
 }
 
-void DynamicBodyNode::setOnShapeChangedCallback() {
-    if (pShape == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException("expected the shape to be valid");
-    }
+DynamicBodyNode::~DynamicBodyNode() {}
 
-    pShape->setOnChanged([this]() {
-        if (!isSpawned()) {
-            return;
-        }
-
-        auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
-        physicsManager.destroyBodyForNode(this);
-        physicsManager.createBodyForNode(this);
-    });
-}
-
-void DynamicBodyNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
-    pShape = std::move(pNewShape);
-    setOnShapeChangedCallback();
-
+void DynamicBodyNode::recreateBodyIfSpawned() {
     if (!isSpawned()) {
         return;
     }
@@ -90,7 +98,52 @@ void DynamicBodyNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
             physicsManager.setBodyActiveState(pBody, true);
 #endif
         }
+
+#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+        if (!bWarnedAboutBodyRecreatingOften) {
+            iBodyRecreateCountAfterSpawn += 1;
+            if (iBodyRecreateCountAfterSpawn >= 10) {
+                Logger::get().warn(std::format(
+                    "physics body of the dynamic node \"{}\" was already recreated {} times after the node "
+                    "was spawned, recreating the physics body often might cause performance issues, make "
+                    "sure "
+                    "you know what you're doing",
+                    getNodeName(),
+                    iBodyRecreateCountAfterSpawn));
+                bWarnedAboutBodyRecreatingOften = true;
+            }
+        }
+#endif
     }
+}
+
+void DynamicBodyNode::setOnShapeChangedCallback() {
+    if (pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shape to be valid");
+    }
+
+    pShape->setOnChanged([this]() { recreateBodyIfSpawned(); });
+}
+
+void DynamicBodyNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
+    pShape = std::move(pNewShape);
+    setOnShapeChangedCallback();
+    recreateBodyIfSpawned();
+}
+
+void DynamicBodyNode::setDensity(float newDensity) {
+    density = newDensity;
+    recreateBodyIfSpawned();
+}
+
+void DynamicBodyNode::setMass(float newMassKg) {
+    massKg = newMassKg;
+    recreateBodyIfSpawned();
+}
+
+void DynamicBodyNode::setFriction(float newFriction) {
+    friction = newFriction;
+    recreateBodyIfSpawned();
 }
 
 void DynamicBodyNode::setIsSimulated(bool bActivate) {
@@ -118,8 +171,40 @@ void DynamicBodyNode::setIsSimulated(bool bActivate) {
     }
 }
 
+void DynamicBodyNode::applyOneTimeImpulse(const glm::vec3& impulse) {
+    if (pBody == nullptr) {
+        return;
+    }
+
+    auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+    physicsManager.addImpulseToBody(pBody, impulse);
+}
+
+void DynamicBodyNode::applyOneTimeAngularImpulse(const glm::vec3& impulse) {
+    if (pBody == nullptr) {
+        return;
+    }
+
+    auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+    physicsManager.addAngularImpulseToBody(pBody, impulse);
+}
+
+void DynamicBodyNode::setForceForNextTick(const glm::vec3& force) {
+    if (pBody == nullptr) {
+        return;
+    }
+
+    auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+    physicsManager.addForce(pBody, force);
+}
+
 void DynamicBodyNode::onSpawning() {
     SpatialNode::onSpawning();
+
+#if defined(DEBUG)
+    iBodyRecreateCountAfterSpawn = 0;
+    bWarnedAboutBodyRecreatingOften = false;
+#endif
 
     if (pShape == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(

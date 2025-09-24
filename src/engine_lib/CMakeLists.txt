@@ -155,6 +155,8 @@ set(PROJECT_SOURCES
     public/game/node/physics/CollisionNode.h
     private/game/node/physics/DynamicBodyNode.cpp
     public/game/node/physics/DynamicBodyNode.h
+    private/game/node/physics/KinematicBodyNode.cpp
+    public/game/node/physics/KinematicBodyNode.h
     private/game/node/physics/CompoundCollisionNode.cpp
     public/game/node/physics/CompoundCollisionNode.h
     public/game/node/light/DirectionalLightNode.h
