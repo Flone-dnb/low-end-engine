@@ -12,6 +12,7 @@
 #include "game/node/physics/DynamicBodyNode.h"
 #include "game/node/physics/KinematicBodyNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
+#include "game/node/physics/CharacterBodyNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "render/PhysicsDebugDrawer.hpp"
 #include "game/DebugConsole.h"
@@ -38,6 +39,7 @@
 #include "Jolt/Physics/PhysicsSettings.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
+#include "Jolt/Physics/Character/CharacterVirtual.h"
 
 static void checkJoltInstructionSupport() {
 #ifndef IS_ARM64
@@ -115,9 +117,6 @@ namespace {
     // This determines how many mutexes to allocate to protect rigid bodies from concurrent access. Set it to
     // 0 for the default settings. Should be a power of 2 in the range [1, 64], use 0 to auto detect.
     constexpr unsigned int MAX_BODY_MUTEXES = 0;
-
-    // Uniform density of the interior of the convex object (kg / m^3).
-    constexpr float defaultDensity = 1000.0f;
 }
 
 PhysicsManager::PhysicsManager() {
@@ -137,6 +136,7 @@ PhysicsManager::PhysicsManager() {
     pBroadPhaseLayerInterfaceImpl = std::make_unique<BroadPhaseLayerInterfaceImpl>();
     pObjectVsBroadPhaseLayerFilterImpl = std::make_unique<ObjectVsBroadPhaseLayerFilterImpl>();
     pObjectLayerPairFilterImpl = std::make_unique<ObjectLayerPairFilterImpl>();
+    pCharVsCharCollision = std::make_unique<JPH::CharacterVsCharacterCollisionSimple>();
 
     pPhysicsSystem->Init(
         MAX_BODIES,
@@ -173,6 +173,14 @@ PhysicsManager::~PhysicsManager() {
         Error::showErrorAndThrowException(
             "physics manager is being destroyed but there are still some dynamic bodies registered");
     }
+    if (!characterBodies.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "physics manager is being destroyed but there are still some character bodies registered");
+    }
+
+    if (!pCharVsCharCollision->mCharacters.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("physics manager is being destroyed but there are still some characters registered");
+    }
 
     JPH::UnregisterTypes();
 
@@ -191,12 +199,23 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     while (timeSinceLastJoltUpdate >= JOLT_UPDATE_DELTA_TIME) {
         timeSinceLastJoltUpdate -= JOLT_UPDATE_DELTA_TIME;
 
+#if !defined(ENGINE_EDITOR)
         {
-            PROFILE_SCOPE("onBeforePhysicsUpdate")
+            PROFILE_SCOPE("onBeforePhysicsUpdate - DynamicBodyNode")
             for (const auto& pDynamicNode : dynamicBodies) {
                 pDynamicNode->onBeforePhysicsUpdate(JOLT_UPDATE_DELTA_TIME);
             }
         }
+
+        {
+            PROFILE_SCOPE("onBeforePhysicsUpdate - CharacterBodyNode")
+            for (const auto& pCharacterBody : characterBodies) {
+                pCharacterBody->onBeforePhysicsUpdate(JOLT_UPDATE_DELTA_TIME);
+                pCharacterBody->updateCharacterPosition(
+                    *pPhysicsSystem, *pTempAllocator, JOLT_UPDATE_DELTA_TIME);
+            }
+        }
+#endif
 
         {
             PROFILE_SCOPE("JPH::PhysicsSystem::Update")
@@ -246,7 +265,7 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
     }
 
     // Create shape.
-    const auto shapeResult = pNode->pShape->createShape(defaultDensity);
+    const auto shapeResult = pNode->pShape->createShape();
     if (!shapeResult.IsValid()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics shape for the node \"{}\", error: {}",
@@ -429,7 +448,7 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
         }
 
         // Create shape.
-        const auto shapeResult = pCollisionNode->pShape->createShape(defaultDensity);
+        const auto shapeResult = pCollisionNode->pShape->createShape();
         if (!shapeResult.IsValid()) [[unlikely]] {
             Error::showErrorAndThrowException(std::format(
                 "failed to create a physics shape for the node \"{}\" which is child node of a compound node "
@@ -505,6 +524,48 @@ void PhysicsManager::destroyBodyForNode(CompoundCollisionNode* pNode) {
     pNode->pBody = nullptr;
 }
 
+void PhysicsManager::createBodyForNode(CharacterBodyNode* pNode) {
+    PROFILE_FUNC
+
+    // Prepare settings.
+    JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
+    settings->mMaxSlopeAngle = glm::radians(pNode->getMaxWalkSlopeAngle());
+    settings->mShape = pNode->createCharacterShape();
+    settings->mSupportingVolume = JPH::Plane(
+        convertPosDirToJolt(glm::vec3(Globals::WorldDirection::up)), -pNode->pCollisionShape->getRadius());
+    settings->mInnerBodyLayer = static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING);
+
+    // Create character.
+    pNode->pCharacterBody = new JPH::CharacterVirtual(
+        settings,
+        convertPosDirToJolt(pNode->getWorldLocation()),
+        convertRotationToJolt(pNode->getWorldRotation()),
+        0,
+        pPhysicsSystem.get());
+
+    pNode->pCharacterBody->SetCharacterVsCharacterCollision(pCharVsCharCollision.get());
+
+    // Register.
+    if (!characterBodies.insert(pNode).second) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" was already registered as a character body", pNode->getNodeName()));
+    }
+}
+
+void PhysicsManager::destroyBodyForNode(CharacterBodyNode* pNode) {
+    PROFILE_FUNC
+
+    pNode->pCharacterBody = nullptr;
+
+    // Unregister.
+    const auto it = characterBodies.find(pNode);
+    if (it == characterBodies.end()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" was not registered as a character body", pNode->getNodeName()));
+    }
+    characterBodies.erase(it);
+}
+
 void PhysicsManager::setBodyLocationRotation(
     JPH::Body* pBody, const glm::vec3& location, const glm::vec3& rotation) {
     PROFILE_FUNC
@@ -559,3 +620,7 @@ void PhysicsManager::optimizeBroadPhase() {
 
     pPhysicsSystem->OptimizeBroadPhase();
 }
+
+glm::vec3 PhysicsManager::getGravity() { return convertPosDirFromJolt(pPhysicsSystem->GetGravity()); }
+
+JPH::PhysicsSystem& PhysicsManager::getPhysicsSystem() { return *pPhysicsSystem; }

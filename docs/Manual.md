@@ -425,6 +425,12 @@ void MyGameInstance::onGameStarted() {
 
 `DynamicBodyNode` is a simulated body that is moved by forces. For example it may be used to create a rolling ball that is affected by gravity and similar forces.
 
+`KinematicBodyNode` is a basic simulated body that is moved by velocities.
+
+`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character. It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height and so on.
+
+`SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode.
+
 ## Post-processing
 
 You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the camera manager: `Node::getWorldWhileSpawned()->getCameraManager().getPostProcessManager()`.

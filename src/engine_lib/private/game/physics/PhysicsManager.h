@@ -13,6 +13,7 @@ namespace JPH {
     class JobSystemThreadPool;
     class TempAllocatorImpl;
     class Body;
+    class CharacterVsCharacterCollisionSimple;
 }
 
 class BroadPhaseLayerInterfaceImpl;
@@ -22,6 +23,7 @@ class CollisionNode;
 class DynamicBodyNode;
 class KinematicBodyNode;
 class CompoundCollisionNode;
+class CharacterBodyNode;
 
 #if defined(DEBUG)
 class PhysicsDebugDrawer;
@@ -92,6 +94,20 @@ public:
      * @param pNode Node to destroy collision.
      */
     void destroyBodyForNode(CompoundCollisionNode* pNode);
+
+    /**
+     * Creates a physics body for the specified node.
+     *
+     * @param pNode Node to create collision for.
+     */
+    void createBodyForNode(CharacterBodyNode* pNode);
+
+    /**
+     * Destroys previously created body (see @ref createBodyForNode).
+     *
+     * @param pNode Node to destroy collision.
+     */
+    void destroyBodyForNode(CharacterBodyNode* pNode);
 
     /**
      * Sets new location and rotation to the specified physics body.
@@ -168,6 +184,20 @@ public:
      */
     glm::vec3 getAngularVelocity(JPH::Body* pBody);
 
+    /**
+     * Returns gravity.
+     * 
+     * @return Gravity.
+     */
+    glm::vec3 getGravity();
+
+    /**
+     * Returns internal physics system.
+     * 
+     * @return Physics system.
+     */
+    JPH::PhysicsSystem& getPhysicsSystem();
+
 private:
     PhysicsManager();
 
@@ -185,6 +215,9 @@ private:
      */
     std::unordered_set<DynamicBodyNode*> dynamicBodies;
 
+    /** Active character bodies. */
+    std::unordered_set<CharacterBodyNode*> characterBodies;
+
     /** Broad phase layers. */
     std::unique_ptr<BroadPhaseLayerInterfaceImpl> pBroadPhaseLayerInterfaceImpl;
 
@@ -193,6 +226,9 @@ private:
 
     /** Mapping between broad phase layers and object layers. */
     std::unique_ptr<ObjectVsBroadPhaseLayerFilterImpl> pObjectVsBroadPhaseLayerFilterImpl;
+
+    /** List of active characters so they can collide. */
+    std::unique_ptr<JPH::CharacterVsCharacterCollisionSimple> pCharVsCharCollision;
 
     /** Jolt physics system. */
     std::unique_ptr<JPH::PhysicsSystem> pPhysicsSystem;

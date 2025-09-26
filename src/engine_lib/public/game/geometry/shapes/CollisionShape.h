@@ -15,9 +15,6 @@ namespace JPH {
 
 /** Base class for various collision shapes. */
 class CollisionShape : public Serializable {
-    // Requests shape creation.
-    friend class PhysicsManager;
-
 public:
     CollisionShape() = default;
     virtual ~CollisionShape() = default;
@@ -52,18 +49,18 @@ public:
      */
     virtual std::string getTypeGuid() const override;
 
-protected:
     /**
      * Creates a shape for Jolt physics.
      *
      * @warning Must be implemented by child types, shows error in base implementation.
-     * 
+     *
      * @param density Uniform density of the interior of the convex object (kg / m^3).
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density);
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f);
 
+protected:
     /** Must be called by derived classes after they change some property of the shape. */
     void propertyChanged();
 
@@ -117,15 +114,14 @@ public:
      */
     glm::vec3 getHalfExtent() const { return halfExtent; }
 
-protected:
     /**
      * Creates a shape for Jolt physics.
-     * 
+     *
      * @param density Uniform density of the interior of the convex object (kg / m^3).
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
 
 private:
     /** Half the size of the box. */
@@ -177,15 +173,14 @@ public:
      */
     float getRadius() const { return radius; }
 
-protected:
     /**
      * Creates a shape for Jolt physics.
-     * 
+     *
      * @param density Uniform density of the interior of the convex object (kg / m^3).
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
 
 private:
     /** Radius of the sphere. */
@@ -251,15 +246,14 @@ public:
      */
     float getRadius() const { return radius; }
 
-protected:
     /**
      * Creates a shape for Jolt physics.
-     * 
+     *
      * @param density Uniform density of the interior of the convex object (kg / m^3).
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
 
 private:
     /** Half height of the capsule. */
@@ -328,15 +322,14 @@ public:
      */
     float getRadius() const { return radius; }
 
-protected:
     /**
      * Creates a shape for Jolt physics.
      *
      * @param density Uniform density of the interior of the convex object (kg / m^3).
-     * 
+     *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
 
 private:
     /** Half height of the cylinder. */
@@ -391,15 +384,14 @@ public:
      */
     std::string getPathToGeometryRelativeRes() const { return sPathToGeometryRelativeRes; }
 
-protected:
     /**
      * Creates a shape for Jolt physics.
-     * 
+     *
      * @param density Uniform density of the interior of the convex object (kg / m^3).
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
 
 private:
     /** Path (relative to the `res` directory) to the file that stores convex shape geometry. */

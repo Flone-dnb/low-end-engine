@@ -203,6 +203,8 @@ protected:
      * Called before a physics update is executed.
      * Can be used to update game specific physics parameters of the body (such as force for example).
      * 
+     * @remark Called only while spawned and have a physical body.
+     * 
      * @param deltaTime Time (in seconds) that has passed since the last physics update.
      */
     virtual void onBeforePhysicsUpdate(float deltaTime) {}
@@ -213,6 +215,13 @@ protected:
      * @return `nullptr` if not created yet.
      */
     JPH::Body* getBody() const { return pBody; }
+
+    /**
+     * Returns gravity.
+     *
+     * @return Gravity.
+     */
+    glm::vec3 getGravityWhileSpawned();
 
 private:
     /**

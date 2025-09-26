@@ -102,6 +102,16 @@ public:
      *
      * @return Normalized vector.
      */
+    static inline glm::vec2 normalizeSafely(const glm::vec2& vector);
+
+    /**
+     * Normalizes the specified vector while checking for zero division (to avoid NaNs in
+     * the normalized vector).
+     *
+     * @param vector Input vector to normalize.
+     *
+     * @return Normalized vector.
+     */
     static inline glm::vec3 normalizeSafely(const glm::vec3& vector);
 
     /**
@@ -240,6 +250,16 @@ float MathHelpers::normalizeToRange(float value, float min, float max) {
     const auto offsetValue = value - min;
 
     return (offsetValue - (static_cast<float>(floor(offsetValue / width) * width))) + min;
+}
+
+glm::vec2 MathHelpers::normalizeSafely(const glm::vec2& vector) {
+    const auto squareSum = vector.x * vector.x + vector.y * vector.y;
+
+    if (squareSum < smallFloatEpsilon) {
+        return glm::vec2(0.0F, 0.0F);
+    }
+
+    return vector * glm::inversesqrt(squareSum);
 }
 
 glm::vec3 MathHelpers::normalizeSafely(const glm::vec3& vector) {

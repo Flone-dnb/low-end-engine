@@ -247,7 +247,7 @@ void DynamicBodyNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
     if (bIsApplyingSimulationResults) {
-#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+#if defined(DEBUG)
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
             if (worldLocation.z < -1000.0F) {
@@ -272,4 +272,9 @@ void DynamicBodyNode::onWorldLocationRotationScaleChanged() {
 
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
     physicsManager.setBodyLocationRotation(pBody, getWorldLocation(), getWorldRotation());
+}
+
+glm::vec3 DynamicBodyNode::getGravityWhileSpawned() {
+    auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+    return physicsManager.getGravity();
 }

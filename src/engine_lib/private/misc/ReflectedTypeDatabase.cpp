@@ -28,6 +28,8 @@
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/node/physics/DynamicBodyNode.h"
 #include "game/node/physics/KinematicBodyNode.h"
+#include "game/node/physics/CharacterBodyNode.h"
+#include "game/node/physics/SimpleCharacterBodyNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -67,6 +69,8 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(CompoundCollisionNode::getTypeGuidStatic(), CompoundCollisionNode::getReflectionInfo());
     registerType(DynamicBodyNode::getTypeGuidStatic(), DynamicBodyNode::getReflectionInfo());
     registerType(KinematicBodyNode::getTypeGuidStatic(), KinematicBodyNode::getReflectionInfo());
+    registerType(CharacterBodyNode::getTypeGuidStatic(), CharacterBodyNode::getReflectionInfo());
+    registerType(SimpleCharacterBodyNode::getTypeGuidStatic(), SimpleCharacterBodyNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {
