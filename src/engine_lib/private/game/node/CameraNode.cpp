@@ -6,12 +6,25 @@
 #include "math/MathHelpers.hpp"
 #include "game/World.h"
 
+// External.
+#include "nameof.hpp"
+
 namespace {
     constexpr std::string_view sTypeGuid = "e472b11f-7914-49f8-a86e-a500e6bb749f";
 }
 
 std::string CameraNode::getTypeGuidStatic() { return sTypeGuid.data(); }
 std::string CameraNode::getTypeGuid() const { return sTypeGuid.data(); }
+
+TypeReflectionInfo CameraNode::getReflectionInfo() {
+    ReflectedVariables variables;
+
+    return TypeReflectionInfo(
+        SpatialNode::getTypeGuidStatic(),
+        NAMEOF_SHORT_TYPE(CameraNode).data(),
+        []() -> std::unique_ptr<Serializable> { return std::make_unique<CameraNode>(); },
+        std::move(variables));
+}
 
 CameraNode::CameraNode() : CameraNode("Camera Node") {}
 

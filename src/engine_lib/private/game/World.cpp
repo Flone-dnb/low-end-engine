@@ -24,7 +24,11 @@ World::~World() {
 
 World::World(GameManager* pGameManager, const std::string& sName, std::unique_ptr<Node> pRootNodeToUse)
     : sName(sName), pGameManager(pGameManager) {
-    Logger::get().info(std::format("new world \"{}\" is created", sName));
+    if (!sName.empty()) {
+        Logger::get().info(std::format("new world \"{}\" is created", sName));
+    } else {
+        Logger::get().info("new world is created");
+    }
     Logger::get().flushToDisk();
 
     pCameraManager = std::make_unique<CameraManager>(pGameManager);
@@ -52,8 +56,12 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
 }
 
 void World::destroyWorld() {
-    Logger::get().info(
-        std::format("world \"{}\" is being destroyed, despawning world's root node...", sName));
+    if (!sName.empty()) {
+        Logger::get().info(
+            std::format("world \"{}\" is being destroyed, despawning world's root node...", sName));
+    } else {
+        Logger::get().info("world is being destroyed, despawning world's root node...");
+    }
     Logger::get().flushToDisk();
 
     pGameManager->onBeforeWorldDestroyed(mtxRootNode.second.get());

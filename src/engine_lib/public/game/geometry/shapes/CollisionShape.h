@@ -257,10 +257,10 @@ public:
 
 private:
     /** Half height of the capsule. */
-    float halfHeight = 1.0F;
+    float halfHeight = 0.8F;
 
     /** Radius of the capsule. */
-    float radius = 0.25F;
+    float radius = 0.3F;
 };
 
 // ------------------------------------------------------------------------------------------------

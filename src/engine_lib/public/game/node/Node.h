@@ -616,23 +616,19 @@ protected:
     GameInstance* getGameInstanceWhileSpawned();
 
     /**
-     * Returns map of action events that this node is bound to (must be used with mutex).
+     * Returns map of action events that this node is bound to.
      * Bound callbacks will be automatically called when an action event is triggered.
      *
      * @remark Input events will be only triggered if the node is spawned.
      * @remark Input events will not be called if @ref setIsReceivingInput was not enabled.
-     * @remark Only events in GameInstance's InputManager (@ref GameInstance::getInputManager)
+     * @remark Only events from GameInstance's InputManager (@ref GameInstance::getInputManager)
      * will be considered to trigger events in the node.
      *
      * Example:
      * @code
-     * const auto iForwardActionId = 0;
-     * getActionEventBindings()[iForwardActionId] =
-     *     ActionEventCallbacks{
-     *         .onPressed = [&](KeyboardModifiers modifiers) {
-     *             moveForward(modifiers, bIsPressedDown);
-     *         }
-     *     }};
+     * const auto iJumpActionId = 0;
+     * getActionEventBindings()[iJumpActionId] =
+     *     ActionEventCallbacks{.onPressed = [&](KeyboardModifiers modifiers) { jump(); }};
      * @endcode
      *
      * @return Bound action events.
@@ -642,21 +638,20 @@ protected:
     }
 
     /**
-     * Returns map of axis events that this node is bound to (must be used with mutex).
+     * Returns map of axis events that this node is bound to.
      * Bound callbacks will be automatically called when an axis event is triggered.
      *
      * @remark Input events will be only triggered if the node is spawned.
      * @remark Input events will not be called if @ref setIsReceivingInput was not enabled.
-     * @remark Only events in GameInstance's InputManager (@ref GameInstance::getInputManager)
+     * @remark Only events from GameInstance's InputManager (@ref GameInstance::getInputManager)
      * will be considered to trigger events in the node.
      * @remark Input parameter is a value in range [-1.0f; 1.0f] that describes input.
      *
      * Example:
      * @code
      * const auto iForwardAxisEventId = 0;
-     * getAxisEventBindings()[iForwardAxisEventId] = [&](KeyboardModifiers modifiers, float input) {
-     *     moveForward(modifiers, input);
-     * };
+     * getAxisEventBindings()[iForwardAxisEventId] =
+     *     [&](KeyboardModifiers modifiers, float input) { moveForward(input); };
      * @endcode
      *
      * @return Bound action events.

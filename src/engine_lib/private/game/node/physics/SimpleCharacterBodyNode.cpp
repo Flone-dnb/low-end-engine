@@ -36,6 +36,16 @@ TypeReflectionInfo SimpleCharacterBodyNode::getReflectionInfo() {
                 return reinterpret_cast<SimpleCharacterBodyNode*>(pThis)->getJumpPower();
             }};
 
+    variables.floats[NAMEOF_MEMBER(&SimpleCharacterBodyNode::gravityMultiplier).data()] =
+        ReflectedVariableInfo<float>{
+            .setter =
+                [](Serializable* pThis, const float& newValue) {
+                    reinterpret_cast<SimpleCharacterBodyNode*>(pThis)->setGravityMultiplier(newValue);
+                },
+            .getter = [](Serializable* pThis) -> float {
+                return reinterpret_cast<SimpleCharacterBodyNode*>(pThis)->getGravityMultiplier();
+            }};
+
     return TypeReflectionInfo(
         CharacterBodyNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(SimpleCharacterBodyNode).data(),
@@ -49,13 +59,16 @@ SimpleCharacterBodyNode::SimpleCharacterBodyNode(const std::string& sNodeName)
 
 SimpleCharacterBodyNode::~SimpleCharacterBodyNode() {}
 
-void SimpleCharacterBodyNode::setMovementInput(const glm::vec2& input) { movementInput = input; }
+void SimpleCharacterBodyNode::setForwardMovementInput(float input) { movementInput.x = input; }
+void SimpleCharacterBodyNode::setRightMovementInput(float input) { movementInput.y = input; }
 
 void SimpleCharacterBodyNode::jump() { bWantsToJump = true; }
 
 void SimpleCharacterBodyNode::setMovementSpeed(float newSpeed) { movementSpeed = newSpeed; }
 
 void SimpleCharacterBodyNode::setJumpPower(float newJumpPower) { jumpPower = newJumpPower; }
+
+void SimpleCharacterBodyNode::setGravityMultiplier(float newMultiplier) { gravityMultiplier = newMultiplier; }
 
 void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
     PROFILE_FUNC
@@ -83,11 +96,11 @@ void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
     }
 
     // Apply gravity.
-    newVelocity += getGravity() * deltaTime;
+    newVelocity += getGravity() * gravityMultiplier * deltaTime;
 
     // Apply movement.
     if (groundState == GroundState::OnGround || groundState == GroundState::OnSteepGround) {
-        newVelocity += glm::vec3(movementInput.x, 0.0F, movementInput.y) * movementSpeed;
+        newVelocity += glm::vec3(movementInput.x, movementInput.y, 0.0F) * movementSpeed;
     } else {
         const auto horizontalVelocity = getLinearVelocity() - verticalVelocity;
         newVelocity += horizontalVelocity;

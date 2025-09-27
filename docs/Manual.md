@@ -284,17 +284,14 @@ You can describe input event IDs of your application in a separate file using en
 /** Stores unique IDs of input events. */
 struct GameInputEventIds {
     /** Groups action events. */
-    enum class Action : unsigned int {
-        CAPTURE_MOUSE_CURSOR = 0, //< Capture mouse cursor.
-        INCREASE_CAMERA_SPEED,    //< Increase camera's speed.
-        DECREASE_CAMERA_SPEED,    //< Decrease camera's speed.
+    enum Action : unsigned int {
+        JUMP = 0,
     };
 
     /** Groups axis events. */
-     enum class Axis : unsigned int {
-        MOVE_CAMERA_FORWARD = 0, //< Move camera forward/back.
-        MOVE_CAMERA_RIGHT,       //< Move camera right/left.
-        MOVE_CAMERA_UP,          //< Move camera up/down.
+    enum Axis : unsigned int {
+        MOVE_FORWARD = 0, //< Move forward/back.
+        MOVE_RIGHT,       //< Move right/left.
     };
 };
 ```
@@ -306,51 +303,57 @@ This file will store all input IDs that your game needs, even if you have switch
 Register your game's input events in your game instance like so:
 
 ```Cpp
-// Register action event.
+// Register action events.
 auto optionalError = getInputManager()->addActionEvent(
-    static_cast<unsigned int>(GameInputEventIds::Action::INCREASE_CAMERA_SPEED),
-    {KeyboardButton::LEFT_SHIFT}
-);
-if (optionalError.has_value()) {
-    TODO;
+    GameInputEventIds::Action::JUMP,
+    {KeyboardButton::SPACE});
+if (optionalError.has_value()) [[unlikely]] {
+    Error::showErrorAndThrowException("failed to register input event");
 }
 
-// Register axis event.
+// Register axis events.
 optionalError = getInputManager()->addAxisEvent(
-    static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_CAMERA_FORWARD),
+    GameInputEventIds::Axis::MOVE_FORWARD,
     {{KeyboardButton::W, KeyboardButton::S}},
-    {GamepadAxis::LEFT_STICK_Y}
-);
-if (optionalError.has_value()) {
-    TODO;
+    {GamepadAxis::LEFT_STICK_Y});
+if (optionalError.has_value()) [[unlikely]] {
+    Error::showErrorAndThrowException("failed to register input event");
+}
+
+optionalError = getInputManager()->addAxisEvent(
+    GameInputEventIds::Axis::MOVE_RIGHT,
+    {{KeyboardButton::D, KeyboardButton::A}},
+    {GamepadAxis::LEFT_STICK_X});
+if (optionalError.has_value()) [[unlikely]] {
+    Error::showErrorAndThrowException("failed to register input event");
 }
 ```
 
 Note
 > You can register/bind input events even when world does not exist or not created yet.
 
-At this point you will be able to trigger registered action/axis events by pressing the specified keyboard/gamepad buttons. Now we need to write functions that will react to these input events. You can create these functions in your game instance or in nodes (the approach is the same). For this example we bind to input events in constructor of our camera node class like so:
+At this point you will be able to trigger registered action/axis events by pressing the specified keyboard/gamepad buttons. Now we need to write functions that will react to these input events. You can create these functions in your game instance or in nodes (the approach is the same). For this example we bind to input events in constructor of our custom node class like so:
 
 ```Cpp
-// Bind to increase movement speed.
-getActionEventBindings()[static_cast<unsigned int>(GameInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED)] =
-    [this](KeyboardModifiers modifiers, bool bIsPressed) {
-        if (bIsPressed) {
-            currentMovementSpeedMultiplier = speedIncreaseMultiplier;
-        } else {
-            currentMovementSpeedMultiplier = 1.0F;
-        }
-    };
+MyNode::MyNode() {
+    setIsReceivingInput(true);
 
-// Bind to move forward.
-getAxisEventBindings()[static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_CAMERA_FORWARD)] =
-    [this](KeyboardModifiers modifiers, float input) {
-        lastKeyboardInputDirection.x = input; // example code
-    };
+    // Action event.
+    getActionEventBindings()[GameInputEventIds::Action::JUMP] =
+        ActionEventCallbacks{.onPressed = [&](KeyboardModifiers modifiers) { jump(); }};
+
+    // Axis events.
+    getAxisEventBindings()[GameInputEventIds::Axis::MOVE_FORWARD] =
+        [&](KeyboardModifiers modifiers, float input) { setForwardMovementInput(input); };
+    getAxisEventBindings()[GameInputEventIds::Axis::MOVE_RIGHT] =
+        [&](KeyboardModifiers modifiers, float input) { setRightMovementInput(input); };
+}
 ```
 
 Note
 > Although you can bind to registered input events in `GameInstance` it's not really recommended because input events should generally be processed in nodes such as in your character node.
+
+The code from above allows you to create "node-local" input event bindings. Other nodes can also bind to JUMP, MOVE_FORWARD and MOVE_RIGHT events but have different logic.
 
 ## Importing meshes
 

@@ -315,23 +315,19 @@ protected:
     virtual void onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) {}
 
     /**
-     * Returns map of action events that this GameInstance is bound to (must be used with mutex).
+     * Returns map of action events that this GameInstance is bound to.
      * Bound callbacks will be automatically called when an action event is triggered.
      *
      * @remark Note that nodes can also have their input event bindings and you may prefer
      * to bind to input in specific nodes instead of binding to them in GameInstance.
-     * @remark Only events in GameInstance's InputManager (GameInstance::getInputManager)
+     * @remark Only events from GameInstance's InputManager (GameInstance::getInputManager)
      * will be considered to trigger events in the node.
      *
      * Example:
      * @code
-     * const unsigned int iForwardActionId = 0;
-     * getActionEventBindings()[iForwardActionId] =
-     *     ActionEventCallbacks{
-     *         .onPressed = [&](KeyboardModifiers modifiers) {
-     *             moveForward(modifiers, bIsPressedDown);
-     *         }
-     *     }};
+     * const auto iJumpActionId = 0;
+     * getActionEventBindings()[iJumpActionId] =
+     *     ActionEventCallbacks{.onPressed = [&](KeyboardModifiers modifiers) { jump(); }};
      * @endcode
      *
      * @return Bound action events.
@@ -341,7 +337,7 @@ protected:
     }
 
     /**
-     * Returns map of axis events that this GameInstance is bound to (must be used with mutex).
+     * Returns map of axis events that this GameInstance is bound to.
      * Bound callbacks will be automatically called when an axis event is triggered.
      *
      * @remark Note that nodes can also have their input event bindings and you may prefer
@@ -353,9 +349,8 @@ protected:
      * Example:
      * @code
      * const auto iForwardAxisEventId = 0;
-     * getAxisEventBindings()[iForwardAxisEventId] = [&](KeyboardModifiers modifiers, float input) {
-     *     moveForward(modifiers, input);
-     * };
+     * getAxisEventBindings()[iForwardAxisEventId] =
+     *     [&](KeyboardModifiers modifiers, float input) { moveForward(input); };
      * @endcode
      *
      * @return Bound action events.

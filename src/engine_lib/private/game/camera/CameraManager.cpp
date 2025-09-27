@@ -53,6 +53,14 @@ void CameraManager::setActiveCamera(CameraNode* pCameraNode, bool bIsSoundListen
         Error::showErrorAndThrowException("`nullptr` is not a valid camera");
     }
 
+#if defined(ENGINE_EDITOR)
+    if (pCameraNode->getNodeName().find("editor") == std::string::npos) {
+        // In case the editor spawns some custom game node that makes some game camera active
+        // we don't want to make it the active camera because the editor's "viewport" camera should be active.
+        return;
+    }
+#endif
+
     std::scoped_lock guard(mtxActiveCamera.first, pCameraNode->getSpawnDespawnMutex());
 
     if (!pCameraNode->isSpawned()) [[unlikely]] {

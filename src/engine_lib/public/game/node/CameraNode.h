@@ -38,6 +38,13 @@ public:
     virtual std::string getTypeGuid() const override;
 
     /**
+     * Returns reflection info about this type.
+     *
+     * @return Type reflection.
+     */
+    static TypeReflectionInfo getReflectionInfo();
+
+    /**
      * Makes the camera of this node to be the primary camera and you will see what this camera sees
      * on the game window.
      *

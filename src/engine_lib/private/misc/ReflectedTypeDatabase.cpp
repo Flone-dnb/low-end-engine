@@ -10,6 +10,7 @@
 #include "game/node/Sound3dNode.h"
 #include "game/node/SpatialNode.h"
 #include "game/node/MeshNode.h"
+#include "game/node/CameraNode.h"
 #include "game/node/SkeletonNode.h"
 #include "game/node/SkeletalMeshNode.h"
 #include "game/node/light/DirectionalLightNode.h"
@@ -38,6 +39,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(Node::getTypeGuidStatic(), Node::getReflectionInfo());
     registerType(Sound2dNode::getTypeGuidStatic(), Sound2dNode::getReflectionInfo());
     registerType(SpatialNode::getTypeGuidStatic(), SpatialNode::getReflectionInfo());
+    registerType(CameraNode::getTypeGuidStatic(), CameraNode::getReflectionInfo());
     registerType(Sound3dNode::getTypeGuidStatic(), Sound3dNode::getReflectionInfo());
     registerType(MeshNode::getTypeGuidStatic(), MeshNode::getReflectionInfo());
     registerType(SkeletalMeshNode::getTypeGuidStatic(), SkeletalMeshNode::getReflectionInfo());

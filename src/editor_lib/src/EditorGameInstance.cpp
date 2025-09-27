@@ -64,10 +64,13 @@ void EditorGameInstance::onGameStarted() {
     registerEditorInputEvents();
 
     // Create editor's world.
-    createWorld([this](Node* pRootNode) {
-        editorWorldNodes.pRoot = pRootNode;
-        attachEditorNodes(pRootNode);
-    });
+    createWorld(
+        [this](Node* pRootNode) {
+            editorWorldNodes.pRoot = pRootNode;
+            attachEditorNodes(pRootNode);
+        },
+        true,
+        "editor world");
 }
 
 void EditorGameInstance::onGamepadConnected(std::string_view sGamepadName) {
@@ -118,7 +121,8 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
         return;
     }
 
-    if (modifiers.isControlPressed() && key == KeyboardButton::S) {
+    // Checking if not moving the camera by checking the cursor visibility.
+    if (getWindow()->isCursorVisible() && modifiers.isControlPressed() && key == KeyboardButton::S) {
         // Save node tree.
 
         if (!lastOpenedNodeTree.has_value()) {
@@ -570,7 +574,8 @@ void EditorGameInstance::registerEditorInputEvents() {
 
 void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     // Spawn some camera to view editor's UI.
-    const auto pCamera = pRootNode->addChildNode(std::make_unique<CameraNode>());
+    const auto pCamera = pRootNode->addChildNode(std::make_unique<CameraNode>(
+        "editor UI camera")); // name must contain "editor" to make it active in the camera manager
     pCamera->makeActive(false);
 
     editorWorldNodes.pContextMenu = pRootNode->addChildNode(std::make_unique<ContextMenuNode>());
@@ -658,8 +663,9 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     }
 
     // Viewport camera.
-    gameWorldNodes.pViewportCamera = pRootNode->addChildNode(std::make_unique<EditorCameraNode>(
-        std::format("{}: camera", EditorConstants::getHiddenNodeNamePrefix())));
+    gameWorldNodes.pViewportCamera = pRootNode->addChildNode(std::make_unique<EditorCameraNode>(std::format(
+        "{}: editor viewport camera", // name must contain "editor" to make it active in the camera manager
+        EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pViewportCamera->setSerialize(false);
     gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
     gameWorldNodes.pViewportCamera->makeActive();

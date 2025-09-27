@@ -59,6 +59,13 @@ public:
     void setJumpPower(float newJumpPower);
 
     /**
+     * Sets multiplier for gravity in range [0.0F; +inf].
+     * 
+     * @param newMultiplier New multiplier.
+     */
+    void setGravityMultiplier(float newMultiplier);
+
+    /**
      * Returns movement speed.
      * 
      * @return Speed.
@@ -71,6 +78,13 @@ public:
      * @return Jump power.
      */
     float getJumpPower() const { return jumpPower; }
+
+    /**
+     * Returns multiplier for gravity in range [0.0F; +inf].
+     * 
+     * @return Multiplier.
+     */
+    float getGravityMultiplier() const { return gravityMultiplier; }
 
 protected:
     /**
@@ -86,12 +100,18 @@ protected:
     virtual void onBeforePhysicsUpdate(float deltaTime) override;
 
     /**
-     * Sets the current input for movement.
-     * Forward movement in the X component in range [1.0F; -1.0F] and right movement in the Y component.
+     * Sets the current input for moving forward/back in range [1.0F; -1.0F].
      * 
      * @param input Current input.
      */
-    void setMovementInput(const glm::vec2& input);
+    void setForwardMovementInput(float input);
+
+    /**
+     * Sets the current input for moving right/left in range [1.0F; -1.0F].
+     *
+     * @param input Current input.
+     */
+    void setRightMovementInput(float input);
 
     /** Makes the character jump on the next physics update. */
     void jump();
@@ -107,7 +127,10 @@ private:
     float movementSpeed = 5.0F;
 
     /** The bigger this value to higher the jump. */
-    float jumpPower = 3.0F;
+    float jumpPower = 8.0F;
+
+    /** Multiplier for gravity. */
+    float gravityMultiplier = 2.0F;
 
     /** `true` if @ref jump was called. */
     bool bWantsToJump = false;
