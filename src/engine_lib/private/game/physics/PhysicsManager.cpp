@@ -179,7 +179,8 @@ PhysicsManager::~PhysicsManager() {
     }
 
     if (!pCharVsCharCollision->mCharacters.empty()) [[unlikely]] {
-        Error::showErrorAndThrowException("physics manager is being destroyed but there are still some characters registered");
+        Error::showErrorAndThrowException(
+            "physics manager is being destroyed but there are still some characters registered");
     }
 
     JPH::UnregisterTypes();
@@ -246,6 +247,17 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
         JPH::BodyManager::DrawSettings drawSettings;
         pPhysicsSystem->DrawBodies(drawSettings, pPhysicsDebugDrawer.get());
+
+        // Character bodies must be drawn explicitly.
+        for (const auto& pCharacterBody : characterBodies) {
+            pPhysicsDebugDrawer->DrawCapsule(
+                pCharacterBody->pCharacterBody->GetCenterOfMassTransform(),
+                pCharacterBody->pCollisionShape->getHalfHeight(),
+                pCharacterBody->pCollisionShape->getRadius(),
+                JPH::Color::sGrey,
+                JPH::DebugRenderer::ECastShadow::Off,
+                JPH::DebugRenderer::EDrawMode::Solid);
+        }
 
         pPhysicsDebugDrawer->submitDrawData();
     }

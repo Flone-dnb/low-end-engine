@@ -118,7 +118,8 @@ JPH::Ref<JPH::Shape> CharacterBodyNode::createCharacterShape() {
 
     // Adjust to have bottom on (0, 0, 0).
     shapeResult = JPH::RotatedTranslatedShapeSettings(
-                      convertPosDirToJolt(glm::vec3(0.0F, 0.0F, pCollisionShape->getHalfHeight())),
+                      convertPosDirToJolt(glm::vec3(
+                          0.0F, 0.0F, pCollisionShape->getHalfHeight() + pCollisionShape->getRadius())),
                       JPH::Quat::sIdentity(),
                       shapeResult.Get())
                       .Create();
@@ -178,7 +179,8 @@ void CharacterBodyNode::updateCharacterPosition(
 
     // Prepare to update the position.
     JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
-    updateSettings.mStickToFloorStepDown = -pCharacterBody->GetUp() * static_cast<float>(glm::vec3(0.0F, 0.0F, -0.25F).length());
+    updateSettings.mStickToFloorStepDown =
+        -pCharacterBody->GetUp() * static_cast<float>(glm::vec3(0.0F, 0.0F, -0.25F).length());
     updateSettings.mWalkStairsStepUp =
         pCharacterBody->GetUp() * static_cast<float>(glm::vec3(0.0F, 0.0F, maxStepHeight).length());
 
