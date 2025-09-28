@@ -13,9 +13,6 @@
 #include "misc/Error.h"
 #include "misc/MemoryUsage.hpp"
 
-// External.
-#include "hwinfo/hwinfo.h"
-
 namespace {
     constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0F, 0.96F);
     constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0F, 1.0F - consoleScreenPos.y);
@@ -56,7 +53,8 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
         return;
     }
 
-    DebugDrawer::get().drawScreenRect(consoleScreenPos, consoleScreenSize);
+    // Draw background.
+    DebugDrawer::get().drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
 
     if (sCurrentInput.empty()) {
         // Prepare stats text.
@@ -65,12 +63,9 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
             pRenderer->getRenderStatistics().getFramesPerSecond(),
             pRenderer->getFpsLimit());
 
-        hwinfo::Memory memory;
-        const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;
-        const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024;
-        const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
-        const auto ratio = static_cast<float>(iRamUsedMb) / static_cast<float>(iRamTotalMb);
-        const auto iAppRamMb = getCurrentRSS() / 1024 / 1024;
+        const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
+        const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
+        const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
 
         sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
 #if defined(ENGINE_ASAN_ENABLED)

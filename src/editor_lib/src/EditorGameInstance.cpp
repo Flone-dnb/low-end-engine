@@ -39,7 +39,6 @@
 #endif
 
 // External.
-#include "hwinfo/hwinfo.h"
 #include "utf/utf.hpp"
 #include "glad/glad.h"
 
@@ -290,12 +289,10 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
         std::string sStatsText;
 
         // RAM.
-        hwinfo::Memory memory;
-        const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;
-        const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024;
-        const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
+        const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
+        const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
         const auto ratio = static_cast<float>(iRamUsedMb) / static_cast<float>(iRamTotalMb);
-        const auto iAppRamMb = getCurrentRSS() / 1024 / 1024;
+        const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
 
         sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
 #if defined(ENGINE_ASAN_ENABLED)

@@ -6,9 +6,9 @@
 
 // Custom.
 #include "io/Logger.h"
+#include "misc/MemoryUsage.hpp"
 
 // External.
-#include "hwinfo/hwinfo.h"
 #include "SDL_messagebox.h"
 #include "glad/glad.h"
 #if defined(WIN32)
@@ -47,12 +47,11 @@ void checkLastGlError(const std::source_location location) {
 
 Error::Error(std::string_view sMessage, const std::source_location location) {
     // Mark RAM usage.
-    hwinfo::Memory memory;
-    const auto iRamTotalMb = memory.total_Bytes() / 1024 / 1024;
-    const auto iRamFreeMb = memory.available_Bytes() / 1024 / 1024;
-    const auto iRamUsedMb = iRamTotalMb - iRamFreeMb;
+    const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
+    const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
+    const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
 
-    sRamUsageString = std::format("\n\nRAM (MB): {}/{}\n", iRamUsedMb, iRamTotalMb);
+    sRamUsageString = std::format("\n\nRAM (MB): {} ({}/{})\n", iAppRamMb, iRamUsedMb, iRamTotalMb);
     this->sMessage = sMessage;
 
     stack.push_back(sourceLocationToInfo(location));
