@@ -94,7 +94,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderP
     return pWindow;
 }
 
-void Window::setCursorVisibility(bool bIsVisible) {
+void Window::setIsMouseCursorVisible(bool bIsVisible) {
     if (bIsVisible == bIsCursorVisible) {
         return;
     }
@@ -256,7 +256,7 @@ SDL_Window* Window::getSdlWindow() const { return pSdlWindow; }
 
 GameManager* Window::getGameManager() const { return pGameManager.get(); }
 
-bool Window::isCursorVisible() const { return bIsCursorVisible; }
+bool Window::isMouseCursorVisible() const { return bIsCursorVisible; }
 
 bool Window::isGamepadConnected() const { return pConnectedGamepad != nullptr; }
 

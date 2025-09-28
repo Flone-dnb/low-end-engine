@@ -121,7 +121,7 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
     }
 
     // Checking if not moving the camera by checking the cursor visibility.
-    if (getWindow()->isCursorVisible() && modifiers.isControlPressed() && key == KeyboardButton::S) {
+    if (getWindow()->isMouseCursorVisible() && modifiers.isControlPressed() && key == KeyboardButton::S) {
         // Save node tree.
 
         if (!lastOpenedNodeTree.has_value()) {
@@ -149,7 +149,7 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
         return;
     }
 
-    if (gameWorldNodes.pGizmoNode != nullptr && getWindow()->isCursorVisible() &&
+    if (gameWorldNodes.pGizmoNode != nullptr && getWindow()->isMouseCursorVisible() &&
         (key == KeyboardButton::W || key == KeyboardButton::E || key == KeyboardButton::R) &&
         !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasFocusedNode() &&
         !editorWorldNodes.pRoot->getWorldWhileSpawned()->getUiNodeManager().hasModalUiNodeTree()) {
@@ -496,7 +496,7 @@ void EditorGameInstance::registerEditorInputEvents() {
                     if (!optCursorInGameViewport.has_value()) {
                         return;
                     }
-                    getWindow()->setCursorVisibility(false);
+                    getWindow()->setIsMouseCursorVisible(false);
                     gameWorldNodes.pViewportCamera->setIsMouseCaptured(true);
                 },
             .onReleased =
@@ -505,7 +505,7 @@ void EditorGameInstance::registerEditorInputEvents() {
                         return;
                     }
 
-                    getWindow()->setCursorVisibility(true);
+                    getWindow()->setIsMouseCursorVisible(true);
                     gameWorldNodes.pViewportCamera->setIsMouseCaptured(false);
                 }};
     }

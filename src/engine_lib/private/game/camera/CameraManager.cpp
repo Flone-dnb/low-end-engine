@@ -91,7 +91,7 @@ std::optional<glm::vec2> CameraManager::getCursorPosOnViewport() {
         return {};
     }
 
-    if (!pWindow->isCursorVisible()) {
+    if (!pWindow->isMouseCursorVisible()) {
         return {};
     }
 

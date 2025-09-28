@@ -126,7 +126,7 @@ public:
      * @param bIsVisible 'true' shows cursor (normal behavior),
      * 'false' will hide the cursor and lock it to the window.
      */
-    void setCursorVisibility(bool bIsVisible);
+    void setIsMouseCursorVisible(bool bIsVisible);
 
     /**
      * Starts the window message queue, rendering and game logic.
@@ -176,11 +176,11 @@ public:
     GameManager* getGameManager() const;
 
     /**
-     * Tells if the cursor is currently captured or not (see @ref setCursorVisibility).
+     * Tells if the cursor is currently captured or not.
      *
      * @return Cursor visibility.
      */
-    bool isCursorVisible() const;
+    bool isMouseCursorVisible() const;
 
     /**
      * Tells if a gamepad is currently connected or not.

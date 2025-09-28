@@ -477,7 +477,7 @@ void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, 
             triggerActionEvents(button, modifiers, bIsPressedDown);
         }
 
-        if (getWindow()->isCursorVisible()) {
+        if (getWindow()->isMouseCursorVisible()) {
             // Notify UI.
             pWorld->getUiNodeManager().onMouseInput(button, modifiers, bIsPressedDown);
         }
@@ -505,7 +505,7 @@ void GameManager::onMouseMove(int iXOffset, int iYOffset) {
             }
         }
 
-        if (getWindow()->isCursorVisible()) {
+        if (getWindow()->isMouseCursorVisible()) {
             // Notify UI.
             pWorld->getUiNodeManager().onMouseMove(iXOffset, iYOffset);
         }
@@ -530,7 +530,7 @@ void GameManager::onMouseScrollMove(int iOffset) {
             }
         }
 
-        if (getWindow()->isCursorVisible()) {
+        if (getWindow()->isMouseCursorVisible()) {
             // Notify UI.
             pWorld->getUiNodeManager().onMouseScrollMove(iOffset);
         }

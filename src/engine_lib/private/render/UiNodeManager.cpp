@@ -612,7 +612,7 @@ void UiNodeManager::processMouseHoverOnNodes() {
     const auto cursorPos = *optCursorPos;
 
     const auto bHaveModalNodes = !mtxData.second.modalInputReceivingNodes.empty();
-    const auto bIsCursorVisible = pRenderer->getWindow()->isCursorVisible();
+    const auto bIsCursorVisible = pRenderer->getWindow()->isMouseCursorVisible();
 
     std::vector<UiNode*> vNodesToCallOnMouseLeft;
 
