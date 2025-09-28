@@ -325,16 +325,6 @@ add_subdirectory(${RELATIVE_EXT_PATH}/freetype ${DEPENDENCY_BUILD_DIR_NAME}/free
 target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE freetype)
 set_target_properties(freetype PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
-# Add hwinfo.
-message(STATUS "${PROJECT_NAME}: adding external dependency \"hwinfo\"...")
-set(HWINFO_SHARED OFF CACHE BOOL "" FORCE)
-set(HWINFO_STATIC ON CACHE BOOL "" FORCE)
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-add_subdirectory(${RELATIVE_EXT_PATH}/hwinfo ${DEPENDENCY_BUILD_DIR_NAME}/hwinfo SYSTEM)
-target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE lfreist-hwinfo::hwinfo)
-set_target_properties(hwinfo PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-
 # Add tinygltf.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"tinygltf\"...")
 set(TINYGLTF_HEADER_ONLY ON CACHE BOOL "" FORCE)
