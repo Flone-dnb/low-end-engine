@@ -128,6 +128,15 @@ public:
 
 private:
     /**
+     * Duplicates the specified node with all child nodes.
+     *
+     * @param pNodeToDuplicate Node to duplicate.
+     *
+     * @return Duplicated node.
+     */
+    std::unique_ptr<Node> duplicateNodeWithChildren(Node* pNodeToDuplicate);
+
+    /**
      * Adds a node to be displayed.
      *
      * @param pNode Node to display.

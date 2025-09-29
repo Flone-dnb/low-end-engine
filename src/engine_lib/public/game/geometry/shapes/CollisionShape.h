@@ -19,6 +19,10 @@ public:
     CollisionShape() = default;
     virtual ~CollisionShape() = default;
 
+    // Don't copy `onChanged` callback.
+    CollisionShape(const CollisionShape&) {}
+    CollisionShape& operator=(const CollisionShape&) { return *this; }
+
     /**
      * Sets a callback that will be triggered after some property of the shape changed.
      *
@@ -58,7 +62,7 @@ public:
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f);
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) const;
 
 protected:
     /** Must be called by derived classes after they change some property of the shape. */
@@ -121,7 +125,7 @@ public:
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) const override;
 
 private:
     /** Half the size of the box. */
@@ -180,7 +184,7 @@ public:
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) const override;
 
 private:
     /** Radius of the sphere. */
@@ -253,7 +257,7 @@ public:
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) const override;
 
 private:
     /** Half height of the capsule. */
@@ -329,7 +333,7 @@ public:
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) const override;
 
 private:
     /** Half height of the cylinder. */
@@ -391,7 +395,7 @@ public:
      *
      * @return Shape.
      */
-    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) override;
+    virtual JPH::Result<JPH::Ref<JPH::Shape>> createShape(float density = 1000.0f) const override;
 
 private:
     /** Path (relative to the `res` directory) to the file that stores convex shape geometry. */

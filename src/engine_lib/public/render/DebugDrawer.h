@@ -100,7 +100,7 @@ public:
     void drawCube(
         float size,
         const glm::vec3& worldPosition,
-        float timeInSec = 0.0F,
+        float timeInSec,
         const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
 
     /**
@@ -115,7 +115,7 @@ public:
     void drawSphere(
         float radius,
         const glm::vec3& worldPosition,
-        float timeInSec = 0.0F,
+        float timeInSec,
         const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
 
     /**
@@ -129,8 +129,8 @@ public:
      */
     void drawMesh(
         const std::vector<glm::vec3>& vTrianglePositions,
-        const glm::mat4x4& worldMatrix = glm::identity<glm::mat4x4>(),
-        float timeInSec = 0.0F,
+        const glm::mat4x4& worldMatrix,
+        float timeInSec,
         const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
 
     /**
@@ -144,8 +144,8 @@ public:
      */
     void drawLines(
         const std::vector<glm::vec3>& vLines,
-        const glm::mat4x4& worldMatrix = glm::identity<glm::mat4x4>(),
-        float timeInSec = 0.0F,
+        const glm::mat4x4& worldMatrix,
+        float timeInSec,
         const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
 
     /**
@@ -163,7 +163,7 @@ public:
      */
     void drawText(
         const std::string& sText,
-        float timeInSec = 3.0F,
+        float timeInSec,
         const glm::vec3& color = glm::vec3(1.0F, 1.0F, 1.0F),
         const std::optional<glm::vec2>& optForcePosition = {},
         float textHeight = 0.0325F);
@@ -180,8 +180,8 @@ public:
     void drawScreenRect(
         const glm::vec2& screenPos,
         const glm::vec2& screenSize,
-        const glm::vec3& color = glm::vec3(0.25F, 0.25F, 0.25F),
-        float timeInSec = 0.0F);
+        const glm::vec3& color,
+        float timeInSec);
 
 private:
     DebugDrawer();

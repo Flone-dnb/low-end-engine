@@ -12,6 +12,7 @@ namespace JPH {
     class PhysicsSystem;
     class JobSystemThreadPool;
     class TempAllocatorImpl;
+    class TempAllocator;
     class Body;
     class CharacterVsCharacterCollisionSimple;
 }
@@ -24,6 +25,7 @@ class DynamicBodyNode;
 class KinematicBodyNode;
 class CompoundCollisionNode;
 class CharacterBodyNode;
+class CapsuleCollisionShape;
 
 #if defined(DEBUG)
 class PhysicsDebugDrawer;
@@ -49,7 +51,9 @@ public:
     void setEnableDebugRendering(bool bEnable);
 #endif
 
-    /** Optimizes broad phase if added a lot of bodies before a physics update. Don't call this every frame.
+    /**
+     * Optimizes broad phase if added a lot of bodies before a physics update.
+     * Don't call this every frame.
      */
     void optimizeBroadPhase();
 
@@ -186,17 +190,24 @@ public:
 
     /**
      * Returns gravity.
-     * 
+     *
      * @return Gravity.
      */
     glm::vec3 getGravity();
 
     /**
      * Returns internal physics system.
-     * 
+     *
      * @return Physics system.
      */
     JPH::PhysicsSystem& getPhysicsSystem();
+
+    /**
+     * Returns internal temp allocator.
+     *
+     * @return Temp allocator.
+     */
+    JPH::TempAllocator& getTempAllocator();
 
 private:
     PhysicsManager();
@@ -243,9 +254,6 @@ private:
     /** Debug rendering of the physics. */
     std::unique_ptr<PhysicsDebugDrawer> pPhysicsDebugDrawer;
 #endif
-
-    /** Time in seconds that has passed since the last time we updated Jolt physics. */
-    float timeSinceLastJoltUpdate = 0.0F;
 
 #if defined(DEBUG)
     /** Enables/disabled rendering of the physics bodies. */

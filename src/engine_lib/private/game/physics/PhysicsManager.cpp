@@ -192,54 +192,56 @@ PhysicsManager::~PhysicsManager() {
 void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     PROFILE_FUNC
 
-    constexpr float JOLT_UPDATE_DELTA_TIME = 1.0F / 60.0F;
+    // Ideally we should separate rendering and physics, have 60 tickrate for physics
+    // and do physics interpolation in case the FPS is higher than 60 but because
+    // physics interpolation is a pain in the back I go the stupid way:
 
-    // Simulate Jolt.
-    bool bUpdateHappened = false;
-    timeSinceLastJoltUpdate += timeSincePrevFrameInSec;
-    while (timeSinceLastJoltUpdate >= JOLT_UPDATE_DELTA_TIME) {
-        timeSinceLastJoltUpdate -= JOLT_UPDATE_DELTA_TIME;
+    constexpr float MIN_UPDATE_TIME = 1.0F / 50.0F;
+
+    float deltaTimeLeftToSimulate = timeSincePrevFrameInSec;
+    do {
+        PROFILE_SCOPE("physics tick")
+
+        const float deltaTime = std::min(MIN_UPDATE_TIME, deltaTimeLeftToSimulate);
+        deltaTimeLeftToSimulate -= deltaTime;
 
 #if !defined(ENGINE_EDITOR)
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - DynamicBodyNode")
             for (const auto& pDynamicNode : dynamicBodies) {
-                pDynamicNode->onBeforePhysicsUpdate(JOLT_UPDATE_DELTA_TIME);
+                pDynamicNode->onBeforePhysicsUpdate(deltaTime);
             }
         }
 
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - CharacterBodyNode")
             for (const auto& pCharacterBody : characterBodies) {
-                pCharacterBody->onBeforePhysicsUpdate(JOLT_UPDATE_DELTA_TIME);
-                pCharacterBody->updateCharacterPosition(
-                    *pPhysicsSystem, *pTempAllocator, JOLT_UPDATE_DELTA_TIME);
+                pCharacterBody->onBeforePhysicsUpdate(deltaTime);
+                pCharacterBody->updateCharacterPosition(*pPhysicsSystem, *pTempAllocator, deltaTime);
             }
         }
 #endif
 
         {
             PROFILE_SCOPE("JPH::PhysicsSystem::Update")
-            pPhysicsSystem->Update(JOLT_UPDATE_DELTA_TIME, 1, pTempAllocator.get(), pJobSystem.get());
+            pPhysicsSystem->Update(deltaTime, 1, pTempAllocator.get(), pJobSystem.get());
         }
 
-        bUpdateHappened = true;
-    };
+        // Update nodes according to simulation results.
+        if (!dynamicBodies.empty()) {
+            PROFILE_SCOPE("update dynamic bodies after simulation")
 
-    // Update nodes according to simulation results.
-    if (bUpdateHappened && !dynamicBodies.empty()) {
-        PROFILE_SCOPE("update dynamic bodies after simulation")
+            for (const auto& pDynamicBodyNode : dynamicBodies) {
+                JPH::Vec3 position{};
+                JPH::Quat rotation{};
+                pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
+                    pDynamicBodyNode->pBody->GetID(), position, rotation);
 
-        for (const auto& pDynamicBodyNode : dynamicBodies) {
-            JPH::Vec3 position{};
-            JPH::Quat rotation{};
-            pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
-                pDynamicBodyNode->pBody->GetID(), position, rotation);
-
-            pDynamicBodyNode->setPhysicsSimulationResults(
-                convertPosDirFromJolt(position), convertRotationFromJolt(rotation));
+                pDynamicBodyNode->setPhysicsSimulationResults(
+                    convertPosDirFromJolt(position), convertRotationFromJolt(rotation));
+            }
         }
-    }
+    } while (deltaTimeLeftToSimulate > 0.001F);
 
 #if defined(DEBUG)
     if (bEnableDebugRendering) {
@@ -438,17 +440,6 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
     vShapes.reserve(mtxChildNodes.second.size());
     JPH::StaticCompoundShapeSettings compoundSettings;
     for (const auto& pChildNode : mtxChildNodes.second) {
-#if defined(DEBUG)
-        if (!pChildNode->getChildNodes().second.empty()) [[unlikely]] {
-            Logger::get().warn(std::format(
-                "child node \"{}\" of a compound node \"{}\" has child nodes, these child nodes will not be "
-                "grouped into a compound, only direct child nodes of a compound node will be grouped into a "
-                "compound",
-                pChildNode->getNodeName(),
-                pNode->getNodeName()));
-        }
-#endif
-
         // Cast type.
         const auto pCollisionNode = dynamic_cast<CollisionNode*>(pChildNode);
         if (pCollisionNode == nullptr) [[unlikely]] {
@@ -542,7 +533,7 @@ void PhysicsManager::createBodyForNode(CharacterBodyNode* pNode) {
     // Prepare settings.
     JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
     settings->mMaxSlopeAngle = glm::radians(pNode->getMaxWalkSlopeAngle());
-    settings->mShape = pNode->createCharacterShape();
+    settings->mShape = CharacterBodyNode::createAdjustedJoltShapeForCharacter(pNode->getBodyShape());
     settings->mSupportingVolume = JPH::Plane(
         convertPosDirToJolt(glm::vec3(Globals::WorldDirection::up)), -pNode->pCollisionShape->getRadius());
     settings->mInnerBodyLayer = static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING);
@@ -636,3 +627,5 @@ void PhysicsManager::optimizeBroadPhase() {
 glm::vec3 PhysicsManager::getGravity() { return convertPosDirFromJolt(pPhysicsSystem->GetGravity()); }
 
 JPH::PhysicsSystem& PhysicsManager::getPhysicsSystem() { return *pPhysicsSystem; }
+
+JPH::TempAllocator& PhysicsManager::getTempAllocator() { return *pTempAllocator; }

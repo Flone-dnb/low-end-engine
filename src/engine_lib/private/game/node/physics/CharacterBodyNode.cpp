@@ -103,31 +103,24 @@ void CharacterBodyNode::recreateBodyIfSpawned() {
     createCharacterBody();
 }
 
-JPH::Ref<JPH::Shape> CharacterBodyNode::createCharacterShape() {
-    if (pCollisionShape == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException("expected the shape to be valid");
-    }
-
-    auto shapeResult = pCollisionShape->createShape();
+JPH::Ref<JPH::Shape>
+CharacterBodyNode::createAdjustedJoltShapeForCharacter(const CapsuleCollisionShape& shape) {
+    // Create shape.
+    auto shapeResult = shape.createShape();
     if (!shapeResult.IsValid()) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "failed to create a physics shape for the node \"{}\", error: {}",
-            getNodeName(),
-            shapeResult.GetError().data()));
+        Error::showErrorAndThrowException(
+            std::format("failed to create a physics shape, error: {}", shapeResult.GetError().data()));
     }
 
     // Adjust to have bottom on (0, 0, 0).
     shapeResult = JPH::RotatedTranslatedShapeSettings(
-                      convertPosDirToJolt(glm::vec3(
-                          0.0F, 0.0F, pCollisionShape->getHalfHeight() + pCollisionShape->getRadius())),
+                      convertPosDirToJolt(glm::vec3(0.0F, 0.0F, shape.getHalfHeight() + shape.getRadius())),
                       JPH::Quat::sIdentity(),
                       shapeResult.Get())
                       .Create();
     if (!shapeResult.IsValid()) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "failed to create a physics shape for the node \"{}\", error: {}",
-            getNodeName(),
-            shapeResult.GetError().data()));
+        Error::showErrorAndThrowException(
+            std::format("failed to create a physics shape, error: {}", shapeResult.GetError().data()));
     }
 
     return shapeResult.Get();
@@ -146,6 +139,9 @@ void CharacterBodyNode::createCharacterBody() {
     // Create body.
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
     physicsManager.createBodyForNode(this);
+
+    // Character's up should always be world up.
+    pCharacterBody->SetUp(convertPosDirToJolt(Globals::WorldDirection::up));
 }
 
 void CharacterBodyNode::destroyCharacterBody() {
@@ -171,18 +167,61 @@ void CharacterBodyNode::onDespawning() {
     destroyCharacterBody();
 }
 
-void CharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) { pCharacterBody->UpdateGroundVelocity(); }
+void CharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
+    pCharacterBody->UpdateGroundVelocity();
+
+#if defined(DEBUG)
+    bIsInPhysicsTick = true; // physics engine then calls update in this node
+#endif
+}
+
+bool CharacterBodyNode::trySetNewShape(CapsuleCollisionShape& newShape) {
+    if (pCharacterBody == nullptr){
+        pCollisionShape->setHalfHeight(newShape.getHalfHeight());
+        pCollisionShape->setRadius(newShape.getRadius());
+        return true;
+    }
+
+    const JPH::Ref<JPH::Shape> pNewShape = createAdjustedJoltShapeForCharacter(newShape);
+    auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+    auto& physicsSystem = physicsManager.getPhysicsSystem();
+
+    // Prepare body filter.
+    std::unique_ptr<JPH::BodyFilter> pBodyFilter = std::make_unique<JPH::BodyFilter>();
+    if (pCharacterBody->IsSupported()) {
+        pBodyFilter = std::make_unique<JPH::IgnoreSingleBodyFilter>(pCharacterBody->GetGroundBodyID());
+    }
+
+    const auto bSuccess = pCharacterBody->SetShape(
+        pNewShape,
+        1.5F * physicsSystem.GetPhysicsSettings().mPenetrationSlop,
+        physicsSystem.GetDefaultBroadPhaseLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING)),
+        physicsSystem.GetDefaultLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING)),
+        *pBodyFilter,
+        {},
+        physicsManager.getTempAllocator());
+
+    if (bSuccess)
+    {
+        pCollisionShape->setHalfHeight(newShape.getHalfHeight());
+        pCollisionShape->setRadius(newShape.getRadius());
+    }
+
+    return bSuccess;
+}
 
 void CharacterBodyNode::updateCharacterPosition(
     JPH::PhysicsSystem& physicsSystem, JPH::TempAllocator& tempAllocator, float deltaTime) {
     PROFILE_FUNC
 
+#if defined(DEBUG)
+    bIsInPhysicsTick = false;
+#endif
+
     // Prepare to update the position.
     JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
-    updateSettings.mStickToFloorStepDown =
-        -pCharacterBody->GetUp() * static_cast<float>(glm::vec3(0.0F, 0.0F, -0.25F).length());
-    updateSettings.mWalkStairsStepUp =
-        pCharacterBody->GetUp() * static_cast<float>(glm::vec3(0.0F, 0.0F, maxStepHeight).length());
+    updateSettings.mStickToFloorStepDown = -pCharacterBody->GetUp() * 0.2F;
+    updateSettings.mWalkStairsStepUp = pCharacterBody->GetUp() * maxStepHeight;
 
     // Update position.
     pCharacterBody->ExtendedUpdate(
@@ -211,7 +250,6 @@ void CharacterBodyNode::onWorldLocationRotationScaleChanged() {
 
     if (!bIsApplyingUpdateResults) {
         pCharacterBody->SetPosition(convertPosDirToJolt(getWorldLocation()));
-        pCharacterBody->SetUp(convertPosDirToJolt(getWorldUpDirection()));
         pCharacterBody->SetRotation(convertRotationToJolt(getWorldRotation()));
     }
 
@@ -237,6 +275,13 @@ void CharacterBodyNode::setLinearVelocity(const glm::vec3& velocity) {
         Error::showErrorAndThrowException(
             std::format("expected the body to be valid on node \"{}\"", getNodeName()));
     }
+
+#if defined(DEBUG)
+    if (!bIsInPhysicsTick) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "this and similar physics functions should be called in onBeforePhysicsUpdate");
+    }
+#endif
 
     pCharacterBody->SetLinearVelocity(convertPosDirToJolt(velocity));
 }

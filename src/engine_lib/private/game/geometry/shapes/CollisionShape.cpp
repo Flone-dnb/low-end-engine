@@ -22,6 +22,8 @@ namespace {
     constexpr std::string_view sCapsuleCollisionShapeTypeGuid = "5383bd42-6857-45e2-a45e-8bc799abc387";
     constexpr std::string_view sCylinderCollisionShapeTypeGuid = "a9dca02e-4283-4d62-bed7-85de22c9af7e";
     constexpr std::string_view sConvexCollisionShapeTypeGuid = "f7961b43-393a-43df-bf8c-07d5bf0148a0";
+
+    constexpr float minSize = 0.1F;
 }
 
 std::string CollisionShape::getTypeGuidStatic() { return sCollisionShapeTypeGuid.data(); }
@@ -39,7 +41,7 @@ TypeReflectionInfo CollisionShape::getReflectionInfo() {
 
 void CollisionShape::setOnChanged(const std::function<void()>& callback) { onChanged = callback; }
 
-JPH::Result<JPH::Ref<JPH::Shape>> CollisionShape::createShape(float density) {
+JPH::Result<JPH::Ref<JPH::Shape>> CollisionShape::createShape(float density) const {
     Error::showErrorAndThrowException("derived type not implemented this method");
 }
 
@@ -73,11 +75,11 @@ TypeReflectionInfo BoxCollisionShape::getReflectionInfo() {
 }
 
 void BoxCollisionShape::setHalfExtent(const glm::vec3& size) {
-    halfExtent = glm::max(size, glm::vec3(0.01F));
+    halfExtent = glm::max(size, glm::vec3(minSize));
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> BoxCollisionShape::createShape(float density) {
+JPH::Result<JPH::Ref<JPH::Shape>> BoxCollisionShape::createShape(float density) const {
     JPH::BoxShapeSettings settings(convertPosDirToJolt(halfExtent));
     settings.SetDensity(density);
     return settings.Create();
@@ -107,11 +109,11 @@ TypeReflectionInfo SphereCollisionShape::getReflectionInfo() {
 }
 
 void SphereCollisionShape::setRadius(float size) {
-    radius = std::max(size, 0.01F);
+    radius = std::max(size, minSize);
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> SphereCollisionShape::createShape(float density) {
+JPH::Result<JPH::Ref<JPH::Shape>> SphereCollisionShape::createShape(float density) const {
     JPH::SphereShapeSettings settings(radius);
     settings.SetDensity(density);
     return settings.Create();
@@ -150,15 +152,15 @@ TypeReflectionInfo CapsuleCollisionShape::getReflectionInfo() {
 }
 
 void CapsuleCollisionShape::setRadius(float size) {
-    radius = std::max(size, 0.01F);
+    radius = std::max(size, minSize);
     propertyChanged();
 }
 void CapsuleCollisionShape::setHalfHeight(float size) {
-    halfHeight = std::max(size, 0.01F);
+    halfHeight = std::max(size, minSize);
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> CapsuleCollisionShape::createShape(float density) {
+JPH::Result<JPH::Ref<JPH::Shape>> CapsuleCollisionShape::createShape(float density) const {
     JPH::CapsuleShapeSettings settings(halfHeight, radius);
     settings.SetDensity(density);
     return settings.Create();
@@ -198,15 +200,15 @@ TypeReflectionInfo CylinderCollisionShape::getReflectionInfo() {
 }
 
 void CylinderCollisionShape::setRadius(float size) {
-    radius = std::max(size, 0.01F);
+    radius = std::max(size, minSize);
     propertyChanged();
 }
 void CylinderCollisionShape::setHalfHeight(float size) {
-    halfHeight = std::max(size, 0.01F);
+    halfHeight = std::max(size, minSize);
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> CylinderCollisionShape::createShape(float density) {
+JPH::Result<JPH::Ref<JPH::Shape>> CylinderCollisionShape::createShape(float density) const {
     JPH::CylinderShapeSettings settings(halfHeight, radius);
     settings.SetDensity(density);
     return settings.Create();
@@ -241,7 +243,7 @@ void ConvexCollisionShape::setPathToGeometryRelativeRes(const std::string& sRela
     propertyChanged();
 }
 
-JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape(float density) {
+JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape(float density) const {
     // Construct full path.
     const auto pathToFile =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToGeometryRelativeRes;

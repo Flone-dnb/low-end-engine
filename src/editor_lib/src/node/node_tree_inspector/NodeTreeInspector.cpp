@@ -280,14 +280,12 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
 
     clearInspection();
 
+    // Create a duplicate.
     const auto pOriginalNode = pItem->getDisplayedGameNode();
     const auto sNodeName = std::string(pOriginalNode->getNodeName());
-    auto pDuplicateNode = std::unique_ptr<Node>(
-        dynamic_cast<Node*>(pItem->getDisplayedGameNode()->createDuplicate().release()));
-    if (pDuplicateNode == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException("failed to duplicate node");
-    }
+    auto pDuplicatedNode = duplicateNodeWithChildren(pOriginalNode);
 
+    // Add to parent.
     {
         const auto& mtxParent = pOriginalNode->getParentNode();
         std::scoped_lock guard(*mtxParent.first);
@@ -298,13 +296,13 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
             // Create a new parent to group collisions into a compound.
             auto pCompound = std::make_unique<CompoundCollisionNode>();
             pCompound->addChildNode(pOriginalNode);
-            pCompound->addChildNode(std::move(pDuplicateNode));
+            pCompound->addChildNode(std::move(pDuplicatedNode));
             mtxParent.second->addChildNode(std::move(pCompound));
             Logger::get().info(
                 "created a compound node and grouped your collision nodes to speed up collision "
                 "detection and thus improve performance");
         } else {
-            mtxParent.second->addChildNode(std::move(pDuplicateNode));
+            mtxParent.second->addChildNode(std::move(pDuplicatedNode));
         }
     }
 
@@ -312,6 +310,29 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
     onGameNodeTreeLoaded(pGameRootNode);
 
     Logger::get().info(std::format("duplicated node \"{}\"", sNodeName));
+}
+
+std::unique_ptr<Node> NodeTreeInspector::duplicateNodeWithChildren(Node* pNodeToDuplicate) {
+    // Create a duplicate.
+    auto pDuplicatedNode = std::unique_ptr<Node>(dynamic_cast<Node*>(pNodeToDuplicate->createDuplicate().release()));
+    if (pDuplicatedNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("failed to duplicate node");
+    }
+
+    // Duplicate child nodes.
+    {
+        const auto mtxChildNodes = pNodeToDuplicate->getChildNodes();
+        std::scoped_lock guard(*mtxChildNodes.first);
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            pDuplicatedNode->addChildNode(
+                duplicateNodeWithChildren(pChildNode),
+                Node::AttachmentRule::KEEP_RELATIVE,
+                Node::AttachmentRule::KEEP_RELATIVE,
+                Node::AttachmentRule::KEEP_RELATIVE);
+        }
+    }
+
+    return pDuplicatedNode;
 }
 
 void NodeTreeInspector::deleteGameNode(NodeTreeInspectorItem* pItem) {

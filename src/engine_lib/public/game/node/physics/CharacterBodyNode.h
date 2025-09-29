@@ -70,7 +70,7 @@ public:
 
     /**
      * Sets the maximum height of the stairs to automatically step up on.
-     * 
+     *
      * @param newMaxStepHeight New max step height.
      */
     void setMaxStepHeight(float newMaxStepHeight);
@@ -84,7 +84,7 @@ public:
 
     /**
      * Maximum height of the stairs to automatically step up on.
-     * 
+     *
      * @return Step height.
      */
     float getMaxStepHeight() const { return maxStepHeight; }
@@ -139,7 +139,7 @@ protected:
     /**
      * Called before a physics update is executed.
      * Can be used to update game specific physics parameters of the body (such as velocity for example).
-     * 
+     *
      * @warning If overriding you must call parent version before doing your logic.
      *
      * @remark Called only while spawned and have a physical body.
@@ -149,11 +149,20 @@ protected:
     virtual void onBeforePhysicsUpdate(float deltaTime);
 
     /**
-     * Returns collision shape.
+     * Tries changing the shape.
      * 
+     * @param newShape Shape to take.
+     *
+     * @return `true` if the shape was changed, `false` if something will collide with the shape.
+     */
+    bool trySetNewShape(CapsuleCollisionShape& newShape);
+
+    /**
+     * Returns collision shape.
+     *
      * @return Shape.
      */
-    CapsuleCollisionShape& getBodyShape() { return *pCollisionShape; }
+    const CapsuleCollisionShape& getBodyShape() { return *pCollisionShape; }
 
     /**
      * Sets linear velocity of the body.
@@ -171,14 +180,14 @@ protected:
 
     /**
      * Returns the current state of the "floor" under the character.
-     * 
+     *
      * @return State.
      */
     GroundState getGroundState();
 
     /**
      * Checks if the normal of the ground surface is too steep to walk on.
-     * 
+     *
      * @param normal Normal of the ground.
      */
     bool isSlopeTooSteep(const glm::vec3& normal);
@@ -193,7 +202,7 @@ protected:
     /**
      * Returns velocity of the ground (if there is a ground below the character).
      * For example if staying on a moving platform this returns velocity of the platform.
-     * 
+     *
      * @return Ground velocity.
      */
     glm::vec3 getGroundVelocity();
@@ -206,6 +215,16 @@ protected:
     glm::vec3 getGravity();
 
 private:
+    /**
+     * Adjusts @ref pCollisionShape so that its bottom is at (0, 0, 0)
+     * and returns the created body.
+     *
+     * @param shape Shape to use.
+     *
+     * @return Created shape.
+     */
+    static JPH::Ref<JPH::Shape> createAdjustedJoltShapeForCharacter(const CapsuleCollisionShape& shape);
+
     /** Generally called after some property is changed to recreate the body. */
     void recreateBodyIfSpawned();
 
@@ -217,18 +236,13 @@ private:
 
     /**
      * Called after @ref onBeforePhysicsUpdate (after user logic) to calculate updated body position.
-     * 
+     *
      * @param physicsSystem Physics system.
      * @param tempAllocator Temp allocator.
      * @param deltaTime Time (in seconds) that has passed since the last physics update.
      */
-    void updateCharacterPosition(JPH::PhysicsSystem& physicsSystem, JPH::TempAllocator& tempAllocator, float deltaTime);
-
-    /**
-     * Adjusts @ref pCollisionShape so that its bottom is at (0, 0, 0)
-     * and returns the created body.
-     */
-    JPH::Ref<JPH::Shape> createCharacterShape();
+    void updateCharacterPosition(
+        JPH::PhysicsSystem& physicsSystem, JPH::TempAllocator& tempAllocator, float deltaTime);
 
     /** Collision shape of the character. */
     std::unique_ptr<CapsuleCollisionShape> pCollisionShape;
@@ -237,7 +251,7 @@ private:
     JPH::Ref<JPH::CharacterVirtual> pCharacterBody;
 
     /** Maximum angle of slope that character can still walk on (in degrees). */
-    float maxWalkSlopeAngleDeg = 50.0f;
+    float maxWalkSlopeAngleDeg = 45.0f;
 
     /** Maximum height of the stairs to automatically step up on. */
     float maxStepHeight = 0.4F;
@@ -248,5 +262,8 @@ private:
 #if defined(DEBUG)
     /** `true` if we produced a warning in case the body fell out of the world. */
     bool bWarnedAboutFallingOutOfWorld = false;
+
+    /** `true` if we are running before physics tick functionality. */
+    bool bIsInPhysicsTick = false;
 #endif
 };
