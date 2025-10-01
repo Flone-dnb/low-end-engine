@@ -295,6 +295,13 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
         JPH::EMotionType::Static,
         static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING));
 
+    // Set node ID to body's custom data.
+    if (!pNode->getNodeId().has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have ID initialized", pNode->getNodeName()));
+    }
+    bodySettings.mUserData = *pNode->getNodeId();
+
     JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
@@ -364,6 +371,13 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
         bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
         bodySettings.mMassPropertiesOverride.mMass = pNode->massKg;
     }
+
+    // Set node ID to body's custom data.
+    if (!pNode->getNodeId().has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have ID initialized", pNode->getNodeName()));
+    }
+    bodySettings.mUserData = *pNode->getNodeId();
 
     JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
@@ -490,6 +504,13 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
         JPH::EMotionType::Static,
         static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING));
 
+    // Set node ID to body's custom data.
+    if (!pNode->getNodeId().has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have ID initialized", pNode->getNodeName()));
+    }
+    bodySettings.mUserData = *pNode->getNodeId();
+
     JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
@@ -538,12 +559,18 @@ void PhysicsManager::createBodyForNode(CharacterBodyNode* pNode) {
         convertPosDirToJolt(glm::vec3(Globals::WorldDirection::up)), -pNode->pCollisionShape->getRadius());
     settings->mInnerBodyLayer = static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING);
 
+    // Get node ID to set body's custom data.
+    if (!pNode->getNodeId().has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have ID initialized", pNode->getNodeName()));
+    }
+
     // Create character.
     pNode->pCharacterBody = new JPH::CharacterVirtual(
         settings,
         convertPosDirToJolt(pNode->getWorldLocation()),
         convertRotationToJolt(pNode->getWorldRotation()),
-        0,
+        *pNode->getNodeId(),
         pPhysicsSystem.get());
 
     pNode->pCharacterBody->SetCharacterVsCharacterCollision(pCharVsCharCollision.get());
@@ -616,6 +643,10 @@ glm::vec3 PhysicsManager::getLinearVelocity(JPH::Body* pBody) {
 
 glm::vec3 PhysicsManager::getAngularVelocity(JPH::Body* pBody) {
     return convertPosDirFromJolt(pPhysicsSystem->GetBodyInterface().GetAngularVelocity(pBody->GetID()));
+}
+
+uint64_t PhysicsManager::getUserDataFromBody(JPH::BodyID bodyId) {
+    return pPhysicsSystem->GetBodyInterface().GetUserData(bodyId);
 }
 
 void PhysicsManager::optimizeBroadPhase() {

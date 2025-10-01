@@ -186,6 +186,13 @@ protected:
     GroundState getGroundState();
 
     /**
+     * If standing on ground return spawned node that represents the ground's collision.
+     * 
+     * @return `nullptr` if not on ground.
+     */
+    Node* getGroundNodeIfExists();
+
+    /**
      * Checks if the normal of the ground surface is too steep to walk on.
      *
      * @param normal Normal of the ground.
@@ -212,7 +219,7 @@ protected:
      *
      * @return Gravity.
      */
-    glm::vec3 getGravity();
+    glm::vec3 getGravity(); 
 
 private:
     /**

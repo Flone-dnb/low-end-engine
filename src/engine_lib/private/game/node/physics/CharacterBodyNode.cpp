@@ -94,6 +94,23 @@ CharacterBodyNode::GroundState CharacterBodyNode::getGroundState() {
     return static_cast<GroundState>(pCharacterBody->GetGroundState());
 }
 
+Node* CharacterBodyNode::getGroundNodeIfExists() {
+    if (pCharacterBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to be spawned", getNodeName()));
+    }
+
+    const auto pWorld = getWorldWhileSpawned();
+    auto& physicsManager = pWorld->getGameManager().getPhysicsManager();
+
+    const auto bodyId = pCharacterBody->GetGroundBodyID();
+    if (bodyId.IsInvalid()) {
+        return nullptr;
+    }
+
+    return pWorld->getSpawnedNodeById(physicsManager.getUserDataFromBody(bodyId));
+}
+
 void CharacterBodyNode::recreateBodyIfSpawned() {
     if (!isSpawned()) {
         return;
@@ -176,7 +193,7 @@ void CharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
 }
 
 bool CharacterBodyNode::trySetNewShape(CapsuleCollisionShape& newShape) {
-    if (pCharacterBody == nullptr){
+    if (pCharacterBody == nullptr) {
         pCollisionShape->setHalfHeight(newShape.getHalfHeight());
         pCollisionShape->setRadius(newShape.getRadius());
         return true;
@@ -201,8 +218,7 @@ bool CharacterBodyNode::trySetNewShape(CapsuleCollisionShape& newShape) {
         {},
         physicsManager.getTempAllocator());
 
-    if (bSuccess)
-    {
+    if (bSuccess) {
         pCollisionShape->setHalfHeight(newShape.getHalfHeight());
         pCollisionShape->setRadius(newShape.getRadius());
     }

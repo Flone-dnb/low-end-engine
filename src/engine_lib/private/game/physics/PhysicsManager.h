@@ -14,6 +14,7 @@ namespace JPH {
     class TempAllocatorImpl;
     class TempAllocator;
     class Body;
+    class BodyID;
     class CharacterVsCharacterCollisionSimple;
 }
 
@@ -187,6 +188,13 @@ public:
      * @return Velocity.
      */
     glm::vec3 getAngularVelocity(JPH::Body* pBody);
+
+    /**
+     * Returns user data from the body.
+     * 
+     * @return User data.
+     */
+    uint64_t getUserDataFromBody(JPH::BodyID bodyId);
 
     /**
      * Returns gravity.

@@ -173,6 +173,17 @@ Node* World::getRootNode() {
     return mtxRootNode.second.get();
 }
 
+Node* World::getSpawnedNodeById(size_t iNodeId) {
+    std::scoped_lock guard(mtxSpawnedNodes.first);
+
+    const auto it = mtxSpawnedNodes.second.find(iNodeId);
+    if (it == mtxSpawnedNodes.second.end()) {
+        return nullptr;
+    }
+
+    return it->second;
+}
+
 CameraManager& World::getCameraManager() const { return *pCameraManager; }
 
 UiNodeManager& World::getUiNodeManager() const { return *pUiNodeManager; }

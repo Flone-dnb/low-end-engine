@@ -128,6 +128,13 @@ public:
     Node* getRootNode();
 
     /**
+     * Returns spawned node by the specified node ID (if found).
+     * 
+     * @return `nullptr` if not found.
+     */
+    Node* getSpawnedNodeById(size_t iNodeId);
+
+    /**
      * Returns camera manager.
      *
      * @return Manager.
@@ -196,7 +203,7 @@ private:
          *
          * @return Node count.
          */
-        size_t getTotalNodeCount() { return firstTickGroup.size() + secondTickGroup.size(); }
+        size_t getTotalNodeCount() const { return firstTickGroup.size() + secondTickGroup.size(); }
 
         /** Nodes of the first tick group. */
         std::unordered_set<Node*> firstTickGroup;
