@@ -9,8 +9,8 @@
 #include "game/physics/PhysicsLayers.h"
 #include "game/physics/CoordinateConversions.hpp"
 #include "game/node/physics/CollisionNode.h"
-#include "game/node/physics/DynamicBodyNode.h"
-#include "game/node/physics/KinematicBodyNode.h"
+#include "game/node/physics/SimulatedBodyNode.h"
+#include "game/node/physics/MovingBodyNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/node/physics/CharacterBodyNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
@@ -169,9 +169,13 @@ PhysicsManager::PhysicsManager() {
 }
 
 PhysicsManager::~PhysicsManager() {
-    if (!dynamicBodies.empty()) [[unlikely]] {
+    if (!simulatedBodies.empty()) [[unlikely]] {
         Error::showErrorAndThrowException(
-            "physics manager is being destroyed but there are still some dynamic bodies registered");
+            "physics manager is being destroyed but there are still some simulated bodies registered");
+    }
+    if (!movingBodies.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "physics manager is being destroyed but there are still some moving bodies registered");
     }
     if (!characterBodies.empty()) [[unlikely]] {
         Error::showErrorAndThrowException(
@@ -207,16 +211,27 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
 #if !defined(ENGINE_EDITOR)
         {
-            PROFILE_SCOPE("onBeforePhysicsUpdate - DynamicBodyNode")
-            for (const auto& pDynamicNode : dynamicBodies) {
-                pDynamicNode->onBeforePhysicsUpdate(deltaTime);
+            PROFILE_SCOPE("onBeforePhysicsUpdate - SimulatedBodyNode")
+            for (const auto& pSimulatedNode : simulatedBodies) {
+                pSimulatedNode->onBeforePhysicsUpdate(deltaTime);
+            }
+        }
+
+        {
+            PROFILE_SCOPE("onBeforePhysicsUpdate - MovingBodyNode")
+            for (const auto& pMovingBody : movingBodies) {
+                pMovingBody->bIsInPhysicsTick = true;
+                pMovingBody->onBeforePhysicsUpdate(deltaTime);
+                pMovingBody->bIsInPhysicsTick = false;
             }
         }
 
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - CharacterBodyNode")
             for (const auto& pCharacterBody : characterBodies) {
+                pCharacterBody->bIsInPhysicsTick = true;
                 pCharacterBody->onBeforePhysicsUpdate(deltaTime);
+                pCharacterBody->bIsInPhysicsTick = false;
                 pCharacterBody->updateCharacterPosition(*pPhysicsSystem, *pTempAllocator, deltaTime);
             }
         }
@@ -228,16 +243,29 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         }
 
         // Update nodes according to simulation results.
-        if (!dynamicBodies.empty()) {
-            PROFILE_SCOPE("update dynamic bodies after simulation")
+        if (!simulatedBodies.empty()) {
+            PROFILE_SCOPE("update simulated bodies after simulation")
 
-            for (const auto& pDynamicBodyNode : dynamicBodies) {
+            for (const auto& pSimulatedBodyNode : simulatedBodies) {
                 JPH::Vec3 position{};
                 JPH::Quat rotation{};
                 pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
-                    pDynamicBodyNode->pBody->GetID(), position, rotation);
+                    pSimulatedBodyNode->pBody->GetID(), position, rotation);
 
-                pDynamicBodyNode->setPhysicsSimulationResults(
+                pSimulatedBodyNode->setPhysicsSimulationResults(
+                    convertPosDirFromJolt(position), convertRotationFromJolt(rotation));
+            }
+        }
+        if (!movingBodies.empty()) {
+            PROFILE_SCOPE("update moving bodies after simulation")
+
+            for (const auto& pMovingBodyNode : movingBodies) {
+                JPH::Vec3 position{};
+                JPH::Quat rotation{};
+                pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
+                    pMovingBodyNode->pBody->GetID(), position, rotation);
+
+                pMovingBodyNode->setPhysicsSimulationResults(
                     convertPosDirFromJolt(position), convertRotationFromJolt(rotation));
             }
         }
@@ -339,7 +367,7 @@ void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
     pNode->pBody = nullptr;
 }
 
-void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
+void PhysicsManager::createBodyForNode(SimulatedBodyNode* pNode) {
     PROFILE_FUNC
 
     if (pNode->pShape == nullptr) [[unlikely]] {
@@ -356,14 +384,12 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
             shapeResult.GetError().data()));
     }
 
-    const auto bIsKinematic = dynamic_cast<KinematicBodyNode*>(pNode) != nullptr;
-
     // Create body.
     JPH::BodyCreationSettings bodySettings(
         shapeResult.Get(),
         convertPosDirToJolt(pNode->getWorldLocation()),
         convertRotationToJolt(pNode->getWorldRotation()),
-        bIsKinematic ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic,
+        JPH::EMotionType::Dynamic,
         static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
 
     bodySettings.mFriction = pNode->friction;
@@ -394,13 +420,13 @@ void PhysicsManager::createBodyForNode(DynamicBodyNode* pNode) {
     pNode->pBody = pCreatedBody;
 
     // Register.
-    if (!dynamicBodies.insert(pNode).second) [[unlikely]] {
+    if (!simulatedBodies.insert(pNode).second) [[unlikely]] {
         Error::showErrorAndThrowException(
-            std::format("node \"{}\" was already registered as a dynamic body", pNode->getNodeName()));
+            std::format("node \"{}\" was already registered as a simulated body", pNode->getNodeName()));
     }
 }
 
-void PhysicsManager::destroyBodyForNode(DynamicBodyNode* pNode) {
+void PhysicsManager::destroyBodyForNode(SimulatedBodyNode* pNode) {
     PROFILE_FUNC
 
     if (pNode->pBody == nullptr) [[unlikely]] {
@@ -423,12 +449,95 @@ void PhysicsManager::destroyBodyForNode(DynamicBodyNode* pNode) {
     pNode->pBody = nullptr;
 
     // Unregister.
-    const auto it = dynamicBodies.find(pNode);
-    if (it == dynamicBodies.end()) [[unlikely]] {
+    const auto it = simulatedBodies.find(pNode);
+    if (it == simulatedBodies.end()) [[unlikely]] {
         Error::showErrorAndThrowException(
-            std::format("node \"{}\" was not registered as a dynamic body", pNode->getNodeName()));
+            std::format("node \"{}\" was not registered as a simulated body", pNode->getNodeName()));
     }
-    dynamicBodies.erase(it);
+    simulatedBodies.erase(it);
+}
+
+void PhysicsManager::createBodyForNode(MovingBodyNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have a valid shape setup", pNode->getNodeName()));
+    }
+
+    // Create shape.
+    const auto shapeResult = pNode->pShape->createShape();
+    if (!shapeResult.IsValid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics shape for the node \"{}\", error: {}",
+            pNode->getNodeName(),
+            shapeResult.GetError().data()));
+    }
+
+    // Create body.
+    JPH::BodyCreationSettings bodySettings(
+        shapeResult.Get(),
+        convertPosDirToJolt(pNode->getWorldLocation()),
+        convertRotationToJolt(pNode->getWorldRotation()),
+        JPH::EMotionType::Kinematic,
+        static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+
+    // Set node ID to body's custom data.
+    if (!pNode->getNodeId().has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have ID initialized", pNode->getNodeName()));
+    }
+    bodySettings.mUserData = *pNode->getNodeId();
+
+    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    if (pCreatedBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics body for the node \"{}\", probably run out of bodies",
+            pNode->getNodeName()));
+    }
+
+    // Add to physics world.
+    pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::Activate);
+
+    // Save created body.
+    pNode->pBody = pCreatedBody;
+
+    // Register.
+    if (!movingBodies.insert(pNode).second) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" was already registered as a moving body", pNode->getNodeName()));
+    }
+}
+
+void PhysicsManager::destroyBodyForNode(MovingBodyNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node has no physics body",
+            pNode->getNodeName()));
+    }
+    if (pNode->pBody->GetID().IsInvalid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node's physics body ID is "
+            "invalid",
+            pNode->getNodeName()));
+    }
+
+    // Remove from physics world.
+    pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
+
+    // Destroy body.
+    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    pNode->pBody = nullptr;
+
+    // Unregister.
+    const auto it = movingBodies.find(pNode);
+    if (it == movingBodies.end()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" was not registered as a moving body", pNode->getNodeName()));
+    }
+    movingBodies.erase(it);
 }
 
 void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
@@ -627,6 +736,12 @@ void PhysicsManager::addAngularImpulseToBody(JPH::Body* pBody, const glm::vec3& 
 
 void PhysicsManager::addForce(JPH::Body* pBody, const glm::vec3& force) {
     pPhysicsSystem->GetBodyInterface().AddForce(pBody->GetID(), convertPosDirToJolt(force));
+}
+
+void PhysicsManager::moveKinematic(
+    JPH::Body* pBody, const glm::vec3& worldLocation, const glm::vec3& worldRotation, float deltaTime) {
+    pPhysicsSystem->GetBodyInterface().MoveKinematic(
+        pBody->GetID(), convertPosDirToJolt(worldLocation), convertRotationToJolt(worldRotation), deltaTime);
 }
 
 void PhysicsManager::setLinearVelocity(JPH::Body* pBody, const glm::vec3& velocity) {

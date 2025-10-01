@@ -230,10 +230,6 @@ void CharacterBodyNode::updateCharacterPosition(
     JPH::PhysicsSystem& physicsSystem, JPH::TempAllocator& tempAllocator, float deltaTime) {
     PROFILE_FUNC
 
-#if defined(DEBUG)
-    bIsInPhysicsTick = false;
-#endif
-
     // Prepare to update the position.
     JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
     updateSettings.mStickToFloorStepDown = -pCharacterBody->GetUp() * 0.2F;

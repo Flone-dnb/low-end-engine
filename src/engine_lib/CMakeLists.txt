@@ -153,10 +153,10 @@ set(PROJECT_SOURCES
     private/game/node/SkeletonNode.cpp
     private/game/node/physics/CollisionNode.cpp
     public/game/node/physics/CollisionNode.h
-    private/game/node/physics/DynamicBodyNode.cpp
-    public/game/node/physics/DynamicBodyNode.h
-    private/game/node/physics/KinematicBodyNode.cpp
-    public/game/node/physics/KinematicBodyNode.h
+    private/game/node/physics/SimulatedBodyNode.cpp
+    public/game/node/physics/SimulatedBodyNode.h
+    private/game/node/physics/MovingBodyNode.cpp
+    public/game/node/physics/MovingBodyNode.h
     private/game/node/physics/CharacterBodyNode.cpp
     public/game/node/physics/CharacterBodyNode.h
     private/game/node/physics/SimpleCharacterBodyNode.cpp

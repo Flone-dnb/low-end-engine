@@ -12,22 +12,25 @@ namespace JPH {
 
 class CollisionShape;
 
-/** Physically simulated body that is moved by forces. */
-class DynamicBodyNode : public SpatialNode {
+/**
+ * Simple simulated body that is moved by forces and is affected by the gravity. For example it may be used
+ * to simulate an object that the player throws with some initial impulse (such as a grenade).
+ */
+class SimulatedBodyNode : public SpatialNode {
     // Manages internal physics body.
     friend class PhysicsManager;
 
 public:
-    DynamicBodyNode();
+    SimulatedBodyNode();
 
     /**
      * Creates a new node with the specified name.
      *
      * @param sNodeName Name of this node.
      */
-    DynamicBodyNode(const std::string& sNodeName);
+    SimulatedBodyNode(const std::string& sNodeName);
 
-    virtual ~DynamicBodyNode() override;
+    virtual ~SimulatedBodyNode() override;
 
     /**
      * Returns reflection info about this type.
@@ -79,11 +82,11 @@ public:
     void setMass(float newMassKg);
 
     /**
-     * Sets dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that
-     * presses the two bodies together.
-     * 
+     * Sets dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force
+     * that presses the two bodies together.
+     *
      * @warning Causes the physics body to be recreated.
-     * 
+     *
      * @param newFriction Friction.
      */
     void setFriction(float newFriction);
@@ -101,9 +104,9 @@ public:
     /**
      * Applies impulse to the body. Used for one-time pushes, if you need to constantly (every tick)
      * apply a specific force to the body use @ref setForceForNextTick.
-     * 
+     *
      * @remark Does nothing if the node is not spawned.
-     * 
+     *
      * @param impulse Impulse.
      */
     void applyOneTimeImpulse(const glm::vec3& impulse);
@@ -120,7 +123,7 @@ public:
     /**
      * Sets a force that will be applied during the next physics tick and will be reset after that.
      * Used to apply force that's acting over time (not a single one-time impulse).
-     * 
+     *
      * @param force Force.
      */
     void setForceForNextTick(const glm::vec3& force);
@@ -147,9 +150,9 @@ public:
     float getMass() const { return massKg; }
 
     /**
-     * Returns dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that
-     * presses the two bodies together.
-     * 
+     * Returns dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force
+     * that presses the two bodies together.
+     *
      * @return Friction.
      */
     float getFriction() const { return friction; }
@@ -202,16 +205,16 @@ protected:
     /**
      * Called before a physics update is executed.
      * Can be used to update game specific physics parameters of the body (such as force for example).
-     * 
+     *
      * @remark Called only while spawned and have a physical body.
-     * 
+     *
      * @param deltaTime Time (in seconds) that has passed since the last physics update.
      */
     virtual void onBeforePhysicsUpdate(float deltaTime) {}
 
     /**
      * Returns physics body.
-     * 
+     *
      * @return `nullptr` if not created yet.
      */
     JPH::Body* getBody() const { return pBody; }

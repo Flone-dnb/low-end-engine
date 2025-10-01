@@ -22,8 +22,8 @@ class BroadPhaseLayerInterfaceImpl;
 class ObjectVsBroadPhaseLayerFilterImpl;
 class ObjectLayerPairFilterImpl;
 class CollisionNode;
-class DynamicBodyNode;
-class KinematicBodyNode;
+class SimulatedBodyNode;
+class MovingBodyNode;
 class CompoundCollisionNode;
 class CharacterBodyNode;
 class CapsuleCollisionShape;
@@ -77,14 +77,28 @@ public:
      *
      * @param pNode Node to create collision for.
      */
-    void createBodyForNode(DynamicBodyNode* pNode);
+    void createBodyForNode(SimulatedBodyNode* pNode);
 
     /**
      * Destroys previously created body (see @ref createBodyForNode).
      *
      * @param pNode Node to destroy collision.
      */
-    void destroyBodyForNode(DynamicBodyNode* pNode);
+    void destroyBodyForNode(SimulatedBodyNode* pNode);
+
+    /**
+     * Creates a physics body for the specified node.
+     *
+     * @param pNode Node to create collision for.
+     */
+    void createBodyForNode(MovingBodyNode* pNode);
+
+    /**
+     * Destroys previously created body (see @ref createBodyForNode).
+     *
+     * @param pNode Node to destroy collision.
+     */
+    void destroyBodyForNode(MovingBodyNode* pNode);
 
     /**
      * Creates a physics body for the specified node.
@@ -156,6 +170,18 @@ public:
     void addForce(JPH::Body* pBody, const glm::vec3& force);
 
     /**
+     * Sets velocity of body such that it will be positioned at the specified position/rotation in deltaTime
+     * seconds.
+     *
+     * @param pBody         Body to modify.
+     * @param worldLocation Location to be in after deltaTime seconds.
+     * @param worldRotation Rotation to be in after deltaTime seconds.
+     * @param deltaTime     Time in seconds.
+     */
+    void moveKinematic(
+        JPH::Body* pBody, const glm::vec3& worldLocation, const glm::vec3& worldRotation, float deltaTime);
+
+    /**
      * Sets linear velocity to a body.
      *
      * @param pBody    Body to update.
@@ -191,7 +217,7 @@ public:
 
     /**
      * Returns user data from the body.
-     * 
+     *
      * @return User data.
      */
     uint64_t getUserDataFromBody(JPH::BodyID bodyId);
@@ -228,11 +254,11 @@ private:
      */
     void onBeforeNewFrame(float timeSincePrevFrameInSec);
 
-    /**
-     * Dynamic bodies in the simulation. Used to update node position/rotation according
-     * to the simulated body.
-     */
-    std::unordered_set<DynamicBodyNode*> dynamicBodies;
+    /** Used to update node position/rotation according to the simulated Jolt body. */
+    std::unordered_set<SimulatedBodyNode*> simulatedBodies;
+
+    /** Used to update node position/rotation according to the Jolt body. */
+    std::unordered_set<MovingBodyNode*> movingBodies;
 
     /** Active character bodies. */
     std::unordered_set<CharacterBodyNode*> characterBodies;

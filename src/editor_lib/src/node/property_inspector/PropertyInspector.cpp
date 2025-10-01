@@ -9,7 +9,7 @@
 #include "game/node/SkeletonNode.h"
 #include "game/node/physics/CollisionNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
-#include "game/node/physics/DynamicBodyNode.h"
+#include "game/node/physics/SimulatedBodyNode.h"
 #include "EditorTheme.h"
 #include "EditorGameInstance.h"
 #include "node/GizmoNode.h"
@@ -80,7 +80,7 @@ void PropertyInspector::refreshInspectedProperties() {
         addSkeletonNodeSpecialOptions(pSkeletonNode);
     }
     if (dynamic_cast<CollisionNode*>(pInspectedNode) != nullptr ||
-        dynamic_cast<DynamicBodyNode*>(pInspectedNode) != nullptr) {
+        dynamic_cast<SimulatedBodyNode*>(pInspectedNode) != nullptr) {
         addCollisionShapeSelection(pInspectedNode);
     }
 
@@ -93,7 +93,7 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
     const auto getShape = [pCollisionNode]() -> CollisionShape& {
         if (auto pTargetNode = dynamic_cast<CollisionNode*>(pCollisionNode)) {
             return pTargetNode->getShape();
-        } else if (auto pTargetNode = dynamic_cast<DynamicBodyNode*>(pCollisionNode)) {
+        } else if (auto pTargetNode = dynamic_cast<SimulatedBodyNode*>(pCollisionNode)) {
             return pTargetNode->getShape();
         } else [[unlikely]] {
             Error::showErrorAndThrowException("unhandled case");
@@ -102,7 +102,7 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
     const auto setShape = [pCollisionNode](std::unique_ptr<CollisionShape> pShape) {
         if (auto pTargetNode = dynamic_cast<CollisionNode*>(pCollisionNode)) {
             pTargetNode->setShape(std::move(pShape));
-        } else if (auto pTargetNode = dynamic_cast<DynamicBodyNode*>(pCollisionNode)) {
+        } else if (auto pTargetNode = dynamic_cast<SimulatedBodyNode*>(pCollisionNode)) {
             pTargetNode->setShape(std::move(pShape));
         } else [[unlikely]] {
             Error::showErrorAndThrowException("unhandled case");

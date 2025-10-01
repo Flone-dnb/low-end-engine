@@ -424,15 +424,27 @@ void MyGameInstance::onGameStarted() {
 
 `CollisionNode` is the main way to create walls, floors and other solid objects that do not allow to move through them. Note that moving or rotating such nodes is perfectly fine even when they are spawned.
 
-`CompoundCollisionNode` groups multiple `CollisionNode`s - you create a compound node and attach collision nodes as child nodes. This is used to group multiple collision objects to speed up collision detection and thus improve performance. It's a good idea to group your level's static CollisionNodes under a compound. Note that when collision nodes are grouped under a compound moving or rotating such collision nodes is not recommended as it causes the whole compound to be recreated under the hood. Moving or rotating the compound node is perfectly fine though.
+`CompoundCollisionNode` groups multiple `CollisionNode`s - you create a compound node and attach collision nodes as child nodes. This is used to group multiple collision objects to speed up collision detection and thus improve performance. It's a good idea to group your level's static CollisionNodes under a compound. Note that when collision nodes are grouped under a compound moving or rotating individual collision nodes is not recommended as it causes the whole compound to be recreated under the hood. Moving or rotating the compound node is perfectly fine though.
 
-`DynamicBodyNode` is a simulated body that is moved by forces. For example it may be used to create a rolling ball that is affected by gravity and similar forces.
+`SimulatedBodyNode` is a simple simulated body that is moved by forces and is affected by the gravity. For example it may be used to simulate an object that the player throws with some initial impulse (such as a grenade).
 
-`KinematicBodyNode` is a basic simulated body that is moved by velocities.
+`MovingBodyNode` is a kinematic body that is moved by velocities. For example this node can be used to create things like moving platforms that the player's character can stand on. By default it's not affected by the gravity but derived classes can implement this and other physics-related logic in onBeforePhysicsUpdate. Here is an example of how to create a smooth vertically moving (up and down) platform:
+```Cpp
+void MyMovingBodyNode::onBeforePhysicsUpdate(float deltaTime) {
+    totalTime += deltaTime;
 
-`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character. It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height and so on.
+    constexpr float height = 3.0F;
+    setVelocityToBeAt(
+        getWorldLocation() + glm::vec3(0.0F, 0.0F, height * std::sin(totalTime)),
+        getWorldRotation(),
+        deltaTime);
+}
+```
+Note that moving such nodes by velocities is better for physics simulation instead of using SetWorldLocation which is basically means you are teleporting the body.
 
-`SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode.
+`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character (which are generally represented by a capsule shape). It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height and so on (these features can be configured, see setter/getter functions on this node).
+
+`SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode, copy-paste needed movement functionality from SimpleCharacterBodyNode and adjust to your needs.
 
 ## Post-processing
 

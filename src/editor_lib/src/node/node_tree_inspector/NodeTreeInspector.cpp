@@ -12,7 +12,7 @@
 #include "EditorTheme.h"
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/node/physics/CollisionNode.h"
-#include "game/node/physics/DynamicBodyNode.h"
+#include "game/node/physics/SimulatedBodyNode.h"
 #include "EditorGameInstance.h"
 #include "node/menu/SetNameMenu.h"
 #include "game/node/Sound2dNode.h"
@@ -399,7 +399,7 @@ void NodeTreeInspector::addChildNodeToNodeTree(
     // Refresh tree.
     onGameNodeTreeLoaded(pGameRootNode);
 
-    if (sTypeGuid == DynamicBodyNode::getTypeGuidStatic()) {
+    if (sTypeGuid == SimulatedBodyNode::getTypeGuidStatic()) {
         Logger::get().info("note: dynamic bodies are not simulated in the editor");
     }
 }
