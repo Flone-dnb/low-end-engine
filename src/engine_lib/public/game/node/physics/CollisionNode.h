@@ -66,9 +66,9 @@ public:
     /**
      * Returns used collision shape.
      *
-     * @return `nullptr` if not set.
+     * @return Shape.
      */
-    CollisionShape* getShape() const { return pShape.get(); }
+    CollisionShape& getShape() const;
 
 protected:
     /**

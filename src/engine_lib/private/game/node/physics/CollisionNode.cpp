@@ -1,5 +1,8 @@
 #include "game/node/physics/CollisionNode.h"
 
+// Standard.
+#include <format>
+
 // Custom.
 #include "game/World.h"
 #include "game/GameManager.h"
@@ -49,6 +52,10 @@ CollisionNode::CollisionNode(const std::string& sNodeName) : SpatialNode(sNodeNa
 }
 
 void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
+    if (pNewShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format("`nullptr` is not a valid shape (node \"{}\")", getNodeName()));
+    }
+
     pShape = std::move(pNewShape);
     setOnShapeChangedCallback();
 
@@ -70,6 +77,14 @@ void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
         physicsManager.destroyBodyForNode(this);
         physicsManager.createBodyForNode(this);
     }
+}
+
+CollisionShape& CollisionNode::getShape() const {
+    if (pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format("collision node \"{}\" has invalid shape", getNodeName()));
+    }
+
+    return *pShape;
 }
 
 void CollisionNode::setOnShapeChangedCallback() {
