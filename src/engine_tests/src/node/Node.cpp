@@ -96,8 +96,7 @@ TEST_CASE("move nodes in the hierarchy") {
         REQUIRE(pCarNode->getChildNodes().second.size() == 1);
 
         // Detach the character from the car.
-        pParentNode->addChildNode(
-            pCharacterNode, Node::AttachmentRule::KEEP_RELATIVE, Node::AttachmentRule::KEEP_RELATIVE);
+        pParentNode->addChildNode(pCharacterNode);
 
         // Check that everything is correct.
         REQUIRE(pCharacterNode->getParentNode().second == pParentNode);
@@ -267,17 +266,11 @@ TEST_CASE("onBeforeNewFrame is called only on marked nodes") {
 
                 auto pNotCalledtNodeU = std::make_unique<MyNode>(false);
                 pNotCalledtNode = pNotCalledtNodeU.get();
-                pRootNode->addChildNode(
-                    std::move(pNotCalledtNodeU),
-                    Node::AttachmentRule::KEEP_RELATIVE,
-                    Node::AttachmentRule::KEEP_RELATIVE); // queues deferred task to add to world
+                pRootNode->addChildNode(std::move(pNotCalledtNodeU));
 
                 auto pCalledNodeU = std::make_unique<MyNode>(true);
                 pCalledNode = pCalledNodeU.get();
-                pRootNode->addChildNode(
-                    std::move(pCalledNodeU),
-                    Node::AttachmentRule::KEEP_RELATIVE,
-                    Node::AttachmentRule::KEEP_RELATIVE); // queues deferred task to add to world
+                pRootNode->addChildNode(std::move(pCalledNodeU));
             });
         }
         virtual ~TestGameInstance() override {}
@@ -1758,9 +1751,8 @@ TEST_CASE("load node tree as world") {
                 REQUIRE(std::filesystem::exists(pathToDirectory / "test.toml"));
                 REQUIRE(std::filesystem::exists(
                     pathToDirectory /
-                        (std::string("test") + std::string(Serializable::getNodeTreeGeometryDirSuffix())) /
-                        ("1.meshGeometry." +
-                    std::string(Serializable::getBinaryFileExtension()))));
+                    (std::string("test") + std::string(Serializable::getNodeTreeGeometryDirSuffix())) /
+                    ("1.meshGeometry." + std::string(Serializable::getBinaryFileExtension()))));
 
                 loadNodeTreeAsWorld(pathToDirectory / "test", [this](Node* pRootNode) {
                     REQUIRE(pRootNode->getNodeName() == "my node");

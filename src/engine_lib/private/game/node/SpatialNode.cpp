@@ -363,10 +363,6 @@ void SpatialNode::applyAttachmentRule(
     const glm::vec3& worldScaleBeforeAttachment) {
     // Apply location rule.
     switch (locationRule) {
-    case (AttachmentRule::RESET_RELATIVE): {
-        setRelativeLocation(glm::vec3(0.0F, 0.0F, 0.0F));
-        break;
-    }
     case (AttachmentRule::KEEP_RELATIVE): {
         // Do nothing.
         break;
@@ -379,10 +375,6 @@ void SpatialNode::applyAttachmentRule(
 
     // Apply rotation rule.
     switch (rotationRule) {
-    case (AttachmentRule::RESET_RELATIVE): {
-        setRelativeRotation(glm::vec3(0.0F, 0.0F, 0.0F));
-        break;
-    }
     case (AttachmentRule::KEEP_RELATIVE): {
         // Do nothing.
         break;
@@ -395,10 +387,6 @@ void SpatialNode::applyAttachmentRule(
 
     // Apply scale rule.
     switch (scaleRule) {
-    case (AttachmentRule::RESET_RELATIVE): {
-        setRelativeScale(glm::vec3(1.0F, 1.0F, 1.0F));
-        break;
-    }
     case (AttachmentRule::KEEP_RELATIVE): {
         // Do nothing.
         break;

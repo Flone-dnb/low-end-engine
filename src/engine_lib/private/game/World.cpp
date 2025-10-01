@@ -92,11 +92,7 @@ void World::changeRootNode(std::unique_ptr<Node> pNewRoot) {
 
     // Attach child nodes to new root.
     for (const auto& pChildNode : mtxChildNodes.second) {
-        pNewRoot->addChildNode(
-            pChildNode,
-            Node::AttachmentRule::KEEP_RELATIVE,
-            Node::AttachmentRule::KEEP_RELATIVE,
-            Node::AttachmentRule::KEEP_RELATIVE);
+        pNewRoot->addChildNode(pChildNode);
     }
 
     mtxRootNode.second = std::move(pNewRoot);

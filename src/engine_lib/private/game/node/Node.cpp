@@ -85,11 +85,7 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
             // modified each iteration (this array will be smaller and smaller with each iteration since
             // we are "removing" child nodes of some parent node), thus we avoid modifying the
             // array while iterating over it.
-            nodeInfo.pObject->addChildNode(
-                *mtxChildNodes.second.begin(),
-                AttachmentRule::KEEP_RELATIVE,
-                AttachmentRule::KEEP_RELATIVE,
-                AttachmentRule::KEEP_RELATIVE);
+            nodeInfo.pObject->addChildNode(*mtxChildNodes.second.begin());
 
             // Update list of child nodes.
             mtxChildNodes = pExternalRootNode->getChildNodes();
@@ -240,11 +236,7 @@ Node::deserializeNodeTree(const std::filesystem::path& pathToFile) {
                     sTomlKeyChildNodeArrayIndex));
             }
 
-            pParentNode->addChildNode(
-                std::move(pChildNode),
-                AttachmentRule::KEEP_RELATIVE,
-                AttachmentRule::KEEP_RELATIVE,
-                AttachmentRule::KEEP_RELATIVE);
+            pParentNode->addChildNode(std::move(pChildNode));
         }
     }
 

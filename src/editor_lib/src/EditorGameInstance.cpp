@@ -759,8 +759,7 @@ void EditorGameInstance::showGizmoToControlNode(SpatialNode* pNode, GizmoMode mo
         return;
     }
 
-    gameWorldNodes.pGizmoNode = gameWorldNodes.pRoot->addChildNode(
-        std::make_unique<GizmoNode>(mode, pNode), Node::AttachmentRule::KEEP_RELATIVE);
+    gameWorldNodes.pGizmoNode = gameWorldNodes.pRoot->addChildNode(std::make_unique<GizmoNode>(mode, pNode));
 }
 
 bool EditorGameInstance::isContextMenuOpened() const {

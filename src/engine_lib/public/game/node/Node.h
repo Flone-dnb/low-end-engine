@@ -43,13 +43,11 @@ public:
      * should change after the attachment process (after `onAfterAttachedToNewParent` was called).
      */
     enum class AttachmentRule : uint8_t {
-        RESET_RELATIVE, //< After the new child node was attached, resets its relative location or rotation to
-                        // 0 and relative scale to 1.
-        KEEP_RELATIVE,  //< After the new child node was attached, its relative location/rotation/scale will
-                        // stay the same, but world location/rotation/scale might change.
-        KEEP_WORLD, //< After the new child node was attached, its relative location/rotation/scale will be
-                    // recalculated so that its world location/rotation/scale will stay the same (as before
-                    // attached).
+        KEEP_RELATIVE, //< After the new child node was attached, its relative location/rotation/scale will
+                       // stay the same, but world location/rotation/scale might change.
+        KEEP_WORLD,    //< After the new child node was attached, its relative location/rotation/scale will be
+                       // recalculated so that its world location/rotation/scale will stay the same (as before
+                       // attached).
     };
 
     /** Callbacks for a bound input action event. */
@@ -201,25 +199,12 @@ public:
      *
      * @param pNode        Node to attach as a child. That node must node have a parent because
      * `this` node will take the ownership of the unique_ptr.
-     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's location should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's rotation should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's scale should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
      *
      * @return Raw pointer to the node you passed in this function.
      */
     template <typename NodeType>
         requires std::derived_from<NodeType, Node>
-    NodeType* addChildNode(
-        std::unique_ptr<NodeType> pNode,
-        AttachmentRule locationRule = AttachmentRule::KEEP_WORLD,
-        AttachmentRule rotationRule = AttachmentRule::KEEP_WORLD,
-        AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
+    NodeType* addChildNode(std::unique_ptr<NodeType> pNode);
 
     /**
      * Attaches a node as a child of this node.
@@ -233,25 +218,12 @@ public:
      *
      * @param pNode        Node to attach as a child. That node must have a parent so that `this` node can
      * transfer the ownership of the node, otherwise an error message will be shown.
-     * @param locationRule Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's location should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     * @param rotationRule Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's rotation should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
-     * @param scaleRule    Only applied if the child node is a SpatialNode, otherwise ignored.
-     * Defines how child node's scale should change after the attachment process
-     * (after `onAfterAttachedToNewParent` was called)
      *
      * @return Raw pointer to the node you passed in this function.
      */
     template <typename NodeType>
         requires std::derived_from<NodeType, Node>
-    NodeType* addChildNode(
-        NodeType* pNode,
-        AttachmentRule locationRule = AttachmentRule::KEEP_WORLD,
-        AttachmentRule rotationRule = AttachmentRule::KEEP_WORLD,
-        AttachmentRule scaleRule = AttachmentRule::KEEP_WORLD);
+    NodeType* addChildNode(NodeType* pNode);
 
     /**
      * Changes the position of a child node in the array of child nodes.
@@ -920,11 +892,16 @@ private:
 
 template <typename NodeType>
     requires std::derived_from<NodeType, Node>
-inline NodeType* Node::addChildNode(
-    std::unique_ptr<NodeType> pNode,
-    AttachmentRule locationRule,
-    AttachmentRule rotationRule,
-    AttachmentRule scaleRule) {
+inline NodeType* Node::addChildNode(std::unique_ptr<NodeType> pNode) {
+    AttachmentRule locationRule = AttachmentRule::KEEP_RELATIVE;
+    AttachmentRule rotationRule = AttachmentRule::KEEP_RELATIVE;
+    AttachmentRule scaleRule = AttachmentRule::KEEP_RELATIVE;
+    if (pNode->isSpawned()) {
+        locationRule = AttachmentRule::KEEP_WORLD;
+        rotationRule = AttachmentRule::KEEP_WORLD;
+        scaleRule = AttachmentRule::KEEP_WORLD;
+    }
+
     return addChildNode<NodeType>(
         std::variant<std::unique_ptr<NodeType>, NodeType*>(std::move(pNode)),
         locationRule,
@@ -934,8 +911,16 @@ inline NodeType* Node::addChildNode(
 
 template <typename NodeType>
     requires std::derived_from<NodeType, Node>
-inline NodeType* Node::addChildNode(
-    NodeType* pNode, AttachmentRule locationRule, AttachmentRule rotationRule, AttachmentRule scaleRule) {
+inline NodeType* Node::addChildNode(NodeType* pNode) {
+    AttachmentRule locationRule = AttachmentRule::KEEP_RELATIVE;
+    AttachmentRule rotationRule = AttachmentRule::KEEP_RELATIVE;
+    AttachmentRule scaleRule = AttachmentRule::KEEP_RELATIVE;
+    if (pNode->isSpawned()) {
+        locationRule = AttachmentRule::KEEP_WORLD;
+        rotationRule = AttachmentRule::KEEP_WORLD;
+        scaleRule = AttachmentRule::KEEP_WORLD;
+    }
+
     return addChildNode<NodeType>(
         std::variant<std::unique_ptr<NodeType>, NodeType*>(pNode), locationRule, rotationRule, scaleRule);
 }

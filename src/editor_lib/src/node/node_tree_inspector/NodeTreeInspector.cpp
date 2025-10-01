@@ -196,11 +196,7 @@ void NodeTreeInspector::showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem
             }
             auto pRoot = std::get<std::unique_ptr<Node>>(std::move(result));
 
-            pItem->getDisplayedGameNode()->addChildNode(
-                std::move(pRoot),
-                AttachmentRule::KEEP_RELATIVE,
-                AttachmentRule::KEEP_RELATIVE,
-                AttachmentRule::KEEP_RELATIVE);
+            pItem->getDisplayedGameNode()->addChildNode(std::move(pRoot));
 
             // Refresh tree.
             onGameNodeTreeLoaded(pGameRootNode);
@@ -314,7 +310,8 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
 
 std::unique_ptr<Node> NodeTreeInspector::duplicateNodeWithChildren(Node* pNodeToDuplicate) {
     // Create a duplicate.
-    auto pDuplicatedNode = std::unique_ptr<Node>(dynamic_cast<Node*>(pNodeToDuplicate->createDuplicate().release()));
+    auto pDuplicatedNode =
+        std::unique_ptr<Node>(dynamic_cast<Node*>(pNodeToDuplicate->createDuplicate().release()));
     if (pDuplicatedNode == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("failed to duplicate node");
     }
@@ -324,11 +321,7 @@ std::unique_ptr<Node> NodeTreeInspector::duplicateNodeWithChildren(Node* pNodeTo
         const auto mtxChildNodes = pNodeToDuplicate->getChildNodes();
         std::scoped_lock guard(*mtxChildNodes.first);
         for (const auto& pChildNode : mtxChildNodes.second) {
-            pDuplicatedNode->addChildNode(
-                duplicateNodeWithChildren(pChildNode),
-                Node::AttachmentRule::KEEP_RELATIVE,
-                Node::AttachmentRule::KEEP_RELATIVE,
-                Node::AttachmentRule::KEEP_RELATIVE);
+            pDuplicatedNode->addChildNode(duplicateNodeWithChildren(pChildNode));
         }
     }
 
@@ -401,11 +394,7 @@ void NodeTreeInspector::addChildNodeToNodeTree(
     }
 
     // Add child.
-    pParent->getDisplayedGameNode()->addChildNode(
-        std::move(pNewNode),
-        AttachmentRule::KEEP_RELATIVE,
-        AttachmentRule::KEEP_RELATIVE,
-        AttachmentRule::KEEP_RELATIVE);
+    pParent->getDisplayedGameNode()->addChildNode(std::move(pNewNode));
 
     // Refresh tree.
     onGameNodeTreeLoaded(pGameRootNode);
@@ -438,11 +427,7 @@ void NodeTreeInspector::changeNodeType(
 
         pItem->pGameNode->unsafeDetachFromParentAndDespawn(true);
 
-        const auto pNode = pParentNode->addChildNode(
-            std::move(pNewNode),
-            AttachmentRule::KEEP_RELATIVE,
-            AttachmentRule::KEEP_RELATIVE,
-            AttachmentRule::KEEP_RELATIVE);
+        pParentNode->addChildNode(std::move(pNewNode));
     }
 
     // Refresh tree.
