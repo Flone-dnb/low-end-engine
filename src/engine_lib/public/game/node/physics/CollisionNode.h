@@ -57,6 +57,13 @@ public:
     virtual std::string getTypeGuid() const override;
 
     /**
+     * Used to temporary disable collision (even when spawned).
+     *
+     * @param bEnable New state.
+     */
+    void setIsCollisionEnabled(bool bEnable);
+
+    /**
      * Sets a new shape.
      *
      * @param pNewShape New shape.
@@ -69,6 +76,13 @@ public:
      * @return Shape.
      */
     CollisionShape& getShape() const;
+
+    /**
+     * Tells if the collision is temporary disabled (can be used while spawned).
+     *
+     * @return Is active.
+     */
+    bool isCollisionEnabled() const { return bIsCollisionEnabled; }
 
 protected:
     /**
@@ -132,4 +146,7 @@ private:
 
     /** Not `nullptr` when spawned. */
     JPH::Body* pBody = nullptr;
+
+    /** Used to temporary disable collision while spawned. */
+    bool bIsCollisionEnabled = true;
 };

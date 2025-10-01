@@ -2,6 +2,7 @@
 
 // Standard.
 #include <memory>
+#include <queue>
 
 // Custom.
 #include "game/node/SpatialNode.h"
@@ -149,8 +150,25 @@ protected:
     virtual void onBeforePhysicsUpdate(float deltaTime);
 
     /**
+     * Called after the physics update to notify that there was a contact with another physics body.
+     *
+     * @param pHitNode         Node that has contact with the character.
+     * @param hitWorldPosition World position of the hit.
+     * @param hitNormal        Normal of the hit.
+     */
+    virtual void
+    onContactAdded(Node* pHitNode, const glm::vec3& hitWorldPosition, const glm::vec3& hitNormal) {}
+
+    /**
+     * Called after the physics update to notify that a contact with another physics body was lost.
+     *
+     * @param pNode Node that had contact with the character.
+     */
+    virtual void onContactRemoved(Node* pNode) {}
+
+    /**
      * Tries changing the shape.
-     * 
+     *
      * @param newShape Shape to take.
      *
      * @return `true` if the shape was changed, `false` if something will collide with the shape.
@@ -187,7 +205,7 @@ protected:
 
     /**
      * If standing on ground return spawned node that represents the ground's collision.
-     * 
+     *
      * @return `nullptr` if not on ground.
      */
     Node* getGroundNodeIfExists();
@@ -219,9 +237,74 @@ protected:
      *
      * @return Gravity.
      */
-    glm::vec3 getGravity(); 
+    glm::vec3 getGravity();
 
 private:
+    /** Receives callbacks when character hits something. */
+    class ContactListener : public JPH::CharacterContactListener {
+    public:
+        ContactListener() = delete;
+
+        /**
+         * Constructor.
+         *
+         * @param pOwner Node that owns this object.
+         */
+        ContactListener(CharacterBodyNode* pNode) : pOwner(pNode) {}
+
+        virtual ~ContactListener() override = default;
+
+        /**
+         * Called whenever the character collides with a body for the first time.
+         *
+         * @param character Character that is being solved.
+         * @param hitBodyId Body ID of body that is being hit.
+         * @param hitSubShapeId Sub shape ID of shape that is being hit.
+         * @param contactPosition World space contact position.
+         * @param contactNormal World space contact normal
+         * @param ioSettings Settings returned by the contact callback to indicate how the character should
+         * behave.
+         */
+        virtual void OnContactAdded(
+            const JPH::CharacterVirtual* character,
+            const JPH::BodyID& hitBodyId,
+            const JPH::SubShapeID& hitSubShapeId,
+            JPH::RVec3Arg contactPosition,
+            JPH::Vec3Arg contactNormal,
+            JPH::CharacterContactSettings& ioSettings) override;
+
+        /// Called whenever the character loses contact with a body.
+        /// Note that there is no guarantee that the body or its sub shape still exists at this point. The
+        /// body may have been deleted since the last update.
+        ///
+        /// @param character Character that is being solved.
+        /// @param hitBodyId Body ID of body that is being hit.
+        /// @param hitSubShapeId Sub shape ID of shape that is being hit.
+        virtual void OnContactRemoved(
+            const JPH::CharacterVirtual* character,
+            const JPH::BodyID& hitBodyId,
+            const JPH::SubShapeID& hitSubShapeId) override;
+
+    private:
+        /** Node that owns this object. */
+        CharacterBodyNode* const pOwner = nullptr;
+    };
+
+    /** Groups information about a collision contact. */
+    struct BodyContactInfo {
+        /** `true` if the contact was added, `false` if lost contact. */
+        bool bIsAdded = true;
+
+        /** Body ID of body that is being hit. */
+        JPH::BodyID hitBodyId;
+
+        /** World space contact position. */
+        glm::vec3 hitWorldPosition;
+
+        /** World space contact normal. */
+        glm::vec3 hitNormal;
+    };
+
     /**
      * Adjusts @ref pCollisionShape so that its bottom is at (0, 0, 0)
      * and returns the created body.
@@ -251,11 +334,21 @@ private:
     void updateCharacterPosition(
         JPH::PhysicsSystem& physicsSystem, JPH::TempAllocator& tempAllocator, float deltaTime);
 
+    /** Called by physics manager after the physics update is finished to process @ref mtxContactsToProcess.
+     */
+    void processContactEvents();
+
     /** Collision shape of the character. */
     std::unique_ptr<CapsuleCollisionShape> pCollisionShape;
 
     /** Not `nullptr` if spawned. */
     JPH::Ref<JPH::CharacterVirtual> pCharacterBody;
+
+    /** Receives callbacks when character hits something. */
+    std::unique_ptr<ContactListener> pContactListener;
+
+    /** Contacts with other bodies that occurred during the last physics update. */
+    std::pair<std::mutex, std::queue<BodyContactInfo>> mtxContactsToProcess;
 
     /** Maximum angle of slope that character can still walk on (in degrees). */
     float maxWalkSlopeAngleDeg = 45.0f;

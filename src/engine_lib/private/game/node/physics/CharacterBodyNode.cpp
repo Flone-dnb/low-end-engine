@@ -71,6 +71,8 @@ CharacterBodyNode::CharacterBodyNode() : CharacterBodyNode("Character Body Node"
 CharacterBodyNode::CharacterBodyNode(const std::string& sNodeName) : SpatialNode(sNodeName) {
     pCollisionShape = std::make_unique<CapsuleCollisionShape>();
     pCollisionShape->setOnChanged([this]() { recreateBodyIfSpawned(); });
+
+    pContactListener = std::make_unique<ContactListener>(this);
 }
 
 CharacterBodyNode::~CharacterBodyNode() {}
@@ -337,4 +339,61 @@ bool CharacterBodyNode::isSlopeTooSteep(const glm::vec3& normal) {
 glm::vec3 CharacterBodyNode::getGravity() {
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
     return physicsManager.getGravity();
+}
+
+void CharacterBodyNode::ContactListener::OnContactAdded(
+    const JPH::CharacterVirtual* character,
+    const JPH::BodyID& hitBodyId,
+    const JPH::SubShapeID& hitSubShapeId,
+    JPH::RVec3Arg contactPosition,
+    JPH::Vec3Arg contactNormal,
+    JPH::CharacterContactSettings& ioSettings) {
+    // AFAIK this is called from Jolt's thread pool while the body interface is locked so giving control to
+    // the user code now might be a bad idea (in case the user will try to use our physics functions which
+    // will try to lock the body interface). So we will just put this event in a queue and process after the
+    // physics update.
+    std::scoped_lock guard(pOwner->mtxContactsToProcess.first);
+
+    pOwner->mtxContactsToProcess.second.push(CharacterBodyNode::BodyContactInfo{
+        .bIsAdded = true,
+        .hitBodyId = hitBodyId,
+        .hitWorldPosition = convertPosDirFromJolt(contactPosition),
+        .hitNormal = convertPosDirFromJolt(contactNormal)});
+}
+
+void CharacterBodyNode::ContactListener::OnContactRemoved(
+    const JPH::CharacterVirtual* character,
+    const JPH::BodyID& hitBodyId,
+    const JPH::SubShapeID& hitSubShapeId) {
+    std::scoped_lock guard(pOwner->mtxContactsToProcess.first);
+
+    pOwner->mtxContactsToProcess.second.push(
+        CharacterBodyNode::BodyContactInfo{.bIsAdded = false, .hitBodyId = hitBodyId});
+}
+
+void CharacterBodyNode::processContactEvents() {
+    std::scoped_lock guard(mtxContactsToProcess.first);
+
+    const auto pWorld = getWorldWhileSpawned();
+    auto& physicsManager = pWorld->getGameManager().getPhysicsManager();
+
+    while (!mtxContactsToProcess.second.empty()) {
+        auto& info = mtxContactsToProcess.second.front();
+
+        // Get node.
+        const auto pNode = pWorld->getSpawnedNodeById(physicsManager.getUserDataFromBody(info.hitBodyId));
+        if (pNode == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("unable to determine hit node from body id on node \"{}\"", getNodeName()));
+        }
+
+        // Notify user.
+        if (info.bIsAdded) {
+            onContactAdded(pNode, info.hitWorldPosition, info.hitNormal);
+        } else {
+            onContactRemoved(pNode);
+        }
+
+        mtxContactsToProcess.second.pop();
+    }
 }

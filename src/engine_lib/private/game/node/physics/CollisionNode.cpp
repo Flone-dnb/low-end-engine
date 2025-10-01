@@ -38,6 +38,15 @@ TypeReflectionInfo CollisionNode::getReflectionInfo() {
                 return reinterpret_cast<CollisionNode*>(pThis)->pShape.get();
             }};
 
+    variables.bools[NAMEOF_MEMBER(&CollisionNode::bIsCollisionEnabled).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<CollisionNode*>(pThis)->setIsCollisionEnabled(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<CollisionNode*>(pThis)->isCollisionEnabled();
+        }};
+
     return TypeReflectionInfo(
         SpatialNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(CollisionNode).data(),
@@ -51,9 +60,38 @@ CollisionNode::CollisionNode(const std::string& sNodeName) : SpatialNode(sNodeNa
     setOnShapeChangedCallback();
 }
 
+void CollisionNode::setIsCollisionEnabled(bool bEnable) {
+    if (bIsCollisionEnabled == bEnable) {
+        return;
+    }
+
+    bIsCollisionEnabled = bEnable;
+
+    if (pBody == nullptr) {
+        return;
+    }
+
+    {
+        const auto mtxParentNode = getParentNode();
+        std::scoped_lock guard(*mtxParentNode.first);
+        if (auto pCompound = dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second)) {
+            // TODO: recreate compound?
+            Logger::get().warn(
+                "disabling collision as part of a compound node is not implemented yet, note that "
+                "when implemented this will most likely cause the whole compound to be recreated");
+            return;
+        }
+    }
+
+    auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
+    physicsManager.addRemoveBody(
+        pBody, !bIsCollisionEnabled, false); // collision does not need activation to work
+}
+
 void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
     if (pNewShape == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format("`nullptr` is not a valid shape (node \"{}\")", getNodeName()));
+        Error::showErrorAndThrowException(
+            std::format("`nullptr` is not a valid shape (node \"{}\")", getNodeName()));
     }
 
     pShape = std::move(pNewShape);
@@ -81,7 +119,8 @@ void CollisionNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
 
 CollisionShape& CollisionNode::getShape() const {
     if (pShape == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format("collision node \"{}\" has invalid shape", getNodeName()));
+        Error::showErrorAndThrowException(
+            std::format("collision node \"{}\" has invalid shape", getNodeName()));
     }
 
     return *pShape;

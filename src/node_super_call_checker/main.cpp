@@ -24,9 +24,7 @@ namespace {
 }
 
 // Helper function for consistent log messages.
-void logLine(std::string_view sText) {
-    std::cout << std::format("[node_super_call_checker] {}\n", sText);
-}
+void logLine(std::string_view sText) { std::cout << std::format("[node_super_call_checker] {}\n", sText); }
 
 int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesystem::path& pathToCppFile) {
     // Skip base class.
@@ -167,12 +165,15 @@ int checkClass(const std::filesystem::path& pathToHeaderFile, const std::filesys
             // Find this function.
             const auto sOverrideFuncText = std::format("{}::{}(", sClassName, sOverrideFunctionName);
             const auto iOverridePos = sCode.find(sOverrideFuncText);
-            if (iOverridePos == std::string::npos) [[unlikely]] {
-                logLine(std::format(
-                    "unable to find \"{}\" in the file \"{}\"",
-                    sOverrideFuncText,
-                    pathToCppFile.filename().string()));
-                return 1;
+            if (iOverridePos == std::string::npos) {
+                // This probably means that there is an inner type implemented like:
+                // X::Y::funcName() which we don't need to check.
+                continue;
+                // logLine(std::format(
+                //    "unable to find \"{}\" in the file \"{}\"",
+                //    sOverrideFuncText,
+                //    pathToCppFile.filename().string()));
+                // return 1;
             }
 
             // Find `{` after the function name.

@@ -202,6 +202,7 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
     constexpr float MIN_UPDATE_TIME = 1.0F / 50.0F;
 
+#if !defined(ENGINE_EDITOR)
     float deltaTimeLeftToSimulate = timeSincePrevFrameInSec;
     do {
         PROFILE_SCOPE("physics tick")
@@ -209,7 +210,6 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         const float deltaTime = std::min(MIN_UPDATE_TIME, deltaTimeLeftToSimulate);
         deltaTimeLeftToSimulate -= deltaTime;
 
-#if !defined(ENGINE_EDITOR)
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - SimulatedBodyNode")
             for (const auto& pSimulatedNode : simulatedBodies) {
@@ -235,7 +235,6 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
                 pCharacterBody->updateCharacterPosition(*pPhysicsSystem, *pTempAllocator, deltaTime);
             }
         }
-#endif
 
         {
             PROFILE_SCOPE("JPH::PhysicsSystem::Update")
@@ -269,7 +268,15 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
                     convertPosDirFromJolt(position), convertRotationFromJolt(rotation));
             }
         }
+
+        {
+            PROFILE_SCOPE("processContactEvents")
+            for (const auto& pCharacterBody : characterBodies) {
+                pCharacterBody->processContactEvents();
+            }
+        }
     } while (deltaTimeLeftToSimulate > 0.001F);
+#endif
 
 #if defined(DEBUG)
     if (bEnableDebugRendering) {
@@ -337,8 +344,10 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
             pNode->getNodeName()));
     }
 
-    // Add to physics world.
-    pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
+    if (pNode->isCollisionEnabled()) {
+        // Add to physics world.
+        pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::DontActivate);
+    }
 
     // Save created body.
     pNode->pBody = pCreatedBody;
@@ -359,8 +368,11 @@ void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
             pNode->getNodeName()));
     }
 
-    // Remove from physics world.
-    pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
+    // Collision nodes can temporary disable collision (removed from physics world) thus do a check:
+    if (pPhysicsSystem->GetBodyInterface().IsAdded(pNode->pBody->GetID())) {
+        // Remove from physics world.
+        pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
+    }
 
     // Destroy body.
     pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
@@ -666,7 +678,9 @@ void PhysicsManager::createBodyForNode(CharacterBodyNode* pNode) {
     settings->mShape = CharacterBodyNode::createAdjustedJoltShapeForCharacter(pNode->getBodyShape());
     settings->mSupportingVolume = JPH::Plane(
         convertPosDirToJolt(glm::vec3(Globals::WorldDirection::up)), -pNode->pCollisionShape->getRadius());
-    settings->mInnerBodyLayer = static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING);
+    settings->mEnhancedInternalEdgeRemoval = false;
+    settings->mInnerBodyShape = nullptr;
+    settings->mInnerBodyLayer = static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING);
 
     // Get node ID to set body's custom data.
     if (!pNode->getNodeId().has_value()) [[unlikely]] {
@@ -683,6 +697,11 @@ void PhysicsManager::createBodyForNode(CharacterBodyNode* pNode) {
         pPhysicsSystem.get());
 
     pNode->pCharacterBody->SetCharacterVsCharacterCollision(pCharVsCharCollision.get());
+    if (pNode->pContactListener == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "expected the contact listener on the node \"{}\" to be valid", pNode->getNodeName()));
+    }
+    pNode->pCharacterBody->SetListener(pNode->pContactListener.get());
 
     // Register.
     if (!characterBodies.insert(pNode).second) [[unlikely]] {
@@ -705,10 +724,17 @@ void PhysicsManager::destroyBodyForNode(CharacterBodyNode* pNode) {
     characterBodies.erase(it);
 }
 
+void PhysicsManager::addRemoveBody(JPH::Body* pBody, bool bAdd, bool bActivate) {
+    if (bAdd) {
+        pPhysicsSystem->GetBodyInterface().AddBody(
+            pBody->GetID(), bActivate ? JPH::EActivation::Activate : JPH::EActivation::DontActivate);
+    } else {
+        pPhysicsSystem->GetBodyInterface().RemoveBody(pBody->GetID());
+    }
+}
+
 void PhysicsManager::setBodyLocationRotation(
     JPH::Body* pBody, const glm::vec3& location, const glm::vec3& rotation) {
-    PROFILE_FUNC
-
     pPhysicsSystem->GetBodyInterface().SetPositionAndRotation(
         pBody->GetID(),
         convertPosDirToJolt(location),
@@ -717,8 +743,6 @@ void PhysicsManager::setBodyLocationRotation(
 }
 
 void PhysicsManager::setBodyActiveState(JPH::Body* pBody, bool bActivate) {
-    PROFILE_FUNC
-
     if (bActivate) {
         pPhysicsSystem->GetBodyInterface().ActivateBody(pBody->GetID());
     } else {

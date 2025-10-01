@@ -129,6 +129,15 @@ public:
     void destroyBodyForNode(CharacterBodyNode* pNode);
 
     /**
+     * Adds or removes the body from the physics world (does not destroys the body).
+     *
+     * @param pBody   Body to modify.
+     * @param bAdd    `true` to add to the physics world, `false` to remove.
+     * @param bActive If adding to the physics world, specify `true` to also activate the body.
+     */
+    void addRemoveBody(JPH::Body* pBody, bool bAdd, bool bActivate);
+
+    /**
      * Sets new location and rotation to the specified physics body.
      *
      * @param pBody    Body to change.
