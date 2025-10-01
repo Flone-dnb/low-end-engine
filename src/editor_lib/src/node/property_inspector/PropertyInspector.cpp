@@ -90,7 +90,7 @@ void PropertyInspector::refreshInspectedProperties() {
 
 void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
     // Prepare handy lambdas.
-    const auto getShape = [pCollisionNode]() -> CollisionShape* {
+    const auto getShape = [pCollisionNode]() -> CollisionShape& {
         if (auto pTargetNode = dynamic_cast<CollisionNode*>(pCollisionNode)) {
             return pTargetNode->getShape();
         } else if (auto pTargetNode = dynamic_cast<DynamicBodyNode*>(pCollisionNode)) {
@@ -140,7 +140,7 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
             pButton->setColorWhileHovered(EditorTheme::getButtonHoverColor());
             pButton->setColorWhilePressed(EditorTheme::getButtonPressedColor());
             pButton->setColor(EditorTheme::getButtonColor());
-            if (getShape()->getTypeGuid() == sTypeGuid) {
+            if (getShape().getTypeGuid() == sTypeGuid) {
                 pButton->setColor(EditorTheme::getAccentColor());
             }
             pButton->setSize(glm::vec2(pButton->getSize().x, 0.03F));

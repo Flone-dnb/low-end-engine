@@ -126,6 +126,11 @@ void DynamicBodyNode::setOnShapeChangedCallback() {
 }
 
 void DynamicBodyNode::setShape(std::unique_ptr<CollisionShape> pNewShape) {
+    if (pNewShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("`nullptr` is not a valid shape (node \"{}\")", getNodeName()));
+    }
+
     pShape = std::move(pNewShape);
     setOnShapeChangedCallback();
     recreateBodyIfSpawned();
@@ -196,6 +201,15 @@ void DynamicBodyNode::setForceForNextTick(const glm::vec3& force) {
 
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
     physicsManager.addForce(pBody, force);
+}
+
+CollisionShape& DynamicBodyNode::getShape() const {
+    if (pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("dynamic body node \"{}\" has invalid shape", getNodeName()));
+    }
+
+    return *pShape;
 }
 
 void DynamicBodyNode::onSpawning() {

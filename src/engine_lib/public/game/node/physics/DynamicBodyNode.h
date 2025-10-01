@@ -128,9 +128,9 @@ public:
     /**
      * Returns used collision shape.
      *
-     * @return `nullptr` if not set.
+     * @return Shape.
      */
-    CollisionShape* getShape() const { return pShape.get(); }
+    CollisionShape& getShape() const;
 
     /**
      * Returns uniform density of the interior of the object (kg / m^3).
