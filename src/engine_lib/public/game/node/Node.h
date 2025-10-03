@@ -54,11 +54,11 @@ public:
     struct ActionEventCallbacks {
         /** Optional.  Called when the action event is triggered because one of the bound buttons is pressed.
          */
-        std::function<void(KeyboardModifiers)> onPressed;
+        std::function<void(KeyboardModifiers)> onPressed{};
 
         /** Optional. Called when the action event is stopped because all bound buttons are released (after
          * some was pressed). */
-        std::function<void(KeyboardModifiers)> onReleased;
+        std::function<void(KeyboardModifiers)> onReleased{};
     };
 
     /** Creates a new node with a default name. */
