@@ -8,6 +8,9 @@
  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
 
+#include <fstream>
+#include <string>
+
 #if defined(_WIN32)
 #define NOMINMAX
 #include <windows.h>
@@ -90,7 +93,7 @@ public:
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
         struct sysinfo memInfo;
         sysinfo(&memInfo);
-        long long totalPhysMem = memInfo.totalram;
+        auto totalPhysMem = memInfo.totalram;
         totalPhysMem *= memInfo.mem_unit;
         return static_cast<size_t>(totalPhysMem);
 #else
@@ -112,7 +115,24 @@ public:
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
         struct sysinfo memInfo;
         sysinfo(&memInfo);
-        long long physMemUsed = memInfo.totalram - memInfo.freeram;
+
+        // sysinfo.freeram is not what it means thus we use a different approach here:
+        std::string token;
+        std::ifstream file("/proc/meminfo");
+        if (!file.is_open()) [[unlikely]] {
+            return 0;
+        }
+        unsigned long freeram = memInfo.totalram;
+        while (file >> token) {
+            if (token == "MemAvailable:") { // in kB
+                if (file >> freeram) {
+                    freeram *= 1024;
+                    break;
+                }
+            }
+        }
+
+        auto physMemUsed = memInfo.totalram - freeram;
         physMemUsed *= memInfo.mem_unit;
         return static_cast<size_t>(physMemUsed);
 #else

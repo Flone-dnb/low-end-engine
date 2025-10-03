@@ -327,13 +327,13 @@ private:
         bool bIsAdded = true;
 
         /** Body ID of body that is being hit. */
-        JPH::BodyID hitBodyId;
+        JPH::BodyID hitBodyId{};
 
         /** World space contact position. */
-        glm::vec3 hitWorldPosition;
+        glm::vec3 hitWorldPosition = glm::vec3(0.0F);
 
         /** World space contact normal. */
-        glm::vec3 hitNormal;
+        glm::vec3 hitNormal = glm::vec3(0.0F);
     };
 
     /**
