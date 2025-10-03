@@ -345,10 +345,10 @@ private:
         size_t iOtherNodeId = 0;
 
         /** World space normal of the contact. */
-        glm::vec3 worldNormal;
+        glm::vec3 worldNormal = glm::vec3(0.0F);
 
         /** World space location of the contact point. */
-        glm::vec3 contactPointLocation;
+        glm::vec3 contactPointLocation = glm::vec3(0.0F);
     };
 
     /** Groups info about an active contact with sensor. */

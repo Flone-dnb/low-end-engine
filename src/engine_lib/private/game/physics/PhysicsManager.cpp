@@ -299,18 +299,26 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - MovingBodyNode")
             for (const auto& pMovingBody : movingBodies) {
+#if defined(DEBUG)
                 pMovingBody->bIsInPhysicsTick = true;
+#endif
                 pMovingBody->onBeforePhysicsUpdate(deltaTime);
+#if defined(DEBUG)
                 pMovingBody->bIsInPhysicsTick = false;
+#endif
             }
         }
 
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - CharacterBodyNode")
             for (const auto& pCharacterBody : characterBodies) {
+#if defined(DEBUG)
                 pCharacterBody->bIsInPhysicsTick = true;
+#endif
                 pCharacterBody->onBeforePhysicsUpdate(deltaTime);
+#if defined(DEBUG)
                 pCharacterBody->bIsInPhysicsTick = false;
+#endif
                 pCharacterBody->updateCharacterPosition(*pPhysicsSystem, *pTempAllocator, deltaTime);
             }
         }
