@@ -129,7 +129,9 @@ public:
 
     /**
      * Returns spawned node by the specified node ID (if found).
-     * 
+     *
+     * @param iNodeId ID of the node to get.
+     *
      * @return `nullptr` if not found.
      */
     Node* getSpawnedNodeById(size_t iNodeId);

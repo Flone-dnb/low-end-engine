@@ -87,7 +87,7 @@ public:
      * is no room to stand, use return value or @ref getIsCrouching to check the result.
      *
      * @param bIsCrouching New state.
-     * 
+     *
      * @return `true` if successfully changed the state.
      */
     bool trySetIsCrouching(bool bIsCrouching);
@@ -124,7 +124,7 @@ public:
     /**
      * Return value in range [0.0F; 1.0F] that defines how to change character height when crouching.
      *
-     * @param Crouching height factor.
+     * @return Crouching height factor.
      */
     float getCrouchingHeightFactor() const { return crouchingHeightFactor; }
 

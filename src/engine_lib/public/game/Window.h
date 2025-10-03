@@ -290,7 +290,7 @@ private:
     /** Width and height of the window. */
     std::pair<unsigned int, unsigned int> windowSize;
 
-    /** Current state of @ref setCursorVisibility. */
+    /** Current state of @ref setIsMouseCursorVisible. */
     bool bIsCursorVisible = true;
 
     /** Used in the window message loop. */

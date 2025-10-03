@@ -128,9 +128,20 @@ namespace {
 /** A listener class that receives collision contact events. */
 class ContactListener : public JPH::ContactListener {
 public:
+    /**
+     * Constructor.
+     *
+     * @param pManager Physics manager.
+     */
     ContactListener(PhysicsManager* pManager) : pManager(pManager) {}
     virtual ~ContactListener() override = default;
 
+    /**
+     * @param inBody1 Body 1.
+     * @param inBody2 Body 2.
+     * @param inManifold Info.
+     * @param ioSettings settings.
+     */
     virtual void OnContactAdded(
         const JPH::Body& inBody1,
         const JPH::Body& inBody2,
@@ -168,6 +179,9 @@ public:
                 .iSensorNodeId = pSensorBody->GetUserData(), .iOtherNodeId = pOtherBody->GetUserData()};
     }
 
+    /**
+     * @param inSubShapePair Contact info.
+     */
     virtual void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override {
         // Note: this function is called from Jolt's thread pool when all bodies are locked.
 
@@ -189,6 +203,7 @@ public:
     }
 
 private:
+    /** Physics manager. */
     PhysicsManager* const pManager = nullptr;
 };
 

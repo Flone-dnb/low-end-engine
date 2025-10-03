@@ -175,7 +175,7 @@ public:
      * Casts a ray until something is hit.
      *
      * @param rayStartPosition Position of the ray's origin.
-     * @param rayEndDirection  Position of the end of the ray.
+     * @param rayEndPosition   Position of the end of the ray.
      * @param vIgnoredBodies   Optional array of bodies to ignore.
      *
      * @return Empty if nothing was hit.
@@ -189,10 +189,11 @@ public:
      * Casts a ray and collect all hits (don't stop after the first hit).
      *
      * @param rayStartPosition Position of the ray's origin.
-     * @param rayEndDirection  Position of the end of the ray.
+     * @param rayEndPosition   Position of the end of the ray.
      * @param vIgnoredBodies   Optional array of bodies to ignore.
      *
-     * @return Empty if nothing was hit, otherwise array of hits sorted by distance (starting with closest first).
+     * @return Empty if nothing was hit, otherwise array of hits sorted by distance (starting with closest
+     * first).
      */
     std::vector<RayCastHit> castRayHitMultipleSort(
         const glm::vec3& rayStartPosition,
@@ -202,9 +203,9 @@ public:
     /**
      * Adds or removes the body from the physics world (does not destroys the body).
      *
-     * @param pBody   Body to modify.
-     * @param bAdd    `true` to add to the physics world, `false` to remove.
-     * @param bActive If adding to the physics world, specify `true` to also activate the body.
+     * @param pBody     Body to modify.
+     * @param bAdd      `true` to add to the physics world, `false` to remove.
+     * @param bActivate If adding to the physics world, specify `true` to also activate the body.
      */
     void addRemoveBody(JPH::Body* pBody, bool bAdd, bool bActivate);
 
@@ -307,6 +308,8 @@ public:
     /**
      * Returns user data from the body.
      *
+     * @param bodyId Body ID.
+     *
      * @return User data.
      */
     uint64_t getUserDataFromBody(JPH::BodyID bodyId);
@@ -375,7 +378,7 @@ private:
     /**
      * Constructor.
      *
-     * @param GameManager Game manager.
+     * @param pGameManager Game manager.
      */
     PhysicsManager(GameManager* pGameManager);
 
@@ -388,14 +391,16 @@ private:
     void onBeforeNewFrame(float timeSincePrevFrameInSec);
 
     /**
-     * Creates a new body and adds to @ref aliveBodies if successful.
+     * Creates a new body and adds to @ref bodyIdToPtr if successful.
+     *
+     * @param settings Body creation settings.
      *
      * @return `nullptr` if failed to create body.
      */
     JPH::Body* createBody(const JPH::BodyCreationSettings& settings);
 
     /**
-     * Destroys a body and removes it from @ref aliveBodies.
+     * Destroys a body and removes it from @ref bodyIdToPtr.
      *
      * @param bodyId ID of the body to destroy.
      */

@@ -192,7 +192,7 @@ protected:
      * Casts a ray until something is hit.
      *
      * @param rayStartPosition     Position of the ray's origin.
-     * @param rayEndDirection      Position of the end of the ray.
+     * @param rayEndPosition       Position of the end of the ray.
      * @param bIgnoreThisCharacter `true` to ignore collision of this character while doing a ray cast.
      * @param bIgnoreTriggers      `true` to ignore trigger volume nodes.
      *
