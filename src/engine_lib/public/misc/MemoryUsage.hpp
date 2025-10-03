@@ -91,7 +91,7 @@ public:
         struct sysinfo memInfo;
         sysinfo(&memInfo);
         long long totalPhysMem = memInfo.totalram;
-        totalVirtualMem *= memInfo.mem_unit;
+        totalPhysMem *= memInfo.mem_unit;
         return static_cast<size_t>(totalPhysMem);
 #else
         static_assert(false, "not supported OS");
