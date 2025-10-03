@@ -3,6 +3,7 @@
 // Standard.
 #include <memory>
 #include <queue>
+#include <optional>
 
 // Custom.
 #include "game/node/SpatialNode.h"
@@ -28,6 +29,18 @@ class CharacterBodyNode : public SpatialNode {
     friend class PhysicsManager;
 
 public:
+    /** Hit result of a ray cast. */
+    struct RayCastHit {
+        /** Physics node that was hit. */
+        Node* pHitNode = nullptr;
+
+        /** Position of the hit. */
+        glm::vec3 hitPosition;
+
+        /** Normal of the hit. */
+        glm::vec3 hitNormal;
+    };
+
     CharacterBodyNode();
 
     /**
@@ -174,6 +187,22 @@ protected:
      * @return `true` if the shape was changed, `false` if something will collide with the shape.
      */
     bool trySetNewShape(CapsuleCollisionShape& newShape);
+
+    /**
+     * Casts a ray until something is hit.
+     *
+     * @param rayStartPosition     Position of the ray's origin.
+     * @param rayEndDirection      Position of the end of the ray.
+     * @param bIgnoreThisCharacter `true` to ignore collision of this character while doing a ray cast.
+     * @param bIgnoreTriggers      `true` to ignore trigger volume nodes.
+     *
+     * @return Empty if nothing was hit.
+     */
+    std::optional<RayCastHit> castRayUntilHit(
+        const glm::vec3& rayStartPosition,
+        const glm::vec3& rayEndPosition,
+        bool bIgnoreThisCharacter = true,
+        bool bIgnoreTriggers = true);
 
     /**
      * Returns collision shape.

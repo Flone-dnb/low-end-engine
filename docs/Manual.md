@@ -442,11 +442,13 @@ void MyMovingBodyNode::onBeforePhysicsUpdate(float deltaTime) {
 ```
 Note that moving such nodes by velocities is better for physics simulation instead of using SetWorldLocation which is basically means you are teleporting the body.
 
-`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character (which are generally represented by a capsule shape). It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height and so on (these features can be configured, see setter/getter functions on this node).
+`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character (which are generally represented by a capsule shape). It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height, ray casting and so on (these features can be configured, see setter/getter functions on this node).
 
 `SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode, copy-paste needed movement functionality from SimpleCharacterBodyNode and adjust to your needs.
 
 `TriggerVolumeNode` is a node that reports contacts with other physics bodies (but does not block them). It's used to detect when an object enters their area.
+
+In case you need more functionality (related to physics) you can look at `PhysicsManager`, physics-based nodes use it under the hood.
 
 ## Post-processing
 

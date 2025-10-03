@@ -1,4 +1,5 @@
 #include "game/physics/PhysicsManager.h"
+#include "game/physics/PhysicsManager.h"
 
 // Standard.
 #include <thread>
@@ -42,6 +43,9 @@
 #include "Jolt/Physics/Collision/ContactListener.h"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 #include "Jolt/Physics/Character/CharacterVirtual.h"
+#include "Jolt/Physics/Collision/RayCast.h"
+#include "Jolt/Physics/Collision/CastResult.h"
+#include "Jolt/Physics/Collision/CollisionCollectorImpl.h"
 
 static void checkJoltInstructionSupport() {
 #ifndef IS_ARM64
@@ -252,6 +256,10 @@ PhysicsManager::~PhysicsManager() {
         Error::showErrorAndThrowException(
             "physics manager is being destroyed but there are still some character bodies registered");
     }
+    if (!bodyIdToPtr.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            "physics manager is being destroyed but there are still some alive bodies registered");
+    }
 
     if (!pCharVsCharCollision->mCharacters.empty()) [[unlikely]] {
         Error::showErrorAndThrowException(
@@ -438,6 +446,34 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 #endif
 }
 
+JPH::Body* PhysicsManager::createBody(const JPH::BodyCreationSettings& settings) {
+    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(settings);
+    if (pCreatedBody == nullptr) {
+        return nullptr;
+    }
+
+    const auto it = bodyIdToPtr.find(pCreatedBody->GetID());
+    if (it != bodyIdToPtr.end()) [[unlikely]] {
+        // We forgot somewhere to add/remove body from this map.
+        Error::showErrorAndThrowException(
+            "created a new body but a body with the same ID already exists in the alive bodies map");
+    }
+    bodyIdToPtr[pCreatedBody->GetID()] = pCreatedBody;
+
+    return pCreatedBody;
+}
+
+void PhysicsManager::destroyBody(const JPH::BodyID& bodyId) {
+    const auto it = bodyIdToPtr.find(bodyId);
+    if (it == bodyIdToPtr.end()) [[unlikely]] {
+        // We forgot somewhere to add/remove body from this map.
+        Error::showErrorAndThrowException("unable to find body ID to destroy");
+    }
+    bodyIdToPtr.erase(it);
+
+    pPhysicsSystem->GetBodyInterface().DestroyBody(bodyId);
+}
+
 #if defined(DEBUG)
 void PhysicsManager::setEnableDebugRendering(bool bEnable) { bEnableDebugRendering = bEnable; }
 #endif
@@ -474,7 +510,7 @@ void PhysicsManager::createBodyForNode(CollisionNode* pNode) {
     }
     bodySettings.mUserData = *pNode->getNodeId();
 
-    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    JPH::Body* pCreatedBody = createBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics body for the node \"{}\", probably run out of bodies",
@@ -512,7 +548,7 @@ void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
     }
 
     // Destroy body.
-    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    destroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
 }
 
@@ -549,7 +585,7 @@ void PhysicsManager::createBodyForNode(TriggerVolumeNode* pNode) {
     }
     bodySettings.mUserData = *pNode->getNodeId();
 
-    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    JPH::Body* pCreatedBody = createBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics body for the node \"{}\", probably run out of bodies",
@@ -587,7 +623,7 @@ void PhysicsManager::destroyBodyForNode(TriggerVolumeNode* pNode) {
     }
 
     // Destroy body.
-    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    destroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
 }
 
@@ -629,7 +665,7 @@ void PhysicsManager::createBodyForNode(SimulatedBodyNode* pNode) {
     }
     bodySettings.mUserData = *pNode->getNodeId();
 
-    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    JPH::Body* pCreatedBody = createBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics body for the node \"{}\", probably run out of bodies",
@@ -669,7 +705,7 @@ void PhysicsManager::destroyBodyForNode(SimulatedBodyNode* pNode) {
     pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
 
     // Destroy body.
-    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    destroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
 
     // Unregister.
@@ -713,7 +749,7 @@ void PhysicsManager::createBodyForNode(MovingBodyNode* pNode) {
     }
     bodySettings.mUserData = *pNode->getNodeId();
 
-    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    JPH::Body* pCreatedBody = createBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics body for the node \"{}\", probably run out of bodies",
@@ -752,7 +788,7 @@ void PhysicsManager::destroyBodyForNode(MovingBodyNode* pNode) {
     pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
 
     // Destroy body.
-    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    destroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
 
     // Unregister.
@@ -844,7 +880,7 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
     }
     bodySettings.mUserData = *pNode->getNodeId();
 
-    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    JPH::Body* pCreatedBody = createBody(bodySettings);
     if (pCreatedBody == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "failed to create a physics body for the node \"{}\", probably run out of bodies",
@@ -877,7 +913,7 @@ void PhysicsManager::destroyBodyForNode(CompoundCollisionNode* pNode) {
     pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
 
     // Destroy body.
-    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    destroyBody(pNode->pBody->GetID());
     pNode->pBody = nullptr;
 }
 
@@ -936,6 +972,114 @@ void PhysicsManager::destroyBodyForNode(CharacterBodyNode* pNode) {
     characterBodies.erase(it);
 }
 
+std::optional<PhysicsManager::RayCastHit> PhysicsManager::castRayUntilHit(
+    const glm::vec3& rayStartPosition,
+    const glm::vec3& rayEndPosition,
+    const std::vector<JPH::BodyID>& vIgnoredBodies) {
+    PROFILE_FUNC
+
+    const auto rayDirectionAndLength = rayEndPosition - rayStartPosition;
+
+    // Prepare filters.
+    const JPH::DefaultBroadPhaseLayerFilter broadPhaseLayerFilter =
+        pPhysicsSystem->GetDefaultBroadPhaseLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+    const JPH::DefaultObjectLayerFilter objectLayerFilter =
+        pPhysicsSystem->GetDefaultLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+
+    std::unique_ptr<JPH::BodyFilter> pBodyFilter = std::make_unique<JPH::BodyFilter>();
+    if (vIgnoredBodies.size() == 1) {
+        pBodyFilter = std::make_unique<JPH::IgnoreSingleBodyFilter>(vIgnoredBodies[0]);
+    } else if (!vIgnoredBodies.empty()) {
+        auto pFilter = std::make_unique<JPH::IgnoreMultipleBodiesFilter>();
+        for (const auto& bodyId : vIgnoredBodies) {
+            pFilter->IgnoreBody(bodyId);
+        }
+        pBodyFilter = std::move(pFilter);
+    }
+
+    // Cast ray.
+    JPH::RRayCast ray(convertPosDirToJolt(rayStartPosition), convertPosDirToJolt(rayDirectionAndLength));
+    JPH::RayCastResult result{};
+    if (!pPhysicsSystem->GetNarrowPhaseQuery().CastRay(
+            ray, result, broadPhaseLayerFilter, objectLayerFilter, *pBodyFilter)) {
+        return {};
+    }
+
+    const auto bodyIt = bodyIdToPtr.find(result.mBodyID);
+    if (bodyIt == bodyIdToPtr.end()) [[unlikely]] {
+        // We forgot to add/remove body somewhere.
+        Error::showErrorAndThrowException("unable to find body by ID");
+    }
+    const auto pHitBody = bodyIt->second;
+
+    const auto hitPosition = rayStartPosition + rayDirectionAndLength * result.mFraction;
+    const auto hitNormal = convertPosDirFromJolt(
+        pHitBody->GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction)));
+
+    return RayCastHit{.bodyId = result.mBodyID, .hitPosition = hitPosition, .hitNormal = hitNormal};
+}
+
+std::vector<PhysicsManager::RayCastHit> PhysicsManager::castRayHitMultipleSort(
+    const glm::vec3& rayStartPosition,
+    const glm::vec3& rayEndPosition,
+    const std::vector<JPH::BodyID>& vIgnoredBodies) {
+    PROFILE_FUNC
+
+    const auto rayDirectionAndLength = rayEndPosition - rayStartPosition;
+
+    // Prepare filters.
+    const JPH::DefaultBroadPhaseLayerFilter broadPhaseLayerFilter =
+        pPhysicsSystem->GetDefaultBroadPhaseLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+    const JPH::DefaultObjectLayerFilter objectLayerFilter =
+        pPhysicsSystem->GetDefaultLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
+
+    std::unique_ptr<JPH::BodyFilter> pBodyFilter = std::make_unique<JPH::BodyFilter>();
+    if (vIgnoredBodies.size() == 1) {
+        pBodyFilter = std::make_unique<JPH::IgnoreSingleBodyFilter>(vIgnoredBodies[0]);
+    } else if (!vIgnoredBodies.empty()) {
+        auto pFilter = std::make_unique<JPH::IgnoreMultipleBodiesFilter>();
+        for (const auto& bodyId : vIgnoredBodies) {
+            pFilter->IgnoreBody(bodyId);
+        }
+        pBodyFilter = std::move(pFilter);
+    }
+
+    JPH::RayCastSettings settings;
+    settings.SetBackFaceMode(JPH::EBackFaceMode::CollideWithBackFaces);
+    settings.mTreatConvexAsSolid = true;
+
+    // Cast ray.
+    JPH::RRayCast ray(convertPosDirToJolt(rayStartPosition), convertPosDirToJolt(rayDirectionAndLength));
+    JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
+    pPhysicsSystem->GetNarrowPhaseQuery().CastRay(
+        ray, settings, collector, broadPhaseLayerFilter, objectLayerFilter, *pBodyFilter);
+    if (collector.mHits.empty()) {
+        return {};
+    }
+
+    collector.Sort();
+
+    std::vector<RayCastHit> vHits;
+    vHits.reserve(collector.mHits.size());
+    for (const auto& hitInfo : collector.mHits) {
+        const auto bodyIt = bodyIdToPtr.find(hitInfo.mBodyID);
+        if (bodyIt == bodyIdToPtr.end()) [[unlikely]] {
+            // We forgot to add/remove body somewhere.
+            Error::showErrorAndThrowException("unable to find body by ID");
+        }
+        const auto pHitBody = bodyIt->second;
+
+        const auto hitPosition = rayStartPosition + rayDirectionAndLength * hitInfo.mFraction;
+        const auto hitNormal = convertPosDirFromJolt(
+            pHitBody->GetWorldSpaceSurfaceNormal(hitInfo.mSubShapeID2, ray.GetPointOnRay(hitInfo.mFraction)));
+
+        vHits.push_back(
+            RayCastHit{.bodyId = hitInfo.mBodyID, .hitPosition = hitPosition, .hitNormal = hitNormal});
+    }
+
+    return vHits;
+}
+
 void PhysicsManager::addRemoveBody(JPH::Body* pBody, bool bAdd, bool bActivate) {
     if (bAdd) {
         pPhysicsSystem->GetBodyInterface().AddBody(
@@ -986,6 +1130,10 @@ void PhysicsManager::setLinearVelocity(JPH::Body* pBody, const glm::vec3& veloci
 
 void PhysicsManager::setAngularVelocity(JPH::Body* pBody, const glm::vec3& velocity) {
     pPhysicsSystem->GetBodyInterface().SetAngularVelocity(pBody->GetID(), convertPosDirToJolt(velocity));
+}
+
+bool PhysicsManager::isBodySensor(JPH::BodyID bodyId) {
+    return pPhysicsSystem->GetBodyInterface().IsSensor(bodyId);
 }
 
 glm::vec3 PhysicsManager::getLinearVelocity(JPH::Body* pBody) {

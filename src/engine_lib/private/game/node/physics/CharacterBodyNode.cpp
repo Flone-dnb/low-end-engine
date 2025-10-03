@@ -77,6 +77,53 @@ CharacterBodyNode::CharacterBodyNode(const std::string& sNodeName) : SpatialNode
 
 CharacterBodyNode::~CharacterBodyNode() {}
 
+std::optional<CharacterBodyNode::RayCastHit> CharacterBodyNode::castRayUntilHit(
+    const glm::vec3& rayStartPosition,
+    const glm::vec3& rayEndPosition,
+    bool bIgnoreThisCharacter,
+    bool bIgnoreTriggers) {
+    PROFILE_FUNC
+
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("ray cast function can only be used on spawned nodes");
+    }
+
+    std::vector<JPH::BodyID> vIgnoredBodies;
+    if (bIgnoreThisCharacter && !pCharacterBody->GetInnerBodyID().IsInvalid()) {
+        vIgnoredBodies.push_back(pCharacterBody->GetInnerBodyID());
+    }
+
+    const auto pWorld = getWorldWhileSpawned();
+    auto& physicsManager = pWorld->getGameManager().getPhysicsManager();
+
+    std::optional<PhysicsManager::RayCastHit> hitResult;
+    do {
+        // Cast ray.
+        hitResult = pWorld->getGameManager().getPhysicsManager().castRayUntilHit(
+            rayStartPosition, rayEndPosition, vIgnoredBodies);
+        if (!hitResult.has_value()) {
+            return {};
+        }
+
+        if (bIgnoreTriggers && physicsManager.isBodySensor(hitResult->bodyId)) {
+            vIgnoredBodies.push_back(hitResult->bodyId);
+            continue;
+        } else {
+            break;
+        }
+    } while (true); // TODO: rework I guess
+
+    // Get hit node.
+    const auto pHitNode = pWorld->getSpawnedNodeById(physicsManager.getUserDataFromBody(hitResult->bodyId));
+    if (pHitNode == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" is unable to determine hit node from ray cast result", getNodeName()));
+    }
+
+    return CharacterBodyNode::RayCastHit{
+        .pHitNode = pHitNode, .hitPosition = hitResult->hitPosition, .hitNormal = hitResult->hitNormal};
+}
+
 void CharacterBodyNode::setMaxWalkSlopeAngle(float degrees) {
     maxWalkSlopeAngleDeg = degrees;
     recreateBodyIfSpawned();

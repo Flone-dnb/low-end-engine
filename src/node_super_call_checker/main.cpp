@@ -242,6 +242,73 @@ int checkFiles(
     return 0;
 }
 
+int checkPhysicsManager(const std::filesystem::path& pathToCppFile) {
+    // Make sure we don't call JPH::PhysicsSystem::CreateBody/DestroyBody more than 1 time in the
+    // file, because we wrapped these functions into our custom functions that do additional stuff.
+
+    if (!std::filesystem::exists(pathToCppFile)) [[unlikely]] {
+        logLine(std::format("path to the specified file \"{}\" does not exist", pathToCppFile.string()));
+        return 1;
+    }
+
+    std::ifstream file(pathToCppFile.string());
+    if (!file.is_open()) [[unlikely]] {
+        logLine(std::format("unable to open file \"{}\"", pathToCppFile.string()));
+        return 1;
+    }
+    std::string sCode;
+    {
+        std::string sCodeLine;
+        while (getline(file, sCodeLine)) {
+            sCode += sCodeLine;
+        }
+    }
+
+    // Prepare a lambda.
+    const auto countCalls = [&](const std::string& sText) -> size_t {
+        auto iFoundPos = sCode.find(sText);
+        if (iFoundPos == std::string::npos) {
+            return 0;
+        }
+
+        size_t iCallCount = 1;
+
+        do {
+            iFoundPos = sCode.find(sText, iFoundPos + 1);
+            if (iFoundPos != std::string::npos) {
+                iCallCount += 1;
+            }
+        } while (iFoundPos != std::string::npos);
+
+        return iCallCount;
+    };
+
+    const auto logError = [](const std::string& sFunc) {
+        logLine(std::format(
+            "expected `JPH::PhysicsSystem::{}` function to be called only once because we have a "
+            "wrapper function that you should use instead (if wrong maybe update this check?)",
+            sFunc));
+    };
+    if (countCalls("CreateBody(") != 1) [[unlikely]] {
+        logError("CreateBody");
+        return 1;
+    }
+    if (countCalls("DestroyBody(") != 1) [[unlikely]] {
+        logError("DestroyBody");
+        return 1;
+    }
+    if (countCalls("DestroyBodies(") > 1) [[unlikely]] {
+        logError("DestroyBodies");
+        return 1;
+    }
+    if (countCalls("AddBodiesFinalize(") > 1) [[unlikely]] {
+        logError("AddBodiesFinalize");
+        return 1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     // Enable run-time memory check for debug builds (on Windows).
 #if defined(WIN32) && defined(DEBUG)
@@ -266,6 +333,13 @@ int main(int argc, char* argv[]) {
     }
     const std::filesystem::path pathToDirectory1 = argv[1];
     const std::filesystem::path pathToDirectory2 = argv[2];
+
+    // TODO: probably rename this program to something like post build checker and rework this hardcode
+    if (checkPhysicsManager(
+            std::filesystem::path(__FILE__).parent_path().parent_path() / "engine_lib" / "private" / "game" / "physics" /
+            "PhysicsManager.cpp") != 0) {
+        return 1;
+    }
 
     // Gather directories to check.
     std::vector<std::filesystem::path> vPathsToDirectoryToCheck;

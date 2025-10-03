@@ -4,6 +4,8 @@
 #include <memory>
 #include <mutex>
 #include <unordered_set>
+#include <vector>
+#include <optional>
 #include <unordered_map>
 #include <queue>
 
@@ -14,6 +16,7 @@
 #include "Jolt/Jolt.h" // Always include Jolt.h before including any other Jolt header.
 #include "Jolt/Physics/Body/BodyID.h"
 #include "Jolt/Physics/Collision/Shape/SubShapeIDPair.h"
+#include "Jolt/Physics/Body/BodyCreationSettings.h"
 
 namespace JPH {
     class PhysicsSystem;
@@ -52,6 +55,18 @@ class PhysicsManager {
     friend class ContactListener;
 
 public:
+    /** Hit result of a ray cast. */
+    struct RayCastHit {
+        /** ID of the body hit. */
+        JPH::BodyID bodyId;
+
+        /** Position of the hit. */
+        glm::vec3 hitPosition;
+
+        /** Normal of the hit. */
+        glm::vec3 hitNormal;
+    };
+
     ~PhysicsManager();
 
     PhysicsManager(const PhysicsManager&) = delete;
@@ -157,6 +172,34 @@ public:
     void destroyBodyForNode(CharacterBodyNode* pNode);
 
     /**
+     * Casts a ray until something is hit.
+     *
+     * @param rayStartPosition Position of the ray's origin.
+     * @param rayEndDirection  Position of the end of the ray.
+     * @param vIgnoredBodies   Optional array of bodies to ignore.
+     *
+     * @return Empty if nothing was hit.
+     */
+    std::optional<RayCastHit> castRayUntilHit(
+        const glm::vec3& rayStartPosition,
+        const glm::vec3& rayEndPosition,
+        const std::vector<JPH::BodyID>& vIgnoredBodies = {});
+
+    /**
+     * Casts a ray and collect all hits (don't stop after the first hit).
+     *
+     * @param rayStartPosition Position of the ray's origin.
+     * @param rayEndDirection  Position of the end of the ray.
+     * @param vIgnoredBodies   Optional array of bodies to ignore.
+     *
+     * @return Empty if nothing was hit, otherwise array of hits sorted by distance (starting with closest first).
+     */
+    std::vector<RayCastHit> castRayHitMultipleSort(
+        const glm::vec3& rayStartPosition,
+        const glm::vec3& rayEndPosition,
+        const std::vector<JPH::BodyID>& vIgnoredBodies = {});
+
+    /**
      * Adds or removes the body from the physics world (does not destroys the body).
      *
      * @param pBody   Body to modify.
@@ -235,6 +278,15 @@ public:
     void setAngularVelocity(JPH::Body* pBody, const glm::vec3& velocity);
 
     /**
+     * Tells if a body with the specified ID is a sensor.
+     *
+     * @param bodyId ID of the body.
+     *
+     * @return `true` if sensor.
+     */
+    bool isBodySensor(JPH::BodyID bodyId);
+
+    /**
      * Returns linear velocity to a body.
      *
      * @param pBody Body to check.
@@ -309,8 +361,7 @@ private:
     };
 
     /** Groups data related to contacts. */
-    struct ContactData
-    {
+    struct ContactData {
         /** Contact add events to process. */
         std::queue<ContactInfo> newContactsAdded;
 
@@ -336,11 +387,28 @@ private:
      */
     void onBeforeNewFrame(float timeSincePrevFrameInSec);
 
+    /**
+     * Creates a new body and adds to @ref aliveBodies if successful.
+     *
+     * @return `nullptr` if failed to create body.
+     */
+    JPH::Body* createBody(const JPH::BodyCreationSettings& settings);
+
+    /**
+     * Destroys a body and removes it from @ref aliveBodies.
+     *
+     * @param bodyId ID of the body to destroy.
+     */
+    void destroyBody(const JPH::BodyID& bodyId);
+
     /** Data related to contacts. */
     std::pair<std::mutex, ContactData> mtxContactData;
 
     /** Used to update node position/rotation according to the simulated Jolt body. */
     std::unordered_set<SimulatedBodyNode*> simulatedBodies;
+
+    /** Mapping from body ID to body pointer for non destroyed bodies. */
+    std::unordered_map<JPH::BodyID, JPH::Body*> bodyIdToPtr;
 
     /** Used to update node position/rotation according to the Jolt body. */
     std::unordered_set<MovingBodyNode*> movingBodies;
