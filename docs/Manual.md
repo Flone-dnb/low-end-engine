@@ -446,6 +446,8 @@ Note that moving such nodes by velocities is better for physics simulation inste
 
 `SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode, copy-paste needed movement functionality from SimpleCharacterBodyNode and adjust to your needs.
 
+`TriggerVolumeNode` is a node that reports contacts with other physics bodies (but does not block them). It's used to detect when an object enters their area.
+
 ## Post-processing
 
 You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the camera manager: `Node::getWorldWhileSpawned()->getCameraManager().getPostProcessManager()`.

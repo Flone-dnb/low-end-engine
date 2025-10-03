@@ -201,6 +201,12 @@ bool CharacterBodyNode::trySetNewShape(CapsuleCollisionShape& newShape) {
         return true;
     }
 
+    if (bIsInPhysicsTick) [[unlikely]] {
+        // We probably shouldn't change shapes during the physics update.
+        Error::showErrorAndThrowException(std::format(
+            "this function cannot be called while in physics update (node \"{}\")", getNodeName()));
+    }
+
     const JPH::Ref<JPH::Shape> pNewShape = createAdjustedJoltShapeForCharacter(newShape);
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
     auto& physicsSystem = physicsManager.getPhysicsSystem();
@@ -221,6 +227,8 @@ bool CharacterBodyNode::trySetNewShape(CapsuleCollisionShape& newShape) {
         physicsManager.getTempAllocator());
 
     if (bSuccess) {
+        pCharacterBody->SetInnerBodyShape(pNewShape.GetPtr());
+
         pCollisionShape->setHalfHeight(newShape.getHalfHeight());
         pCollisionShape->setRadius(newShape.getRadius());
     }

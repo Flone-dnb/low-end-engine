@@ -163,6 +163,8 @@ set(PROJECT_SOURCES
     public/game/node/physics/SimpleCharacterBodyNode.h
     private/game/node/physics/CompoundCollisionNode.cpp
     public/game/node/physics/CompoundCollisionNode.h
+    private/game/node/physics/TriggerVolumeNode.cpp
+    public/game/node/physics/TriggerVolumeNode.h
     public/game/node/light/DirectionalLightNode.h
     private/game/node/light/DirectionalLightNode.cpp
     public/game/node/light/SpotlightNode.h

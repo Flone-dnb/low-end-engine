@@ -39,7 +39,7 @@ GameManager::GameManager(
     this->pGameInstance = std::move(pGameInstance);
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
 #ifndef ENGINE_UI_ONLY
-    pPhysicsManager = std::unique_ptr<PhysicsManager>(new PhysicsManager());
+    pPhysicsManager = std::unique_ptr<PhysicsManager>(new PhysicsManager(this));
 #endif
 
     ReflectedTypeDatabase::registerEngineTypes();

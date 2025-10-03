@@ -24,7 +24,10 @@ public:
      * @param color Color.
      */
     virtual void DrawLine(JPH::Vec3 from, JPH::Vec3 to, JPH::ColorArg color) override {
-        Error::showErrorAndThrowException("not implemented");
+        vLinesToDraw.reserve(vLinesToDraw.size() + 2);
+
+        vLinesToDraw.push_back(convertPosDirFromJolt(from));
+        vLinesToDraw.push_back(convertPosDirFromJolt(to));
     }
 
     /**

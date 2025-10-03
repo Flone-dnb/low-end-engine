@@ -2,11 +2,18 @@
 
 // Standard.
 #include <memory>
-#include <atomic>
+#include <mutex>
 #include <unordered_set>
+#include <unordered_map>
+#include <queue>
 
 // Custom.
 #include "math/GLMath.hpp"
+
+// External.
+#include "Jolt/Jolt.h" // Always include Jolt.h before including any other Jolt header.
+#include "Jolt/Physics/Body/BodyID.h"
+#include "Jolt/Physics/Collision/Shape/SubShapeIDPair.h"
 
 namespace JPH {
     class PhysicsSystem;
@@ -14,7 +21,6 @@ namespace JPH {
     class TempAllocatorImpl;
     class TempAllocator;
     class Body;
-    class BodyID;
     class CharacterVsCharacterCollisionSimple;
 }
 
@@ -27,6 +33,11 @@ class MovingBodyNode;
 class CompoundCollisionNode;
 class CharacterBodyNode;
 class CapsuleCollisionShape;
+class TriggerVolumeNode;
+class ContactListener;
+class GameManager;
+class TriggerVolumeNode;
+class Node;
 
 #if defined(DEBUG)
 class PhysicsDebugDrawer;
@@ -36,6 +47,9 @@ class PhysicsDebugDrawer;
 class PhysicsManager {
     // Only game manager is expected to create physics manager.
     friend class GameManager;
+
+    // Adds contacts events to the queue.
+    friend class ContactListener;
 
 public:
     ~PhysicsManager();
@@ -71,6 +85,20 @@ public:
      * @param pNode Node to destroy collision.
      */
     void destroyBodyForNode(CollisionNode* pNode);
+
+    /**
+     * Creates a physics body for the specified node.
+     *
+     * @param pNode Node to create collision for.
+     */
+    void createBodyForNode(TriggerVolumeNode* pNode);
+
+    /**
+     * Destroys previously created body (see @ref createBodyForNode).
+     *
+     * @param pNode Node to destroy collision.
+     */
+    void destroyBodyForNode(TriggerVolumeNode* pNode);
 
     /**
      * Creates a physics body for the specified node.
@@ -253,7 +281,52 @@ public:
     JPH::TempAllocator& getTempAllocator();
 
 private:
-    PhysicsManager();
+    /** Groups information about a collision contact. */
+    struct ContactInfo {
+        /** `true` if contact added, `false` if contact lost. */
+        bool bIsAdded = false;
+
+        /** Sensor node id. */
+        size_t iSensorNodeId = 0;
+
+        /** Other node id. */
+        size_t iOtherNodeId = 0;
+
+        /** World space normal of the contact. */
+        glm::vec3 worldNormal;
+
+        /** World space location of the contact point. */
+        glm::vec3 contactPointLocation;
+    };
+
+    /** Groups info about an active contact with sensor. */
+    struct SensorContactInfo {
+        /** Node ID of the sensor body. */
+        size_t iSensorNodeId = 0;
+
+        /** Node ID of the other body. */
+        size_t iOtherNodeId = 0;
+    };
+
+    /** Groups data related to contacts. */
+    struct ContactData
+    {
+        /** Contact add events to process. */
+        std::queue<ContactInfo> newContactsAdded;
+
+        /** Contact remove events to process. */
+        std::queue<ContactInfo> newContactsRemoved;
+
+        /** Added contacts that were not removed yet. */
+        std::unordered_map<JPH::SubShapeIDPair, SensorContactInfo> activeSensorContacts;
+    };
+
+    /**
+     * Constructor.
+     *
+     * @param GameManager Game manager.
+     */
+    PhysicsManager(GameManager* pGameManager);
 
     /**
      * Checks if needs to run a physics tick and runs if needed.
@@ -262,6 +335,9 @@ private:
      * the last frame was rendered.
      */
     void onBeforeNewFrame(float timeSincePrevFrameInSec);
+
+    /** Data related to contacts. */
+    std::pair<std::mutex, ContactData> mtxContactData;
 
     /** Used to update node position/rotation according to the simulated Jolt body. */
     std::unordered_set<SimulatedBodyNode*> simulatedBodies;
@@ -284,6 +360,9 @@ private:
     /** List of active characters so they can collide. */
     std::unique_ptr<JPH::CharacterVsCharacterCollisionSimple> pCharVsCharCollision;
 
+    /** A listener class that receives collision contact events. */
+    std::unique_ptr<ContactListener> pContactListener;
+
     /** Jolt physics system. */
     std::unique_ptr<JPH::PhysicsSystem> pPhysicsSystem;
 
@@ -292,6 +371,9 @@ private:
 
     /** Temp allocator. */
     std::unique_ptr<JPH::TempAllocatorImpl> pTempAllocator;
+
+    /** Game manager. */
+    GameManager* const pGameManager = nullptr;
 
 #if defined(DEBUG)
     /** Debug rendering of the physics. */

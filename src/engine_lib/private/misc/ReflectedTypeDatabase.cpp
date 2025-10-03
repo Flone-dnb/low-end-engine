@@ -31,6 +31,7 @@
 #include "game/node/physics/MovingBodyNode.h"
 #include "game/node/physics/CharacterBodyNode.h"
 #include "game/node/physics/SimpleCharacterBodyNode.h"
+#include "game/node/physics/TriggerVolumeNode.h"
 
 std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::reflectedTypes{};
 
@@ -73,6 +74,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(MovingBodyNode::getTypeGuidStatic(), MovingBodyNode::getReflectionInfo());
     registerType(CharacterBodyNode::getTypeGuidStatic(), CharacterBodyNode::getReflectionInfo());
     registerType(SimpleCharacterBodyNode::getTypeGuidStatic(), SimpleCharacterBodyNode::getReflectionInfo());
+    registerType(TriggerVolumeNode::getTypeGuidStatic(), TriggerVolumeNode::getReflectionInfo());
 }
 
 void ReflectedTypeDatabase::registerType(const std::string& sTypeGuid, TypeReflectionInfo&& typeInfo) {

@@ -6,6 +6,7 @@
 // Custom.
 #include "misc/Error.h"
 #include "misc/Profiler.hpp"
+#include "game/GameManager.h"
 #include "game/physics/PhysicsLayers.h"
 #include "game/physics/CoordinateConversions.hpp"
 #include "game/node/physics/CollisionNode.h"
@@ -13,6 +14,7 @@
 #include "game/node/physics/MovingBodyNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
 #include "game/node/physics/CharacterBodyNode.h"
+#include "game/node/physics/TriggerVolumeNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "render/PhysicsDebugDrawer.hpp"
 #include "game/DebugConsole.h"
@@ -30,7 +32,6 @@
 #include "isa_availability.h"
 #endif
 #endif
-#include "Jolt/Jolt.h" // Always include Jolt.h before including any other Jolt header.
 #include "Jolt/Core/JobSystemThreadPool.h"
 #include "Jolt/Core/Factory.h"
 #include "Jolt/Core/TempAllocator.h"
@@ -38,6 +39,7 @@
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/PhysicsSettings.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
+#include "Jolt/Physics/Collision/ContactListener.h"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 #include "Jolt/Physics/Character/CharacterVirtual.h"
 
@@ -119,7 +121,74 @@ namespace {
     constexpr unsigned int MAX_BODY_MUTEXES = 0;
 }
 
-PhysicsManager::PhysicsManager() {
+/** A listener class that receives collision contact events. */
+class ContactListener : public JPH::ContactListener {
+public:
+    ContactListener(PhysicsManager* pManager) : pManager(pManager) {}
+    virtual ~ContactListener() override = default;
+
+    virtual void OnContactAdded(
+        const JPH::Body& inBody1,
+        const JPH::Body& inBody2,
+        const JPH::ContactManifold& inManifold,
+        JPH::ContactSettings& ioSettings) override {
+        // Note: this function is called from Jolt's thread pool when all bodies are locked.
+
+        // For now we only care about sensor contacts.
+        const JPH::Body* pSensorBody = nullptr;
+        const JPH::Body* pOtherBody = nullptr;
+        if (inBody1.IsSensor()) {
+            pSensorBody = &inBody1;
+            pOtherBody = &inBody2;
+        } else if (inBody2.IsSensor()) {
+            pSensorBody = &inBody2;
+            pOtherBody = &inBody1;
+        } else {
+            return;
+        }
+
+        auto& mtxData = pManager->mtxContactData;
+        std::scoped_lock guard(mtxData.first);
+
+        mtxData.second.newContactsAdded.push(PhysicsManager::ContactInfo{
+            .bIsAdded = true,
+            .iSensorNodeId = pSensorBody->GetUserData(),
+            .iOtherNodeId = pOtherBody->GetUserData(),
+            .worldNormal = convertPosDirFromJolt(inManifold.mWorldSpaceNormal),
+            .contactPointLocation = convertPosDirFromJolt(inManifold.GetWorldSpaceContactPointOn1(0)),
+        });
+
+        mtxData.second.activeSensorContacts[JPH::SubShapeIDPair(
+            inBody1.GetID(), inManifold.mSubShapeID1, inBody2.GetID(), inManifold.mSubShapeID2)] =
+            PhysicsManager::SensorContactInfo{
+                .iSensorNodeId = pSensorBody->GetUserData(), .iOtherNodeId = pOtherBody->GetUserData()};
+    }
+
+    virtual void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override {
+        // Note: this function is called from Jolt's thread pool when all bodies are locked.
+
+        // Body can be destroyed at this point so we can't use it.
+        auto& mtxData = pManager->mtxContactData;
+        std::scoped_lock guard(mtxData.first);
+
+        const auto it = mtxData.second.activeSensorContacts.find(inSubShapePair);
+        if (it == mtxData.second.activeSensorContacts.end()) {
+            return;
+        }
+
+        mtxData.second.newContactsRemoved.push(PhysicsManager::ContactInfo{
+            .bIsAdded = false,
+            .iSensorNodeId = it->second.iSensorNodeId,
+            .iOtherNodeId = it->second.iOtherNodeId});
+
+        mtxData.second.activeSensorContacts.erase(it);
+    }
+
+private:
+    PhysicsManager* const pManager = nullptr;
+};
+
+PhysicsManager::PhysicsManager(GameManager* pGameManager) : pGameManager(pGameManager) {
     checkJoltInstructionSupport();
 
     pTempAllocator = std::make_unique<JPH::TempAllocatorImpl>(1024 * 1024); // 1 MB
@@ -137,6 +206,7 @@ PhysicsManager::PhysicsManager() {
     pObjectVsBroadPhaseLayerFilterImpl = std::make_unique<ObjectVsBroadPhaseLayerFilterImpl>();
     pObjectLayerPairFilterImpl = std::make_unique<ObjectLayerPairFilterImpl>();
     pCharVsCharCollision = std::make_unique<JPH::CharacterVsCharacterCollisionSimple>();
+    pContactListener = std::make_unique<ContactListener>(this);
 
     pPhysicsSystem->Init(
         MAX_BODIES,
@@ -153,6 +223,7 @@ PhysicsManager::PhysicsManager() {
         false; // disable because sleeping bodies don't notify contact callbacks which can be inconvenient
     pPhysicsSystem->SetPhysicsSettings(settings);
     pPhysicsSystem->SetGravity(convertPosDirToJolt(glm::vec3(0.0F, 0.0F, -9.81F)));
+    pPhysicsSystem->SetContactListener(pContactListener.get());
 
 #if defined(DEBUG)
     pPhysicsDebugDrawer = std::make_unique<PhysicsDebugDrawer>();
@@ -270,9 +341,75 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         }
 
         {
-            PROFILE_SCOPE("processContactEvents")
+            PROFILE_SCOPE("CharacterBodyNode::processContactEvents")
             for (const auto& pCharacterBody : characterBodies) {
                 pCharacterBody->processContactEvents();
+            }
+        }
+
+        // Process contacts.
+        {
+            auto& mtxWorlds = pGameManager->getWorlds();
+            std::scoped_lock guardWorld(mtxWorlds.first);
+            if (!mtxWorlds.second.vWorlds.empty()) {
+                const auto pWorld = mtxWorlds.second.vWorlds[0].get();
+
+                std::scoped_lock guardContacts(mtxContactData.first);
+
+                // Prepare lambda to process contact events.
+                const auto processContacts = [this, pWorld](std::queue<ContactInfo>& contacts) {
+                    while (!contacts.empty()) {
+                        auto& info = contacts.front();
+
+                        // Get sensor node.
+                        const auto pSensorNode = pWorld->getSpawnedNodeById(info.iSensorNodeId);
+                        if (pSensorNode == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException(
+                                "unable to determine contact node from body id");
+                        }
+
+                        // Cast type.
+#if defined(DEBUG)
+                        const auto pTriggerNode = dynamic_cast<TriggerVolumeNode*>(pSensorNode);
+                        if (pTriggerNode == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException(std::format(
+                                "expected the node \"{}\" to be a trigger volume node",
+                                pSensorNode->getNodeName()));
+                        }
+#else
+                        const auto pTriggerNode = reinterpret_cast<TriggerVolumeNode*>(pSensorNode);
+#endif
+
+                        // Get other node.
+                        const auto pHitNode = pWorld->getSpawnedNodeById(info.iOtherNodeId);
+                        if (pHitNode == nullptr) [[unlikely]] {
+                            Error::showErrorAndThrowException(
+                                "unable to determine contact node from body id");
+                        }
+
+                        // Notify.
+                        if (info.bIsAdded) {
+                            pTriggerNode->onContactAdded(
+                                pHitNode, info.contactPointLocation, info.worldNormal);
+                        } else {
+                            pTriggerNode->onContactRemoved(pHitNode);
+                        }
+
+                        contacts.pop();
+                    }
+                };
+
+                // First process removed contacts because when a character changes its shape (possible due to
+                // crouching) in a single update we will receive 2 events (old shape removed and new shape
+                // added, the order might be different) but because we give nodes to the user (in contact
+                // callback) the events received by the user might look like this: "added node, tick, added
+                // node (again, new shape), removed node (old shape), tick" but we want: "added node, tick,
+                // removed node (old shape), added node (new shape), tick".
+                processContacts(mtxContactData.second.newContactsRemoved);
+                processContacts(mtxContactData.second.newContactsAdded);
+
+                mtxContactData.second.newContactsAdded = {};
+                mtxContactData.second.newContactsRemoved = {};
             }
         }
     } while (deltaTimeLeftToSimulate > 0.001F);
@@ -369,6 +506,81 @@ void PhysicsManager::destroyBodyForNode(CollisionNode* pNode) {
     }
 
     // Collision nodes can temporary disable collision (removed from physics world) thus do a check:
+    if (pPhysicsSystem->GetBodyInterface().IsAdded(pNode->pBody->GetID())) {
+        // Remove from physics world.
+        pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
+    }
+
+    // Destroy body.
+    pPhysicsSystem->GetBodyInterface().DestroyBody(pNode->pBody->GetID());
+    pNode->pBody = nullptr;
+}
+
+void PhysicsManager::createBodyForNode(TriggerVolumeNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pShape == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have a valid shape setup", pNode->getNodeName()));
+    }
+
+    // Create shape.
+    const auto shapeResult = pNode->pShape->createShape();
+    if (!shapeResult.IsValid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics shape for the node \"{}\", error: {}",
+            pNode->getNodeName(),
+            shapeResult.GetError().data()));
+    }
+
+    // Create body.
+    JPH::BodyCreationSettings bodySettings(
+        shapeResult.Get(),
+        convertPosDirToJolt(pNode->getWorldLocation()),
+        convertRotationToJolt(pNode->getWorldRotation()),
+        JPH::EMotionType::Static,
+        static_cast<JPH::ObjectLayer>(ObjectLayer::NON_MOVING));
+    bodySettings.mIsSensor = true;
+
+    // Set node ID to body's custom data.
+    if (!pNode->getNodeId().has_value()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to have ID initialized", pNode->getNodeName()));
+    }
+    bodySettings.mUserData = *pNode->getNodeId();
+
+    JPH::Body* pCreatedBody = pPhysicsSystem->GetBodyInterface().CreateBody(bodySettings);
+    if (pCreatedBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to create a physics body for the node \"{}\", probably run out of bodies",
+            pNode->getNodeName()));
+    }
+
+    if (pNode->isTriggerEnabled()) {
+        // Add to physics world.
+        pPhysicsSystem->GetBodyInterface().AddBody(pCreatedBody->GetID(), JPH::EActivation::Activate);
+    }
+
+    // Save created body.
+    pNode->pBody = pCreatedBody;
+}
+
+void PhysicsManager::destroyBodyForNode(TriggerVolumeNode* pNode) {
+    PROFILE_FUNC
+
+    if (pNode->pBody == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node has no physics body",
+            pNode->getNodeName()));
+    }
+    if (pNode->pBody->GetID().IsInvalid()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "the node \"{}\" requested its physics body to be destroyed but this node's physics body ID is "
+            "invalid",
+            pNode->getNodeName()));
+    }
+
+    // Trigger volume nodes can temporary disable collision (removed from physics world) thus do a check:
     if (pPhysicsSystem->GetBodyInterface().IsAdded(pNode->pBody->GetID())) {
         // Remove from physics world.
         pPhysicsSystem->GetBodyInterface().RemoveBody(pNode->pBody->GetID());
@@ -679,7 +891,7 @@ void PhysicsManager::createBodyForNode(CharacterBodyNode* pNode) {
     settings->mSupportingVolume = JPH::Plane(
         convertPosDirToJolt(glm::vec3(Globals::WorldDirection::up)), -pNode->pCollisionShape->getRadius());
     settings->mEnhancedInternalEdgeRemoval = false;
-    settings->mInnerBodyShape = nullptr;
+    settings->mInnerBodyShape = settings->mShape;
     settings->mInnerBodyLayer = static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING);
 
     // Get node ID to set body's custom data.
