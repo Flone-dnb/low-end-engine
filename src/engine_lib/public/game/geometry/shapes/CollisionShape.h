@@ -19,8 +19,14 @@ public:
     CollisionShape() = default;
     virtual ~CollisionShape() = default;
 
-    // Don't copy `onChanged` callback.
+    /** Don't copy `onChanged` callback. */
     CollisionShape(const CollisionShape&) {}
+
+    /**
+     * Copy assignment.
+     *
+     * @return This.
+     */
     CollisionShape& operator=(const CollisionShape&) { return *this; }
 
     /**

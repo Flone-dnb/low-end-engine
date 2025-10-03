@@ -214,6 +214,8 @@ protected:
      * Checks if the normal of the ground surface is too steep to walk on.
      *
      * @param normal Normal of the ground.
+     *
+     * @return `true` if unable to walk on.
      */
     bool isSlopeTooSteep(const glm::vec3& normal);
 
@@ -248,7 +250,7 @@ private:
         /**
          * Constructor.
          *
-         * @param pOwner Node that owns this object.
+         * @param pNode Node that owns this object.
          */
         ContactListener(CharacterBodyNode* pNode) : pOwner(pNode) {}
 
