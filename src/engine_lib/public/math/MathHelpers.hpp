@@ -95,6 +95,13 @@ public:
     static inline float normalizeToRange(float value, float min, float max);
 
     /**
+     * Used to fix a common problem where diagonal movement has ~1.4 speed instead of 1.
+     *
+     * @param vector Input vector to fix (forward and right input).
+     */
+    static inline void fixDiagonalMovementSpeedup(glm::vec2& vector);
+
+    /**
      * Normalizes the specified vector while checking for zero division (to avoid NaNs in
      * the normalized vector).
      *
@@ -128,7 +135,7 @@ public:
 
 private:
     /** Default tolerance for floats to use. */
-    static inline const float smallFloatEpsilon = 0.0000001F;
+    static inline const float smallFloatEpsilon = 0.000001F;
 };
 
 glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3& direction) {
@@ -250,6 +257,21 @@ float MathHelpers::normalizeToRange(float value, float min, float max) {
     const auto offsetValue = value - min;
 
     return (offsetValue - (static_cast<float>(floor(offsetValue / width) * width))) + min;
+}
+
+inline void MathHelpers::fixDiagonalMovementSpeedup(glm::vec2& vector) {
+    const auto squareSum = vector.x * vector.x + vector.y * vector.y;
+    if (squareSum < 0.1F) { // don't normalize if vector is zero or very small to avoid NaNs
+        return;
+    }
+
+    const auto length = glm::sqrt(squareSum);
+    if (length <= 1.0F) { // only normalize when exceeding 1 to keep minor (small) thumbstick movements
+        return;
+    }
+
+    // normalize
+    vector /= length;
 }
 
 glm::vec2 MathHelpers::normalizeSafely(const glm::vec2& vector) {

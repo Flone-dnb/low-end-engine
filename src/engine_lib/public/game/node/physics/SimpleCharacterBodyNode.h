@@ -137,18 +137,6 @@ public:
 
 protected:
     /**
-     * Called before a physics update is executed.
-     * Can be used to update game specific physics parameters of the body (such as velocity for example).
-     *
-     * @warning If overriding you must call parent version before doing your logic.
-     *
-     * @remark Called only while spawned and have a physical body.
-     *
-     * @param deltaTime Time (in seconds) that has passed since the last physics update.
-     */
-    virtual void onBeforePhysicsUpdate(float deltaTime) override;
-
-    /**
      * Sets the current input for moving forward/back in range [1.0F; -1.0F].
      *
      * @param input Current input.
@@ -170,6 +158,19 @@ protected:
     void jump(bool bEvenIfInAir);
 
 private:
+    /**
+     * Called before a physics update is executed.
+     * Can be used to update game specific physics parameters of the body (such as velocity for example).
+     *
+     * @warning Overriding this function is not recommended because it already implements movement logic.
+     * Instead derive from CharacterBodyNode and implement movement functionality from scratch.
+     *
+     * @remark Called only while spawned and have a physical body.
+     *
+     * @param deltaTime Time (in seconds) that has passed since the last physics update.
+     */
+    virtual void onBeforePhysicsUpdate(float deltaTime) override;
+
     /**
      * Stores forward movement in the X component in range [1.0F; -1.0F] and right movement in the Y
      * component. Normalized vector.

@@ -537,6 +537,24 @@ protected:
     virtual void onMouseScrollMove(int iOffset) {}
 
     /**
+     * Called after a gamepad controller was connected.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param sGamepadName Name of the connected gamepad.
+     */
+    virtual void onGamepadConnected(std::string_view sGamepadName) {}
+
+    /**
+     * Called after a gamepad controller was disconnected.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     */
+    virtual void onGamepadDisconnected() {}
+
+    /**
      * Determines if the @ref onBeforeNewFrame should be called each frame or not.
      *
      * @remark Safe to call any time (while spawned/despawned).

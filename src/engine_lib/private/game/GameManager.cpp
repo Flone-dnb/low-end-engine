@@ -495,13 +495,10 @@ void GameManager::onMouseMove(int iXOffset, int iYOffset) {
             pGameInstance->onMouseMove(iXOffset, iYOffset);
 
             // Call on nodes that receive input.
-            std::scoped_lock guard(mtxWorldData.first);
-            for (const auto& pWorld : mtxWorldData.second.vWorlds) {
-                const auto nodesGuard = pWorld->getReceivingInputNodes();
-                const auto pNodes = nodesGuard.getNodes();
-                for (const auto& pNode : *pNodes) {
-                    pNode->onMouseMove(iXOffset, iYOffset);
-                }
+            const auto nodesGuard = pWorld->getReceivingInputNodes();
+            const auto pNodes = nodesGuard.getNodes();
+            for (const auto& pNode : *pNodes) {
+                pNode->onMouseMove(iXOffset, iYOffset);
             }
         }
 
@@ -520,13 +517,10 @@ void GameManager::onMouseScrollMove(int iOffset) {
     for (auto& pWorld : mtxWorldData.second.vWorlds) {
         if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
             // Call on nodes that receive input.
-            std::scoped_lock guard(mtxWorldData.first);
-            for (const auto& pWorld : mtxWorldData.second.vWorlds) {
-                const auto nodesGuard = pWorld->getReceivingInputNodes();
-                const auto pNodes = nodesGuard.getNodes();
-                for (const auto& pNode : *pNodes) {
-                    pNode->onMouseScrollMove(iOffset);
-                }
+            const auto nodesGuard = pWorld->getReceivingInputNodes();
+            const auto pNodes = nodesGuard.getNodes();
+            for (const auto& pNode : *pNodes) {
+                pNode->onMouseScrollMove(iOffset);
             }
         }
 
@@ -541,12 +535,32 @@ void GameManager::onGamepadConnected(std::string_view sGamepadName) {
     Logger::get().info(std::format("gamepad \"{}\" was connected", sGamepadName));
 
     pGameInstance->onGamepadConnected(sGamepadName);
+
+    std::scoped_lock guard(mtxWorldData.first);
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        // Call on nodes that receive input.
+        const auto nodesGuard = pWorld->getReceivingInputNodes();
+        const auto pNodes = nodesGuard.getNodes();
+        for (const auto& pNode : *pNodes) {
+            pNode->onGamepadConnected(sGamepadName);
+        }
+    }
 }
 
 void GameManager::onGamepadDisconnected() {
     Logger::get().info("gamepad was disconnected");
 
     pGameInstance->onGamepadDisconnected();
+
+    std::scoped_lock guard(mtxWorldData.first);
+    for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        // Call on nodes that receive input.
+        const auto nodesGuard = pWorld->getReceivingInputNodes();
+        const auto pNodes = nodesGuard.getNodes();
+        for (const auto& pNode : *pNodes) {
+            pNode->onGamepadDisconnected();
+        }
+    }
 }
 
 void GameManager::onWindowFocusChanged(bool bIsFocused) const {

@@ -142,8 +142,7 @@ void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
 
     CharacterBodyNode::onBeforePhysicsUpdate(deltaTime);
 
-    // Fix diagonal movement.
-    movementInput = MathHelpers::normalizeSafely(movementInput);
+    MathHelpers::fixDiagonalMovementSpeedup(movementInput);
 
     const auto upDirection = getWorldUpDirection();
     const auto groundState = getGroundState();
