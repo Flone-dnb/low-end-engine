@@ -388,7 +388,7 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
                 std::scoped_lock guardContacts(mtxContactData.first);
 
                 // Prepare lambda to process contact events.
-                const auto processContacts = [this, pWorld](std::queue<ContactInfo>& contacts) {
+                const auto processContacts = [pWorld](std::queue<ContactInfo>& contacts) {
                     while (!contacts.empty()) {
                         auto& info = contacts.front();
 
