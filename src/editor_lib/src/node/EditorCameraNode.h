@@ -24,13 +24,21 @@ public:
      */
     void setIsMouseCaptured(bool bCaptured);
 
-    /** Called after a gamepad was connected. */
-    void onGamepadConnected();
-
-    /** Called after a gamepad was disconnected. */
-    void onGamepadDisconnected();
-
 protected:
+    /**
+     * Called when this node was not spawned previously and it was either attached to a parent node
+     * that is spawned or set as world's root node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This node will be marked as spawned before this function is called.
+     * @remark @ref getSpawnDespawnMutex is locked while this function is called.
+     * @remark This function is called before any of the child nodes are spawned. If you
+     * need to do some logic after child nodes are spawned use @ref onChildNodesSpawned.
+     */
+    virtual void onSpawning() override;
+
     /**
      * Called before a new frame is rendered.
      *
@@ -55,6 +63,24 @@ protected:
      * minus if moved down).
      */
     virtual void onMouseMove(double xOffset, double yOffset) override;
+
+    /**
+     * Called after a gamepad controller was connected.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param sGamepadName Name of the connected gamepad.
+     */
+    virtual void onGamepadConnected(std::string_view sGamepadName) override;
+
+    /**
+     * Called after a gamepad controller was disconnected.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     */
+    virtual void onGamepadDisconnected() override;
 
 private:
     /**
@@ -91,6 +117,9 @@ private:
 
     /** Tells if the movement is currently enabled or not. */
     bool bIsGamepadConnected = false;
+
+    /** Whether to apply or ignore input. */
+    bool bIgnoreInput = true;
 
     /** Constant multiplier for gamepad's rotation input. */
     static constexpr float gamepadLookInputMult = 10.0F;

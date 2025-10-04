@@ -5,6 +5,7 @@
 
 // Custom.
 #include "misc/Error.h"
+#include "game/GameInstance.h"
 #include "input/EditorInputEventIds.hpp"
 
 EditorCameraNode::EditorCameraNode() : EditorCameraNode("Editor Camera Node") {}
@@ -12,7 +13,7 @@ EditorCameraNode::EditorCameraNode() : EditorCameraNode("Editor Camera Node") {}
 EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sNodeName) {
     // Enable tick and input.
     setIsCalledEveryFrame(true);
-    setIsReceivingInput(false); // will be enabled later
+    setIsReceivingInput(true);
 
     // Initialize current speed.
     currentMovementSpeed = movementSpeed;
@@ -83,11 +84,19 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
     }
 }
 
+void EditorCameraNode::onSpawning() {
+    CameraNode::onSpawning();
+
+    if (getGameInstanceWhileSpawned()->isGamepadConnected()) {
+        onGamepadConnected("");
+    }
+}
+
 void EditorCameraNode::setIsMouseCaptured(bool bCaptured) {
     bIsMouseCaptured = bCaptured;
 
     if (!bCaptured && !bIsGamepadConnected) {
-        setIsReceivingInput(false);
+        bIgnoreInput = true;
     }
 
     lastKeyboardInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
@@ -97,11 +106,13 @@ void EditorCameraNode::setIsMouseCaptured(bool bCaptured) {
         return;
     }
 
-    setIsReceivingInput(true);
+    bIgnoreInput = false;
 }
 
-void EditorCameraNode::onGamepadConnected() {
-    setIsReceivingInput(true);
+void EditorCameraNode::onGamepadConnected(std::string_view sGamepadName) {
+    CameraNode::onGamepadConnected(sGamepadName);
+
+    bIgnoreInput = false;
     bIsGamepadConnected = true;
 
     lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
@@ -109,11 +120,13 @@ void EditorCameraNode::onGamepadConnected() {
 }
 
 void EditorCameraNode::onGamepadDisconnected() {
+    CameraNode::onGamepadDisconnected();
+
     lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
     lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
 
     if (!bIsMouseCaptured) {
-        setIsReceivingInput(false);
+        bIgnoreInput = true;
     }
 
     bIsGamepadConnected = false;
@@ -122,7 +135,7 @@ void EditorCameraNode::onGamepadDisconnected() {
 void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     CameraNode::onBeforeNewFrame(timeSincePrevFrameInSec);
 
-    if (!isReceivingInput()) {
+    if (bIgnoreInput) {
         return;
     }
 
@@ -161,7 +174,7 @@ void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 void EditorCameraNode::onMouseMove(double xOffset, double yOffset) {
     CameraNode::onMouseMove(xOffset, yOffset);
 
-    if (!isReceivingInput() || !bIsMouseCaptured) {
+    if (bIgnoreInput || !bIsMouseCaptured) {
         return;
     }
 

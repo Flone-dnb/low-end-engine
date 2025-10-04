@@ -72,21 +72,6 @@ void EditorGameInstance::onGameStarted() {
         "editor world");
 }
 
-void EditorGameInstance::onGamepadConnected(std::string_view sGamepadName) {
-    if (gameWorldNodes.pViewportCamera == nullptr) {
-        return;
-    }
-    gameWorldNodes.pViewportCamera->onGamepadConnected();
-}
-
-void EditorGameInstance::onGamepadDisconnected() {
-    if (gameWorldNodes.pViewportCamera == nullptr) {
-        return;
-    }
-
-    gameWorldNodes.pViewportCamera->onGamepadDisconnected();
-}
-
 void EditorGameInstance::onMouseButtonPressed(MouseButton button, KeyboardModifiers modifiers) {
     if (button != MouseButton::LEFT) {
         return;
@@ -666,9 +651,6 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pViewportCamera->setSerialize(false);
     gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
     gameWorldNodes.pViewportCamera->makeActive();
-    if (isGamepadConnected()) {
-        gameWorldNodes.pViewportCamera->onGamepadConnected();
-    }
     const auto pos = editorWorldNodes.pViewportUiPlaceholder->getPosition();
     const auto size = editorWorldNodes.pViewportUiPlaceholder->getSize();
     gameWorldNodes.pViewportCamera->getCameraProperties()->setViewport(

@@ -119,16 +119,6 @@ protected:
     virtual void onGameStarted() override;
 
     /**
-     * Called after a gamepad controller was connected.
-     *
-     * @param sGamepadName Name of the connected gamepad.
-     */
-    virtual void onGamepadConnected(std::string_view sGamepadName) override;
-
-    /** Called after a gamepad controller was disconnected. */
-    virtual void onGamepadDisconnected() override;
-
-    /**
      * Called when the window (that owns this object) receives mouse input.
      *
      * @param button         Mouse button.

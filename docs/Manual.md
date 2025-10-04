@@ -246,14 +246,7 @@ Use WASD keys while holding right mouse button to move viewport camera.
 
 You can create node tree using the editor or the code but a world can only be created using the code. Your generated project should already have a call to `createWorld` in `GameInstance::onGameStarted` which creates a world with a single node - root node. In order to load a node tree as a new world you should call `GameInstance::loadNodeTreeAsWorld`.
 
-After creating the world you would also need a camera to see your world. Here is the most simple to create an active camera after your world is created/loaded:
-
-```Cpp
-const auto pCamera = pWorldRootNode->addChildNode(std::make_unique<CameraNode>());
-pCamera->makeActive();
-```
-
-Default `CameraNode` class does not support input so it will be a static camera (probably located in 0, 0, 0). To be able to control your camera's position/rotation you need to create a new camera node class derived from `CameraNode`. As a starting point look at the editor's `EditorCameraNode` class and how it's implemented, it supports both keyboard+mouse and gamepad but there's not much code so you can easily adapt the code for your game's needs. See one of the next sections in this manual on how to work with user input.
+After creating the world you would also need a camera to see your world. Default `CameraNode` class does not support input so it will be a static camera (probably located in 0, 0, 0). To understand how to control your camera you can generate a new project, look at the generated character node and see how it uses the camera.
 
 ## Handling user input
 
