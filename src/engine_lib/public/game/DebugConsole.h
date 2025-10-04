@@ -46,8 +46,35 @@ public:
      */
     void registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*)>& callback);
 
+    /**
+     * Registers a new command with the specified name that accepts a single argument.
+     *
+     * @remark If a command with the specified name is already registered an error will be shown.
+     *
+     * @param sCommandName Name of the new command.
+     * @param callback     Callback to trigger on command.
+     */
+    void
+    registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*, int)>& callback);
+
 private:
+    /** Groups info about a registered command. */
+    struct RegisteredCommand {
+        /** If not empty means the command does not accept any arguments. */
+        std::function<void(GameInstance*)> noArgs{};
+
+        /** If not empty means the command requires 1 argument. */
+        std::function<void(GameInstance*, int)> intArg{};
+    };
+
     DebugConsole() = default;
+
+    /**
+     * Displays a message on top of the console.
+     *
+     * @param sText Text to display.
+     */
+    void displayMessage(const std::string& sText);
 
     /**
      * Called every frame by game manager regardless if the state (shown/hidden).
@@ -86,7 +113,7 @@ private:
     bool isShown() const { return bIsShown; }
 
     /** Pairs of "command name" - "callback to trigger on command". */
-    std::unordered_map<std::string, std::function<void(GameInstance*)>> registeredCommands;
+    std::unordered_map<std::string, RegisteredCommand> registeredCommands;
 
     /** Input by the user. */
     std::string sCurrentInput;

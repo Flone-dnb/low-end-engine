@@ -16,6 +16,7 @@
 #include "material/TextureManager.h"
 #include "io/ConfigManager.h"
 #include "render/DebugDrawer.h"
+#include "game/DebugConsole.h"
 
 // External.
 #include "glad/glad.h"
@@ -81,6 +82,15 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     }
 
     recreateFramebuffers();
+
+#if defined(DEBUG)
+    DebugConsole::get().registerCommand("setFpsLimit", [this](GameInstance*, int iNewLimit) {
+        if (iNewLimit < 0) {
+            iNewLimit = 0;
+        }
+        setFpsLimit(static_cast<unsigned int>(iNewLimit));
+    });
+#endif
 }
 
 void Renderer::recreateFramebuffers() {

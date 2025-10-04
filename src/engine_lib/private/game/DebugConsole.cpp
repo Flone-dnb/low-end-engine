@@ -38,7 +38,23 @@ void DebugConsole::registerCommand(
         return;
     }
 
-    registeredCommands[sCommandName] = callback;
+    registeredCommands[sCommandName] = RegisteredCommand{.noArgs = callback};
+}
+
+void DebugConsole::registerCommand(
+    const std::string& sCommandName, const std::function<void(GameInstance*, int)>& callback) {
+    if (sCommandName.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("empty commands are not allowed");
+    }
+
+    const auto it = registeredCommands.find(sCommandName);
+    if (it != registeredCommands.end()) {
+        // Probably already registered since DebugConsole is a singleton.
+        // This often happens in automated tests.
+        return;
+    }
+
+    registeredCommands[sCommandName] = RegisteredCommand{.intArg = callback};
 }
 
 void DebugConsole::show() { bIsShown = true; }
@@ -99,7 +115,27 @@ void DebugConsole::onKeyboardInput(
     }
 
     if (key == KeyboardButton::ENTER && !sCurrentInput.empty()) {
-        const auto commandIt = registeredCommands.find(sCurrentInput);
+        // Split input into command and arguments.
+        std::vector<std::string> vCommand;
+        std::string sCurrentPart;
+        for (const auto& ch : sCurrentInput) {
+            if (ch == ' ') {
+                if (!sCurrentPart.empty()) {
+                    vCommand.push_back(sCurrentPart);
+                    sCurrentPart = "";
+                }
+                continue;
+            }
+            sCurrentPart += ch;
+        }
+        if (!sCurrentPart.empty()) {
+            vCommand.push_back(sCurrentPart);
+        }
+        if (vCommand.empty()) {
+            vCommand.push_back("");
+        }
+
+        const auto commandIt = registeredCommands.find(vCommand[0]);
         if (commandIt == registeredCommands.end()) {
             sCurrentInput = "";
 
@@ -124,28 +160,45 @@ void DebugConsole::onKeyboardInput(
                 sErrorMessage.pop_back();
             }
 
-            constexpr float messageTimeSec = 5.0F;
-            DebugDrawer::get().drawScreenRect( // <- message background
-                glm::vec2(consoleScreenPos.x, consoleScreenPos.y - consoleScreenSize.y),
-                glm::vec2(consoleScreenSize.x, consoleScreenSize.y),
-                glm::vec3(0.25F),
-                messageTimeSec);
-            DebugDrawer::get().drawText( // <- message
-                sErrorMessage,
-                messageTimeSec,
-                glm::vec3(1.0F),
-                glm::vec2(
-                    consoleScreenPos.x + textPadding, consoleScreenPos.y - consoleScreenSize.y + textPadding),
-                textHeight);
+            displayMessage(sErrorMessage);
             return;
         }
 
         // Execute the command.
-        commandIt->second(pGameInstance);
-        hide();
-
-        return;
+        if (commandIt->second.noArgs != nullptr) {
+            commandIt->second.noArgs(pGameInstance);
+            hide();
+        } else if (vCommand.size() == 2 && commandIt->second.intArg != nullptr) {
+            int iArg1 = 0;
+            try {
+                iArg1 = std::stoi(vCommand[1]);
+            } catch (std::exception&) {
+                displayMessage("unable to convert 1st argument to int");
+                return;
+            }
+            commandIt->second.intArg(pGameInstance, iArg1);
+            hide();
+        } else {
+            displayMessage("incorrect number of arguments specified");
+        }
     }
+}
+
+void DebugConsole::displayMessage(const std::string& sText) {
+    constexpr float messageTimeSec = 2.5F;
+
+    DebugDrawer::get().drawScreenRect( // <- message background
+        glm::vec2(consoleScreenPos.x, consoleScreenPos.y - consoleScreenSize.y),
+        glm::vec2(consoleScreenSize.x, consoleScreenSize.y),
+        glm::vec3(0.25F),
+        messageTimeSec);
+
+    DebugDrawer::get().drawText( // <- message
+        sText,
+        messageTimeSec,
+        glm::vec3(1.0F),
+        glm::vec2(consoleScreenPos.x + textPadding, consoleScreenPos.y - consoleScreenSize.y + textPadding),
+        textHeight);
 }
 
 #endif

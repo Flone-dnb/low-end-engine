@@ -607,28 +607,17 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     createWorld(
         [this](Node* pGameRootNode) {
             auto pFloor = std::make_unique<MeshNode>("Floor");
-            pFloor->setRelativeScale(glm::vec3(200.0F, 200.0F, 1.0F));
-            pFloor->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.5F, 0.0F));
+            pFloor->setRelativeScale(glm::vec3(10.0F, 10.0F, 1.0F));
+            pFloor->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.5F, 0.0F));
             pGameRootNode->addChildNode(std::move(pFloor));
 
             auto pCube = std::make_unique<MeshNode>("Cube");
             pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
-            pCube->getMaterial().setDiffuseColor(glm::vec3(0.5F, 0.0F, 0.0F));
+            pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 1.0F, 1.0F));
             pGameRootNode->addChildNode(std::move(pCube));
 
-            auto pSun = std::make_unique<DirectionalLightNode>();
-            pSun->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(1.0F, 1.0F, -1.0F))));
-            pGameRootNode->addChildNode(std::move(pSun));
-
-            auto pSpotlight = std::make_unique<SpotlightNode>();
-            pSpotlight->setRelativeLocation(glm::vec3(5.0F, 4.0F, 4.0F));
-            pSpotlight->setRelativeRotation(MathHelpers::convertNormalizedDirectionToRollPitchYaw(
-                glm::normalize(glm::vec3(-1.0F, -1.0F, -2.0F))));
-            pGameRootNode->addChildNode(std::move(pSpotlight));
-
-            auto pPointLight = std::make_unique<PointLightNode>();
-            pPointLight->setRelativeLocation(glm::vec3(2.0F, -5.0F, 2.0F));
+            auto pPointLight = std::make_unique<PointLightNode>("Point Light");
+            pPointLight->setRelativeLocation(glm::vec3(1.0F, -1.0F, 5.0F));
             pGameRootNode->addChildNode(std::move(pPointLight));
 
             onAfterGameWorldCreated(pGameRootNode);
