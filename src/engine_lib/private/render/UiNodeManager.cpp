@@ -285,6 +285,10 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
 #endif
 }
 
+void UiNodeManager::writeToClipboard(const std::string& sText) { sClipboard = sText; }
+
+std::string UiNodeManager::getTextFromClipboard() const { return sClipboard; }
+
 bool UiNodeManager::hasModalParent(UiNode* pNode) const {
     if (pNode->bShouldBeModal) {
         return true;

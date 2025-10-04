@@ -194,7 +194,7 @@ private:
     /** Empty if text edit is read only or not focused, otherwise value in range [0; textSize]. */
     std::optional<size_t> optionalCursorOffset;
 
-    /** Empty if no selected, otherwise pair of "start offset" and "end offset" in range [0; textSize]. */
+    /** Empty if no text selected, otherwise pair of "start offset" and "count" in range [0; textSize]. */
     std::optional<std::pair<size_t, size_t>> optionalSelection;
 
     /** Color of the selected region of the text. */

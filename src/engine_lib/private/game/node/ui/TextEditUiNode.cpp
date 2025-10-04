@@ -184,6 +184,7 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
             getWorldWhileSpawned()->getUiNodeManager().setFocusedNode(nullptr);
         }
     } else if (button == KeyboardButton::BACKSPACE) {
+        // Erase text.
         if (optionalSelection.has_value()) {
             auto sText = std::u16string(getText());
             sText.erase(optionalSelection->first, optionalSelection->second - optionalSelection->first);
@@ -203,12 +204,15 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
             onTextChanged(getText());
         }
     } else if (button == KeyboardButton::RIGHT) {
+        // Move cursor right.
         optionalCursorOffset = std::min(*optionalCursorOffset + 1, getText().size());
     } else if (button == KeyboardButton::LEFT && (*optionalCursorOffset) > 0) {
+        // Move cursor left.
         (*optionalCursorOffset) -= 1;
     } else if (
         (button == KeyboardButton::UP || button == KeyboardButton::DOWN) &&
         optionalCursorOffset.has_value() && *optionalCursorOffset > 0) {
+        // Move cursor up/down.
         // TODO: using a very simple (and inaccurate) approach.
         const auto sText = getText();
         bool bFoundLineStart = false;
@@ -248,8 +252,30 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
                 }
             }
         }
+    } else if (modifiers.isControlPressed() && button == KeyboardButton::A) {
+        // Select all.
+        optionalSelection = {0, getText().size()};
+    } else if (modifiers.isControlPressed() && button == KeyboardButton::C && optionalSelection.has_value()) {
+        // Copy selected text.
+        const auto sTextToCopy = std::u16string(getText()).substr(
+            optionalSelection->first, optionalSelection->second - optionalSelection->first);
+        getWorldWhileSpawned()->getUiNodeManager().writeToClipboard(utf::as_str8(sTextToCopy));
+    } else if (
+        modifiers.isControlPressed() && button == KeyboardButton::V && optionalCursorOffset.has_value()) {
+        // Paste text.
+        const auto sTextToPaste = getWorldWhileSpawned()->getUiNodeManager().getTextFromClipboard();
+        if (!sTextToPaste.empty()) {
+            auto sText = std::u16string(getText());
+            sText.insert(*optionalCursorOffset, utf::as_u16(sTextToPaste));
+            setText(sText);
+
+            if (onTextChanged) {
+                onTextChanged(getText());
+            }
+        }
     }
 
+    // Trigger user callback.
     if (onEnterPressed && button == KeyboardButton::ENTER) {
         onEnterPressed(getText());
     }

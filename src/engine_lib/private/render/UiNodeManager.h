@@ -137,6 +137,19 @@ public:
     void onNodeChangedDepth(UiNode* pTargetNode);
 
     /**
+     * Writes the specified text to the clipboard to later paste the text.
+     */
+    void writeToClipboard(const std::string& sText);
+
+    /**
+     * Returns empty string if nothing in the clipboard or some text that was previously added using @ref
+     * writeToClipboard.
+     *
+     * @return Clipboard text.
+     */
+    std::string getTextFromClipboard() const;
+
+    /**
      * Makes the specified UI node (tree) a modal UI node (tree) that takes all input to itself.
      *
      * @remark Replaces old modal node (tree).
@@ -420,6 +433,9 @@ private:
 
     /** Orthographic projection matrix for rendering UI elements. */
     glm::mat4 uiProjMatrix;
+
+    /** A single text entry is our clipboard. */
+    std::string sClipboard;
 
     /** Renderer. */
     Renderer* const pRenderer = nullptr;
