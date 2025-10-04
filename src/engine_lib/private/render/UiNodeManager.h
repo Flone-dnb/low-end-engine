@@ -138,6 +138,8 @@ public:
 
     /**
      * Writes the specified text to the clipboard to later paste the text.
+     *
+     * @param sText Text to copy.
      */
     void writeToClipboard(const std::string& sText);
 
