@@ -35,6 +35,12 @@ GameManager::GameManager(
     Logger::get().info("AddressSanitizer (ASan) is enabled, expect increased RAM usage!");
 #endif
 
+#if defined(DEBUG)
+    Logger::get().info("DEBUG macro is defined, running debug build");
+#else
+    Logger::get().info("DEBUG macro is NOT defined, running release build");
+#endif
+
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
