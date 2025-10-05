@@ -842,6 +842,10 @@ cmake --build profiler/build --config=Release --parallel
 
 Then built tracy server will be located at `ext/tracy/profiler/build/Release/tracy-profiler.exe`, open it and connect to your game.
 
+## Exporting your game
+
+At the time of writing there's no compression or encryption of game files, just build you game using cmake in Release mode and copy the resulting binary. Don't forget to also copy the `res` directory next to your game (note that you can delete `editor` directory and gitignore files as they are not needed for the game).
+
 # Advanced topics
 
 ## Writing custom shaders

@@ -205,8 +205,12 @@ set(ENGINE_LIB_TARGET_FOR_EDITOR engine_lib_for_editor)
 add_library(${ENGINE_LIB_TARGET} STATIC ${PROJECT_SOURCES})
 add_library(${ENGINE_LIB_TARGET_FOR_EDITOR} STATIC ${PROJECT_SOURCES})
 
-# Define editor macro for editor's version of the engine_lib.
+# Define editor macros for editor's version of the engine_lib.
 target_compile_definitions(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC ENGINE_EDITOR)
+if (IS_RELEASE_BUILD)
+    # Define DEBUG even for release because the editor needs debug drawer and debug console.
+    target_compile_definitions(${ENGINE_LIB_TARGET_FOR_EDITOR} PUBLIC DEBUG)
+endif()
 
 # -------------------------------------------------------------------------------------------------
 #                                         CONFIGURE TARGET
