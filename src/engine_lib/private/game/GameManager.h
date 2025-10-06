@@ -460,6 +460,12 @@ private:
     /** Game world, stores world's node tree. */
     std::pair<std::recursive_mutex, WorldData> mtxWorldData;
 
+    /** `true` if gamepad input was received on this frame. */
+    bool bReceivedGamepadInputThisFrame = false;
+
+    /** `true` if gamepad input was received on the last frame. */
+    bool bReceivedGamepadInputLastFrame = false;
+
     /** Determines if @ref destroy was called or not. */
     bool bIsDestroyed = false;
 

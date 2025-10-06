@@ -288,6 +288,14 @@ protected:
     virtual void onGamepadDisconnected() {}
 
     /**
+     * Called after the last input device changed.
+     *
+     * @param bIsGamepadCurrent `true` if the last input was received from a gamepad, `false` if from mouse
+     * and keyboard.
+     */
+    virtual void onLastInputSourceChanged(bool bIsGamepadCurrent) {}
+
+    /**
      * Called when the window focus was changed.
      *
      * @param bIsFocused  Whether the window has gained or lost the focus.

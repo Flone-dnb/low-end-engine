@@ -225,6 +225,7 @@ void GameManager::onWindowSizeChanged() {
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     PROFILE_FUNC
 
+    // Create world if needed.
     {
         PROFILE_SCOPE("check world creation task")
 
@@ -330,36 +331,62 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
         }
     }
 
+    // Check input device change.
+    bool bInputDeviceChanged = false;
+    if (bReceivedGamepadInputLastFrame != bReceivedGamepadInputThisFrame) {
+        PROFILE_SCOPE("GameInstance::onLastInputSourceChanged")
+        pGameInstance->onLastInputSourceChanged(bReceivedGamepadInputThisFrame);
+        bReceivedGamepadInputLastFrame = bReceivedGamepadInputThisFrame;
+        bInputDeviceChanged = true;
+    }
+
     {
         PROFILE_SCOPE("tick game instance")
         pGameInstance->onBeforeNewFrame(timeSincePrevCallInSec);
     }
 
-    std::scoped_lock guard(mtxWorldData.first);
-    if (mtxWorldData.second.vWorlds.empty()) {
-        return;
-    }
-    auto& vWorlds = mtxWorldData.second.vWorlds;
-
+    // Notify world.
     {
-        PROFILE_SCOPE("tick nodes")
-        for (const auto& pWorld : vWorlds) {
-            pWorld->tickTickableNodes(timeSincePrevCallInSec);
+        std::scoped_lock guard(mtxWorldData.first);
+        if (mtxWorldData.second.vWorlds.empty()) {
+            return;
         }
-    }
+        auto& vWorlds = mtxWorldData.second.vWorlds;
 
-    // Update sound info.
-    for (const auto& pWorld : vWorlds) {
-        auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
-        std::scoped_lock guard(mtxActiveCamera.first);
-        if (mtxActiveCamera.second.pNode == nullptr) {
-            continue;
+        // Device change.
+        if (bInputDeviceChanged) {
+            PROFILE_SCOPE("Node::onLastInputSourceChanged")
+            for (auto& pWorld : vWorlds) {
+                // Call on nodes that receive input.
+                const auto nodesGuard = pWorld->getReceivingInputNodes();
+                const auto pNodes = nodesGuard.getNodes();
+                for (const auto& pNode : *pNodes) {
+                    pNode->onLastInputSourceChanged(bReceivedGamepadInputThisFrame);
+                }
+            }
         }
-        if (!mtxActiveCamera.second.bIsSoundListener) {
-            continue;
+
+        // Tick nodes.
+        {
+            PROFILE_SCOPE("tick nodes")
+            for (const auto& pWorld : vWorlds) {
+                pWorld->tickTickableNodes(timeSincePrevCallInSec);
+            }
         }
-        pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
-        break;
+
+        // Update sound info.
+        for (const auto& pWorld : vWorlds) {
+            auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
+            std::scoped_lock guard(mtxActiveCamera.first);
+            if (mtxActiveCamera.second.pNode == nullptr) {
+                continue;
+            }
+            if (!mtxActiveCamera.second.bIsSoundListener) {
+                continue;
+            }
+            pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
+            break;
+        }
     }
 
 #ifndef ENGINE_UI_ONLY
@@ -373,6 +400,8 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
 void GameManager::onKeyboardInput(
     KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) {
+    bReceivedGamepadInputThisFrame = false;
+
 #if defined(DEBUG)
     if (DebugConsole::get().isShown() && key != KeyboardButton::TILDE) {
         if (bIsRepeat || !bIsPressedDown) {
@@ -413,6 +442,8 @@ void GameManager::onKeyboardInput(
 }
 
 void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+    bReceivedGamepadInputThisFrame = false;
+
 #if defined(DEBUG)
     if (DebugConsole::get().isShown()) {
         DebugConsole::get().onKeyboardInputTextCharacter(sTextCharacter);
@@ -428,6 +459,8 @@ void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter
 }
 
 void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
+    bReceivedGamepadInputThisFrame = true;
+
     if (bIsPressedDown) {
         pGameInstance->onGamepadButtonPressed(button);
     } else {
@@ -448,6 +481,8 @@ void GameManager::onGamepadInput(GamepadButton button, bool bIsPressedDown) {
 }
 
 void GameManager::onGamepadAxisMoved(GamepadAxis axis, float position) {
+    bReceivedGamepadInputThisFrame = true;
+
     pGameInstance->onGamepadAxisMoved(axis, position);
 
     std::scoped_lock guard(mtxWorldData.first);
@@ -469,6 +504,8 @@ void GameManager::onCursorVisibilityChanged(bool bVisibleNow) {
 }
 
 void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, bool bIsPressedDown) {
+    bReceivedGamepadInputThisFrame = false;
+
     if (bIsPressedDown) {
         pGameInstance->onMouseButtonPressed(button, modifiers);
     } else {
@@ -491,15 +528,14 @@ void GameManager::onMouseInput(MouseButton button, KeyboardModifiers modifiers, 
 }
 
 void GameManager::onMouseMove(int iXOffset, int iYOffset) {
+    bReceivedGamepadInputThisFrame = false;
+
     pGameInstance->onMouseMove(iXOffset, iYOffset);
 
     std::scoped_lock guard(mtxWorldData.first);
 
     for (auto& pWorld : mtxWorldData.second.vWorlds) {
         if (!pWorld->getUiNodeManager().hasModalUiNodeTree()) {
-            // Trigger game instance logic.
-            pGameInstance->onMouseMove(iXOffset, iYOffset);
-
             // Call on nodes that receive input.
             const auto nodesGuard = pWorld->getReceivingInputNodes();
             const auto pNodes = nodesGuard.getNodes();
@@ -516,6 +552,8 @@ void GameManager::onMouseMove(int iXOffset, int iYOffset) {
 }
 
 void GameManager::onMouseScrollMove(int iOffset) {
+    bReceivedGamepadInputThisFrame = false;
+
     pGameInstance->onMouseScrollMove(iOffset);
 
     std::scoped_lock guard(mtxWorldData.first);

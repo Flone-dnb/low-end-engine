@@ -555,6 +555,17 @@ protected:
     virtual void onGamepadDisconnected() {}
 
     /**
+     * Called after the last input device changed.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * 
+     * @param bIsGamepadCurrent `true` if the last input was received from a gamepad, `false` if from mouse
+     * and keyboard.
+     */
+    virtual void onLastInputSourceChanged(bool bIsGamepadCurrent) {}
+
+    /**
      * Determines if the @ref onBeforeNewFrame should be called each frame or not.
      *
      * @remark Safe to call any time (while spawned/despawned).
