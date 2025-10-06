@@ -66,8 +66,10 @@ void SkeletonNode::setPathToSkeletonRelativeRes(std::string sPathToNewSkeleton) 
 
     sPathToSkeletonRelativeRes = sPathToNewSkeleton;
 
-    if (isSpawned() && pSkeleton != nullptr) {
-        unloadAnimationContextData();
+    if (isSpawned()) {
+        if (pSkeleton != nullptr) {
+            unloadAnimationContextData();
+        }
         loadAnimationContextData();
     }
 }
@@ -285,14 +287,14 @@ void SkeletonNode::convertLocalTransformsToBoneMatrices() {
             ozz::math::StorePtrU(transform.rotation.z, glm::value_ptr(vec3));
             ozz::math::StorePtrU(transform.rotation.w, glm::value_ptr(vec4));
 
-            glm::vec4 bone1Quat = glm::vec4(vec1.x, vec2.x, vec3.x, vec4.x);
-            glm::vec4 bone2Quat = glm::vec4(vec1.y, vec2.y, vec3.y, vec4.y);
-            glm::vec4 bone3Quat = glm::vec4(vec1.z, vec2.z, vec3.z, vec4.z);
-            glm::vec4 bone4Quat = glm::vec4(vec1.w, vec2.w, vec3.w, vec4.w);
+            auto bone1Quat = glm::quat(vec4.x, vec1.x, vec2.x, vec3.x);
+            auto bone2Quat = glm::quat(vec4.y, vec1.y, vec2.y, vec3.y);
+            auto bone3Quat = glm::quat(vec4.z, vec1.z, vec2.z, vec3.z);
+            auto bone4Quat = glm::quat(vec4.w, vec1.w, vec2.w, vec3.w);
 
             // Transform.
-            const auto convertBoneQuat = [](const glm::vec4& quat) -> glm::vec4 {
-                return glm::vec4(quat.y, quat.z, quat.x, quat.w);
+            const auto convertBoneQuat = [](const glm::quat& quat) -> auto {
+                return glm::quat(quat.w, quat.x, quat.y, quat.z); // no conversion
             };
             bone1Quat = convertBoneQuat(bone1Quat);
             bone2Quat = convertBoneQuat(bone2Quat);
@@ -318,14 +320,14 @@ void SkeletonNode::convertLocalTransformsToBoneMatrices() {
             ozz::math::StorePtrU(transform.translation.y, glm::value_ptr(vec2));
             ozz::math::StorePtrU(transform.translation.z, glm::value_ptr(vec3));
 
-            glm::vec3 bone1Pos = glm::vec3(vec1.x, vec2.x, vec3.x);
-            glm::vec3 bone2Pos = glm::vec3(vec1.y, vec2.y, vec3.y);
-            glm::vec3 bone3Pos = glm::vec3(vec1.z, vec2.z, vec3.z);
-            glm::vec3 bone4Pos = glm::vec3(vec1.w, vec2.w, vec3.w);
+            auto bone1Pos = glm::vec3(vec1.x, vec2.x, vec3.x);
+            auto bone2Pos = glm::vec3(vec1.y, vec2.y, vec3.y);
+            auto bone3Pos = glm::vec3(vec1.z, vec2.z, vec3.z);
+            auto bone4Pos = glm::vec3(vec1.w, vec2.w, vec3.w);
 
             // Transform.
-            const auto convertBonePos = [](const glm::vec3& pos) -> glm::vec3 {
-                return glm::vec3(pos.x, pos.z, pos.y);
+            const auto convertBonePos = [](const glm::vec3& pos) -> auto {
+                return glm::vec3(pos.x, pos.y, pos.z); // no conversion
             };
             bone1Pos = convertBonePos(bone1Pos);
             bone2Pos = convertBonePos(bone2Pos);

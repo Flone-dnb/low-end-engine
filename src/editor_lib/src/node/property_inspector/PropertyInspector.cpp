@@ -199,7 +199,8 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
             const auto pAnimPathEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pAnimPathEdit->setTextHeight(EditorTheme::getSmallTextHeight());
             pAnimPathEdit->setHandleNewLineChars(false);
-            pAnimPathEdit->setText(u"game/");
+            pAnimPathEdit->setText(utf::as_u16(
+                std::filesystem::path(pSkeletonNode->getPathToSkeletonRelativeRes()).parent_path().string()));
             pAnimPathEdit->setOnTextChanged([pSkeletonNode](std::u16string_view sNewText) {
                 pSkeletonNode->stopAnimation();
 
