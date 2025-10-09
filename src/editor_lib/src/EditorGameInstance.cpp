@@ -29,6 +29,7 @@
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
+#include "render/PostProcessManager.h"
 #include "game/physics/PhysicsManager.h"
 #include "EditorResourcePaths.hpp"
 #include "EditorTheme.h"
@@ -49,6 +50,7 @@ EditorGameInstance::EditorGameInstance(Window* pWindow) : GameInstance(pWindow) 
 void EditorGameInstance::onGameStarted() {
 #if defined(GAME_LIB_INCLUDED)
     MyGameInstance::registerGameTypes();
+    editorAmbientLight = MyGameInstance::getAmbientLightForEditor();
 #endif
 
     getRenderer()->getFontManager().loadFont(
@@ -628,6 +630,9 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 
 void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pRoot = pRootNode;
+
+    pRootNode->getWorldWhileSpawned()->getCameraManager().getPostProcessManager().setAmbientLightColor(
+        editorAmbientLight);
 
     if (editorWorldNodes.pViewportUiPlaceholder == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected editor's viewport UI node to be created at this point");

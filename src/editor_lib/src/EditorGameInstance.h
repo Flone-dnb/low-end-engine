@@ -8,6 +8,7 @@
 // Custom.
 #include "game/GameInstance.h"
 #include "node/GizmoMode.hpp"
+#include "math/GLMath.hpp"
 
 class Window;
 class EditorCameraNode;
@@ -297,4 +298,7 @@ private:
 
     /** Data for GPU-picking. */
     GpuPickingData gpuPickingData;
+
+    /** Ambient light to use for worlds in the editor. */
+    glm::vec3 editorAmbientLight = glm::vec3(0.25F, 0.25F, 0.25F);
 };
