@@ -12,11 +12,6 @@ namespace {
     constexpr std::string_view sTypeGuid = "385659e9-bd1a-4ebd-a92a-67e2ba657d4d";
 }
 
-glm::mat4 convertFromRightHanded(const glm::mat4& mat) noexcept {
-    static const glm::mat4 invertHandedness = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
-    return invertHandedness * mat * invertHandedness;
-}
-
 std::string SkeletonNode::getTypeGuidStatic() { return sTypeGuid.data(); }
 std::string SkeletonNode::getTypeGuid() const { return sTypeGuid.data(); }
 
@@ -306,9 +301,11 @@ void SkeletonNode::convertLocalTransformsToSkinningMatrices() {
     }
 
     for (size_t i = 0; i < vBoneMatrices.size(); i++) {
-        vSkinningMatrices[i] =
-            convertFromRightHanded(reinterpret_cast<const glm::mat4x4&>(vBoneMatrices[i])) *
-            vInverseBindPoseMatrices[i];
+        glm::mat4x4 boneMatrix = glm::identity<glm::mat4x4>();
+        for (int k = 0; k < 4; k++) {
+            ozz::math::StorePtr(vBoneMatrices[i].cols[k], &boneMatrix[k].x);
+        }
+        vSkinningMatrices[i] = boneMatrix * vInverseBindPoseMatrices[i];
     }
 }
 

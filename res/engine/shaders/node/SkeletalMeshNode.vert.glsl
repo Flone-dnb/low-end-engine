@@ -42,3 +42,4 @@ void main() {
     fragmentNormal = normalMatrix * normalModelSpace;
     fragmentUv = uv;
 } 
+

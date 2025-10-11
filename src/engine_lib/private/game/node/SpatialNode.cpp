@@ -267,7 +267,7 @@ void SpatialNode::recalculateWorldMatrix(bool bNotifyChildren) {
 
     // Calculate world up direction.
     mtxWorldMatrix.second.worldUp =
-        glm::cross(mtxWorldMatrix.second.worldForward, mtxWorldMatrix.second.worldRight);
+        glm::cross(mtxWorldMatrix.second.worldRight, mtxWorldMatrix.second.worldForward);
 
     if (mtxWorldMatrix.second.bInOnWorldLocationRotationScaleChanged) {
         // We came here from a `onWorldLocationRotationScaleChanged` call, stop recursion and

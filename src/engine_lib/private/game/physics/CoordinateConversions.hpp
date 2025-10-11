@@ -8,28 +8,27 @@
 #include "Jolt/Math/Vec3.h"
 
 /**
- * Convert a position or a direction to Jolt physics coordinate system. Jolt uses left-handed
- * coordinate system with Y-up but we have Z-up thus conversion functions.
+ * Convert type.
  *
  * @param vec Value.
  *
  * @return Result.
  */
-static inline JPH::Vec3 convertPosDirToJolt(const glm::vec3& vec) { return JPH::Vec3(vec.x, vec.z, vec.y); }
+static inline JPH::Vec3 convertPosDirToJolt(const glm::vec3& vec) { return JPH::Vec3(vec.x, vec.y, vec.z); }
 
 /**
- * Convert a position or a direction from Jolt physics coordinate system.
+ * Convert type.
  *
  * @param vec Value.
  *
  * @return Result.
  */
 static inline glm::vec3 convertPosDirFromJolt(const JPH::Vec3& vec) {
-    return glm::vec3(vec.GetX(), vec.GetZ(), vec.GetY());
+    return glm::vec3(vec.GetX(), vec.GetY(), vec.GetZ());
 }
 
 /**
- * Convert rotation to Jolt physics coordinate system.
+ * Convert type.
  *
  * @param rotation Rotation in degrees.
  *
@@ -37,11 +36,11 @@ static inline glm::vec3 convertPosDirFromJolt(const JPH::Vec3& vec) {
  */
 static inline JPH::Quat convertRotationToJolt(const glm::vec3& rotation) {
     const auto quat = glm::quat(glm::radians(rotation));
-    return JPH::Quat(quat.x, quat.z, quat.y, -quat.w);
+    return JPH::Quat(quat.x, quat.y, quat.z, quat.w);
 }
 
 /**
- * Convert rotation from Jolt physics coordinate system.
+ * Convert type.
  *
  * @param rotation Rotation.
  *

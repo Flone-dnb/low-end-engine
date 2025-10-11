@@ -1515,12 +1515,12 @@ void UiNodeManager::drawQuad(
     // Update vertices.
     const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
         glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
         glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
 
         glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
         glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
     };
 
     // Copy new vertex data to VBO.

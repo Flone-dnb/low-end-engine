@@ -54,7 +54,8 @@ void MovingBodyNode::setVelocityToBeAt(
 
 void MovingBodyNode::setLinearVelocity(const glm::vec3& velocity) {
     if (pBody == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format("expected the node \"{}\" to be spawned", getNodeName()));
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to be spawned", getNodeName()));
     }
 
 #if defined(DEBUG)
@@ -149,7 +150,7 @@ void MovingBodyNode::onWorldLocationRotationScaleChanged() {
 #if defined(DEBUG)
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
-            if (worldLocation.z < -1000.0F) {
+            if (worldLocation.y < -1000.0F) {
                 Logger::get().warn(std::format(
                     "moving node \"{}\" seems to be falling out of the world, its world location is "
                     "({}, {}, {})",

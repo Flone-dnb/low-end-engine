@@ -93,18 +93,18 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
     // Prepare initial vertex buffer (full screen quad with positions in normalized device coordinates).
     std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
         ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(-1.0F, -1.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+            .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
         ScreenQuadGeometry::VertexLayout{
             .position = glm::vec3(-1.0F, 1.0F, 0.0F), .uv = glm::vec2(0.0F, 1.0F)},
         ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
+            .position = glm::vec3(-1.0F, -1.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
 
         ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(-1.0F, -1.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+            .position = glm::vec3(1.0F, -1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
         ScreenQuadGeometry::VertexLayout{
             .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
         ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(1.0F, -1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
+            .position = glm::vec3(-1.0F, -1.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
     };
 
     if (vertexPositions.has_value()) {
@@ -144,8 +144,9 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
     glBindVertexArray(0);
 
     return std::unique_ptr<ScreenQuadGeometry>(new ScreenQuadGeometry(
-        vVertices, std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
-            iVao, iVbo, static_cast<unsigned int>(vVertices.size())))));
+        vVertices,
+        std::unique_ptr<VertexArrayObject>(
+            new VertexArrayObject(iVao, iVbo, static_cast<unsigned int>(vVertices.size())))));
 }
 
 std::unique_ptr<VertexArrayObject>

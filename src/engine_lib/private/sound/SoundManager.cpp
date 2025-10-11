@@ -46,11 +46,11 @@ void SoundManager::onBeforeNewFrame(CameraManager& cameraManager) {
 
     const auto pos = pCamera->getWorldLocation();
     const auto forward = pCamera->getWorldForwardDirection();
-    const auto up = pCamera->getWorldUpDirection(); // NOLINT
+    const auto up = pCamera->getWorldUpDirection();
 
     sf::Listener::setPosition({pos.x, pos.y, pos.z});
     sf::Listener::setDirection({forward.x, forward.y, forward.z});
-    sf::Listener::setUpVector({up.x, up.y, -up.z});
+    sf::Listener::setUpVector({up.x, up.y, up.z});
 }
 
 void SoundManager::onSoundNodeSpawned(Sound2dNode* pNode) {

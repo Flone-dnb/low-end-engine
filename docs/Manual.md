@@ -224,7 +224,7 @@ Some engine functions return raw pointers. Generally, when the engine returns a 
 
 ### World axes and world units
 
-The engine uses a left handed coordinate system. +X is world "forward" direction, +Y is world "right" direction and +Z is world "up" direction. These directions are stored in `Globals::WorldDirection` (`misc/Globals.h`).
+The engine uses a right handed coordinate system. -Z is world "forward" direction, +X is world "right" direction and +Y is world "up" direction. These directions are stored in `Globals::WorldDirection` (`misc/Globals.h`).
 
 Rotations are applied in the following order: ZYX, so "yaw" is applied first, then "pitch" and then "roll". If you need to do math with rotations you can use `MathHelpers::buildRotationMatrix` that builds a rotation matrix with the correct rotation order.
 
@@ -353,7 +353,7 @@ The code from above allows you to create "node-local" input event bindings. Othe
 Note
 > We only support import from GLTF/GLB format.
 
-If you're using Blender to model your meshes, in order to properly export a GLTF/GLB file usually the only thing that you need to do is to untick the "+Y up" checkbox in "Transform" section (since we use +Z as our UP axis).
+In Blender no special export settings required, just export with the default settings.
 
 In order to import your file you can use the editor: right click on a directory in the content browser (left-bottom corner) and select "Import GLTF/GLB" in the opened context menu. Select a .gltf or .glb file and a converted version of the asset will appear in that directory in the form of a node tree file (.TOML file) (plus some other stuff).
 

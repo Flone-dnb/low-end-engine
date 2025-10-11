@@ -516,11 +516,11 @@ inline std::optional<Error> processGltfNode(
 
         // Attach new nodes to parent.
         for (auto& pMeshNode : vMeshNodes) {
-            // Attach to parent node.
-            pParentNode->addChildNode(std::move(pMeshNode));
-
             // Mark this node as parent for child GLTF nodes.
             pThisNode = pMeshNode.get();
+
+            // Attach to parent node.
+            pParentNode->addChildNode(std::move(pMeshNode));
         }
     }
 

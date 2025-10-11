@@ -171,7 +171,7 @@ void CameraProperties::makeSureViewMatrixIsUpToDate() {
 
     // Calculate view matrix.
     viewData.viewMatrix =
-        glm::lookAtLH(viewData.worldLocation, viewData.targetPointWorldLocation, viewData.worldUpDirection);
+        glm::lookAt(viewData.worldLocation, viewData.targetPointWorldLocation, viewData.worldUpDirection);
     viewData.invViewMatrix = glm::inverse(viewData.viewMatrix);
 
     // Since we finished updating view data - recalculate frustum.
@@ -194,7 +194,7 @@ void CameraProperties::makeSureProjectionMatrixAndClipPlanesAreUpToDate() {
     const auto verticalFovInRadians = glm::radians(static_cast<float>(projectionData.iVerticalFov));
 
     // Calculate projection matrix.
-    projectionData.projectionMatrix = glm::perspectiveFovLH(
+    projectionData.projectionMatrix = glm::perspectiveFov(
         verticalFovInRadians,
         static_cast<float>(projectionData.iRenderTargetWidth),
         static_cast<float>(projectionData.iRenderTargetHeight),
@@ -254,7 +254,7 @@ void CameraProperties::recalculateFrustum() {
     const auto cameraWorldForward = glm::normalize(
         mtxData.second.viewData.targetPointWorldLocation - mtxData.second.viewData.worldLocation);
     const auto cameraWorldRight =
-        glm::normalize(glm::cross(mtxData.second.viewData.worldUpDirection, cameraWorldForward));
+        glm::normalize(glm::cross(cameraWorldForward, mtxData.second.viewData.worldUpDirection));
     const auto toFarPlaneRelativeCameraLocation = projectionData.farClipPlaneDistance * cameraWorldForward;
 
     // Update frustum near face.
@@ -268,29 +268,29 @@ void CameraProperties::recalculateFrustum() {
     // Update frustum right face.
     frustum.rightFace = Plane(
         glm::normalize(glm::cross(
-            toFarPlaneRelativeCameraLocation + cameraWorldRight * farClipPlaneHalfWidth,
-            viewData.worldUpDirection)),
+            viewData.worldUpDirection,
+            toFarPlaneRelativeCameraLocation + cameraWorldRight * farClipPlaneHalfWidth)),
         viewData.worldLocation);
 
     // Update frustum left face.
     frustum.leftFace = Plane(
         glm::normalize(glm::cross(
-            viewData.worldUpDirection,
-            toFarPlaneRelativeCameraLocation - cameraWorldRight * farClipPlaneHalfWidth)),
+            toFarPlaneRelativeCameraLocation - cameraWorldRight * farClipPlaneHalfWidth,
+            viewData.worldUpDirection)),
         viewData.worldLocation);
 
     // Update frustum top face.
     frustum.topFace = Plane(
         glm::normalize(glm::cross(
-            cameraWorldRight,
-            toFarPlaneRelativeCameraLocation + viewData.worldUpDirection * farClipPlaneHalfHeight)),
+            toFarPlaneRelativeCameraLocation + viewData.worldUpDirection * farClipPlaneHalfHeight,
+            cameraWorldRight)),
         viewData.worldLocation);
 
     // Update frustum bottom face.
     frustum.bottomFace = Plane(
         glm::normalize(glm::cross(
-            toFarPlaneRelativeCameraLocation - viewData.worldUpDirection * farClipPlaneHalfHeight,
-            cameraWorldRight)),
+            cameraWorldRight,
+            toFarPlaneRelativeCameraLocation - viewData.worldUpDirection * farClipPlaneHalfHeight)),
         viewData.worldLocation);
 }
 

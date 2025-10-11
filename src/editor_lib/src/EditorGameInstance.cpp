@@ -609,17 +609,17 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     createWorld(
         [this](Node* pGameRootNode) {
             auto pFloor = std::make_unique<MeshNode>("Floor");
-            pFloor->setRelativeScale(glm::vec3(10.0F, 10.0F, 1.0F));
+            pFloor->setRelativeScale(glm::vec3(10.0F, 1.0F, 10.0F));
             pFloor->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.5F, 0.0F));
             pGameRootNode->addChildNode(std::move(pFloor));
 
             auto pCube = std::make_unique<MeshNode>("Cube");
-            pCube->setRelativeLocation(glm::vec3(2.0F, 0.0F, 1.0F));
+            pCube->setRelativeLocation(glm::vec3(0.0F, 1.0F, -2.0F));
             pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 1.0F, 1.0F));
             pGameRootNode->addChildNode(std::move(pCube));
 
             auto pPointLight = std::make_unique<PointLightNode>("Point Light");
-            pPointLight->setRelativeLocation(glm::vec3(1.0F, -1.0F, 5.0F));
+            pPointLight->setRelativeLocation(glm::vec3(1.0F, 5.0F, -1.0F));
             pGameRootNode->addChildNode(std::move(pPointLight));
 
             onAfterGameWorldCreated(pGameRootNode);
@@ -643,7 +643,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
         "{}: editor viewport camera", // name must contain "editor" to make it active in the camera manager
         EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pViewportCamera->setSerialize(false);
-    gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(-2.0F, 0.0F, 2.0F));
+    gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(0.0F, 3.0F, 1.0F));
     gameWorldNodes.pViewportCamera->makeActive();
     const auto pos = editorWorldNodes.pViewportUiPlaceholder->getPosition();
     const auto size = editorWorldNodes.pViewportUiPlaceholder->getSize();

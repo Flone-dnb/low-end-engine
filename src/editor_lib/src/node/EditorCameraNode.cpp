@@ -184,8 +184,8 @@ void EditorCameraNode::onMouseMove(double xOffset, double yOffset) {
 void EditorCameraNode::applyLookInput(float xDelta, float yDelta) {
     // Modify rotation.
     auto currentRotation = getRelativeRotation();
-    currentRotation.z += xDelta * rotationSensitivity;
-    currentRotation.y += yDelta * rotationSensitivity;
+    currentRotation.y -= xDelta * rotationSensitivity;
+    currentRotation.x -= yDelta * rotationSensitivity;
 
     // Apply rotation.
     setRelativeRotation(currentRotation);

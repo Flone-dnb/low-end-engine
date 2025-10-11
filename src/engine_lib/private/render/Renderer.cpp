@@ -45,9 +45,6 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    // Use DirectX/Vulkan winding order.
-    glFrontFace(GL_CW);
-
     // Setup clear values.
     glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
     glClearDepthf(1.0F);
@@ -188,11 +185,11 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         const auto iViewportHeight =
             static_cast<unsigned int>(static_cast<float>(iWindowHeight) * viewportRect.w);
 
-        pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
-
         const auto iViewportX = static_cast<int>(static_cast<float>(iWindowWidth) * viewportRect.x);
         const auto iViewportLeftBottom = static_cast<int>(
             static_cast<float>(iWindowHeight) * (1.0F - std::min(1.0F, viewportRect.y + viewportRect.w)));
+
+        pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
 
         vActiveCameras.push_back(
             {&mtxActiveCamera.first,

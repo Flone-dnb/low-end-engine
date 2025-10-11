@@ -16,13 +16,13 @@ public:
     /** Groups vectors that point along world axes X, Y and Z. */
     struct WorldDirection {
         /** Vector that points in world's up direction. */
-        static inline const glm::vec3 up = glm::vec3(0.0F, 0.0F, 1.0F);
+        static inline const glm::vec3 up = glm::vec3(0.0F, 1.0F, 0.0F);
 
         /** Vector that points in world's right direction. */
-        static inline const glm::vec3 right = glm::vec3(0.0F, 1.0F, 0.0F);
+        static inline const glm::vec3 right = glm::vec3(1.0F, 0.0F, 0.0F);
 
         /** Vector that points in world's forward direction. */
-        static inline const glm::vec3 forward = glm::vec3(1.0F, 0.0F, 0.0F);
+        static inline const glm::vec3 forward = glm::vec3(0.0F, 0.0F, -1.0F);
     };
 
     /**

@@ -29,8 +29,10 @@ TypeReflectionInfo SimulatedBodyNode::getReflectionInfo() {
         }};
 
     variables.floats[NAMEOF_MEMBER(&SimulatedBodyNode::massKg).data()] = ReflectedVariableInfo<float>{
-        .setter = [](Serializable* pThis,
-                     const float& newValue) { reinterpret_cast<SimulatedBodyNode*>(pThis)->setMass(newValue); },
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<SimulatedBodyNode*>(pThis)->setMass(newValue);
+            },
         .getter = [](Serializable* pThis) -> float {
             return reinterpret_cast<SimulatedBodyNode*>(pThis)->getMass();
         }};
@@ -264,7 +266,7 @@ void SimulatedBodyNode::onWorldLocationRotationScaleChanged() {
 #if defined(DEBUG)
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
-            if (worldLocation.z < -1000.0F) {
+            if (worldLocation.y < -1000.0F) {
                 Logger::get().warn(std::format(
                     "simulated node \"{}\" seems to be falling out of the world, its world location is "
                     "({}, {}, {})",
