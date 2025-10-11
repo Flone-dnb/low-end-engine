@@ -145,9 +145,7 @@ void SkeletalMeshNode::onSpawning() {
     getShaderConstantsSetterWhileSpawned().addSetterFunction([this](ShaderProgram* pShaderProgram) {
         const auto& matrices = pSpawnedSkeleton->getSkeletonBoneMatrices();
         pShaderProgram->setMatrix4ArrayToShader(
-            "vSkinningMatrices[0]",
-            static_cast<int>(matrices.size()),
-            reinterpret_cast<const float*>(matrices.data()));
+            "vSkinningMatrices[0]", static_cast<int>(matrices.size()), glm::value_ptr(matrices[0]));
     });
 }
 

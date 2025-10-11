@@ -305,6 +305,7 @@ void SkeletonNode::convertLocalTransformsToSkinningMatrices() {
         for (int k = 0; k < 4; k++) {
             ozz::math::StorePtr(vBoneMatrices[i].cols[k], &boneMatrix[k].x);
         }
+
         vSkinningMatrices[i] = boneMatrix * vInverseBindPoseMatrices[i];
     }
 }

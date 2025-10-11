@@ -21,17 +21,19 @@ uniform mat4 vSkinningMatrices[MAX_BONE_COUNT_ALLOWED];
 /// Entry point.
 void main() {
     // up to 4 bones might affect a vertex
-    mat4 finalSkinningMatrix = mat4(1.0F);
+    vec4 skinnedPosition = vec4(0.0F);
+    vec4 skinnedNormal = vec4(0.0F);
     for (int i = 0; i < 4; i++) {
         uint iBoneIndex = boneIndices[i];
         float boneWeight = boneWeights[i];
         mat4 boneMatrix = vSkinningMatrices[iBoneIndex];
 
-        finalSkinningMatrix += boneMatrix * boneWeight;
+        skinnedPosition += (boneMatrix * vec4(position, 1.0F)) * boneWeight;
+        skinnedNormal += (boneMatrix * vec4(normal, 0.0F)) * boneWeight;
     }
 
-    vec3 posModelSpace = (finalSkinningMatrix * vec4(position, 1.0F)).xyz;
-    vec3 normalModelSpace = (finalSkinningMatrix * vec4(normal, 0.0F)).xyz;
+    vec3 posModelSpace = skinnedPosition.xyz;
+    vec3 normalModelSpace = skinnedNormal.xyz;
 
     // Calculate world position.
     vec4 posWorldSpace = worldMatrix * vec4(posModelSpace, 1.0F);
