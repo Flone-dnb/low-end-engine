@@ -12,6 +12,11 @@ namespace {
     constexpr std::string_view sTypeGuid = "385659e9-bd1a-4ebd-a92a-67e2ba657d4d";
 }
 
+glm::mat4 convertFromRightHanded(const glm::mat4& mat) noexcept {
+    static const glm::mat4 invertHandedness = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
+    return invertHandedness * mat * invertHandedness;
+}
+
 std::string SkeletonNode::getTypeGuidStatic() { return sTypeGuid.data(); }
 std::string SkeletonNode::getTypeGuid() const { return sTypeGuid.data(); }
 
@@ -198,7 +203,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         return;
     }
 
-    convertLocalTransformsToBoneMatrices();
+    convertLocalTransformsToSkinningMatrices();
 }
 
 void SkeletonNode::loadAnimationContextData() {
@@ -214,7 +219,7 @@ void SkeletonNode::loadAnimationContextData() {
         Error::showErrorAndThrowException(
             std::format("expected path to skeleton to exist \"{}\"", pathToSkeletonFile.string()));
     }
-    pSkeleton = loadSkeleton(pathToSkeletonFile);
+    pSkeleton = loadSkeleton(pathToSkeletonFile, vInverseBindPoseMatrices);
 
     // Preload some animations.
     const auto pathToSkeletonDirectory = pathToSkeletonFile.parent_path();
@@ -237,6 +242,13 @@ void SkeletonNode::loadAnimationContextData() {
     // Allocate matrices.
     vLocalTransforms.resize(static_cast<size_t>(pSkeleton->num_soa_joints()));
     vBoneMatrices.resize(static_cast<size_t>(pSkeleton->num_joints()));
+    vSkinningMatrices.resize(vBoneMatrices.size());
+    if (vInverseBindPoseMatrices.size() != vSkinningMatrices.size()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "skeleton bone matrix mismatch {} != {}",
+            vInverseBindPoseMatrices.size(),
+            vSkinningMatrices.size()));
+    }
     setRestPoseToBoneMatrices();
 
     // Create sampling job context.
@@ -254,6 +266,12 @@ void SkeletonNode::unloadAnimationContextData() {
 
     vBoneMatrices.clear();
     vBoneMatrices.shrink_to_fit();
+
+    vInverseBindPoseMatrices.clear();
+    vInverseBindPoseMatrices.shrink_to_fit();
+
+    vSkinningMatrices.clear();
+    vSkinningMatrices.shrink_to_fit();
 }
 
 void SkeletonNode::setRestPoseToBoneMatrices() {
@@ -266,82 +284,14 @@ void SkeletonNode::setRestPoseToBoneMatrices() {
         vLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
     }
 
-    convertLocalTransformsToBoneMatrices();
+    convertLocalTransformsToSkinningMatrices();
 }
 
-void SkeletonNode::convertLocalTransformsToBoneMatrices() {
+void SkeletonNode::convertLocalTransformsToSkinningMatrices() {
     PROFILE_FUNC
 
     if (pSkeleton == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected the skeleton to be loaded while calling this function");
-    }
-
-    // Convert bone local transform from ozz-animation space to ours.
-    for (auto& transform : vLocalTransforms) {
-        // Convert rotation.
-        {
-            // Read from __m128 SIMD vector using a store operation (don't access elements via .x or []).
-            glm::vec4 vec1, vec2, vec3, vec4;
-            ozz::math::StorePtrU(transform.rotation.x, glm::value_ptr(vec1));
-            ozz::math::StorePtrU(transform.rotation.y, glm::value_ptr(vec2));
-            ozz::math::StorePtrU(transform.rotation.z, glm::value_ptr(vec3));
-            ozz::math::StorePtrU(transform.rotation.w, glm::value_ptr(vec4));
-
-            auto bone1Quat = glm::quat(vec4.x, vec1.x, vec2.x, vec3.x);
-            auto bone2Quat = glm::quat(vec4.y, vec1.y, vec2.y, vec3.y);
-            auto bone3Quat = glm::quat(vec4.z, vec1.z, vec2.z, vec3.z);
-            auto bone4Quat = glm::quat(vec4.w, vec1.w, vec2.w, vec3.w);
-
-            // Transform.
-            const auto convertBoneQuat = [](const glm::quat& quat) -> auto {
-                return glm::quat(quat.w, quat.x, quat.y, quat.z); // no conversion
-            };
-            bone1Quat = convertBoneQuat(bone1Quat);
-            bone2Quat = convertBoneQuat(bone2Quat);
-            bone3Quat = convertBoneQuat(bone3Quat);
-            bone4Quat = convertBoneQuat(bone4Quat);
-
-            // Save.
-            transform.rotation.x =
-                ozz::math::simd_float4::Load(bone1Quat.x, bone2Quat.x, bone3Quat.x, bone4Quat.x);
-            transform.rotation.y =
-                ozz::math::simd_float4::Load(bone1Quat.y, bone2Quat.y, bone3Quat.y, bone4Quat.y);
-            transform.rotation.z =
-                ozz::math::simd_float4::Load(bone1Quat.z, bone2Quat.z, bone3Quat.z, bone4Quat.z);
-            transform.rotation.w =
-                ozz::math::simd_float4::Load(bone1Quat.w, bone2Quat.w, bone3Quat.w, bone4Quat.w);
-        }
-
-        // Convert translation.
-        {
-            // Read from __m128 SIMD vector using a store operation (don't access elements via .x or []).
-            glm::vec4 vec1, vec2, vec3;
-            ozz::math::StorePtrU(transform.translation.x, glm::value_ptr(vec1));
-            ozz::math::StorePtrU(transform.translation.y, glm::value_ptr(vec2));
-            ozz::math::StorePtrU(transform.translation.z, glm::value_ptr(vec3));
-
-            auto bone1Pos = glm::vec3(vec1.x, vec2.x, vec3.x);
-            auto bone2Pos = glm::vec3(vec1.y, vec2.y, vec3.y);
-            auto bone3Pos = glm::vec3(vec1.z, vec2.z, vec3.z);
-            auto bone4Pos = glm::vec3(vec1.w, vec2.w, vec3.w);
-
-            // Transform.
-            const auto convertBonePos = [](const glm::vec3& pos) -> auto {
-                return glm::vec3(pos.x, pos.y, pos.z); // no conversion
-            };
-            bone1Pos = convertBonePos(bone1Pos);
-            bone2Pos = convertBonePos(bone2Pos);
-            bone3Pos = convertBonePos(bone3Pos);
-            bone4Pos = convertBonePos(bone4Pos);
-
-            // Save.
-            transform.translation.x =
-                ozz::math::simd_float4::Load(bone1Pos.x, bone2Pos.x, bone3Pos.x, bone4Pos.x);
-            transform.translation.y =
-                ozz::math::simd_float4::Load(bone1Pos.y, bone2Pos.y, bone3Pos.y, bone4Pos.y);
-            transform.translation.z =
-                ozz::math::simd_float4::Load(bone1Pos.z, bone2Pos.z, bone3Pos.z, bone4Pos.z);
-        }
     }
 
     // Convert local space matrices to model space.
@@ -354,6 +304,12 @@ void SkeletonNode::convertLocalTransformsToBoneMatrices() {
             "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
         return;
     }
+
+    for (size_t i = 0; i < vBoneMatrices.size(); i++) {
+        vSkinningMatrices[i] =
+            convertFromRightHanded(reinterpret_cast<const glm::mat4x4&>(vBoneMatrices[i])) *
+            vInverseBindPoseMatrices[i];
+    }
 }
 
 float SkeletonNode::getCurrentAnimationDurationSec() const {
@@ -364,33 +320,85 @@ float SkeletonNode::getCurrentAnimationDurationSec() const {
     return pPlayingAnimation->duration();
 }
 
-std::unique_ptr<ozz::animation::Skeleton>
-SkeletonNode::loadSkeleton(const std::filesystem::path& pathToSkeleton) {
-    std::string sFullPathToSkeletonFile = pathToSkeleton.string();
+std::unique_ptr<ozz::animation::Skeleton> SkeletonNode::loadSkeleton(
+    const std::filesystem::path& pathToSkeleton, std::vector<glm::mat4x4>& vInverseBindPoseMatrices) {
+    unsigned int iBoneCount = 0;
+    std::unique_ptr<ozz::animation::Skeleton> pSkeleton;
+    {
+        // Open file.
+        const std::string sFullPathToSkeletonFile = pathToSkeleton.string();
+        ozz::io::File file(sFullPathToSkeletonFile.c_str(), "rb");
+        if (!file.opened()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("unable to open the skeleton file \"{}\"", sFullPathToSkeletonFile));
+        }
+        ozz::io::IArchive archive(&file);
+        if (!archive.TestTag<ozz::animation::Skeleton>()) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "the skeleton file does not seem to store a skeleton \"{}\"", sFullPathToSkeletonFile));
+        }
 
-    // Open file.
-    ozz::io::File file(sFullPathToSkeletonFile.c_str(), "rb");
-    if (!file.opened()) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("unable to open the skeleton file \"{}\"", sFullPathToSkeletonFile));
+        // Create skeleton.
+        pSkeleton = std::make_unique<ozz::animation::Skeleton>();
+        archive >> *pSkeleton;
+
+        iBoneCount = static_cast<unsigned int>(pSkeleton->num_joints());
+        if (iBoneCount > SkeletonNode::getMaxBoneCountAllowed()) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "skeleton \"{}\" bone count {} exceeds the maximum allowed bone count of {}",
+                sFullPathToSkeletonFile,
+                iBoneCount,
+                SkeletonNode::getMaxBoneCountAllowed()));
+        }
     }
-    ozz::io::IArchive archive(&file);
-    if (!archive.TestTag<ozz::animation::Skeleton>()) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "the skeleton file does not seem to store a skeleton \"{}\"", sFullPathToSkeletonFile));
-    }
 
-    // Create skeleton.
-    auto pSkeleton = std::make_unique<ozz::animation::Skeleton>();
-    archive >> *pSkeleton;
+    // Load inverse bind pose matrices.
+    {
+        // Open file.
+        const auto pathToInverseBindPoseFile =
+            pathToSkeleton.parent_path() /
+            ("skeletonInverseBindPose." + std::string(Serializable::getBinaryFileExtension()));
+        std::ifstream file(pathToInverseBindPoseFile.c_str(), std::ios::binary);
+        if (!file.is_open()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("unable to open the file \"{}\"", pathToInverseBindPoseFile.c_str()));
+        }
 
-    if (static_cast<unsigned int>(pSkeleton->num_joints()) > SkeletonNode::getMaxBoneCountAllowed())
-        [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "skeleton \"{}\" bone count {} exceeds the maximum allowed bone count of {}",
-            sFullPathToSkeletonFile,
-            pSkeleton->num_joints(),
-            SkeletonNode::getMaxBoneCountAllowed()));
+        // Get file size.
+        file.seekg(0, std::ios::end);
+        const size_t iFileSizeInBytes = static_cast<size_t>(file.tellg());
+        file.seekg(0);
+
+        // Read matrix count.
+        size_t iReadByteCount = 0;
+        unsigned int iMatrixCount = 0;
+        if (iReadByteCount + sizeof(iMatrixCount) > iFileSizeInBytes) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("unexpected end of file \"{}\"", pathToInverseBindPoseFile.c_str()));
+        }
+        file.read(reinterpret_cast<char*>(&iMatrixCount), sizeof(iMatrixCount));
+        iReadByteCount += sizeof(iMatrixCount);
+
+        // Check matrix count.
+        if (iBoneCount != iMatrixCount) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "skeleton bone count {} does not match inverse bind pose matrix count {}",
+                iBoneCount,
+                vInverseBindPoseMatrices.size()));
+        }
+
+        // Read matrices.
+        vInverseBindPoseMatrices.resize(iMatrixCount);
+        for (unsigned int i = 0; i < iMatrixCount; i++) {
+            if (iReadByteCount + sizeof(glm::mat4x4) > iFileSizeInBytes) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    std::format("unexpected end of file \"{}\"", pathToInverseBindPoseFile.string()));
+            }
+
+            file.read(
+                reinterpret_cast<char*>(glm::value_ptr(vInverseBindPoseMatrices[i])), sizeof(glm::mat4x4));
+            iReadByteCount += sizeof(glm::mat4x4);
+        }
     }
 
     return pSkeleton;

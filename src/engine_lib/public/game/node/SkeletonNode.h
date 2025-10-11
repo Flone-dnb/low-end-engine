@@ -110,7 +110,7 @@ public:
      *
      * @return Matrices.
      */
-    const ozz::vector<ozz::math::Float4x4>& getSkeletonBoneMatrices() const { return vBoneMatrices; }
+    const std::vector<glm::mat4x4>& getSkeletonBoneMatrices() const { return vSkinningMatrices; }
 
     /**
      * Returns path (if was set) to the `skeleton.ozz` file relative to the `res` directory.
@@ -185,11 +185,12 @@ private:
      * Loads skeleton from file.
      *
      * @param pathToSkeleton Path to skeleton .ozz file.
+     * @param vInverseBindPoseMatrices Inverse bind pose matrices.
      *
      * @return Loaded skeleton.
      */
-    static std::unique_ptr<ozz::animation::Skeleton>
-    loadSkeleton(const std::filesystem::path& pathToSkeleton);
+    static std::unique_ptr<ozz::animation::Skeleton> loadSkeleton(
+        const std::filesystem::path& pathToSkeleton, std::vector<glm::mat4x4>& vInverseBindPoseMatrices);
 
     /**
      * Loads animation from file.
@@ -224,8 +225,8 @@ private:
     /** Updates @ref vBoneMatrices to display a rest pose. */
     void setRestPoseToBoneMatrices();
 
-    /** Converts @ref vLocalTransforms to @ref vBoneMatrices. */
-    void convertLocalTransformsToBoneMatrices();
+    /** Converts @ref vLocalTransforms to @ref vSkinningMatrices. */
+    void convertLocalTransformsToSkinningMatrices();
 
     /** `nullptr` if the skeleton is not loaded. */
     std::unique_ptr<ozz::animation::Skeleton> pSkeleton;
@@ -251,8 +252,14 @@ private:
     /** Sampled local transforms (relative to parent bone), 1 soa transform can store multiple (4) bones. */
     ozz::vector<ozz::math::SoaTransform> vLocalTransforms;
 
-    /** Matrices that transform bone from local space to model space. */
+    /** Matrices that transform bone from local space to model space. In ozz-animation system. */
     ozz::vector<ozz::math::Float4x4> vBoneMatrices;
+
+    /** Matrix per bone in @ref vBoneMatrices to create @ref vSkinningMatrices. */
+    std::vector<glm::mat4x4> vInverseBindPoseMatrices;
+
+    /** Matrices used for skinning. */
+    std::vector<glm::mat4x4> vSkinningMatrices;
 
     /** Path to the `skeleton.ozz` file relative to the `res` directory. */
     std::string sPathToSkeletonRelativeRes;

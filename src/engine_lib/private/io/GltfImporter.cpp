@@ -713,7 +713,41 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
         return optionalError;
     }
 
-    onProgress("checking for animations to import...");
+    onProgress("checking for skeleton/animations to import...");
+
+    if (model.skins.empty()) {
+        onProgress("no skeleton/animations found");
+        return {};
+    }
+
+    // Read skinning info.
+    std::vector<glm::mat4x4> vInverseBindPoseMatrices;
+    if (model.skins.size() > 1) [[unlikely]] {
+        return Error(std::format("found multiple ({}) skins while expected only 1", model.skins.size()));
+    }
+
+    const auto& skin = model.skins[0];
+    const auto& accessor = model.accessors[static_cast<size_t>(skin.inverseBindMatrices)];
+    const auto& bufferView = model.bufferViews[static_cast<size_t>(accessor.bufferView)];
+    const auto& buffer = model.buffers[static_cast<size_t>(bufferView.buffer)];
+    const size_t byteOffset = bufferView.byteOffset + accessor.byteOffset;
+    if (accessor.type != TINYGLTF_TYPE_MAT4 || accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT)
+        [[unlikely]] {
+        return Error(std::format(
+            "expected inverse bind pose matrices to be stored as `mat4`, actual type: {}", accessor.type));
+    }
+
+    const float* matrixData = reinterpret_cast<const float*>(&buffer.data[byteOffset]);
+    vInverseBindPoseMatrices.resize(accessor.count);
+    for (size_t i = 0; i < accessor.count; ++i) {
+        const float* floats = &matrixData[i * 16];
+
+        for (int col = 0; col < 4; col++) {
+            for (int row = 0; row < 4; row++) {
+                vInverseBindPoseMatrices[i][col][row] = floats[row * 4 + col];
+            }
+        }
+    }
 
 #ifndef GLTF2OZZ_BIN_PATH
     static_assert(false, "need path to gltf2ozz for importing animations");
@@ -824,17 +858,17 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
             }
 
             // Open file.
-            ozz::io::File file(sFullPathToSkeletonFile.c_str(), "rb");
-            if (!file.opened()) [[unlikely]] {
+            ozz::io::File skeletonFile(sFullPathToSkeletonFile.c_str(), "rb");
+            if (!skeletonFile.opened()) [[unlikely]] {
                 return Error(std::format("unable to open the skeleton file \"{}\"", sFullPathToSkeletonFile));
             }
-            ozz::io::IArchive archive(&file);
-            if (!archive.TestTag<ozz::animation::Skeleton>()) [[unlikely]] {
+            ozz::io::IArchive skeletonArchive(&skeletonFile);
+            if (!skeletonArchive.TestTag<ozz::animation::Skeleton>()) [[unlikely]] {
                 return Error(std::format(
                     "the skeleton file does not seem to store a skeleton \"{}\"", sFullPathToSkeletonFile));
             }
             auto pSkeleton = std::make_unique<ozz::animation::Skeleton>();
-            archive >> *pSkeleton;
+            skeletonArchive >> *pSkeleton;
 
             // Check bone count.
             if (static_cast<unsigned int>(pSkeleton->num_joints()) > SkeletonNode::getMaxBoneCountAllowed()) {
@@ -860,6 +894,31 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
                 return Error(std::format(
                     "found bone named \"Armature\" imported by gltf2ozz, Armature should not be imported "
                     "as a bone which means gltf2ozz has a bug that imports non-skin bones"));
+            }
+
+            // Check inverse bind pose matrices.
+            if (vInverseBindPoseMatrices.size() != static_cast<size_t>(pSkeleton->num_joints()))
+                [[unlikely]] {
+                return Error(std::format(
+                    "skeleton bone count {} don't not match inverse bind pose matrix count {}",
+                    pSkeleton->num_joints(),
+                    vInverseBindPoseMatrices.size()));
+            }
+
+            // Save inverse bind pose matrices.
+            const auto pathToInverseBindPose =
+                std::filesystem::path(sFullPathToSkeletonFile).parent_path() /
+                ("skeletonInverseBindPose." + std::string(Serializable::getBinaryFileExtension()));
+
+            std::ofstream file(pathToInverseBindPose.c_str(), std::ios::binary);
+            if (!file.is_open()) [[unlikely]] {
+                return Error(std::format("unable to create the file \"{}\"", pathToInverseBindPose.c_str()));
+            }
+
+            unsigned int iMatrixCount = static_cast<unsigned int>(vInverseBindPoseMatrices.size());
+            file.write(reinterpret_cast<char*>(&iMatrixCount), sizeof(iMatrixCount));
+            for (const auto& matrix : vInverseBindPoseMatrices) {
+                file.write(reinterpret_cast<const char*>(glm::value_ptr(matrix)), sizeof(matrix));
             }
         }
     }

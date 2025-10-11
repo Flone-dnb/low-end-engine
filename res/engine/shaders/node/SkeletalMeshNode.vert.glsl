@@ -16,20 +16,22 @@ out vec2 fragmentUv;
 uniform mat4 worldMatrix;
 uniform mat3 normalMatrix;
 uniform mat4 viewProjectionMatrix;
-uniform mat4 vBoneMatrices[MAX_BONE_COUNT_ALLOWED]; // they convert from local space to model space
+uniform mat4 vSkinningMatrices[MAX_BONE_COUNT_ALLOWED];
 
 /// Entry point.
 void main() {
-    vec3 posModelSpace = vec3(0.0F);
-    vec3 normalModelSpace = vec3(0.0F);
+    // up to 4 bones might affect a vertex
+    mat4 finalSkinningMatrix = mat4(1.0F);
     for (int i = 0; i < 4; i++) {
         uint iBoneIndex = boneIndices[i];
-        mat3 boneMatrix = mat3(vBoneMatrices[iBoneIndex]);
-        vec3 boneLocalPos = vBoneMatrices[iBoneIndex][3].xyz;
         float boneWeight = boneWeights[i];
-        posModelSpace += (boneMatrix * vec3(position - boneLocalPos) + boneLocalPos) * boneWeight;
-        normalModelSpace += boneMatrix * normal * boneWeight;
+        mat4 boneMatrix = vSkinningMatrices[iBoneIndex];
+
+        finalSkinningMatrix += boneMatrix * boneWeight;
     }
+
+    vec3 posModelSpace = (finalSkinningMatrix * vec4(position, 1.0F)).xyz;
+    vec3 normalModelSpace = (finalSkinningMatrix * vec4(normal, 0.0F)).xyz;
 
     // Calculate world position.
     vec4 posWorldSpace = worldMatrix * vec4(posModelSpace, 1.0F);
