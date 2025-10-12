@@ -348,6 +348,36 @@ Note
 
 The code from above allows you to create "node-local" input event bindings. Other nodes can also bind to JUMP, MOVE_FORWARD and MOVE_RIGHT events but have different logic.
 
+## Physics
+
+`CollisionNode` is the main way to create walls, floors and other solid objects that do not allow to move through them. Note that moving or rotating such nodes is perfectly fine even when they are spawned.
+
+`CompoundCollisionNode` groups multiple `CollisionNode`s - you create a compound node and attach collision nodes as child nodes. This is used to group multiple collision objects to speed up collision detection and thus improve performance. It's a good idea to group your level's static CollisionNodes under a compound. Note that when collision nodes are grouped under a compound moving or rotating individual collision nodes is not recommended as it causes the whole compound to be recreated under the hood. Moving or rotating the compound node is perfectly fine though.
+
+`SimulatedBodyNode` is a simple simulated body that is moved by forces and is affected by the gravity. For example it may be used to simulate an object that the player throws with some initial impulse (such as a grenade).
+
+`MovingBodyNode` is a kinematic body that is moved by velocities. For example this node can be used to create things like moving platforms that the player's character can stand on. By default it's not affected by the gravity but derived classes can implement this and other physics-related logic in onBeforePhysicsUpdate. Here is an example of how to create a smooth vertically moving (up and down) platform:
+```Cpp
+void MyMovingBodyNode::onBeforePhysicsUpdate(float deltaTime) {
+    totalTime += deltaTime;
+
+    constexpr float height = 3.0F;
+    setVelocityToBeAt(
+        getWorldLocation() + glm::vec3(0.0F, 0.0F, height * std::sin(totalTime)),
+        getWorldRotation(),
+        deltaTime);
+}
+```
+Note that moving such nodes by velocities is better for physics simulation instead of using SetWorldLocation which is basically means you are teleporting the body.
+
+`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character (which are generally represented by a capsule shape). It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height, ray casting and so on (these features can be configured, see setter/getter functions on this node).
+
+`SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode, copy-paste needed movement functionality from SimpleCharacterBodyNode and adjust to your needs.
+
+`TriggerVolumeNode` is a node that reports contacts with other physics bodies (but does not block them). It's used to detect when an object enters their area.
+
+In case you need more functionality (related to physics) you can look at `PhysicsManager`, physics-based nodes use it under the hood.
+
 ## Importing meshes
 
 Note
@@ -413,35 +443,13 @@ void MyGameInstance::onGameStarted() {
 }
 ```
 
-## Physics
+## Skeletal animations
 
-`CollisionNode` is the main way to create walls, floors and other solid objects that do not allow to move through them. Note that moving or rotating such nodes is perfectly fine even when they are spawned.
+If your asset has an armature and bones with animations (which you've prepared in Blender) when importing such GLTF file a new subdirectory with the suffix "_anim" will be created, this directory stores skeleton data and animation data.
 
-`CompoundCollisionNode` groups multiple `CollisionNode`s - you create a compound node and attach collision nodes as child nodes. This is used to group multiple collision objects to speed up collision detection and thus improve performance. It's a good idea to group your level's static CollisionNodes under a compound. Note that when collision nodes are grouped under a compound moving or rotating individual collision nodes is not recommended as it causes the whole compound to be recreated under the hood. Moving or rotating the compound node is perfectly fine though.
+After the GLTF import you need to setup your node tree: create a new `SkeletonNode` and assign it the path to the `skeleton.ozz` file that you will find in the "_anim" directory. Then you need to attach a new child node to this skeleton node, the child node must be `SkeletalMeshNode` and you already have it. Imported node tree (.toml file in the directory that was created during the GLTF import) should already have a skeletal mesh node somewhere (probably as the root node, if not adjust the created node tree). Attach a new external node tree to your `SkeletonNode` and specify the imported .toml file. The attached child node should be skeletal mesh node. At this point you are ready to play some animations.
 
-`SimulatedBodyNode` is a simple simulated body that is moved by forces and is affected by the gravity. For example it may be used to simulate an object that the player throws with some initial impulse (such as a grenade).
-
-`MovingBodyNode` is a kinematic body that is moved by velocities. For example this node can be used to create things like moving platforms that the player's character can stand on. By default it's not affected by the gravity but derived classes can implement this and other physics-related logic in onBeforePhysicsUpdate. Here is an example of how to create a smooth vertically moving (up and down) platform:
-```Cpp
-void MyMovingBodyNode::onBeforePhysicsUpdate(float deltaTime) {
-    totalTime += deltaTime;
-
-    constexpr float height = 3.0F;
-    setVelocityToBeAt(
-        getWorldLocation() + glm::vec3(0.0F, 0.0F, height * std::sin(totalTime)),
-        getWorldRotation(),
-        deltaTime);
-}
-```
-Note that moving such nodes by velocities is better for physics simulation instead of using SetWorldLocation which is basically means you are teleporting the body.
-
-`CharacterBodyNode` is a kinematic body that is used to represent the physical body of a NPC or a player character (which are generally represented by a capsule shape). It's expected that you create a new node that derives from this class and implement custom movement logic in the onBeforePhysicsUpdate function. It has features like ground detection, movement on some steep slopes, automatically stepping on stairs of a configurable height, ray casting and so on (these features can be configured, see setter/getter functions on this node).
-
-`SimpleCharacterBodyNode` is an implementation of CharacterBodyNode which provides out of the box functionality for character movement, jumping and crounching, it's more limited than CharacterBodyNode but simpler to use. You can derive your character node from this type and then if you would need more features change the base class to CharacterBodyNode, copy-paste needed movement functionality from SimpleCharacterBodyNode and adjust to your needs.
-
-`TriggerVolumeNode` is a node that reports contacts with other physics bodies (but does not block them). It's used to detect when an object enters their area.
-
-In case you need more functionality (related to physics) you can look at `PhysicsManager`, physics-based nodes use it under the hood.
+`SkeletonNode` is responsible for playing the animations (moving the bones) while `SkeletalMeshNode` is just a skin that is moved by the bones. When skeleton node is selected the editor will allow you to type a path to an animation to preview. You can also play an animation by calling C++ functions of the skeleton node from your game code. Imported animations are located in the "_anim" directory, they have names that you've assigned to them in Blender and have .ozz extension, you just need to provide a relative path to such .ozz file to play.
 
 ## Post-processing
 
