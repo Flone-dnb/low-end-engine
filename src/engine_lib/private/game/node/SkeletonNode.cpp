@@ -359,7 +359,7 @@ std::unique_ptr<ozz::animation::Skeleton> SkeletonNode::loadSkeleton(
         std::ifstream file(pathToInverseBindPoseFile.c_str(), std::ios::binary);
         if (!file.is_open()) [[unlikely]] {
             Error::showErrorAndThrowException(
-                std::format("unable to open the file \"{}\"", pathToInverseBindPoseFile.c_str()));
+                std::format("unable to open the file \"{}\"", pathToInverseBindPoseFile.string().c_str()));
         }
 
         // Get file size.
@@ -372,7 +372,7 @@ std::unique_ptr<ozz::animation::Skeleton> SkeletonNode::loadSkeleton(
         unsigned int iMatrixCount = 0;
         if (iReadByteCount + sizeof(iMatrixCount) > iFileSizeInBytes) [[unlikely]] {
             Error::showErrorAndThrowException(
-                std::format("unexpected end of file \"{}\"", pathToInverseBindPoseFile.c_str()));
+                std::format("unexpected end of file \"{}\"", pathToInverseBindPoseFile.string().c_str()));
         }
         file.read(reinterpret_cast<char*>(&iMatrixCount), sizeof(iMatrixCount));
         iReadByteCount += sizeof(iMatrixCount);

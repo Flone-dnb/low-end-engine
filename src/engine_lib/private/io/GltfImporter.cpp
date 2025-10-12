@@ -912,7 +912,8 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
 
             std::ofstream file(pathToInverseBindPose.c_str(), std::ios::binary);
             if (!file.is_open()) [[unlikely]] {
-                return Error(std::format("unable to create the file \"{}\"", pathToInverseBindPose.c_str()));
+                return Error(
+                    std::format("unable to create the file \"{}\"", pathToInverseBindPose.string().c_str()));
             }
 
             unsigned int iMatrixCount = static_cast<unsigned int>(vInverseBindPoseMatrices.size());
