@@ -127,7 +127,7 @@ ozz::animation::Animation* SkeletonNode::findOrLoadAnimation(const std::string& 
     return pAnimation;
 }
 
-void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bool bRestart, bool bLoop) {
+void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bool bLoop, bool bRestart) {
     if (pSkeleton == nullptr) {
         return;
     }

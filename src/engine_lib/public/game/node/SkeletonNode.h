@@ -97,12 +97,12 @@ public:
      * @warning If not spawned shows an error.
      *
      * @param sRelativePathToAnimation Path to .ozz animation file relative to the `res` directory.
-     * @param bRestart                 If the specified animation is already playing specify `true` to restart
-     * the animation to play it from the beginning or `false` to just continue playing it without restarting.
      * @param bLoop                    Specify `true` to automatically play the animation again after it
      * finished, `false` otherwise.
+     * @param bRestart                 If the specified animation is already playing specify `true` to restart
+     * the animation to play it from the beginning or `false` to just continue playing it without restarting.
      */
-    void playAnimation(const std::string& sRelativePathToAnimation, bool bRestart, bool bLoop);
+    void playAnimation(const std::string& sRelativePathToAnimation, bool bLoop, bool bRestart = true);
 
     /**
      * Returns matrices that convert skeleton bones from local space to model space.
