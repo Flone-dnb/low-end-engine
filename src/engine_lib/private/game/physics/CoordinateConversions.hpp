@@ -47,6 +47,6 @@ static inline JPH::Quat convertRotationToJolt(const glm::vec3& rotation) {
  * @return Result.
  */
 static inline glm::vec3 convertRotationFromJolt(const JPH::Quat& rotation) {
-    const auto quat = glm::quat(glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ()));
+    const auto quat = glm::quat(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
     return glm::degrees(glm::eulerAngles(quat));
 }

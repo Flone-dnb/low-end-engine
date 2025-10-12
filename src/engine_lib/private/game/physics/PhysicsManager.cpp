@@ -241,7 +241,6 @@ PhysicsManager::PhysicsManager(GameManager* pGameManager) : pGameManager(pGameMa
     settings.mAllowSleeping =
         false; // disable because sleeping bodies don't notify contact callbacks which can be inconvenient
     pPhysicsSystem->SetPhysicsSettings(settings);
-    pPhysicsSystem->SetGravity(convertPosDirToJolt(glm::vec3(0.0F, 0.0F, -9.81F)));
     pPhysicsSystem->SetContactListener(pContactListener.get());
 
 #if defined(DEBUG)

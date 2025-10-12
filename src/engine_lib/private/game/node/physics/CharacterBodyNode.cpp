@@ -180,7 +180,7 @@ CharacterBodyNode::createAdjustedJoltShapeForCharacter(const CapsuleCollisionSha
 
     // Adjust to have bottom on (0, 0, 0).
     shapeResult = JPH::RotatedTranslatedShapeSettings(
-                      convertPosDirToJolt(glm::vec3(0.0F, 0.0F, shape.getHalfHeight() + shape.getRadius())),
+                      convertPosDirToJolt(glm::vec3(0.0F, shape.getHalfHeight() + shape.getRadius(), 0.0F)),
                       JPH::Quat::sIdentity(),
                       shapeResult.Get())
                       .Create();
