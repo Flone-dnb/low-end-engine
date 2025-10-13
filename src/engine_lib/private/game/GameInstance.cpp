@@ -72,4 +72,8 @@ Renderer* GameInstance::getRenderer() const { return pWindow->getGameManager()->
 
 InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }
 
+ScriptManager& GameInstance::getScriptManager() const {
+    return pWindow->getGameManager()->getScriptManager();
+}
+
 bool GameInstance::isGamepadConnected() const { return pWindow->isGamepadConnected(); }

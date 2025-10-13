@@ -21,6 +21,7 @@ class Node;
 class CameraManager;
 class SoundManager;
 class PhysicsManager;
+class ScriptManager;
 
 /**
  * Controls main game objects: game instance, input manager, renderer,
@@ -245,6 +246,13 @@ public:
     PhysicsManager& getPhysicsManager() const;
 
     /**
+     * Returns script manager.
+     *
+     * @return Script manager.
+     */
+    ScriptManager& getScriptManager() const;
+
+    /**
      * Returns info about existing worlds.
      *
      * @return Worlds info.
@@ -451,6 +459,9 @@ private:
 
     /** Manages sound and sound effects. */
     std::unique_ptr<SoundManager> pSoundManager;
+
+    /** Manager game scripts. */
+    std::unique_ptr<ScriptManager> pScriptManager;
 
 #ifndef ENGINE_UI_ONLY
     /** Manages game physics. */

@@ -814,6 +814,70 @@ if (optionalError.has_value()){
 
 As it was shown `InputManager` can be acquired using `GameInstance::getInputManager()`, so both game instance and nodes (using `getGameInstance()->getInputManager()`) can work with the input manager.
 
+## Scripting
+
+### General
+
+The engine has AngelScript integrated, it's a scripting language which is very similar to C++. The main purpose of a scripting language in this engine is to provide support for advanced modding for your game.
+
+It process goes like this:
+1. expose your game's custom node type and node's functions to scripts
+2. provide a way for modders to put script files somewhere to "override"/react to some game events
+3. trigger functions from scripts and pass some arguments (like a pointer to some node)
+4. allow the script to modify the game world in some way
+
+But first some information about the types/functions that the engine provides by default for all scripts:
+- `Logger` is accessible as `Logger::info(text)`, `Logger::warn(text)`, `Logger::error(text)` 
+- `string` type (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_stdlib_string.html)
+- math functions (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_addon_math.html)
+
+### Compile and execute a script
+
+Prepare a sample script:
+
+```Cpp
+// test.as
+uint calculate(uint input) {
+    return input * 2;
+}
+```
+
+Compile the script:
+
+```Cpp
+const auto result = getScriptManager().compileScript("game/test.as");
+if (std::holds_alternative<Error>(result)) [[unlikely]] {
+    // handle error
+}
+auto pScript = std::get<std::unique_ptr<Script>>(std::move(result));
+```
+
+Then execute the script:
+
+```Cpp
+unsigned int iReturnValue = 0;
+pScript->executeFunction(
+    "calculate",
+    [](const ScriptFuncInterface& func) { func.setArgUInt(0, 2); },
+    [&](const ScriptFuncInterface& func) { iReturnValue = func.getReturnUInt(); });
+Logger::get().info(std::format("script returned: {}", iReturnValue));
+```
+
+### Register custom types and functions
+
+Use `ScriptManager` to register new types and functions:
+
+```Cpp
+// Example global function to register:
+static void myfunc(const std::string& sText) {
+    Logger::get().info(sText);
+}
+
+getScriptManager().registerGlobalFunction("void myfunc(string)", asFUNCTION(myfunc));
+```
+
+This registration must be done before you compile a script that uses custom types or functions.
+
 ## Using profiler
 
 The engine uses [tracy profiler](https://github.com/wolfpld/tracy), by default it's enabled in non-release builds.

@@ -111,6 +111,12 @@ set(PROJECT_SOURCES
     private/game/geometry/ScreenQuadGeometry.cpp
     public/game/geometry/ScreenQuadGeometry.h
     private/game/geometry/MeshIndexType.hpp
+    private/game/script/ScriptManager.cpp
+    public/game/script/ScriptManager.h
+    public/game/script/Script.h
+    private/game/script/Script.cpp
+    private/game/script/ScriptFuncInterface.cpp
+    public/game/script/ScriptFuncInterface.h
     public/math/GLMath.hpp
     public/math/MathHelpers.hpp
     public/io/Logger.h
@@ -433,6 +439,41 @@ add_dependencies(${ENGINE_LIB_DEPS_TARGET} Jolt)
 if (NOT IS_RELEASE_BUILD)
     target_compile_definitions(Jolt PUBLIC JPH_DEBUG_RENDERER)    
 endif()
+
+# Add Angel Script.
+message(STATUS "${PROJECT_NAME}: adding external dependency \"Angel Script\"...")
+set(AS_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
+add_subdirectory(${RELATIVE_EXT_PATH}/angelscript/sdk/angelscript/projects/cmake ${DEPENDENCY_BUILD_DIR_NAME}/angelscript SYSTEM)
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE angelscript)
+set_target_properties(angelscript PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} angelscript)
+# Angel Script addons:
+set(AS_ADDONS_TARGET angelscript_addons)
+add_library(${AS_ADDONS_TARGET} STATIC
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptstdstring/scriptstdstring.cpp
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptstdstring/scriptstdstring.h
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptstdstring/scriptstdstring_utils.cpp
+
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptbuilder/scriptbuilder.cpp
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptbuilder/scriptbuilder.h
+
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scripthelper/scripthelper.cpp
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scripthelper/scripthelper.h
+
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmath.cpp
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmath.h
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmathcomplex.cpp
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmathcomplex.h
+)
+target_include_directories(${AS_ADDONS_TARGET} PUBLIC ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on)
+target_compile_definitions(${AS_ADDONS_TARGET} PRIVATE AS_USE_STLNAMES=1)
+target_compile_definitions(${AS_ADDONS_TARGET} PRIVATE AS_USE_FLOAT=1)
+target_link_libraries(${AS_ADDONS_TARGET} PUBLIC angelscript)
+set_target_properties(${AS_ADDONS_TARGET} PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+add_dependencies(${AS_ADDONS_TARGET} angelscript)
+# Link addons:
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE ${AS_ADDONS_TARGET})
+add_dependencies(${ENGINE_LIB_DEPS_TARGET} ${AS_ADDONS_TARGET})
 
 if (NOT IS_RELEASE_BUILD)
     # Add tracy.

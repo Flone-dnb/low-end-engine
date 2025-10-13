@@ -20,6 +20,7 @@ class World;
 class CameraManager;
 class CameraNode;
 class Framebuffer;
+class ScriptManager;
 
 /**
  * Main game class, exists while the game window is not closed
@@ -167,6 +168,13 @@ public:
      * @return Always valid pointer.
      */
     InputManager* getInputManager() const;
+
+    /**
+     * Returns script manager.
+     *
+     * @return Script manager.
+     */
+    ScriptManager& getScriptManager() const;
 
     /**
      * Tells if a gamepad is currently connected or not.

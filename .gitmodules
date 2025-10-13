@@ -49,3 +49,6 @@
 [submodule "ext/JoltPhysics"]
 	path = ext/JoltPhysics
 	url = https://github.com/jrouwe/JoltPhysics.git
+[submodule "ext/angelscript"]
+	path = ext/angelscript
+	url = https://github.com/anjo76/angelscript.git
