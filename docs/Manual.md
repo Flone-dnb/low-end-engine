@@ -1020,7 +1020,7 @@ This section describes the build process for such devices as Anbernic RG35XX H o
 
 - Based on https://github.com/Cebion/Portmaster_builds
 
-Commands for WSL2 Ubuntu 24.04.1 LTS:
+The section will describe commands for WSL2 Ubuntu 24.04.1 LTS (for Windows users, Linux users you know what to do):
 ```
 sudo apt update && sudo apt upgrade -y
 sudo reboot now
@@ -1035,24 +1035,20 @@ sudo apt install -y build-essential binfmt-support daemonize libarchive-tools qe
 wget "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64-root.tar.xz"
 mkdir arm64ubuntu
 sudo bsdtar -xpf ubuntu-24.04-server-cloudimg-arm64-root.tar.xz -C arm64ubuntu
-```
-Because of the issue https://github.com/ubuntu/wsl-setup/issues/11 we need an additional step:
-```
-sudo rm /usr/lib/systemd/system/systemd-binfmt.service.d/wsl.conf
-sudo rm /etc/systemd/system/systemd-binfmt.service.d/00-wsl.con
-```
-Then use `wsl --shutdown` just in case. Continue:
-```
+
 sudo cp /usr/bin/qemu-aarch64-static arm64ubuntu/usr/bin
 sudo daemonize /usr/bin/unshare -fp --mount-proc /lib/systemd/systemd --system-unit=basic.target
+# or if you're on Void linux: sudo daemonize /usr/bin/unshare -fp --mount-proc /usr/bin/runsvdir /etc/sv
 sudo mount -o bind /dev arm64ubuntu/dev
 sudo chroot arm64ubuntu qemu-aarch64-static /bin/bash
 rm /etc/resolv.conf
 echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 exit
 mkdir -p arm64ubuntu/tmp/.X11-unix
+
 echo '#!/bin/bash' > chroot.sh
 echo 'sudo daemonize /usr/bin/unshare -fp --mount-proc /lib/systemd/systemd --system-unit=basic.target' >> chroot.sh
+# or if you're on Void linux: echo 'sudo daemonize /usr/bin/unshare -fp --mount-proc /usr/bin/runsvdir /etc/sv' >> chroot.sh
 echo 'sudo mount -o bind /proc/ arm64ubuntu/proc/' >> chroot.sh
 echo 'sudo mount --rbind /dev/ arm64ubuntu/dev/' >> chroot.sh
 echo 'sudo mount -o bind /tmp/.X11-unix arm64ubuntu/tmp/.X11-unix' >> chroot.sh
