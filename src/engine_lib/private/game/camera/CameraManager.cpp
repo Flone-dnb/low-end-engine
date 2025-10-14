@@ -4,7 +4,7 @@
 #include <format>
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "game/node/CameraNode.h"
 #include "render/PostProcessManager.h"
 #include "game/GameManager.h"
@@ -163,7 +163,7 @@ void CameraManager::onCameraNodeDespawning(CameraNode* pCameraNode) {
 
     // Make sure there's an active camera.
     if (mtxActiveCamera.second.pNode == nullptr) [[unlikely]] {
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "the camera node \"{}\" notified the camera manager about it being despawned because "
             "it thinks that it's the active camera but the camera manager has no active camera node",
             pCameraNode->getNodeName()));
@@ -172,7 +172,7 @@ void CameraManager::onCameraNodeDespawning(CameraNode* pCameraNode) {
 
     // See if this camera is indeed used as the active one.
     if (mtxActiveCamera.second.pNode != pCameraNode) [[unlikely]] {
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "the camera node \"{}\" notified the camera manager about it being despawned because "
             "it thinks that it's the active camera but it's not the active camera node",
             pCameraNode->getNodeName()));

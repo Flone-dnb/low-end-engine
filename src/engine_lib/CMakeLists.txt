@@ -117,10 +117,11 @@ set(PROJECT_SOURCES
     private/game/script/Script.cpp
     private/game/script/ScriptFuncInterface.cpp
     public/game/script/ScriptFuncInterface.h
+    public/game/script/ScriptTypeRegistration.hpp
     public/math/GLMath.hpp
     public/math/MathHelpers.hpp
-    public/io/Logger.h
-    private/io/Logger.cpp
+    public/io/Log.h
+    private/io/Log.cpp
     public/io/ConfigManager.h
     private/io/ConfigManager.cpp
     private/io/Serializable.cpp

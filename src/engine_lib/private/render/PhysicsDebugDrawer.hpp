@@ -75,7 +75,7 @@ public:
             return;
         }
 
-        DebugDrawer::get().drawLines(vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0F, glm::vec3(1.0F));
+        DebugDrawer::drawLines(vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0F, glm::vec3(1.0F));
 
         vLinesToDraw.clear(); // clear but don't shrink
     }

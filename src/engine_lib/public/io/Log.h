@@ -20,7 +20,7 @@ enum class LogMessageCategory : unsigned char { INFO, WARNING, ERROR };
 /** RAII-style type that creates logger callback on construction and unregisters it on destruction. */
 class LoggerCallbackGuard {
     // Only logger should be able to create objects of this type.
-    friend class Logger;
+    friend class Log;
 
 public:
     LoggerCallbackGuard(const LoggerCallbackGuard&) = delete;
@@ -33,23 +33,14 @@ private:
 };
 
 /** Logs to file and console. */
-class Logger {
+class Log {
     // Clear callback in destructor.
     friend class LoggerCallbackGuard;
 
 public:
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
-    ~Logger();
-
-    /**
-     * Returns a reference to the logger instance.
-     * If no instance was created yet, this function will create it
-     * and return a reference to it.
-     *
-     * @return Reference to the logger instance.
-     */
-    static Logger& get();
+    Log(const Log&) = delete;
+    Log& operator=(const Log&) = delete;
+    ~Log();
 
     /**
      * Returns the total number of warnings produced at this point.
@@ -72,9 +63,8 @@ public:
      * @param sText     Text to write to log.
      * @param location  Should not be passed explicitly.
      */
-    void info(
-        std::string_view sText,
-        const std::source_location location = std::source_location::current()) const; // NOLINT
+    static void
+    info(std::string_view sText, const std::source_location location = std::source_location::current());
 
     /**
      * Add text to console and log file using "warning" category.
@@ -85,9 +75,8 @@ public:
      * @param sText  Text to write to log.
      * @param location Should not be passed explicitly.
      */
-    void warn(
-        std::string_view sText,
-        const std::source_location location = std::source_location::current()) const; // NOLINT
+    static void
+    warn(std::string_view sText, const std::source_location location = std::source_location::current());
 
     /**
      * Add text to console and log file using "error" category.
@@ -98,9 +87,8 @@ public:
      * @param sText  Text to write to log.
      * @param location Should not be passed explicitly.
      */
-    void error(
-        std::string_view sText,
-        const std::source_location location = std::source_location::current()) const; // NOLINT
+    static void
+    error(std::string_view sText, const std::source_location location = std::source_location::current());
 
     /**
      * Forces the log to be flushed to the disk.
@@ -110,7 +98,7 @@ public:
      * explicitly call this function when you need to make sure the current log is
      * fully saved on the disk.
      */
-    void flushToDisk();
+    static void flushToDisk();
 
     /**
      * Sets callback that will be called after a log message is created.
@@ -119,7 +107,7 @@ public:
      *
      * @return RAII-style object that will unregister the callback on destruction.
      */
-    [[nodiscard]] std::unique_ptr<LoggerCallbackGuard>
+    [[nodiscard]] static std::unique_ptr<LoggerCallbackGuard>
     setCallback(const std::function<void(LogMessageCategory, const std::string&)>& onLogMessage);
 
     /**
@@ -127,10 +115,10 @@ public:
      *
      * @return Directory for logs.
      */
-    std::filesystem::path getDirectoryWithLogs() const;
+    static std::filesystem::path getDirectoryWithLogs();
 
 private:
-    Logger();
+    Log();
 
     /**
      * Returns current date and time in format "month.day_hour-minute-second".
@@ -145,6 +133,13 @@ private:
      * @param sLogDirectory Directory that contains log files.
      */
     static void removeOldestLogFiles(const std::filesystem::path& sLogDirectory);
+
+    /**
+     * Returns logger singleton.
+     *
+     * @return Logger.
+     */
+    static Log& get();
 
     /** Spdlog logger. */
     std::unique_ptr<spdlog::logger> pSpdLogger = nullptr;

@@ -60,7 +60,7 @@ FloatInspector::FloatInspector(
                     try {
                         newValue = EditorTheme::stringToFloat(sText);
                     } catch (...) {
-                        Logger::get().error("unable to convert string to float");
+                        Log::error("unable to convert string to float");
                         return;
                     }
                 }

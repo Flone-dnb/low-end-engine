@@ -115,7 +115,7 @@ void SkeletalMeshNode::onSpawning() {
 
         pSpawnedSkeleton = dynamic_cast<SkeletonNode*>(mtxParentNode.second);
         if (pSpawnedSkeleton == nullptr) {
-            Logger::get().warn(std::format(
+            Log::warn(std::format(
                 "node \"{}\" expects a SkeletonNode to be a direct parent node in order for animations to "
                 "work",
                 getNodeName()));
@@ -128,7 +128,7 @@ void SkeletalMeshNode::onSpawning() {
         for (const auto& vertex : skeletalMeshGeometry.getVertices()) {
             for (SkeletalMeshNodeVertex::BoneIndexType iBoneIndex : vertex.vBoneIndices) {
                 if (iBoneIndex >= iBoneCount) [[unlikely]] {
-                    Logger::get().error(std::format(
+                    Log::error(std::format(
                         "skeletal mesh node \"{}\" has vertices that reference bone with index {} but parent "
                         "skeleton node only has {} bones (index out of bounds - incompatible skeleton)",
                         getNodeName(),
@@ -171,7 +171,7 @@ void SkeletalMeshNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
 
     pSpawnedSkeleton = dynamic_cast<SkeletonNode*>(mtxParentNode.second);
     if (pSpawnedSkeleton == nullptr) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "node \"{}\" expects a SkeletonNode to be a direct parent node in order for animations to work",
             getNodeName()));
     }

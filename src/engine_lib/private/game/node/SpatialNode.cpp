@@ -80,7 +80,7 @@ void SpatialNode::setRelativeScale(const glm::vec3& scale) {
 #if defined(DEBUG)
     // Make sure we don't have negative scale specified.
     if (scale.x < 0.0F || scale.y < 0.0F || scale.z < 0.0F) [[unlikely]] {
-        Logger::get().warn("avoid using negative scale as it may cause issues");
+        Log::warn("avoid using negative scale as it may cause issues");
     }
 #endif
 
@@ -180,7 +180,7 @@ void SpatialNode::setWorldScale(const glm::vec3& scale) {
 #if defined(DEBUG)
     // Make sure we don't have negative scale specified.
     if (scale.x < 0.0F || scale.y < 0.0F || scale.z < 0.0F) [[unlikely]] {
-        Logger::get().warn("avoid using negative scale as it's not supported and may cause issues");
+        Log::warn("avoid using negative scale as it's not supported and may cause issues");
     }
 #endif
 

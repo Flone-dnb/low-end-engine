@@ -76,7 +76,7 @@ void CollisionNode::setIsCollisionEnabled(bool bEnable) {
         std::scoped_lock guard(*mtxParentNode.first);
         if (dynamic_cast<CompoundCollisionNode*>(mtxParentNode.second) != nullptr) {
             // TODO: recreate compound?
-            Logger::get().warn(
+            Log::warn(
                 "disabling collision as part of a compound node is not implemented yet, note that "
                 "when implemented this will most likely cause the whole compound to be recreated");
             return;

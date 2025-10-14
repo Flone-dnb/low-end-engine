@@ -328,7 +328,7 @@ void CharacterBodyNode::onWorldLocationRotationScaleChanged() {
     if (bIsApplyingUpdateResults && !bWarnedAboutFallingOutOfWorld) {
         const auto worldLocation = getWorldLocation();
         if (worldLocation.y < -1000.0F) {
-            Logger::get().warn(std::format(
+            Log::warn(std::format(
                 "character body node \"{}\" seems to be falling out of the world, its world location is "
                 "({}, {}, {})",
                 getNodeName(),

@@ -191,7 +191,7 @@ void NodeTreeInspector::showAddExternalNodeTreeMenu(NodeTreeInspectorItem* pItem
             auto result = Node::deserializeNodeTree(selectedPath);
             if (std::holds_alternative<Error>(result)) [[unlikely]] {
                 auto error = std::get<Error>(std::move(result));
-                Logger::get().error(error.getInitialMessage());
+                Log::error(error.getInitialMessage());
                 return;
             }
             auto pRoot = std::get<std::unique_ptr<Node>>(std::move(result));
@@ -212,7 +212,7 @@ void NodeTreeInspector::moveGameNodeInChildArray(NodeTreeInspectorItem* pItem, b
     {
         std::scoped_lock guard(*mtxParentNode.first, *mtxChildNodes.first);
         if (mtxParentNode.second == nullptr) [[unlikely]] {
-            Logger::get().error(
+            Log::error(
                 std::format("expected to the node \"{}\" to have a parent node", pNode->getNodeName()));
             return;
         }
@@ -294,7 +294,7 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
             pCompound->addChildNode(pOriginalNode);
             pCompound->addChildNode(std::move(pDuplicatedNode));
             mtxParent.second->addChildNode(std::move(pCompound));
-            Logger::get().info(
+            Log::info(
                 "created a compound node and grouped your collision nodes to speed up collision "
                 "detection and thus improve performance");
         } else {
@@ -305,7 +305,7 @@ void NodeTreeInspector::duplicateGameNode(NodeTreeInspectorItem* pItem) {
     // Refresh tree.
     onGameNodeTreeLoaded(pGameRootNode);
 
-    Logger::get().info(std::format("duplicated node \"{}\"", sNodeName));
+    Log::info(std::format("duplicated node \"{}\"", sNodeName));
 }
 
 std::unique_ptr<Node> NodeTreeInspector::duplicateNodeWithChildren(Node* pNodeToDuplicate) {
@@ -400,7 +400,7 @@ void NodeTreeInspector::addChildNodeToNodeTree(
     onGameNodeTreeLoaded(pGameRootNode);
 
     if (sTypeGuid == SimulatedBodyNode::getTypeGuidStatic()) {
-        Logger::get().info("note: dynamic bodies are not simulated in the editor");
+        Log::info("note: dynamic bodies are not simulated in the editor");
     }
 }
 

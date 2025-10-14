@@ -3,9 +3,11 @@
 // Standard.
 #include <string>
 #include <functional>
+#include <optional>
 
 // Custom.
 #include "game/script/ScriptFuncInterface.h"
+#include "misc/Error.h"
 
 class ScriptManager;
 
@@ -44,8 +46,10 @@ public:
      * @param sFunctionName    Name of the function to execute.
      * @param onSetArgs        Optional callback to pass arguments to the script function.
      * @param onGetReturnValue Optional callback to get return value from the script function.
+     *
+     * @return Error if something went wrong.
      */
-    void executeFunction(
+    [[nodiscard]] std::optional<Error> executeFunction(
         const std::string& sFunctionName,
         const std::function<void(const ScriptFuncInterface&)>& onSetArgs = {},
         const std::function<void(const ScriptFuncInterface&)>& onGetReturnValue = {});

@@ -4,7 +4,7 @@
 #include <format>
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/ProjectPaths.h"
 
 std::string ConfigManager::getConfigFormatExtension() { return ".toml"; }
@@ -214,7 +214,7 @@ std::optional<Error> ConfigManager::saveFile(ConfigCategory category, std::strin
 
 std::optional<Error> ConfigManager::saveFile(std::filesystem::path pathToConfigFile, bool bEnableBackup) {
     if (tomlData.is_empty()) {
-        Logger::get().warn("requested to save empty TOML data - ignoring save");
+        Log::warn("requested to save empty TOML data - ignoring save");
         return {};
     }
 
@@ -236,7 +236,7 @@ std::optional<Error> ConfigManager::saveFile(std::filesystem::path pathToConfigF
     constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
     const auto iFilePathLength = pathToConfigFile.string().length();
     if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "file path length {} is close to the platform limit of {} characters (path: {})",
             iFilePathLength,
             iMaxPathLimit,

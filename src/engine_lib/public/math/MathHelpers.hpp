@@ -6,7 +6,7 @@
 // Custom.
 #include "game/geometry/shapes/Plane.h"
 #include "misc/Globals.h"
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "math/GLMath.hpp"
 #include "misc/Error.h"
 #include "misc/Profiler.hpp"
@@ -163,13 +163,13 @@ glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3&
 
     // Check for NaNs.
     if (glm::isnan(worldRotation.z)) {
-        Logger::get().warn(
+        Log::warn(
             "found NaN in the Z component of the calculated rotation, setting this component's value to "
             "zero");
         worldRotation.z = 0.0F;
     }
     if (glm::isnan(worldRotation.y)) {
-        Logger::get().warn(
+        Log::warn(
             "found NaN in the Y component of the calculated rotation, setting this component's value to "
             "zero");
         worldRotation.y = 0.0F;

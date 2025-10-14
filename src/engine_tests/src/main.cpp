@@ -7,7 +7,7 @@
 #include <filesystem>
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "TestFilePaths.hpp"
 #include "misc/ProjectPaths.h"
 
@@ -21,8 +21,8 @@ struct EventListener : Catch::EventListenerBase {
     using Catch::EventListenerBase::EventListenerBase;
 
     void testCaseStarting(Catch::TestCaseInfo const& testInfo) override {
-        Logger::get().info(std::format("\n\nstarting test case \"{}\"\n", testInfo.name));
-        Logger::get().flushToDisk();
+        Log::info(std::format("\n\nstarting test case \"{}\"\n", testInfo.name));
+        Log::flushToDisk();
     }
 
     void testCaseEnded(Catch::TestCaseStats const& testCaseStats) override {
@@ -39,9 +39,9 @@ struct EventListener : Catch::EventListenerBase {
             return;
         }
 
-        Logger::get().info("failed tests:");
+        Log::info("failed tests:");
         for (const auto& sName : mtxFailedTestNames.second) {
-            Logger::get().info(std::format("- {}", sName));
+            Log::info(std::format("- {}", sName));
         }
     }
 
@@ -72,8 +72,8 @@ int main() {
     }
 
     // Check warnings/errors logged.
-    if (Logger::getTotalWarningsProduced() > 0 || Logger::getTotalErrorsProduced() > 0) {
-        Logger::get().info("all tests passed but some warnings/errors were logged");
+    if (Log::getTotalWarningsProduced() > 0 || Log::getTotalErrorsProduced() > 0) {
+        Log::info("all tests passed but some warnings/errors were logged");
         return 1;
     }
 

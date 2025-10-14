@@ -31,6 +31,8 @@ void DebugConsole::registerCommand(
         Error::showErrorAndThrowException("empty commands are not allowed");
     }
 
+    auto& registeredCommands = get().registeredCommands;
+
     const auto it = registeredCommands.find(sCommandName);
     if (it != registeredCommands.end()) {
         // Probably already registered since DebugConsole is a singleton.
@@ -46,6 +48,8 @@ void DebugConsole::registerCommand(
     if (sCommandName.empty()) [[unlikely]] {
         Error::showErrorAndThrowException("empty commands are not allowed");
     }
+
+    auto& registeredCommands = get().registeredCommands;
 
     const auto it = registeredCommands.find(sCommandName);
     if (it != registeredCommands.end()) {
@@ -70,7 +74,7 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
     }
 
     // Draw background.
-    DebugDrawer::get().drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
+    DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
 
     if (sCurrentInput.empty()) {
         // Prepare stats text.
@@ -88,14 +92,14 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
         sStatsText += " (big RAM usage due to ASan)";
 #endif
 
-        DebugDrawer::get().drawText(
+        DebugDrawer::drawText(
             "type a command...               | " + sStatsText,
             0.0F,
             glm::vec3(0.5F),
             consoleScreenPos + textPadding,
             textHeight);
     } else {
-        DebugDrawer::get().drawText(
+        DebugDrawer::drawText(
             sCurrentInput, 0.0F, glm::vec3(1.0F), consoleScreenPos + textPadding, textHeight);
     }
 }
@@ -187,13 +191,13 @@ void DebugConsole::onKeyboardInput(
 void DebugConsole::displayMessage(const std::string& sText) {
     constexpr float messageTimeSec = 2.5F;
 
-    DebugDrawer::get().drawScreenRect( // <- message background
+    DebugDrawer::drawScreenRect( // <- message background
         glm::vec2(consoleScreenPos.x, consoleScreenPos.y - consoleScreenSize.y),
         glm::vec2(consoleScreenSize.x, consoleScreenSize.y),
         glm::vec3(0.25F),
         messageTimeSec);
 
-    DebugDrawer::get().drawText( // <- message
+    DebugDrawer::drawText( // <- message
         sText,
         messageTimeSec,
         glm::vec3(1.0F),

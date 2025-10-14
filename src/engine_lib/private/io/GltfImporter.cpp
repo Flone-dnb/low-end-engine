@@ -34,7 +34,7 @@ inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::stri
         static_cast<unsigned int>(image.height),
         static_cast<unsigned int>(image.component));
     if (optionalError.has_value()) [[unlikely]] {
-        Logger::get().error(optionalError->getFullErrorMessage());
+        Log::error(optionalError->getFullErrorMessage());
         return false;
     }
 
@@ -424,7 +424,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             // affect the performance), instead force the developer to carefully think and enable transparency
             // (in the editor) for meshes that actually need it.
             // if (material.alphaMode == "MASK") {
-            //     Logger::get().warn(
+            //     Log::warn(
             //         "found material with transparency enabled, transparent materials have "
             //         "very serious impact on the performance so you might want to avoid using them");
             //     meshMaterial.setEnableTransparency(true);

@@ -249,11 +249,11 @@ JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape(float densit
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToGeometryRelativeRes;
     bool bIsPathInvalid = false;
     if (!std::filesystem::exists(pathToFile)) {
-        Logger::get().error(
+        Log::error(
             std::format("the path to convex shape geometry does not exist ({})", pathToFile.string()));
         bIsPathInvalid = true;
     } else if (std::filesystem::is_directory(pathToFile)) {
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "expected the path to convex shape geometry to point to a file ({})", pathToFile.string()));
         bIsPathInvalid = true;
     }

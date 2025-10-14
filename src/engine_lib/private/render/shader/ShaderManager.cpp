@@ -10,7 +10,7 @@
 #include "misc/ProjectPaths.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "misc/Profiler.hpp"
-#include "io/Logger.h"
+#include "io/Log.h"
 
 // External.
 #include "glad/glad.h"
@@ -113,7 +113,7 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 
             sFormattedSourceCode += ch;
         }
-        Logger::get().info(std::format("full source code of the shader:\n{}\n", sFormattedSourceCode));
+        Log::info(std::format("full source code of the shader:\n{}\n", sFormattedSourceCode));
         Error::showErrorAndThrowException(std::format(
             "failed to compile shader from \"{}\" (see log to view the full source code), error: {}",
             sPathToShaderRelativeRes,

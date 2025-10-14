@@ -121,13 +121,12 @@ void EditorGameInstance::onKeyboardButtonReleased(KeyboardButton key, KeyboardMo
 
         const auto optionalError = gameWorldNodes.pRoot->serializeNodeTree(*lastOpenedNodeTree, false);
         if (optionalError.has_value()) [[unlikely]] {
-            Logger::get().error(std::format(
+            Log::error(std::format(
                 "failed to save node tree to \"{}\", error: {}",
                 lastOpenedNodeTree->filename().string(),
                 optionalError->getInitialMessage()));
         } else {
-            Logger::get().info(
-                std::format("node tree saved to \"{}\"", lastOpenedNodeTree->filename().string()));
+            Log::info(std::format("node tree saved to \"{}\"", lastOpenedNodeTree->filename().string()));
             if (editorWorldNodes.pContentBrowser != nullptr) {
                 editorWorldNodes.pContentBrowser->rebuildFileTree();
             }

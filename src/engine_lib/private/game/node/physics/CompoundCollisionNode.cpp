@@ -78,7 +78,7 @@ void CompoundCollisionNode::onChildCollisionChangedShape() {
 
     if (iRecreateCompoundCount >= 10) {
         iRecreateCompoundCount = 0;
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "compound collision node \"{}\" was recreated multiple times since it was spawned due to changes "
             "in child collision nodes, changes to child nodes such as movement/rotation or shape change "
             "cause the whole compound to be recreated which might cause performance issues",

@@ -149,7 +149,7 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      const auto pNode = std::make_unique<Node>("Root node");
                      const auto optionalError = pNode->serializeNodeTree(pathToNodeTree, false);
                      if (optionalError.has_value()) [[unlikely]] {
-                         Logger::get().error(std::format(
+                         Log::error(std::format(
                              "failed to serialize new node tree, error: {}",
                              optionalError->getInitialMessage()));
                          return;
@@ -171,7 +171,7 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      try {
                          std::filesystem::create_directory(pathToNewDirectory);
                      } catch (std::exception& exception) {
-                         Logger::get().error(
+                         Log::error(
                              std::format("unable to create directory, error: {}", exception.what()));
                      }
                      openedDirectoryPaths.insert(pathToDirectory);
@@ -187,7 +187,7 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      try {
                          std::filesystem::rename(pathToDirectory, pathToNewDirectory);
                      } catch (std::exception& exception) {
-                         Logger::get().error(
+                         Log::error(
                              std::format("unable to rename directory, error: {}", exception.what()));
                      }
                      rebuildFileTree();
@@ -213,13 +213,13 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                                      selectedPath,
                                      sRelativeOutputPath,
                                      selectedPath.stem().string(),
-                                     [](std::string_view sMessage) { Logger::get().info(sMessage); });
+                                     [](std::string_view sMessage) { Log::info(sMessage); });
                                  if (optionalError.has_value()) [[unlikely]] {
-                                     Logger::get().error(std::format(
+                                     Log::error(std::format(
                                          "failed to import the file, error: {}",
                                          optionalError->getInitialMessage()));
                                  } else {
-                                     Logger::get().info(std::format(
+                                     Log::info(std::format(
                                          "file \"{}\" was successfully imported",
                                          selectedPath.filename().string()));
                                      rebuildFileTree();
@@ -242,10 +242,10 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                          const auto optionalError =
                              TextureManager::importTextureFromFile(selectedPath, sRelativeOutputPath);
                          if (optionalError.has_value()) [[unlikely]] {
-                             Logger::get().error(std::format(
+                             Log::error(std::format(
                                  "failed to import texture, error: {}", optionalError->getInitialMessage()));
                          } else {
-                             Logger::get().info(std::format(
+                             Log::info(std::format(
                                  "texture \"{}\" was successfully imported", selectedPath.stem().string()));
                              rebuildFileTree();
                          }
@@ -259,13 +259,13 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      [this, pathToDirectory](const std::filesystem::path& selectedPath) {
                          const auto optionalError = GltfImporter::importFileAsConvexShapeGeometry(
                              selectedPath, pathToDirectory, [](std::string_view sMessage) {
-                                 Logger::get().info(sMessage);
+                                 Log::info(sMessage);
                              });
                          if (optionalError.has_value()) [[unlikely]] {
-                             Logger::get().error(std::format(
+                             Log::error(std::format(
                                  "failed to import the file, error: {}", optionalError->getInitialMessage()));
                          } else {
-                             Logger::get().info(std::format(
+                             Log::info(std::format(
                                  "file \"{}\" was successfully imported", selectedPath.filename().string()));
                              rebuildFileTree();
                          }
@@ -310,7 +310,7 @@ void ContentBrowser::showFileContextMenu(const std::filesystem::path& pathToFile
                                     try {
                                         std::filesystem::rename(pathToFile, pathToNewFile);
                                     } catch (std::exception& exception) {
-                                        Logger::get().error(std::format(
+                                        Log::error(std::format(
                                             "unable to rename file, error: {}", exception.what()));
                                     }
                                     rebuildFileTree();

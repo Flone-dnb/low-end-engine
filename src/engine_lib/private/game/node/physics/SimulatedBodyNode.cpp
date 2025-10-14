@@ -105,7 +105,7 @@ void SimulatedBodyNode::recreateBodyIfSpawned() {
         if (!bWarnedAboutBodyRecreatingOften) {
             iBodyRecreateCountAfterSpawn += 1;
             if (iBodyRecreateCountAfterSpawn >= 10) {
-                Logger::get().warn(std::format(
+                Log::warn(std::format(
                     "physics body of the simulated node \"{}\" was already recreated {} times after the node "
                     "was spawned, recreating the physics body often might cause performance issues, make "
                     "sure you know what you're doing",
@@ -267,7 +267,7 @@ void SimulatedBodyNode::onWorldLocationRotationScaleChanged() {
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
             if (worldLocation.y < -1000.0F) {
-                Logger::get().warn(std::format(
+                Log::warn(std::format(
                     "simulated node \"{}\" seems to be falling out of the world, its world location is "
                     "({}, {}, {})",
                     getNodeName(),

@@ -6,7 +6,7 @@
 
 // Custom.
 #include "misc/ProjectPaths.h"
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "render/GpuResourceManager.h"
 #include "misc/Profiler.hpp"
 
@@ -157,7 +157,7 @@ void TextureManager::releaseTextureIfNotUsed(const std::string& sPathToTextureRe
     const auto it = mtxLoadedTextures.second.find(sPathToTextureRelativeRes);
     if (it == mtxLoadedTextures.second.end()) [[unlikely]] {
         // This should not happen, something is wrong.
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "a texture handle just notified the texture manager about "
             "no longer referencing a texture resource at \"{}\" "
             "but the manager does not store resources from this path",
@@ -167,7 +167,7 @@ void TextureManager::releaseTextureIfNotUsed(const std::string& sPathToTextureRe
 
     // Self check: make sure the handle counter is not zero.
     if (it->second.iActiveTextureHandleCount == 0) [[unlikely]] {
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "a texture handle just notified the texture manager "
             "about no longer referencing a texture resource at \"{}\", "
             "the manager has such a resource entry but the current "
@@ -212,7 +212,7 @@ std::unique_ptr<TextureHandle> TextureManager::createNewHandleForLoadedTexture(
 
     // Self check: make sure handle counter will not hit type limit.
     if (texIt->second.iActiveTextureHandleCount == ULLONG_MAX) [[unlikely]] {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "texture handle counter for resource \"{}\" just hit type limit "
             "with value: {}, new texture handle for this resource will make the counter invalid",
             sPathToTextureRelativeRes,

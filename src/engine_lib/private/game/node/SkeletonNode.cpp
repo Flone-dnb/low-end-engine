@@ -56,11 +56,11 @@ void SkeletonNode::setPathToSkeletonRelativeRes(std::string sPathToNewSkeleton) 
     // Make sure the path is valid.
     const auto pathToFile = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToNewSkeleton;
     if (!std::filesystem::exists(pathToFile)) {
-        Logger::get().error(std::format("path \"{}\" does not exist", pathToFile.string()));
+        Log::error(std::format("path \"{}\" does not exist", pathToFile.string()));
         return;
     }
     if (std::filesystem::is_directory(pathToFile)) {
-        Logger::get().error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
+        Log::error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
         return;
     }
 
@@ -153,7 +153,7 @@ void SkeletonNode::onSpawning() {
     SpatialNode::onSpawning();
 
     if (sPathToSkeletonRelativeRes.empty()) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "path to skeleton file was not specified for node \"{}\", node will do nothing", getNodeName()));
         return;
     }
@@ -194,7 +194,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     samplingJob.ratio = animationRatio;
     samplingJob.output = ozz::make_span(vLocalTransforms);
     if (!samplingJob.Run()) {
-        Logger::get().error(std::format("skeleton sampling job failed for node \"{}\"", getNodeName()));
+        Log::error(std::format("skeleton sampling job failed for node \"{}\"", getNodeName()));
         return;
     }
 
@@ -295,7 +295,7 @@ void SkeletonNode::convertLocalTransformsToSkinningMatrices() {
     localToModelJob.input = ozz::make_span(vLocalTransforms);
     localToModelJob.output = ozz::make_span(vBoneMatrices);
     if (!localToModelJob.Run()) {
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
         return;
     }

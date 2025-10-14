@@ -11,7 +11,7 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "game/GameManager.h"
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/Profiler.hpp"
 
 // External.
@@ -383,5 +383,5 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
     // destroyed yet (and they are allowed to do that).
     pGameManager->destroy();
     pGameManager = nullptr;
-    Logger::get().info("game manager is destroyed");
+    Log::info("game manager is destroyed");
 }

@@ -13,7 +13,7 @@
 #include "misc/Error.h"
 #include "io/ConfigManager.h"
 #include "misc/ProjectPaths.h"
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/ReflectedTypeDatabase.h"
 
 class Serializable;
@@ -628,7 +628,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
         // Find type.
         const auto varIt = typeInfo.variableNameToType.find(sFieldName.data());
         if (varIt == typeInfo.variableNameToType.end()) [[unlikely]] {
-            Logger::get().warn(std::format(
+            Log::warn(std::format(
                 "field name \"{}\" exists in the specified toml value but does not exist in the actual "
                 "object (if you removed/renamed this reflected field from your type - ignore this "
                 "warning)",
@@ -1110,7 +1110,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                     const auto pathToMeshGeometry = getPathToGeometryFile(sVariableName);
                     if (!std::filesystem::exists(pathToMeshGeometry)) {
                         if (!bUsedOriginalObject) {
-                            Logger::get().warn(std::format(
+                            Log::warn(std::format(
                                 "unable to find geometry file for variable \"{}\" for file \"{}\" (expected "
                                 "file \"{}\")",
                                 sVariableName,
@@ -1130,7 +1130,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
             }
 
             if (iNotFoundMeshGeometryCount > 0) {
-                Logger::get().warn(std::format(
+                Log::warn(std::format(
                     "unable to find geometry file(s) for {} variable(s) for file \"{}\", make sure these "
                     "files "
                     "exist and have correct names",

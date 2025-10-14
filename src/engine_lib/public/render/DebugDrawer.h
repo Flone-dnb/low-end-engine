@@ -80,15 +80,6 @@ public:
     ~DebugDrawer();
 
     /**
-     * Returns a reference to the debug drawer instance.
-     * If no instance was created yet, this function will create it
-     * and return a reference to it.
-     *
-     * @return Reference to the instance.
-     */
-    static DebugDrawer& get();
-
-    /**
      * Draws a cube.
      *
      * @param size      Full size (both sides) of the cube on one axis.
@@ -97,7 +88,7 @@ public:
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      * @param color     Color of the mesh.
      */
-    void drawCube(
+    static void drawCube(
         float size,
         const glm::vec3& worldPosition,
         float timeInSec,
@@ -112,7 +103,7 @@ public:
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      * @param color     Color of the mesh.
      */
-    void drawSphere(
+    static void drawSphere(
         float radius,
         const glm::vec3& worldPosition,
         float timeInSec,
@@ -127,7 +118,7 @@ public:
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      * @param color              Color of the mesh.
      */
-    void drawMesh(
+    static void drawMesh(
         const std::vector<glm::vec3>& vTrianglePositions,
         const glm::mat4x4& worldMatrix,
         float timeInSec,
@@ -142,7 +133,7 @@ public:
      * then they will be removed from rendering. Specify 0.0 to draw for a single frame.
      * @param color       Color of the lines.
      */
-    void drawLines(
+    static void drawLines(
         const std::vector<glm::vec3>& vLines,
         const glm::mat4x4& worldMatrix,
         float timeInSec,
@@ -161,7 +152,7 @@ public:
      * a position of the top-left corner of the text in range [0.0; 1.0] relative to screen.
      * @param textHeight Height of the text in range [0.0; 1.0] relative to screen height.
      */
-    void drawText(
+    static void drawText(
         const std::string& sText,
         float timeInSec,
         const glm::vec3& color = glm::vec3(1.0F, 1.0F, 1.0F),
@@ -177,7 +168,7 @@ public:
      * @param timeInSec  Time (in seconds) during which the text will be rendered
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      */
-    void drawScreenRect(
+    static void drawScreenRect(
         const glm::vec2& screenPos,
         const glm::vec2& screenSize,
         const glm::vec3& color,
@@ -185,6 +176,15 @@ public:
 
 private:
     DebugDrawer();
+
+    /**
+     * Returns a reference to the debug drawer instance.
+     * If no instance was created yet, this function will create it
+     * and return a reference to it.
+     *
+     * @return Reference to the instance.
+     */
+    static DebugDrawer& get();
 
     /**
      * Called by the renderer to draw all available debug objects.

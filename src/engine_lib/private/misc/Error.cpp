@@ -5,7 +5,7 @@
 #include <filesystem>
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/MemoryUsage.hpp"
 
 // External.
@@ -116,7 +116,7 @@ std::string Error::getInitialMessage() const { return sMessage; }
 void Error::showErrorAndThrowException() const {
     // Log error.
     const std::string sErrorMessage = getFullErrorMessage();
-    Logger::get().error(sErrorMessage);
+    Log::error(sErrorMessage);
 
     // Show message box.
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", sErrorMessage.c_str(), nullptr);

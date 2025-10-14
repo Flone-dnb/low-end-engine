@@ -56,7 +56,7 @@ UnsignedLongLongInspector::UnsignedLongLongInspector(
                     try {
                         iNewValue = std::stoull(sText);
                     } catch (...) {
-                        Logger::get().error("unable to convert string to float");
+                        Log::error("unable to convert string to float");
                         return;
                     }
                 }

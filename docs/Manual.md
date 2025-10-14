@@ -134,32 +134,29 @@ const std::unique_ptr<Window> pMainWindow = std::get<std::unique_ptr<Window>>(st
 
 ## Logging
 
-The engine has a simple `Logger` class (`io/Logger.h`) that you can use to write to log files and to console (note that logging to console is disabled in release builds).
+The engine has a simple `Log` class (`io/Log.h`) that you can use to write to log files and to console (note that logging to console is disabled in release builds).
 
 On Windows log files are located at `%%localappdata%/low-end-engine/*yourtargetname*/logs`.
 On Linux log files are located at `~/.config/low-end-engine/*yourtargetname*/logs`.
 
-Here is an example of `Logger` usage:
+Here is an example of `Log` usage:
 
 ```Cpp
-#include "misc/Logger.h"
-
 void foo(){
-    Logger::get().info("some information");
-    Logger::get().warn("some warning");
-    Logger::get().error("some error");
+    Log::info("some information");
+    Log::warn("some warning");
+    Log::error("some error");
 }
 ```
 
 You can also combine `std::format` with logger:
 
 ```Cpp
-#include "misc/Logger.h"
 #include <format>
 
 void bar(){
     int iAnswer = 42;
-    Logger::get().info(std::format("the value of the variable is {}", iAnswer));
+    Log::info(std::format("the value of the variable is {}", iAnswer));
 }
 ```
 
@@ -395,7 +392,7 @@ auto optionalError = GltfImporter::importFileAsNodeTree(
     "game/models",                 // path to the output directory relative `res` (should exist)
     "sword",                       // name of the new directory that will be created (should not exist yet)
     [](std::string_view sState) {
-        Logger::get().info(sState);
+        Log::info(sState);
     });
 if (optionalError.has_value()) [[unlikely]] {
     // ... handle error ...
@@ -679,7 +676,7 @@ In case you need to quickly draw some temporary objects/text in the game world i
 #include "render/DebugDrawer.h"
 
 // draw a cube of size 1 on coordinates (1, 1, 0) for a single frame
-DebugDrawer::get().drawCube(1.0F, glm::vec3(1.0F, 1.0F, 0.0F));
+DebugDrawer::drawCube(1.0F, glm::vec3(1.0F, 1.0F, 0.0F));
 ```
 
 ## Debug console
@@ -691,8 +688,8 @@ Often during development developers need some cheats for debugging and/or testin
 
 #if defined(DEBUG) // DebugConsole is only available when DEBUG is defined
 
-DebugConsole::get().registerCommand("testCommand", [](GameInstance* pGameInstance) {
-    DebugDrawer::get().drawText("hello"); // <- example command logic
+DebugConsole::registerCommand("testCommand", [](GameInstance* pGameInstance) {
+    DebugDrawer::drawText("hello"); // <- example command logic
 });
 
 #endif
@@ -827,9 +824,10 @@ It process goes like this:
 4. allow the script to modify the game world in some way
 
 But first some information about the types/functions that the engine provides by default for all scripts:
-- `Logger` is accessible as `Logger::info(text)`, `Logger::warn(text)`, `Logger::error(text)` 
-- `string` type (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_stdlib_string.html)
-- math functions (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_addon_math.html)
+- `Log` is accessible as usual (Log::info(text), Log::warn(text), Log::error(text))
+- `std::string` type and various helper function in the `std` namespace: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_stdlib_string.html
+- some math functions in the `std` namespace: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_addon_math.html
+- some `glm` functionality, such as `vec2`, `vec3`, `vec4`, `mat3`, `mat4` and some helper functions such as `glm::dot`, `glm::cross` and similar
 
 ### Compile and execute a script
 
@@ -845,9 +843,9 @@ uint calculate(uint input) {
 Compile the script:
 
 ```Cpp
-const auto result = getScriptManager().compileScript("game/test.as");
+auto result = getScriptManager().compileScript("game/test.as");
 if (std::holds_alternative<Error>(result)) [[unlikely]] {
-    // handle error
+    // handle compilation error
 }
 auto pScript = std::get<std::unique_ptr<Script>>(std::move(result));
 ```
@@ -856,25 +854,19 @@ Then execute the script:
 
 ```Cpp
 unsigned int iReturnValue = 0;
-pScript->executeFunction(
+auto optError = pScript->executeFunction(
     "calculate",
     [](const ScriptFuncInterface& func) { func.setArgUInt(0, 2); },
     [&](const ScriptFuncInterface& func) { iReturnValue = func.getReturnUInt(); });
-Logger::get().info(std::format("script returned: {}", iReturnValue));
+if (optError.has_value()) [[unlikely]] {
+    // handle execution error
+}
+Log::info(std::format("script returned: {}", iReturnValue));
 ```
 
 ### Register custom types and functions
 
-Use `ScriptManager` to register new types and functions:
-
-```Cpp
-// Example global function to register:
-static void myfunc(const std::string& sText) {
-    Logger::get().info(sText);
-}
-
-getScriptManager().registerGlobalFunction("void myfunc(string)", asFUNCTION(myfunc));
-```
+Use `ScriptManager` to register new types and functions. Functions for registering have examples in their documentation comments.
 
 This registration must be done before you compile a script that uses custom types or functions.
 

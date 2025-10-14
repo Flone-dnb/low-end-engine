@@ -4,7 +4,7 @@
 #include <format>
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/Error.h"
 #include "misc/ReflectedTypeDatabase.h"
 
@@ -67,7 +67,7 @@ std::optional<Error> Serializable::serialize(
     constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
     const auto iFilePathLength = pathToFile.string().length();
     if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "file path length {} is close to the platform limit of {} characters (path: {})",
             iFilePathLength,
             iMaxPathLimit,
@@ -241,7 +241,7 @@ std::optional<Error> Serializable::serializeMultiple(
     constexpr auto iMaxPathLimit = iMaxPath - iMaxPathLimitBound;
     const auto iFilePathLength = pathToFile.string().length();
     if (iFilePathLength > iMaxPathLimit - (iMaxPathLimitBound * 2) && iFilePathLength < iMaxPathLimit) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "file path length {} is close to the platform limit of {} characters (path: {})",
             iFilePathLength,
             iMaxPathLimit,
@@ -549,7 +549,7 @@ std::variant<std::string, Error> Serializable::serialize(
                     const auto currentValue = variableInfo.getter(this);
                     if (currentValue.getIndices().empty() && currentValue.getVertices().empty() &&
                         !bFoundNonEmptyMesh) {
-                        Logger::get().warn(std::format(
+                        Log::warn(std::format(
                             "found empty geometry in variable \"{}\" for file \"{}\"",
                             sVariableName,
                             pathToFile.filename().string()));

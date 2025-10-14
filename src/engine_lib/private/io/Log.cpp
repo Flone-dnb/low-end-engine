@@ -1,4 +1,4 @@
-﻿#include "io/Logger.h"
+﻿#include "io/Log.h"
 
 // Standard.
 #include <ctime>
@@ -23,9 +23,14 @@ namespace {
 }
 #endif
 
-LoggerCallbackGuard::~LoggerCallbackGuard() { Logger::get().onLogMessage = {}; }
+Log& Log::get() {
+    static Log logger;
+    return logger;
+}
 
-Logger::~Logger() {
+LoggerCallbackGuard::~LoggerCallbackGuard() { Log::get().onLogMessage = {}; }
+
+Log::~Log() {
     if (iTotalWarningsProduced.load() > 0 || iTotalErrorsProduced.load() > 0) {
         pSpdLogger->info(std::format(
             "\n---------------------------------------------------\n"
@@ -40,79 +45,74 @@ Logger::~Logger() {
     flushToDisk();
 }
 
-Logger& Logger::get() {
-    static Logger logger;
-    return logger;
-}
+size_t Log::getTotalWarningsProduced() { return iTotalWarningsProduced.load(); }
 
-size_t Logger::getTotalWarningsProduced() { return iTotalWarningsProduced.load(); }
+size_t Log::getTotalErrorsProduced() { return iTotalErrorsProduced.load(); }
 
-size_t Logger::getTotalErrorsProduced() { return iTotalErrorsProduced.load(); }
-
-void Logger::info(std::string_view sText, const std::source_location location) const {
+void Log::info(std::string_view sText, const std::source_location location) {
     const auto sMessage = std::format(
         "[{}, {}] {}",
         std::filesystem::path(location.file_name()).filename().string(),
         location.line(),
         sText);
 
-    pSpdLogger->info(sMessage);
+    get().pSpdLogger->info(sMessage);
 
-    if (onLogMessage) {
-        onLogMessage(LogMessageCategory::INFO, sMessage);
+    if (get().onLogMessage) {
+        get().onLogMessage(LogMessageCategory::INFO, sMessage);
     }
 }
 
-void Logger::warn(std::string_view sText, const std::source_location location) const {
+void Log::warn(std::string_view sText, const std::source_location location) {
     const auto sMessage = std::format(
         "[{}:{}] {}",
         std::filesystem::path(location.file_name()).filename().string(),
         location.line(),
         sText);
 
-    pSpdLogger->warn(sMessage);
+    get().pSpdLogger->warn(sMessage);
     iTotalWarningsProduced.fetch_add(1);
 
-    if (onLogMessage) {
-        onLogMessage(LogMessageCategory::WARNING, sMessage);
+    if (get().onLogMessage) {
+        get().onLogMessage(LogMessageCategory::WARNING, sMessage);
     }
 
 #if defined(DEBUG) && !defined(ENGINE_EDITOR)
-    DebugDrawer::get().drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 1.0F, 0.0F), {}, debugTextHeight);
+    DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 1.0F, 0.0F), {}, debugTextHeight);
 #endif
 }
 
-void Logger::error(std::string_view sText, const std::source_location location) const {
+void Log::error(std::string_view sText, const std::source_location location) {
     const auto sMessage = std::format(
         "[{}:{}] {}",
         std::filesystem::path(location.file_name()).filename().string(),
         location.line(),
         sText);
 
-    pSpdLogger->error(sMessage);
+    get().pSpdLogger->error(sMessage);
     iTotalErrorsProduced.fetch_add(1);
 
-    if (onLogMessage) {
-        onLogMessage(LogMessageCategory::ERROR, sMessage);
+    if (get().onLogMessage) {
+        get().onLogMessage(LogMessageCategory::ERROR, sMessage);
     }
 
 #if defined(DEBUG) && !defined(ENGINE_EDITOR)
-    DebugDrawer::get().drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 0.0F, 0.0F), {}, debugTextHeight);
+    DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 0.0F, 0.0F), {}, debugTextHeight);
 #endif
 }
 
-void Logger::flushToDisk() { pSpdLogger->flush(); }
+void Log::flushToDisk() { get().pSpdLogger->flush(); }
 
 std::unique_ptr<LoggerCallbackGuard>
-Logger::setCallback(const std::function<void(LogMessageCategory, const std::string&)>& onLogMessage) {
-    this->onLogMessage = onLogMessage;
+Log::setCallback(const std::function<void(LogMessageCategory, const std::string&)>& onLogMessage) {
+    get().onLogMessage = onLogMessage;
 
     return std::unique_ptr<LoggerCallbackGuard>(new LoggerCallbackGuard());
 }
 
-std::filesystem::path Logger::getDirectoryWithLogs() const { return sLoggerWorkingDirectory; }
+std::filesystem::path Log::getDirectoryWithLogs() { return get().sLoggerWorkingDirectory; }
 
-Logger::Logger() {
+Log::Log() {
     auto sLoggerFilePath = ProjectPaths::getPathToLogsDirectory();
 
     if (!std::filesystem::exists(sLoggerFilePath)) {
@@ -143,7 +143,7 @@ Logger::Logger() {
     pSpdLogger->flush_on(spdlog::level::warn); // flush log on warnings and errors
 }
 
-std::string Logger::getDateTime() {
+std::string Log::getDateTime() {
     const time_t now = time(nullptr);
 
     tm tm{}; // NOLINT
@@ -161,7 +161,7 @@ std::string Logger::getDateTime() {
     return std::format("{}.{}_{}-{}-{}", 1 + tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
-void Logger::removeOldestLogFiles(const std::filesystem::path& sLogDirectory) {
+void Log::removeOldestLogFiles(const std::filesystem::path& sLogDirectory) {
     size_t iFileCount = 0;
 
     auto oldestTime = std::chrono::file_clock::now();

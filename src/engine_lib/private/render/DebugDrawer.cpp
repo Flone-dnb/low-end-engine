@@ -96,12 +96,12 @@ void DebugDrawer::destroy() {
 
 void DebugDrawer::drawCube(
     float size, const glm::vec3& worldPosition, float timeInSec, const glm::vec3& color) {
-    drawMesh(vCubePositions, glm::translate(worldPosition) * glm::scale(glm::vec3(size)), timeInSec, color);
+    drawMesh(get().vCubePositions, glm::translate(worldPosition) * glm::scale(glm::vec3(size)), timeInSec, color);
 }
 
 void DebugDrawer::drawSphere(
     float radius, const glm::vec3& worldPosition, float timeInSec, const glm::vec3& color) {
-    drawMesh(vIcospherePositions, glm::translate(worldPosition), timeInSec, color);
+    drawMesh(get().vIcospherePositions, glm::translate(worldPosition), timeInSec, color);
 }
 
 void DebugDrawer::drawMesh(
@@ -130,7 +130,7 @@ void DebugDrawer::drawMesh(
     auto pMeshVao =
         GpuResourceManager::createVertexArrayObject(static_cast<unsigned int>(vEdges.size()), false, vEdges);
 
-    vMeshesToDraw.push_back(Mesh{
+    get().vMeshesToDraw.push_back(Mesh{
         .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pMeshVao)});
 }
 
@@ -146,7 +146,7 @@ void DebugDrawer::drawLines(
     auto pLinesVao =
         GpuResourceManager::createVertexArrayObject(static_cast<unsigned int>(vLines.size()), false, vLines);
 
-    vMeshesToDraw.push_back(Mesh{
+    get().vMeshesToDraw.push_back(Mesh{
         .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pLinesVao)});
 }
 
@@ -156,7 +156,7 @@ void DebugDrawer::drawText(
     const glm::vec3& color,
     const std::optional<glm::vec2>& optForcePosition,
     float textHeight) {
-    vTextToDraw.push_back(Text{
+    get().vTextToDraw.push_back(Text{
         .sText = sText,
         .textHeight = textHeight,
         .optForcePosition = optForcePosition,
@@ -166,7 +166,7 @@ void DebugDrawer::drawText(
 
 void DebugDrawer::drawScreenRect(
     const glm::vec2& screenPos, const glm::vec2& screenSize, const glm::vec3& color, float timeInSec) {
-    vRectsToDraw.push_back(ScreenRect{
+    get().vRectsToDraw.push_back(ScreenRect{
         .screenPos = screenPos, .screenSize = screenSize, .timeLeftSec = timeInSec, .color = color});
 }
 

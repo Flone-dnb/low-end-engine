@@ -58,7 +58,7 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
 
     // Set FPS limit.
     const auto iScreenRefreshRate = Window::getScreenRefreshRate();
-    Logger::get().info(std::format("setting FPS limit to {} (screen refresh rate)", iScreenRefreshRate));
+    Log::info(std::format("setting FPS limit to {} (screen refresh rate)", iScreenRefreshRate));
     pRenderer->setFpsLimit(iScreenRefreshRate);
 
     return pRenderer;
@@ -81,7 +81,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     recreateFramebuffers();
 
 #if defined(DEBUG)
-    DebugConsole::get().registerCommand("setFpsLimit", [this](GameInstance*, int iNewLimit) {
+    DebugConsole::registerCommand("setFpsLimit", [this](GameInstance*, int iNewLimit) {
         if (iNewLimit < 0) {
             iNewLimit = 0;
         }

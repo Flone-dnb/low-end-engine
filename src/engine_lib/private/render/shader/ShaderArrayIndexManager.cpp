@@ -1,7 +1,7 @@
 #include "render/shader/ShaderArrayIndexManager.h"
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/Error.h"
 
 ShaderArrayIndexManager::ShaderArrayIndexManager(const std::string& sName, unsigned int iArraySize)
@@ -45,7 +45,7 @@ std::unique_ptr<ShaderArrayIndex> ShaderArrayIndexManager::reserveIndex() {
 
         // Make sure we won't hit type limit.
         if (mtxData.second.iNextFreeIndex == UINT_MAX) [[unlikely]] {
-            Logger::get().warn(std::format(
+            Log::warn(std::format(
                 "an index manager \"{}\"reached type limit for next free index of {}",
                 sName,
                 mtxData.second.iNextFreeIndex));
@@ -53,7 +53,7 @@ std::unique_ptr<ShaderArrayIndex> ShaderArrayIndexManager::reserveIndex() {
 
         // Make sure we don't reach array size limit.
         if (mtxData.second.iNextFreeIndex == iArraySize) [[unlikely]] {
-            Logger::get().warn(std::format(
+            Log::warn(std::format(
                 "index manager \"{}\" just reached array's size limit of {}, the next requested index "
                 "(if no unused indices exist) will reference out of array bounds",
                 sName,
@@ -73,7 +73,7 @@ void ShaderArrayIndexManager::onIndexNoLongerUsed(unsigned int iIndex) {
 
     // Make sure the number of active indices will not go below zero.
     if (mtxData.second.iActiveIndexCount == 0) [[unlikely]] {
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "some index object ({}) notified owner index manager \"{}\" about no longer being used "
             "but index manager's counter of active (used) indices is already zero",
             sName,

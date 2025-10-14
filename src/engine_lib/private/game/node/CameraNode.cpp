@@ -130,7 +130,7 @@ void CameraNode::clearOrbitalTargetLocation() {
 
     // Make sure we are in the orbital camera mode.
     if (cameraProperties.mtxData.second.currentCameraMode == CameraMode::FREE) [[unlikely]] {
-        Logger::get().warn(
+        Log::warn(
             "an attempt to clear orbital camera's target location was ignored because the camera is not "
             "in the orbital mode");
         return;
@@ -147,7 +147,7 @@ void CameraNode::setOrbitalTargetLocation(const glm::vec3& targetPointLocation) 
 
     // Make sure we are in the orbital camera mode.
     if (cameraProperties.mtxData.second.currentCameraMode == CameraMode::FREE) [[unlikely]] {
-        Logger::get().warn(
+        Log::warn(
             "an attempt to set orbital camera's target location was ignored because the camera is not in "
             "the orbital mode");
         return;
@@ -164,7 +164,7 @@ void CameraNode::setOrbitalRotation(float phi, float theta) {
 
     // Make sure we are in the orbital camera mode.
     if (cameraProperties.mtxData.second.currentCameraMode == CameraMode::FREE) [[unlikely]] {
-        Logger::get().warn(
+        Log::warn(
             "an attempt to set orbital camera's rotation was ignored because the camera is not in "
             "the orbital mode");
         return;
@@ -190,7 +190,7 @@ void CameraNode::setOrbitalDistanceToTarget(float distanceToTarget) {
 
     // Make sure we are in the orbital camera mode.
     if (cameraProperties.mtxData.second.currentCameraMode == CameraMode::FREE) [[unlikely]] {
-        Logger::get().warn(
+        Log::warn(
             "an attempt to set orbital camera's rotation was ignored because the camera is not in "
             "the orbital mode");
         return;
@@ -214,7 +214,7 @@ glm::vec3 CameraNode::getOrbitalTargetLocation() {
 
     // Make sure we are in the orbital camera mode.
     if (cameraProperties.mtxData.second.currentCameraMode == CameraMode::FREE) [[unlikely]] {
-        Logger::get().warn(
+        Log::warn(
             "an attempt to get orbital camera's target location was ignored because the camera is not in "
             "the orbital mode");
         return glm::vec3(0.0F, 0.0F, 0.0F);

@@ -60,11 +60,11 @@ void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
     const auto pathToTexture =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
     if (!std::filesystem::exists(pathToTexture)) {
-        Logger::get().error(std::format("path \"{}\" does not exist", pathToTexture.string()));
+        Log::error(std::format("path \"{}\" does not exist", pathToTexture.string()));
         return;
     }
     if (std::filesystem::is_directory(pathToTexture)) {
-        Logger::get().error(
+        Log::error(
             std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
         return;
     }
@@ -102,11 +102,11 @@ void Material::setPathToCustomVertexShader(std::string sPathToCustomVertexShader
     const auto pathToFile =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToCustomVertexShader;
     if (!std::filesystem::exists(pathToFile)) {
-        Logger::get().error(std::format("path \"{}\" does not exist", pathToFile.string()));
+        Log::error(std::format("path \"{}\" does not exist", pathToFile.string()));
         return;
     }
     if (std::filesystem::is_directory(pathToFile)) {
-        Logger::get().error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
+        Log::error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
         return;
     }
 
@@ -143,11 +143,11 @@ void Material::setPathToCustomFragmentShader(std::string sPathToCustomFragmentSh
     const auto pathToFile =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToCustomFragmentShader;
     if (!std::filesystem::exists(pathToFile)) {
-        Logger::get().error(std::format("path \"{}\" does not exist", pathToFile.string()));
+        Log::error(std::format("path \"{}\" does not exist", pathToFile.string()));
         return;
     }
     if (std::filesystem::is_directory(pathToFile)) {
-        Logger::get().error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
+        Log::error(std::format("expected the path \"{}\" to point to a file", pathToFile.string()));
         return;
     }
 

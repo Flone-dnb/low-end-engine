@@ -5,7 +5,7 @@
 #include <thread>
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 
 #if defined(ENGINE_PROFILER_ENABLED)
 #include "tracy/public/common/TracySystem.hpp"
@@ -15,7 +15,7 @@ ThreadPool::ThreadPool() {
     auto iThreadCount = std::thread::hardware_concurrency();
     if (iThreadCount == 0) {
         iThreadCount = iMinThreadCount;
-        Logger::get().error(std::format(
+        Log::error(std::format(
             "hardware concurrency information is not available, as a fallback creating {} thread(s) "
             "for the thread pool",
             iThreadCount));

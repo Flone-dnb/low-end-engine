@@ -88,7 +88,7 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderP
 
     // Log resulting window size.
     const auto createdWindowSize = pWindow->getWindowSize();
-    Logger::get().info(
+    Log::info(
         std::format("created a new window of size {}x{}", createdWindowSize.first, createdWindowSize.second));
 
     return pWindow;
@@ -100,7 +100,7 @@ void Window::setIsMouseCursorVisible(bool bIsVisible) {
     }
 
     if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!bIsVisible)) != 0) {
-        Logger::get().error(SDL_GetError());
+        Log::error(SDL_GetError());
         return;
     }
 

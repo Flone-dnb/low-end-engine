@@ -249,9 +249,9 @@ PhysicsManager::PhysicsManager(GameManager* pGameManager) : pGameManager(pGameMa
 #if defined(ENGINE_EDITOR)
     bEnableDebugRendering = true;
 #else
-    DebugConsole::get().registerCommand(
+    DebugConsole::registerCommand(
         "showCollision", [this](GameInstance* pGameInstance) { bEnableDebugRendering = true; });
-    DebugConsole::get().registerCommand(
+    DebugConsole::registerCommand(
         "hideCollision", [this](GameInstance* pGameInstance) { bEnableDebugRendering = false; });
 #endif
 #endif
@@ -829,13 +829,13 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
     std::scoped_lock guard(*mtxChildNodes.first);
 
     if (mtxChildNodes.second.empty()) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "expected the compound collision node \"{}\" to have child collision nodes",
             pNode->getNodeName()));
         return;
     }
     if (mtxChildNodes.second.size() == 1) {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "compound collision node \"{}\" has only 1 child collision node, in this case it's better to "
             "create a single collision node instead of using a compound",
             pNode->getNodeName()));
@@ -848,7 +848,7 @@ void PhysicsManager::createBodyForNode(CompoundCollisionNode* pNode) {
         // Cast type.
         const auto pCollisionNode = dynamic_cast<CollisionNode*>(pChildNode);
         if (pCollisionNode == nullptr) [[unlikely]] {
-            Logger::get().error(std::format(
+            Log::error(std::format(
                 "expected the child node \"{}\" of a compound node \"{}\" to be a collision node",
                 pChildNode->getNodeName(),
                 pNode->getNodeName()));

@@ -19,7 +19,7 @@ LogViewNode::LogViewNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
     pLayout->setAutoScrollToBottom(true);
 
     pLoggerCallback =
-        Logger::get().setCallback([this](LogMessageCategory category, const std::string& sMessage) {
+        Log::setCallback([this](LogMessageCategory category, const std::string& sMessage) {
             const auto pTextNode = pLayout->addChildNode(std::make_unique<TextUiNode>("Log View Message"));
             pTextNode->setTextHeight(EditorTheme::getSmallTextHeight() * 0.95F);
             pTextNode->setText(utf::as_u16(sMessage));

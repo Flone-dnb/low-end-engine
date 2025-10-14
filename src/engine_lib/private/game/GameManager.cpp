@@ -1,7 +1,7 @@
 ﻿#include "GameManager.h"
 
 // Custom.
-#include "io/Logger.h"
+#include "io/Log.h"
 #include "misc/ReflectedTypeDatabase.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/Node.h"
@@ -29,17 +29,17 @@ GameManager::GameManager(
     : pWindow(pWindow) {
 #if defined(ENGINE_PROFILER_ENABLED)
     tracy::SetThreadName("main thread");
-    Logger::get().info("profiler enabled");
+    Log::info("profiler enabled");
 #endif
 
 #if defined(ENGINE_ASAN_ENABLED)
-    Logger::get().info("AddressSanitizer (ASan) is enabled, expect increased RAM usage!");
+    Log::info("AddressSanitizer (ASan) is enabled, expect increased RAM usage!");
 #endif
 
 #if defined(DEBUG)
-    Logger::get().info("DEBUG macro is defined, running debug build");
+    Log::info("DEBUG macro is defined, running debug build");
 #else
-    Logger::get().info("DEBUG macro is NOT defined, running release build");
+    Log::info("DEBUG macro is NOT defined, running release build");
 #endif
 
     this->pRenderer = std::move(pRenderer);
@@ -72,9 +72,9 @@ void GameManager::destroyWorldsImmediately() {
 
 void GameManager::destroy() {
     // Log destruction so that it will be slightly easier to read logs.
-    Logger::get().info("\n\n\n-------------------- starting game manager destruction... "
-                       "--------------------\n\n");
-    Logger::get().flushToDisk();
+    Log::info("\n\n\n-------------------- starting game manager destruction... "
+              "--------------------\n\n");
+    Log::flushToDisk();
 
     // Destroy world before game instance, so that no node will reference game instance.
     destroyWorldsImmediately();
@@ -84,7 +84,7 @@ void GameManager::destroy() {
     // Make sure all nodes were destroyed.
     const auto iAliveNodeCount = Node::getAliveNodeCount();
     if (iAliveNodeCount != 0) {
-        Logger::get().error(
+        Log::error(
             std::format("the world was destroyed but there are still {} node(s) alive", iAliveNodeCount));
     }
 
@@ -208,9 +208,8 @@ size_t GameManager::getCalledEveryFrameNodeCount() {
 
 void GameManager::onGameStarted() {
     // Log game start so that it will be slightly easier to read logs.
-    Logger::get().info(
-        "\n\n\n------------------------------ game started ------------------------------\n\n");
-    Logger::get().flushToDisk();
+    Log::info("\n\n\n------------------------------ game started ------------------------------\n\n");
+    Log::flushToDisk();
 
     pGameInstance->onGameStarted();
 }
@@ -578,7 +577,7 @@ void GameManager::onMouseScrollMove(int iOffset) {
 }
 
 void GameManager::onGamepadConnected(std::string_view sGamepadName) {
-    Logger::get().info(std::format("gamepad \"{}\" was connected", sGamepadName));
+    Log::info(std::format("gamepad \"{}\" was connected", sGamepadName));
 
     pGameInstance->onGamepadConnected(sGamepadName);
 
@@ -594,7 +593,7 @@ void GameManager::onGamepadConnected(std::string_view sGamepadName) {
 }
 
 void GameManager::onGamepadDisconnected() {
-    Logger::get().info("gamepad was disconnected");
+    Log::info("gamepad was disconnected");
 
     pGameInstance->onGamepadDisconnected();
 
@@ -635,8 +634,7 @@ void GameManager::triggerActionEvents(
         const auto actionStateIt = inputManager.actionEventStates.find(iActionId);
         if (actionStateIt == inputManager.actionEventStates.end()) [[unlikely]] {
             // Unexpected, nothing to process.
-            Logger::get().error(
-                std::format("input manager returned 0 states for action event with ID {}", iActionId));
+            Log::error(std::format("input manager returned 0 states for action event with ID {}", iActionId));
             continue;
         }
 
@@ -659,18 +657,18 @@ void GameManager::triggerActionEvents(
         // We should have found a trigger button.
         if (!bFoundKey) [[unlikely]] {
             if (std::holds_alternative<KeyboardButton>(button)) {
-                Logger::get().error(std::format(
+                Log::error(std::format(
                     "could not find the keyboard button `{}` in trigger buttons for action event with ID "
                     "{}",
                     getKeyboardButtonName(std::get<KeyboardButton>(button)),
                     iActionId));
             } else if (std::holds_alternative<KeyboardButton>(button)) {
-                Logger::get().error(std::format(
+                Log::error(std::format(
                     "could not find the mouse button `{}` in trigger buttons for action event with ID {}",
                     static_cast<int>(std::get<MouseButton>(button)),
                     iActionId));
             } else if (std::holds_alternative<GamepadButton>(button)) {
-                Logger::get().error(std::format(
+                Log::error(std::format(
                     "could not find the gamepad button `{}` in trigger buttons for action event with ID "
                     "{}",
                     static_cast<int>(std::get<GamepadButton>(button)),
@@ -735,7 +733,7 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
         auto axisStateIt = inputManager.axisEventStates.find(iAxisEventId);
         if (axisStateIt == inputManager.axisEventStates.end()) [[unlikely]] {
             // Unexpected.
-            Logger::get().error(
+            Log::error(
                 std::format("input manager returned 0 states for axis event with ID {}", iAxisEventId));
             continue;
         }
@@ -764,7 +762,7 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
 
         // Log an error if the key is not found.
         if (!bFound) [[unlikely]] {
-            Logger::get().error(std::format(
+            Log::error(std::format(
                 "could not find key `{}` in key states for axis event with ID {}",
                 getKeyboardButtonName(button),
                 iAxisEventId));
@@ -827,7 +825,7 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
         auto axisStateIt = inputManager.axisEventStates.find(iAxisEventId);
         if (axisStateIt == inputManager.axisEventStates.end()) [[unlikely]] {
             // Unexpected.
-            Logger::get().error(
+            Log::error(
                 std::format("input manager returned 0 states for axis event with ID {}", iAxisEventId));
             continue;
         }
@@ -848,7 +846,7 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 
         // Log an error if the key is not found.
         if (!bFound) [[unlikely]] {
-            Logger::get().error(std::format(
+            Log::error(std::format(
                 "could not find gamepad axis `{}` in axis states for axis event with ID {}",
                 getGamepadAxisName(gamepadAxis),
                 iAxisEventId));

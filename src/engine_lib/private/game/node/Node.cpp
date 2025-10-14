@@ -7,7 +7,7 @@
 #include "game/World.h"
 #include "game/GameManager.h"
 #include "game/node/SpatialNode.h"
-#include "io/Logger.h"
+#include "io/Log.h"
 
 // External.
 #include "nameof.hpp"
@@ -322,8 +322,8 @@ TypeReflectionInfo Node::getReflectionInfo() {
 
 void Node::unsafeDetachFromParentAndDespawn(bool bDontLogMessage) {
     if (!bDontLogMessage) {
-        Logger::get().info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
-        Logger::get().flushToDisk(); // flush in case if we crash later
+        Log::info(std::format("detaching and despawning the node \"{}\"", getNodeName()));
+        Log::flushToDisk(); // flush in case if we crash later
     }
 
     std::unique_ptr<Node> pSelf;
@@ -354,7 +354,7 @@ void Node::unsafeDetachFromParentAndDespawn(bool bDontLogMessage) {
             }
 
             if (pSelf == nullptr) [[unlikely]] {
-                Logger::get().error(std::format(
+                Log::error(std::format(
                     "node \"{}\" has a parent node but parent's children array "
                     "does not contain this node.",
                     getNodeName()));
@@ -390,7 +390,7 @@ Node::Node(std::string_view sName) : sNodeName(sName) {
     // Increment total node counter.
     const size_t iNodeCount = iTotalAliveNodeCount.fetch_add(1) + 1;
     if (iNodeCount + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "\"total alive nodes\" counter is at its maximum value: {}, another new node will cause "
             "an overflow",
             iNodeCount + 1));
@@ -605,7 +605,7 @@ void Node::spawn() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (mtxIsSpawned.second) [[unlikely]] {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "an attempt was made to spawn already spawned node \"{}\", ignoring this operation",
             getNodeName()));
         return;
@@ -617,7 +617,7 @@ void Node::spawn() {
     // Get unique ID.
     iNodeId = iAvailableNodeId.fetch_add(1);
     if (iNodeId.value() + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "\"next available node ID\" is at its maximum value: {}, another spawned node will "
             "cause an overflow",
             iNodeId.value() + 1));
@@ -669,7 +669,7 @@ void Node::despawn() {
     std::scoped_lock guard(mtxIsSpawned.first);
 
     if (!mtxIsSpawned.second) [[unlikely]] {
-        Logger::get().warn(std::format(
+        Log::warn(std::format(
             "an attempt was made to despawn already despawned node \"{}\", ignoring this operation",
             getNodeName()));
         return;

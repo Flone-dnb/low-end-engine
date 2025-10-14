@@ -27,15 +27,6 @@ public:
     ~DebugConsole() = default;
 
     /**
-     * Returns a reference to the debug console instance.
-     * If no instance was created yet, this function will create it
-     * and return a reference to it.
-     *
-     * @return Reference to the instance.
-     */
-    static DebugConsole& get();
-
-    /**
      * Registers a new command with the specified name and a callback that will be triggered once
      * the command is called.
      *
@@ -44,7 +35,8 @@ public:
      * @param sCommandName Name of the new command.
      * @param callback     Callback to trigger on command.
      */
-    void registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*)>& callback);
+    static void
+    registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*)>& callback);
 
     /**
      * Registers a new command with the specified name that accepts a single argument.
@@ -54,7 +46,7 @@ public:
      * @param sCommandName Name of the new command.
      * @param callback     Callback to trigger on command.
      */
-    void
+    static void
     registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*, int)>& callback);
 
 private:
@@ -68,6 +60,15 @@ private:
     };
 
     DebugConsole() = default;
+
+    /**
+     * Returns a reference to the debug console instance.
+     * If no instance was created yet, this function will create it
+     * and return a reference to it.
+     *
+     * @return Reference to the instance.
+     */
+    static DebugConsole& get();
 
     /**
      * Displays a message on top of the console.
