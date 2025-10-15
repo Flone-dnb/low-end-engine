@@ -21,7 +21,7 @@ public:
      * @endcode
      *
      * @param sDeclaration Function declaration.
-     * @param functionPtr  Pointer to the constructor function.
+     * @param funcPtr  Pointer to the constructor function.
      */
     ScriptTypeConstructor(const std::string& sDeclaration, asSFuncPtr funcPtr)
         : sDeclaration(sDeclaration), functionPtr(funcPtr) {}

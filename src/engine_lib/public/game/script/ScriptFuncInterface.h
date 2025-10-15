@@ -6,6 +6,12 @@ class asIScriptContext;
 class ScriptFuncInterface {
 public:
     ScriptFuncInterface() = delete;
+
+    /**
+     * Constructor.
+     *
+     * @param pContext Context.
+     */
     ScriptFuncInterface(asIScriptContext* pContext) : pContext(pContext) {}
 
     /**
@@ -49,6 +55,22 @@ public:
     void setArgValueType(unsigned int iArgIndex, void* pObjectToCopy) const;
 
     /**
+     * Sets an argument to pass to the script function.
+     *
+     * Used for custom registered pointer types.
+     *
+     * Example:
+     * @code
+     * MyType* pValue = ...;
+     * setPointerValue(0, pValue);
+     * @endcode
+     *
+     * @param iArgIndex     Index of the argument, starts with 0.
+     * @param pPointerValue Pointer to pass.
+     */
+    void setPointerValue(unsigned int iArgIndex, void* pPointerValue) const;
+
+    /**
      * Gets a return value from the script function.
      *
      * @return Value.
@@ -82,6 +104,20 @@ public:
      * @return Value.
      */
     void* getReturnValueType() const;
+
+    /**
+     * Gets a return value as a pointer to the custom value type.
+     *
+     * Used for custom registered pointer types.
+     *
+     * Example:
+     * @code
+     * MyType* pMy = reinterpret_castMyType*>(getReturnPointerType());
+     * @endcode
+     *
+     * @return Value.
+     */
+    void* getReturnPointerType() const;
 
 private:
     /** Prepared script context. */

@@ -45,7 +45,6 @@ GameManager::GameManager(
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
-    pScriptManager = std::unique_ptr<ScriptManager>(new ScriptManager());
 #ifndef ENGINE_UI_ONLY
     pPhysicsManager = std::unique_ptr<PhysicsManager>(new PhysicsManager(this));
 #endif
@@ -901,4 +900,10 @@ PhysicsManager& GameManager::getPhysicsManager() const {
     Error::showErrorAndThrowException("physics manager is not available in UI only applications");
 }
 
-ScriptManager& GameManager::getScriptManager() const { return *pScriptManager; }
+ScriptManager& GameManager::getScriptManager() {
+    if (pScriptManager == nullptr) {
+        // We are not creating the scripting fuctionality unless it's needed.
+        pScriptManager = std::unique_ptr<ScriptManager>(new ScriptManager());
+    }
+    return *pScriptManager;
+}

@@ -250,7 +250,7 @@ public:
      *
      * @return Script manager.
      */
-    ScriptManager& getScriptManager() const;
+    ScriptManager& getScriptManager();
 
     /**
      * Returns info about existing worlds.

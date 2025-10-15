@@ -17,9 +17,17 @@
 // External.
 #include "angelscript.h"
 
+// Most likely running Linux or other weird platform, AngelScript most likely does not support
+// native calling convention thus we have to use the other way.
+// Also see how we register global functions with asCALL_GENERIC.
+#if defined(WIN32)
+#define asGLOBAL_FUNC asFUNCTION
+#else
+#define asGLOBAL_FUNC WRAP_FN
+#endif
+
 class Script;
 class ScriptManager;
-class ScriptTypeInfo;
 
 /** Small RAII-style type that reserves a context and returns it in the destructor. */
 class ReservedContextGuard {
@@ -88,11 +96,11 @@ public:
      *
      * Example:
      * @code
-     * static void loggerInfo(const std::string& sText) { Log::info("[script]: " + sText); }
+     * static void loggerInfo(std::string sText) { Log::info("[script]: " + sText); }
      * registerGlobalFunction(
      *     "Log",
      *     "void info(std::string)",
-     *     asFUNCTION(loggerInfo)
+     *     asGLOBAL_FUNC(loggerInfo)
      * );
      * @endcode
      *
@@ -104,7 +112,9 @@ public:
         const std::string& sNamespace, const std::string& sDeclaration, const asSFuncPtr& funcPointer);
 
     /**
-     * Registers a new value type to be accessed in the scripts.
+     * Registers a new simple value type to be accessed in the scripts.
+     * This function is used for simple value types, if your type is more complex
+     * consider using @ref registerPointerType.
      *
      * Example:
      * @code
@@ -124,9 +134,8 @@ public:
      * @endcode
      *
      * @param sNamespace Optional namespace of the type, specify "" to don't use a namespace.
-     * @param sTypeName Type name.
-     * @param iTypeSizeInBytes Size of the type in bytes.
-     * @param onSetMembers Function to set public member variables/functions of the type.
+     * @param sTypeName  Type name.
+     * @param onSetPublicMembers Function to set public member variables/functions of the type.
      * @param optCustomConstructor Optionally you can specify a custom constructor (note that default
      * constructor will still exist).
      */
@@ -136,6 +145,36 @@ public:
         const std::string& sTypeName,
         const std::function<std::vector<ScriptMemberInfo>()>& onSetPublicMembers,
         const std::optional<ScriptTypeConstructor>& optCustomConstructor = {});
+
+    /**
+     * Registers a new type `MyType*` which can only be used by reference in scripts like so:
+     * @code
+     * MyType@ pMyStuff = getMyStuff(); // pointer variable
+     * if (pMyStuff is null) { return; }
+     * pMy.doStuff(); // calling by pointer
+     * @endcode
+     *
+     * Example:
+     * @code
+     * class MyType {
+     * public:
+     *     float val;
+     * };
+     * registerPointerType("", "MyType", [&]() -> std::vector<ScriptMemberInfo> {
+     *     return {ScriptMemberInfo("float val", asOFFSET(MyType, val))};
+     * });
+     * @endcode
+     *
+     * @warning When you pass or return such pointer type to scripts you manage the lifetime of the pointer.
+     *
+     * @param sNamespace Optional namespace of the type, specify "" to don't use a namespace.
+     * @param sTypeName  Type name.
+     * @param onSetPublicMembers Function to set public member variables/functions of the type.
+     */
+    void registerPointerType(
+        const std::string& sNamespace,
+        const std::string& sTypeName,
+        const std::function<std::vector<ScriptMemberInfo>()>& onSetPublicMembers);
 
     /**
      * Returns RAII-style object that returns reserved context back to the manager.
@@ -152,6 +191,9 @@ private:
 
     /** Registers some GLM types such as glm::vec. */
     void registerGlmTypes();
+
+    /** Registers debug drawer. */
+    void registerDebugDrawer();
 
     /** Angel script engine. */
     asIScriptEngine* pScriptEngine = nullptr;
@@ -171,6 +213,8 @@ inline void ScriptManager::registerValueType(
     const std::optional<ScriptTypeConstructor>& optCustomConstructor) {
     if (!sNamespace.empty()) {
         pScriptEngine->SetDefaultNamespace(sNamespace.c_str());
+    } else {
+        pScriptEngine->SetDefaultNamespace("");
     }
 
     // Register type.
@@ -178,7 +222,7 @@ inline void ScriptManager::registerValueType(
         sTypeName.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<T>());
     if (result < 0) [[unlikely]] {
         Error::showErrorAndThrowException(
-            std::format("failed to register the object \"{}\", see logs", sTypeName));
+            std::format("failed to register the object type \"{}\", see logs", sTypeName));
     }
 
     if (optCustomConstructor.has_value()) {

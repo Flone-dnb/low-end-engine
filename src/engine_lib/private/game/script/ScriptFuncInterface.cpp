@@ -19,6 +19,10 @@ void ScriptFuncInterface::setArgValueType(unsigned int iArgIndex, void* pObjectT
     pContext->SetArgObject(iArgIndex, pObjectToCopy);
 }
 
+void ScriptFuncInterface::setPointerValue(unsigned int iArgIndex, void* pPointerValue) const {
+    pContext->SetArgObject(iArgIndex, pPointerValue);
+}
+
 unsigned int ScriptFuncInterface::getReturnUInt() const { return pContext->GetReturnDWord(); }
 
 bool ScriptFuncInterface::getReturnBool() const { return static_cast<bool>(pContext->GetReturnByte()); }
@@ -26,3 +30,5 @@ bool ScriptFuncInterface::getReturnBool() const { return static_cast<bool>(pCont
 float ScriptFuncInterface::getReturnFloat() const { return pContext->GetReturnFloat(); }
 
 void* ScriptFuncInterface::getReturnValueType() const { return pContext->GetReturnObject(); }
+
+void* ScriptFuncInterface::getReturnPointerType() const { return pContext->GetReturnObject(); }

@@ -5,11 +5,13 @@
 #include "game/script/Script.h"
 #include "misc/ProjectPaths.h"
 #include "math/GLMath.hpp"
+#include "render/DebugDrawer.h"
 
 // External.
 #include "scriptstdstring/scriptstdstring.h"
 #include "scriptbuilder/scriptbuilder.h"
 #include "scriptmath/scriptmath.h"
+#include "autowrapper/aswrappedcall.h"
 
 static void messageCallback(const asSMessageInfo* msg, void* param) {
     if (msg->type == asMSGTYPE_INFORMATION) {
@@ -53,6 +55,7 @@ ScriptManager::ScriptManager() {
 
     registerLogger();
     registerGlmTypes();
+    registerDebugDrawer();
 }
 
 ScriptManager::~ScriptManager() {
@@ -123,6 +126,47 @@ ReservedContextGuard::~ReservedContextGuard() {
     pScriptManager->mtxUnusedContexts.second.push_back(pContext);
 }
 
+void ScriptManager::registerPointerType(
+    const std::string& sNamespace,
+    const std::string& sTypeName,
+    const std::function<std::vector<ScriptMemberInfo>()>& onSetPublicMembers) {
+    if (!sNamespace.empty()) {
+        pScriptEngine->SetDefaultNamespace(sNamespace.c_str());
+    } else {
+        pScriptEngine->SetDefaultNamespace("");
+    }
+
+    // Register type.
+    auto result = pScriptEngine->RegisterObjectType(sTypeName.c_str(), 0, asOBJ_REF | asOBJ_NOCOUNT);
+    if (result < 0) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("failed to register the object type \"{}\", see logs", sTypeName));
+    }
+
+    // Register members.
+    const auto vMembers = onSetPublicMembers();
+    for (const auto& memberInfo : vMembers) {
+        if (memberInfo.iVariableOffset >= 0) {
+            result = pScriptEngine->RegisterObjectProperty(
+                sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.iVariableOffset);
+        } else {
+            result = pScriptEngine->RegisterObjectMethod(
+                sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.functionPtr, asCALL_THISCALL);
+        }
+
+        if (result < 0) [[unlikely]] {
+            Error::showErrorAndThrowException(std::format(
+                "failed to register the member function \"{}\" for type \"{}\", see logs",
+                memberInfo.sDeclaration,
+                sTypeName));
+        }
+    }
+
+    if (!sNamespace.empty()) {
+        pScriptEngine->SetDefaultNamespace("");
+    }
+}
+
 std::unique_ptr<ReservedContextGuard> ScriptManager::reserveContextForExecution() {
     std::scoped_lock guard(mtxUnusedContexts.first);
 
@@ -147,8 +191,15 @@ void ScriptManager::registerGlobalFunction(
         pScriptEngine->SetDefaultNamespace(sNamespace.c_str());
     }
 
+#if defined(WIN32)
     const auto result =
         pScriptEngine->RegisterGlobalFunction(sDeclaration.c_str(), funcPointer, asCALL_CDECL);
+#else
+    // Most likely running Linux or other weird platform, AngelScript most likely does not support
+    // native calling convention thus we have to use the other way.
+    const auto result =
+        pScriptEngine->RegisterGlobalFunction(sDeclaration.c_str(), funcPointer, asCALL_GENERIC);
+#endif
     if (result < 0) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("failed to register the function \"{}\", see logs", sDeclaration));
@@ -159,13 +210,13 @@ void ScriptManager::registerGlobalFunction(
     }
 }
 
-static void loggerInfo(const std::string& sText) { Log::info("[script]: " + sText); }
-static void loggerWarn(const std::string& sText) { Log::warn("[script]: " + sText); }
-static void loggerError(const std::string& sText) { Log::error("[script]: " + sText); }
+static void loggerInfo(std::string sText) { Log::info("[script]: " + sText); }
+static void loggerWarn(std::string sText) { Log::warn("[script]: " + sText); }
+static void loggerError(std::string sText) { Log::error("[script]: " + sText); }
 void ScriptManager::registerLogger() {
-    registerGlobalFunction("Log", "void info(std::string)", asFUNCTION(loggerInfo));
-    registerGlobalFunction("Log", "void warn(std::string)", asFUNCTION(loggerWarn));
-    registerGlobalFunction("Log", "void error(std::string)", asFUNCTION(loggerError));
+    registerGlobalFunction("Log", "void info(std::string)", asGLOBAL_FUNC(loggerInfo));
+    registerGlobalFunction("Log", "void warn(std::string)", asGLOBAL_FUNC(loggerWarn));
+    registerGlobalFunction("Log", "void error(std::string)", asGLOBAL_FUNC(loggerError));
 }
 
 static void glmVec2Constructor(float x, float y, glm::vec2* self) { new (self) glm::vec2(x, y); }
@@ -173,9 +224,9 @@ static void glmVec3Constructor(float x, float y, float z, glm::vec3* self) { new
 static void glmVec4Constructor(float x, float y, float z, float w, glm::vec4* self) {
     new (self) glm::vec4(x, y, z, w);
 }
-static float glmVec2Dot(const glm::vec2& a, const glm::vec2& b) { return glm::dot(a, b); }
-static float glmVec3Dot(const glm::vec3& a, const glm::vec3& b) { return glm::dot(a, b); }
-static glm::vec3 glmVec3Cross(const glm::vec3& a, const glm::vec3& b) { return glm::cross(a, b); }
+static float glmVec2Dot(glm::vec2 a, glm::vec2 b) { return glm::dot(a, b); }
+static float glmVec3Dot(glm::vec3 a, glm::vec3 b) { return glm::dot(a, b); }
+static glm::vec3 glmVec3Cross(glm::vec3 a, glm::vec3 b) { return glm::cross(a, b); }
 static float glmDegrees(float radians) { return glm::degrees(radians); }
 static float glmRadians(float degrees) { return glm::radians(degrees); }
 void ScriptManager::registerGlmTypes() {
@@ -218,11 +269,26 @@ void ScriptManager::registerGlmTypes() {
     registerValueType<glm::mat3>("glm", "mat3", [&]() -> std::vector<ScriptMemberInfo> { return {}; });
     registerValueType<glm::mat4>("glm", "mat4", [&]() -> std::vector<ScriptMemberInfo> { return {}; });
 
-    registerGlobalFunction("glm", "float dot(vec2, vec2)", asFUNCTION(glmVec2Dot));
-    registerGlobalFunction("glm", "float dot(vec3, vec3)", asFUNCTION(glmVec3Dot));
+    registerGlobalFunction("glm", "float dot(glm::vec2, glm::vec2)", asGLOBAL_FUNC(glmVec2Dot));
+    registerGlobalFunction("glm", "float dot(glm::vec3, glm::vec3)", asGLOBAL_FUNC(glmVec3Dot));
 
-    registerGlobalFunction("glm", "vec3 cross(vec3, vec3)", asFUNCTION(glmVec3Cross));
+    registerGlobalFunction("glm", "vec3 cross(glm::vec3, glm::vec3)", asGLOBAL_FUNC(glmVec3Cross));
 
-    registerGlobalFunction("glm", "float degrees(float)", asFUNCTION(glmDegrees));
-    registerGlobalFunction("glm", "float radians(float)", asFUNCTION(glmRadians));
+    registerGlobalFunction("glm", "float degrees(float)", asGLOBAL_FUNC(glmDegrees));
+    registerGlobalFunction("glm", "float radians(float)", asGLOBAL_FUNC(glmRadians));
+}
+
+#if defined(DEBUG)
+static void scriptDrawText(std::string sText, float timeInSec) { DebugDrawer::drawText(sText, timeInSec); }
+static void scriptDrawSphere(float radius, glm::vec3 worldPosition, float timeInSec) {
+    DebugDrawer::drawSphere(radius, worldPosition, timeInSec);
+}
+#endif
+void ScriptManager::registerDebugDrawer() {
+#if defined(DEBUG)
+    registerGlobalFunction(
+        "DebugDrawer", "void drawText(std::string sText, float)", asGLOBAL_FUNC(scriptDrawText));
+    registerGlobalFunction(
+        "DebugDrawer", "void drawSphere(float, glm::vec3, float)", asGLOBAL_FUNC(scriptDrawSphere));
+#endif
 }

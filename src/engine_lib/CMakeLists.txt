@@ -465,6 +465,8 @@ add_library(${AS_ADDONS_TARGET} STATIC
     ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmath.h
     ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmathcomplex.cpp
     ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/scriptmath/scriptmathcomplex.h
+
+    ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on/autowrapper/aswrappedcall.h
 )
 target_include_directories(${AS_ADDONS_TARGET} PUBLIC ${RELATIVE_EXT_PATH}/angelscript/sdk/add_on)
 target_compile_definitions(${AS_ADDONS_TARGET} PRIVATE AS_USE_STLNAMES=1)

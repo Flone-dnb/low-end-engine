@@ -815,7 +815,7 @@ As it was shown `InputManager` can be acquired using `GameInstance::getInputMana
 
 ### General
 
-The engine has AngelScript integrated, it's a scripting language which is very similar to C++. The main purpose of a scripting language in this engine is to provide support for advanced modding for your game.
+The engine has AngelScript integrated (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html), it's a scripting language which is very similar to C++. The main purpose of a scripting language in this engine is to provide support for advanced modding for your game.
 
 It process goes like this:
 1. expose your game's custom node type and node's functions to scripts
@@ -824,7 +824,7 @@ It process goes like this:
 4. allow the script to modify the game world in some way
 
 But first some information about the types/functions that the engine provides by default for all scripts:
-- `Log` is accessible as usual (Log::info(text), Log::warn(text), Log::error(text))
+- `Log` and `DebugDrawer` are accessible as usual (Log::info(text), DebugDrawer::drawText(...))
 - `std::string` type and various helper function in the `std` namespace: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_stdlib_string.html
 - some math functions in the `std` namespace: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_addon_math.html
 - some `glm` functionality, such as `vec2`, `vec3`, `vec4`, `mat3`, `mat4` and some helper functions such as `glm::dot`, `glm::cross` and similar
