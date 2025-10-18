@@ -4,13 +4,68 @@
 #include "nameof.hpp"
 #include "ozz/base/io/stream.h"
 #include "ozz/base/io/archive.h"
+#include "ozz/base/span.h"
 #include "ozz/animation/runtime/animation.h"
 #include "ozz/animation/runtime/skeleton.h"
 #include "ozz/animation/runtime/local_to_model_job.h"
+#include "ozz/animation/runtime/blending_job.h"
 
 namespace {
     constexpr std::string_view sTypeGuid = "385659e9-bd1a-4ebd-a92a-67e2ba657d4d";
 }
+
+AnimationSampler::AnimationSampler(
+    std::unique_ptr<ozz::animation::Animation> pInAnimation, ozz::animation::Skeleton* pSkeleton)
+    : pSkeleton(pSkeleton) {
+    pAnimation = std::move(pInAnimation);
+
+    pSamplingJobContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+    pSamplingJobContext->Resize(pSkeleton->num_joints());
+
+    vLocalTransforms.resize(static_cast<size_t>(pSkeleton->num_soa_joints()));
+    for (size_t i = 0; i < vLocalTransforms.size(); i++) {
+        vLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
+    }
+}
+
+void AnimationSampler::prepareForPlaying(bool bLoop) {
+    for (size_t i = 0; i < vLocalTransforms.size(); i++) {
+        vLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
+    }
+
+    animationRatio = 0.0F;
+    playbackSpeed = 1.0F;
+    weight = 1.0F;
+    bLoopAnimation = bLoop;
+}
+
+void AnimationSampler::updateAnimation(float deltaTime, bool bSampleBoneMatrices) {
+    animationRatio += deltaTime * playbackSpeed / pAnimation->duration();
+    if (bLoopAnimation) {
+        // Wraps in [0; 1] interval.
+        const float loopCount = std::floor(animationRatio);
+        animationRatio = animationRatio - loopCount;
+    } else {
+        // Clamp to [0; 1] interval.
+        animationRatio = std::clamp(animationRatio, 0.0F, 1.0F);
+    }
+
+    if (!bSampleBoneMatrices) {
+        return;
+    }
+
+    // Sample bone local transforms.
+    ozz::animation::SamplingJob samplingJob;
+    samplingJob.animation = pAnimation.get();
+    samplingJob.context = pSamplingJobContext.get();
+    samplingJob.ratio = animationRatio;
+    samplingJob.output = ozz::make_span(vLocalTransforms);
+    if (!samplingJob.Run()) [[unlikely]] {
+        Error::showErrorAndThrowException("skeleton sampling job failed for node \"{}\"");
+    }
+}
+
+float AnimationSampler::getDuration() const { return pAnimation->duration(); }
 
 std::string SkeletonNode::getTypeGuidStatic() { return sTypeGuid.data(); }
 std::string SkeletonNode::getTypeGuid() const { return sTypeGuid.data(); }
@@ -90,22 +145,20 @@ void SkeletonNode::addPathToAnimationToPreload(std::string& sRelativePathToAnima
     findOrLoadAnimation(sRelativePathToAnimation);
 }
 
-void SkeletonNode::setAnimationPlaybackSpeed(float speed) { playbackSpeed = speed; }
-
 void SkeletonNode::stopAnimation() {
-    if (pPlayingAnimation == nullptr) {
-        return;
-    }
+    animState.vPlayingAnimations.clear();
 
-    pPlayingAnimation = nullptr;
-    animationRatio = 0.0F;
-    setRestPoseToBoneMatrices();
+    // Set rest pose.
+    for (size_t i = 0; i < vResultingLocalTransforms.size(); i++) {
+        vResultingLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
+    }
+    convertResultingLocalTransformsToSkinning();
 }
 
-ozz::animation::Animation* SkeletonNode::findOrLoadAnimation(const std::string& sRelativePathToAnimation) {
-    ozz::animation::Animation* pAnimation = nullptr;
+AnimationSampler* SkeletonNode::findOrLoadAnimation(const std::string& sRelativePathToAnimation) {
+    AnimationSampler* pAnimationSampler = nullptr;
 
-    const auto animationIt = loadedAnimations.find(sRelativePathToAnimation);
+    auto animationIt = loadedAnimations.find(sRelativePathToAnimation);
     if (animationIt == loadedAnimations.end()) {
         // Construct full path.
         const auto pathToAnimationFile =
@@ -115,19 +168,20 @@ ozz::animation::Animation* SkeletonNode::findOrLoadAnimation(const std::string& 
                 std::format("path to animation \"{}\" does not exist", sRelativePathToAnimation));
         }
 
-        // Load animation.
-        auto pAnimationUptr =
-            loadAnimation(pathToAnimationFile, static_cast<unsigned int>(pSkeleton->num_joints()));
-        pAnimation = pAnimationUptr.get();
-        loadedAnimations[sRelativePathToAnimation] = std::move(pAnimationUptr);
-    } else {
-        pAnimation = animationIt->second.get();
+        loadAnimation(sRelativePathToAnimation, pSkeleton.get());
+        animationIt = loadedAnimations.find(sRelativePathToAnimation);
+        if (animationIt == loadedAnimations.end()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("expected the animation for \"{}\" to be loaded", sRelativePathToAnimation));
+        }
     }
 
-    return pAnimation;
+    pAnimationSampler = animationIt->second.get();
+
+    return pAnimationSampler;
 }
 
-void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bool bLoop, bool bRestart) {
+void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bool bLoop) {
     if (pSkeleton == nullptr) {
         return;
     }
@@ -137,16 +191,30 @@ void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bo
             "this function should only be called while the node is spawned (node \"{}\"", getNodeName()));
     }
 
-    const auto pPreviousPlayingAnimation = pPlayingAnimation;
-    pPlayingAnimation = findOrLoadAnimation(sRelativePathToAnimation);
+    auto pSampler = findOrLoadAnimation(sRelativePathToAnimation);
 
-    bLoopAnimation = bLoop;
+    // Playing a single animation (without blending).
+    animState.vPlayingAnimations.clear();
+    pSampler->prepareForPlaying(bLoop);
+    animState.vPlayingAnimations.push_back(pSampler);
+}
 
-    if (pPreviousPlayingAnimation == pPlayingAnimation && !bRestart) {
-        return;
+void SkeletonNode::setBlendFactor(float blendFactor) { animState.blendFactor = blendFactor; }
+
+void SkeletonNode::playBlendedAnimations(
+    const std::vector<std::string>& vRelativePathsToAnimations, float blendFactor) {
+    if (vRelativePathsToAnimations.size() == 1) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("this function expects that at least 2 animations will be specified"));
     }
 
-    animationRatio = 0.0F;
+    animState.vPlayingAnimations.clear();
+    animState.blendFactor = blendFactor;
+    for (const auto& sRelativePathToAnimation : vRelativePathsToAnimations) {
+        auto pSampler = findOrLoadAnimation(sRelativePathToAnimation);
+        pSampler->prepareForPlaying(true);
+        animState.vPlayingAnimations.push_back(pSampler);
+    }
 }
 
 void SkeletonNode::onSpawning() {
@@ -172,33 +240,84 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
     SpatialNode::onBeforeNewFrame(timeSincePrevFrameInSec);
 
-    if (pPlayingAnimation == nullptr) {
+    if (animState.vPlayingAnimations.empty()) {
         return;
     }
 
-    // Update current animation position.
-    animationRatio += timeSincePrevFrameInSec * playbackSpeed / pPlayingAnimation->duration();
-    if (bLoopAnimation) {
-        // Wraps in [0; 1] interval.
-        const float loopCount = std::floor(animationRatio);
-        animationRatio = animationRatio - loopCount;
+    if (animState.vPlayingAnimations.size() > 1) {
+        // Calculate weights for blending.
+        const size_t iIntervalCount = animState.vPlayingAnimations.size() - 1;
+        const float intervalSize = 1.0F / static_cast<float>(iIntervalCount);
+        for (size_t i = 0; i < animState.vPlayingAnimations.size(); ++i) {
+            const float intervalStart = static_cast<float>(i) * intervalSize;
+            float weight = animState.blendFactor - intervalStart;
+            weight = ((weight < 0.0F ? weight : -weight) + intervalSize) * static_cast<float>(iIntervalCount);
+            animState.vPlayingAnimations[i]->setWeight(ozz::math::Max(0.0F, weight));
+        }
+
+        // Selects 2 samplers that define interval that contains blend factor.
+        const float clampedFactor = ozz::math::Clamp(0.0F, animState.blendFactor, 0.999F);
+        const size_t iLeftSamplerIndex =
+            static_cast<size_t>(clampedFactor * static_cast<float>(iIntervalCount));
+        const auto pLeftSampler = animState.vPlayingAnimations[iLeftSamplerIndex];
+        const auto pRightSampler = animState.vPlayingAnimations[iLeftSamplerIndex + 1];
+
+        // Interpolate animation duration using weights to find loop cycle duration.
+        const float loopDuration = pLeftSampler->getDuration() * pLeftSampler->getWeight() +
+                                   pRightSampler->getDuration() * pRightSampler->getWeight();
+
+        // Calculate speed for all samplers.
+        const float invLoopDuration = 1.0F / loopDuration;
+        for (const auto& pSampler : animState.vPlayingAnimations) {
+            const float speed = pSampler->getDuration() * invLoopDuration;
+            pSampler->setPlaybackSpeed(speed);
+        }
+    }
+
+    // Update each playing animation (no blending yet).
+    for (auto& pSampler : animState.vPlayingAnimations) {
+        pSampler->updateAnimation(timeSincePrevFrameInSec, pSampler->getWeight() > 0.0F);
+    }
+
+    if (animState.vPlayingAnimations.size() > 1) {
+        // Prepare for blending.
+        ozz::vector<ozz::animation::BlendingJob::Layer> vLayers(animState.vPlayingAnimations.size());
+        for (size_t i = 0; i < vLayers.size(); ++i) {
+            vLayers[i].transform = ozz::make_span(animState.vPlayingAnimations[i]->getLocalTransforms());
+            vLayers[i].weight = animState.vPlayingAnimations[i]->getWeight();
+        }
+
+        ozz::animation::BlendingJob blend_job;
+        blend_job.threshold = ozz::animation::BlendingJob().threshold;
+        blend_job.layers = ozz::make_span(vLayers);
+        blend_job.rest_pose = pSkeleton->joint_rest_poses();
+        blend_job.output = ozz::make_span(vResultingLocalTransforms);
     } else {
-        // Clamp to [0; 1] interval.
-        animationRatio = std::clamp(animationRatio, 0.0F, 1.0F);
+        vResultingLocalTransforms = animState.vPlayingAnimations[0]->getLocalTransforms();
     }
 
-    // Sample bone local transforms.
-    ozz::animation::SamplingJob samplingJob;
-    samplingJob.animation = pPlayingAnimation;
-    samplingJob.context = &samplingJobContext;
-    samplingJob.ratio = animationRatio;
-    samplingJob.output = ozz::make_span(vLocalTransforms);
-    if (!samplingJob.Run()) {
-        Log::error(std::format("skeleton sampling job failed for node \"{}\"", getNodeName()));
-        return;
+    convertResultingLocalTransformsToSkinning();
+}
+
+void SkeletonNode::convertResultingLocalTransformsToSkinning() {
+    // Convert local space matrices to model space.
+    ozz::animation::LocalToModelJob localToModelJob;
+    localToModelJob.skeleton = pSkeleton.get();
+    localToModelJob.input = ozz::make_span(vResultingLocalTransforms);
+    localToModelJob.output = ozz::make_span(vBoneMatrices);
+    if (!localToModelJob.Run()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
     }
 
-    convertLocalTransformsToSkinningMatrices();
+    for (size_t i = 0; i < vBoneMatrices.size(); i++) {
+        glm::mat4x4 boneMatrix = glm::identity<glm::mat4x4>();
+        for (int k = 0; k < 4; k++) {
+            ozz::math::StorePtr(vBoneMatrices[i].cols[k], &boneMatrix[k].x);
+        }
+
+        vSkinningMatrices[i] = vInverseBindPoseMatrices[i] * boneMatrix;
+    }
 }
 
 void SkeletonNode::loadAnimationContextData() {
@@ -217,25 +336,13 @@ void SkeletonNode::loadAnimationContextData() {
     pSkeleton = loadSkeleton(pathToSkeletonFile, vInverseBindPoseMatrices);
 
     // Preload some animations.
-    const auto pathToSkeletonDirectory = pathToSkeletonFile.parent_path();
     for (const auto& sRelativePath : pathsToAnimationsToPreload) {
-        // Construct full path.
-        const auto pathToAnimationFile = pathToSkeletonDirectory / (sRelativePath + ".ozz");
-        if (!std::filesystem::exists(pathToAnimationFile)) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format(
-                "path to animation \"{}\" results in the full path of \"{}\" which does not exist",
-                sRelativePath,
-                pathToAnimationFile.string()));
-        }
-
-        // Load animation.
-        loadedAnimations[sRelativePath] =
-            loadAnimation(pathToAnimationFile, static_cast<unsigned int>(pSkeleton->num_joints()));
+        loadAnimation(sRelativePath, pSkeleton.get());
     }
     pathsToAnimationsToPreload.clear();
 
     // Allocate matrices.
-    vLocalTransforms.resize(static_cast<size_t>(pSkeleton->num_soa_joints()));
+    vResultingLocalTransforms.resize(static_cast<size_t>(pSkeleton->num_soa_joints()));
     vBoneMatrices.resize(static_cast<size_t>(pSkeleton->num_joints()));
     vSkinningMatrices.resize(vBoneMatrices.size());
     if (vInverseBindPoseMatrices.size() != vSkinningMatrices.size()) [[unlikely]] {
@@ -244,20 +351,28 @@ void SkeletonNode::loadAnimationContextData() {
             vInverseBindPoseMatrices.size(),
             vSkinningMatrices.size()));
     }
-    setRestPoseToBoneMatrices();
 
-    // Create sampling job context.
-    samplingJobContext.Resize(pSkeleton->num_joints());
+    // Set rest pose.
+    if (pSkeleton->joint_rest_poses().size() != vResultingLocalTransforms.size()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "mismatched local transform count {} != {}",
+            pSkeleton->joint_rest_poses().size(),
+            vResultingLocalTransforms.size()));
+    }
+    for (size_t i = 0; i < vResultingLocalTransforms.size(); i++) {
+        vResultingLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
+    }
+    convertResultingLocalTransformsToSkinning();
 }
 
 void SkeletonNode::unloadAnimationContextData() {
-    pPlayingAnimation = nullptr;
+    animState.vPlayingAnimations.clear();
 
     pSkeleton = nullptr;
     loadedAnimations.clear();
 
-    vLocalTransforms.clear();
-    vLocalTransforms.shrink_to_fit();
+    vResultingLocalTransforms.clear();
+    vResultingLocalTransforms.shrink_to_fit();
 
     vBoneMatrices.clear();
     vBoneMatrices.shrink_to_fit();
@@ -267,55 +382,6 @@ void SkeletonNode::unloadAnimationContextData() {
 
     vSkinningMatrices.clear();
     vSkinningMatrices.shrink_to_fit();
-}
-
-void SkeletonNode::setRestPoseToBoneMatrices() {
-    if (pSkeleton == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException("expected the skeleton to be loaded while calling this function");
-    }
-
-    ozz::vector<ozz::math::Transform> transforms(static_cast<size_t>(pSkeleton->num_joints()));
-    for (size_t i = 0; i < vLocalTransforms.size(); ++i) {
-        vLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
-    }
-
-    convertLocalTransformsToSkinningMatrices();
-}
-
-void SkeletonNode::convertLocalTransformsToSkinningMatrices() {
-    PROFILE_FUNC
-
-    if (pSkeleton == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException("expected the skeleton to be loaded while calling this function");
-    }
-
-    // Convert local space matrices to model space.
-    ozz::animation::LocalToModelJob localToModelJob;
-    localToModelJob.skeleton = pSkeleton.get();
-    localToModelJob.input = ozz::make_span(vLocalTransforms);
-    localToModelJob.output = ozz::make_span(vBoneMatrices);
-    if (!localToModelJob.Run()) {
-        Log::error(std::format(
-            "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
-        return;
-    }
-
-    for (size_t i = 0; i < vBoneMatrices.size(); i++) {
-        glm::mat4x4 boneMatrix = glm::identity<glm::mat4x4>();
-        for (int k = 0; k < 4; k++) {
-            ozz::math::StorePtr(vBoneMatrices[i].cols[k], &boneMatrix[k].x);
-        }
-
-        vSkinningMatrices[i] = vInverseBindPoseMatrices[i] * boneMatrix;
-    }
-}
-
-float SkeletonNode::getCurrentAnimationDurationSec() const {
-    if (pPlayingAnimation == nullptr) {
-        return 0.0F;
-    }
-
-    return pPlayingAnimation->duration();
 }
 
 std::unique_ptr<ozz::animation::Skeleton> SkeletonNode::loadSkeleton(
@@ -402,9 +468,30 @@ std::unique_ptr<ozz::animation::Skeleton> SkeletonNode::loadSkeleton(
     return pSkeleton;
 }
 
-std::unique_ptr<ozz::animation::Animation>
-SkeletonNode::loadAnimation(const std::filesystem::path& pathToAnimation, unsigned int iSkeletonBoneCount) {
-    std::string sFullPathToAnimationFile = pathToAnimation.string();
+void SkeletonNode::loadAnimation(
+    const std::string& sRelativePathToAnimation, ozz::animation::Skeleton* pSkeleton) {
+    if (pSkeleton == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "unable to load animation \"{}\" because the specified skeleton is `nullptr`",
+            sRelativePathToAnimation));
+    }
+
+    // Construct full path.
+    const auto pathToAnimationFile =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sRelativePathToAnimation;
+    if (!std::filesystem::exists(pathToAnimationFile)) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "path to animation \"{}\" results in the full path of \"{}\" which does not exist",
+            sRelativePathToAnimation,
+            pathToAnimationFile.string()));
+    }
+
+    if (loadedAnimations.find(sRelativePathToAnimation) != loadedAnimations.end()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("animation for path \"{}\" is already loaded", sRelativePathToAnimation));
+    }
+
+    std::string sFullPathToAnimationFile = pathToAnimationFile.string();
 
     // Open file.
     ozz::io::File file(sFullPathToAnimationFile.c_str(), "rb");
@@ -423,14 +510,15 @@ SkeletonNode::loadAnimation(const std::filesystem::path& pathToAnimation, unsign
     archive >> *pAnimation;
 
     // Make sure animation is compatible.
-    if (static_cast<unsigned int>(pAnimation->num_tracks()) != iSkeletonBoneCount) [[unlikely]] {
+    if (pAnimation->num_tracks() != pSkeleton->num_joints()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
-            "animation \"{}\" is not compatible with the skeleton, animation has {} track(s) and skeleton {} "
-            "bone(s) these numbers need to match",
-            pathToAnimation.string(),
+            "animation \"{}\" is not compatible with the skeleton, animation has {} track(s) and "
+            "skeleton {} bone(s) these numbers need to match",
+            sRelativePathToAnimation,
             pAnimation->num_tracks(),
-            iSkeletonBoneCount));
+            pSkeleton->num_joints()));
     }
 
-    return pAnimation;
+    loadedAnimations.emplace(
+        sRelativePathToAnimation, std::make_unique<AnimationSampler>(std::move(pAnimation), pSkeleton));
 }

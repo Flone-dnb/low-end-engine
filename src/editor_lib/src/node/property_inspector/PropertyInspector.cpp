@@ -211,7 +211,7 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
                     return;
                 }
 
-                pSkeletonNode->playAnimation(utf::as_str8(sNewText), true, true);
+                pSkeletonNode->playAnimation(utf::as_str8(sNewText), true);
             });
         }
     }

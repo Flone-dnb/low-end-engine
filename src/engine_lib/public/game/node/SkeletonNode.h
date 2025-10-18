@@ -20,6 +20,102 @@ namespace ozz {
     }
 }
 
+/** Groups data needed to sample an animation. */
+class AnimationSampler {
+public:
+    AnimationSampler() = delete;
+
+    /**
+     * Initializes the sampler.
+     *
+     * @param pInAnimation Animation to sample.
+     * @param pSkeleton  Skeleton that will be used with the animation.
+     */
+    AnimationSampler(
+        std::unique_ptr<ozz::animation::Animation> pInAnimation, ozz::animation::Skeleton* pSkeleton);
+
+    AnimationSampler(const AnimationSampler&) = delete;
+    AnimationSampler& operator=(const AnimationSampler&) = delete;
+
+    AnimationSampler(AnimationSampler&&) noexcept = default;
+    AnimationSampler& operator=(AnimationSampler&&) noexcept = default;
+
+    /**
+     * Resets animation parameters to their defaults (does not remove the loaded animation).
+     *
+     * @param bLoop `true` to loop the animation.
+     */
+    void prepareForPlaying(bool bLoop);
+
+    /**
+     * Updates playing animation state.
+     *
+     * @param deltaTime Delta time.
+     * @param bSampleBoneMatrices `true` to sample bone matrices (do animation sampling).
+     */
+    void updateAnimation(float deltaTime, bool bSampleBoneMatrices);
+
+    /**
+     * Sets playback speed where 1.0 means default speed.
+     *
+     * @param speed New speed.
+     */
+    void setPlaybackSpeed(float speed) { playbackSpeed = speed; }
+
+    /**
+     * Sets new weight.
+     *
+     * @param newWeight Weight.
+     */
+    void setWeight(float newWeight) { weight = newWeight; }
+
+    /**
+     * Returns weight or animation blending in range [0.0; 1.0].
+     *
+     * @return Weight.
+     */
+    float getWeight() const { return weight; }
+
+    /**
+     * Returns duration of the animation.
+     *
+     * @return Duration.
+     */
+    float getDuration() const;
+
+    /**
+     * Returns local bone transforms.
+     *
+     * @return Transforms.
+     */
+    ozz::vector<ozz::math::SoaTransform>& getLocalTransforms() { return vLocalTransforms; }
+
+private:
+    /** Loaded animation. */
+    std::unique_ptr<ozz::animation::Animation> pAnimation;
+
+    /** Context for sampling animation state. */
+    std::unique_ptr<ozz::animation::SamplingJob::Context> pSamplingJobContext;
+
+    /** Sampled local transforms (relative to parent bone), 1 soa transform can store multiple (4) bones. */
+    ozz::vector<ozz::math::SoaTransform> vLocalTransforms;
+
+    /** Skeleton. */
+    ozz::animation::Skeleton* pSkeleton = nullptr;
+
+    /** Current position of the animation in range [0; 1] where 0 means animation start and 1 means end. */
+    float animationRatio = 0.0F;
+
+    /** Playback speed for the animation. */
+    float playbackSpeed = 1.0F;
+
+    /** Weight for animation blending, in range [0.0; 1.0]. */
+    float weight = 1.0F;
+
+    /** `true` to loop the animation. */
+    bool bLoopAnimation = false;
+};
+
 /** Plays animations and moves child nodes SkeletalMeshNode according to their per-vertex weights. */
 class SkeletonNode : public SpatialNode {
 public:
@@ -79,14 +175,6 @@ public:
      */
     void addPathToAnimationToPreload(std::string& sRelativePathToAnimation);
 
-    /**
-     * Sets animation playback speed where 1 means no modification to the speed of the animation.
-     *
-     * @param speed New speed.
-     *
-     */
-    void setAnimationPlaybackSpeed(float speed);
-
     /** Stops currently playing animation (if an animation was playing). */
     void stopAnimation();
 
@@ -99,10 +187,18 @@ public:
      * @param sRelativePathToAnimation Path to .ozz animation file relative to the `res` directory.
      * @param bLoop                    Specify `true` to automatically play the animation again after it
      * finished, `false` otherwise.
-     * @param bRestart                 If the specified animation is already playing specify `true` to restart
-     * the animation to play it from the beginning or `false` to just continue playing it without restarting.
      */
-    void playAnimation(const std::string& sRelativePathToAnimation, bool bLoop, bool bRestart = true);
+    void playAnimation(const std::string& sRelativePathToAnimation, bool bLoop);
+
+    /**
+     * Loads animations (if it was not preloaded, see @ref addPathToAnimationToPreload) and plays them
+     * while using the blend factor to blend between animations (also see @ref setBlendFactor).
+     *
+     * @param vRelativePathsToAnimations Path to .ozz animation file relative to the `res` directory.
+     * @param blendFactor                Initial blend factor in range [0.0; 1.0] where 0.0 means play
+     * animation 0 (from the specified array of animations) and value 1.0 means play the last animation.
+     */
+    void playBlendedAnimations(const std::vector<std::string>& vRelativePathsToAnimations, float blendFactor);
 
     /**
      * Returns matrices that convert skeleton bones from local space to model space.
@@ -120,26 +216,12 @@ public:
     std::string getPathToSkeletonRelativeRes() const { return sPathToSkeletonRelativeRes; }
 
     /**
-     * Returns animation playback speed where 1 means no modification to the speed of the animation.
+     * Sets blend factor in range [0.0; 1.0] for animations that were previously set in @ref
+     * playBlendedAnimations.
      *
-     * @return Speed.
+     * @param blendFactor Blend ratio in [0.0; 1.0].
      */
-    float getAnimationPlaybackSpeed() const { return playbackSpeed; }
-
-    /**
-     * Returns current position of the playing animation in range [0; 1] where 0 means animation start and 1
-     * animation end.
-     *
-     * @return Animation position.
-     */
-    float getCurrentAnimationTime() const { return animationRatio; }
-
-    /**
-     * Returns duration of the currently playing animation (or 0 if not playing an animation).
-     *
-     * @return Duration.
-     */
-    float getCurrentAnimationDurationSec() const;
+    void setBlendFactor(float blendFactor);
 
 protected:
     /**
@@ -181,6 +263,15 @@ protected:
     virtual void onBeforeNewFrame(float timeSincePrevFrameInSec) override;
 
 private:
+    /** State of the node. */
+    struct AnimationState {
+        /** Currently playing animations. */
+        std::vector<AnimationSampler*> vPlayingAnimations;
+
+        /** Value in [0.0; 1.0] that determines which animation from @ref vPlayingAnimations to play. */
+        float blendFactor = 0.0F;
+    };
+
     /**
      * Loads skeleton from file.
      *
@@ -193,15 +284,12 @@ private:
         const std::filesystem::path& pathToSkeleton, std::vector<glm::mat4x4>& vInverseBindPoseMatrices);
 
     /**
-     * Loads animation from file.
+     * Loads animation and adds it to @ref loadedAnimations.
      *
-     * @param pathToAnimation     Path to animation .ozz file.
-     * @param iSkeletonBoneCount Checks that the animation has the same number of bones as the skeleton.
-     *
-     * @return Loaded animation.
+     * @param sRelativePathToAnimation Path to .ozz animation file relative to the `res` directory.
+     * @param pSkeleton                Skeleton that will be used with the animation.
      */
-    static std::unique_ptr<ozz::animation::Animation>
-    loadAnimation(const std::filesystem::path& pathToAnimation, unsigned int iSkeletonBoneCount);
+    void loadAnimation(const std::string& sRelativePathToAnimation, ozz::animation::Skeleton* pSkeleton);
 
     /**
      * Looks if the animation is loaded in @ref loadedAnimations and returns it, otherwise
@@ -211,7 +299,7 @@ private:
      *
      * @return Pointer to animation from @ref loadedAnimations.
      */
-    ozz::animation::Animation* findOrLoadAnimation(const std::string& sRelativePathToAnimation);
+    AnimationSampler* findOrLoadAnimation(const std::string& sRelativePathToAnimation);
 
     /**
      * Loads all data needed to play animations: skeleton, preloaded animations, runtime buffers and etc.
@@ -222,35 +310,30 @@ private:
     /** Unloads everything that was loaded in @ref loadAnimationContextData (if it was loaded). */
     void unloadAnimationContextData();
 
-    /** Updates @ref vBoneMatrices to display a rest pose. */
-    void setRestPoseToBoneMatrices();
+    /** Converts @ref vResultingLocalTransforms to @ref vSkinningMatrices. */
+    void convertResultingLocalTransformsToSkinning();
 
-    /** Converts @ref vLocalTransforms to @ref vSkinningMatrices. */
-    void convertLocalTransformsToSkinningMatrices();
+    /** State of the node. */
+    AnimationState animState;
 
     /** `nullptr` if the skeleton is not loaded. */
     std::unique_ptr<ozz::animation::Skeleton> pSkeleton;
 
-    /** Pairs of
-     * - key: path to .ozz anim file (without .ozz extension) relative to @ref sPathToSkeletonRelativeRes
+    /**
+     * Pairs of
+     * - key: path to .ozz anim file relative to `res` directory
      * - value: deserialized and loaded animations ready to be played.
      */
-    std::unordered_map<std::string, std::unique_ptr<ozz::animation::Animation>> loadedAnimations;
+    std::unordered_map<std::string, std::unique_ptr<AnimationSampler>> loadedAnimations;
 
     /**
-     * Paths to .ozz animation files (without .ozz ext) relative to @ref sPathToSkeletonRelativeRes
+     * Paths to .ozz animation files relative to `res` directory
      * to add to @ref loadedAnimations on spawn.
      */
     std::unordered_set<std::string> pathsToAnimationsToPreload;
 
-    /** Pointer to item from @ref loadedAnimations that should be currently playing (or `nullptr`). */
-    ozz::animation::Animation* pPlayingAnimation = nullptr;
-
-    /** Context for sampling animation state. */
-    ozz::animation::SamplingJob::Context samplingJobContext;
-
-    /** Sampled local transforms (relative to parent bone), 1 soa transform can store multiple (4) bones. */
-    ozz::vector<ozz::math::SoaTransform> vLocalTransforms;
+    /** Result of sampling/blending playing animations. 1 soa transform can store multiple (4) bones. */
+    ozz::vector<ozz::math::SoaTransform> vResultingLocalTransforms;
 
     /** Matrices that transform bone from local space to model space. In ozz-animation system. */
     ozz::vector<ozz::math::Float4x4> vBoneMatrices;
@@ -263,15 +346,6 @@ private:
 
     /** Path to the `skeleton.ozz` file relative to the `res` directory. */
     std::string sPathToSkeletonRelativeRes;
-
-    /** Current position of the animation in range [0; 1] where 0 means animation start and 1 means end. */
-    float animationRatio = 0.0F;
-
-    /** Playback speed for the animation. */
-    float playbackSpeed = 1.0F;
-
-    /** `true` to loop the currently playing animation. */
-    bool bLoopAnimation = false;
 
     /** The maximum number of bones allowed (per skeleton). */
     static constexpr unsigned int iMaxBoneCountAllowed = 64; // same as in shaders
