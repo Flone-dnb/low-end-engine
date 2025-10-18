@@ -17,7 +17,7 @@ public:
      * Example:
      * @code
      * static void glmVec2Constructor(float x, float y, glm::vec2* self) { new (self) glm::vec2(x, y); }
-     * ScriptTypeConstructor("void f(float, float)", asFUNCTION(glmVec2Constructor));
+     * ScriptTypeConstructor("void f(float, float)", SCRIPT_CONSTRUCTOR(glmVec2Constructor));
      * @endcode
      *
      * @param sDeclaration Function declaration.
@@ -46,7 +46,7 @@ public:
      * struct MyType {
      *     float x;
      * };
-     * ScriptMemberInfo("float x", asOFFSET(MyType, x));
+     * ScriptMemberInfo("float x", SCRIPT_MEMBER_VARIABLE(MyType, x));
      * @endcode
      *
      * @param sDeclaration Member declaration.
@@ -63,7 +63,7 @@ public:
      * struct MyType {
      *     void func();
      * };
-     * ScriptMemberInfo("void func()", asMETHOD(MyType, func));
+     * ScriptMemberInfo("void func()", SCRIPT_MEMBER_FUNC(MyType, func));
      * @endcode
      *
      * @param sDeclaration Member declaration.

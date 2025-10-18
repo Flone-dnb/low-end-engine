@@ -11,7 +11,6 @@
 #include "scriptstdstring/scriptstdstring.h"
 #include "scriptbuilder/scriptbuilder.h"
 #include "scriptmath/scriptmath.h"
-#include "autowrapper/aswrappedcall.h"
 
 static void messageCallback(const asSMessageInfo* msg, void* param) {
     if (msg->type == asMSGTYPE_INFORMATION) {
@@ -151,7 +150,7 @@ void ScriptManager::registerPointerType(
                 sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.iVariableOffset);
         } else {
             result = pScriptEngine->RegisterObjectMethod(
-                sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.functionPtr, asCALL_THISCALL);
+                sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.functionPtr, asCALL_GENERIC);
         }
 
         if (result < 0) [[unlikely]] {
@@ -191,15 +190,8 @@ void ScriptManager::registerGlobalFunction(
         pScriptEngine->SetDefaultNamespace(sNamespace.c_str());
     }
 
-#if defined(WIN32)
-    const auto result =
-        pScriptEngine->RegisterGlobalFunction(sDeclaration.c_str(), funcPointer, asCALL_CDECL);
-#else
-    // Most likely running Linux or other weird platform, AngelScript most likely does not support
-    // native calling convention thus we have to use the other way.
     const auto result =
         pScriptEngine->RegisterGlobalFunction(sDeclaration.c_str(), funcPointer, asCALL_GENERIC);
-#endif
     if (result < 0) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("failed to register the function \"{}\", see logs", sDeclaration));
@@ -214,9 +206,9 @@ static void loggerInfo(std::string sText) { Log::info("[script]: " + sText); }
 static void loggerWarn(std::string sText) { Log::warn("[script]: " + sText); }
 static void loggerError(std::string sText) { Log::error("[script]: " + sText); }
 void ScriptManager::registerLogger() {
-    registerGlobalFunction("Log", "void info(std::string)", asGLOBAL_FUNC(loggerInfo));
-    registerGlobalFunction("Log", "void warn(std::string)", asGLOBAL_FUNC(loggerWarn));
-    registerGlobalFunction("Log", "void error(std::string)", asGLOBAL_FUNC(loggerError));
+    registerGlobalFunction("Log", "void info(std::string)", SCRIPT_GLOBAL_FUNC(loggerInfo));
+    registerGlobalFunction("Log", "void warn(std::string)", SCRIPT_GLOBAL_FUNC(loggerWarn));
+    registerGlobalFunction("Log", "void error(std::string)", SCRIPT_GLOBAL_FUNC(loggerError));
 }
 
 static void glmVec2Constructor(float x, float y, glm::vec2* self) { new (self) glm::vec2(x, y); }
@@ -239,7 +231,7 @@ void ScriptManager::registerGlmTypes() {
                 ScriptMemberInfo("float y", asOFFSET(glm::vec2, y)),
             };
         },
-        ScriptTypeConstructor("void f(float, float)", asFUNCTION(glmVec2Constructor)));
+        ScriptTypeConstructor("void f(float, float)", SCRIPT_CONSTRUCTOR(glmVec2Constructor)));
 
     registerValueType<glm::vec3>(
         "glm",
@@ -251,7 +243,7 @@ void ScriptManager::registerGlmTypes() {
                 ScriptMemberInfo("float z", asOFFSET(glm::vec3, z)),
             };
         },
-        ScriptTypeConstructor("void f(float, float, float)", asFUNCTION(glmVec3Constructor)));
+        ScriptTypeConstructor("void f(float, float, float)", SCRIPT_CONSTRUCTOR(glmVec3Constructor)));
 
     registerValueType<glm::vec4>(
         "glm",
@@ -264,18 +256,18 @@ void ScriptManager::registerGlmTypes() {
                 ScriptMemberInfo("float w", asOFFSET(glm::vec4, w)),
             };
         },
-        ScriptTypeConstructor("void f(float, float, float, float)", asFUNCTION(glmVec4Constructor)));
+        ScriptTypeConstructor("void f(float, float, float, float)", SCRIPT_CONSTRUCTOR(glmVec4Constructor)));
 
     registerValueType<glm::mat3>("glm", "mat3", [&]() -> std::vector<ScriptMemberInfo> { return {}; });
     registerValueType<glm::mat4>("glm", "mat4", [&]() -> std::vector<ScriptMemberInfo> { return {}; });
 
-    registerGlobalFunction("glm", "float dot(glm::vec2, glm::vec2)", asGLOBAL_FUNC(glmVec2Dot));
-    registerGlobalFunction("glm", "float dot(glm::vec3, glm::vec3)", asGLOBAL_FUNC(glmVec3Dot));
+    registerGlobalFunction("glm", "float dot(glm::vec2, glm::vec2)", SCRIPT_GLOBAL_FUNC(glmVec2Dot));
+    registerGlobalFunction("glm", "float dot(glm::vec3, glm::vec3)", SCRIPT_GLOBAL_FUNC(glmVec3Dot));
 
-    registerGlobalFunction("glm", "vec3 cross(glm::vec3, glm::vec3)", asGLOBAL_FUNC(glmVec3Cross));
+    registerGlobalFunction("glm", "vec3 cross(glm::vec3, glm::vec3)", SCRIPT_GLOBAL_FUNC(glmVec3Cross));
 
-    registerGlobalFunction("glm", "float degrees(float)", asGLOBAL_FUNC(glmDegrees));
-    registerGlobalFunction("glm", "float radians(float)", asGLOBAL_FUNC(glmRadians));
+    registerGlobalFunction("glm", "float degrees(float)", SCRIPT_GLOBAL_FUNC(glmDegrees));
+    registerGlobalFunction("glm", "float radians(float)", SCRIPT_GLOBAL_FUNC(glmRadians));
 }
 
 #if defined(DEBUG)
@@ -287,8 +279,8 @@ static void scriptDrawSphere(float radius, glm::vec3 worldPosition, float timeIn
 void ScriptManager::registerDebugDrawer() {
 #if defined(DEBUG)
     registerGlobalFunction(
-        "DebugDrawer", "void drawText(std::string sText, float)", asGLOBAL_FUNC(scriptDrawText));
+        "DebugDrawer", "void drawText(std::string sText, float)", SCRIPT_GLOBAL_FUNC(scriptDrawText));
     registerGlobalFunction(
-        "DebugDrawer", "void drawSphere(float, glm::vec3, float)", asGLOBAL_FUNC(scriptDrawSphere));
+        "DebugDrawer", "void drawSphere(float, glm::vec3, float)", SCRIPT_GLOBAL_FUNC(scriptDrawSphere));
 #endif
 }

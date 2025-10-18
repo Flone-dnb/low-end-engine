@@ -16,15 +16,15 @@
 
 // External.
 #include "angelscript.h"
+#include "autowrapper/aswrappedcall.h"
 
-// Most likely running Linux or other weird platform, AngelScript most likely does not support
-// native calling convention thus we have to use the other way.
-// Also see how we register global functions with asCALL_GENERIC.
-#if defined(WIN32)
-#define asGLOBAL_FUNC asFUNCTION
-#else
-#define asGLOBAL_FUNC WRAP_FN
-#endif
+// AngelScript most likely does not support native calling convention on some platforms (and this means that
+// we need to use generic call macros) so instead of having an ifdef depending on the platform we just use
+// generic calls everywhere.
+#define SCRIPT_GLOBAL_FUNC WRAP_FN
+#define SCRIPT_CONSTRUCTOR WRAP_OBJ_LAST
+#define SCRIPT_MEMBER_FUNC WRAP_MFN
+#define SCRIPT_MEMBER_VARIABLE asOFFSET
 
 class Script;
 class ScriptManager;
@@ -100,7 +100,7 @@ public:
      * registerGlobalFunction(
      *     "Log",
      *     "void info(std::string)",
-     *     asGLOBAL_FUNC(loggerInfo)
+     *     SCRIPT_GLOBAL_FUNC(loggerInfo)
      * );
      * @endcode
      *
@@ -124,12 +124,12 @@ public:
      *     "vec2",
      *     [&]() -> std::vector<ScriptMemberInfo> {
      *         return {
-     *             ScriptMemberInfo("float x", asOFFSET(glm::vec2, x)),
-     *             ScriptMemberInfo("float y", asOFFSET(glm::vec2, y)),
+     *             ScriptMemberInfo("float x", SCRIPT_MEMBER_VARIABLE(glm::vec2, x)),
+     *             ScriptMemberInfo("float y", SCRIPT_MEMBER_VARIABLE(glm::vec2, y)),
      *         };
      *     },
      *     // optional constructor:
-     *     ScriptTypeConstructor("void f(float, float)", asFUNCTION(glmVec2Constructor))
+     *     ScriptTypeConstructor("void f(float, float)", SCRIPT_CONSTRUCTOR(glmVec2Constructor))
      * );
      * @endcode
      *
@@ -161,7 +161,7 @@ public:
      *     float val;
      * };
      * registerPointerType("", "MyType", [&]() -> std::vector<ScriptMemberInfo> {
-     *     return {ScriptMemberInfo("float val", asOFFSET(MyType, val))};
+     *     return {ScriptMemberInfo("float val", SCRIPT_MEMBER_VARIABLE(MyType, val))};
      * });
      * @endcode
      *
@@ -232,7 +232,7 @@ inline void ScriptManager::registerValueType(
             asBEHAVE_CONSTRUCT,
             optCustomConstructor->sDeclaration.c_str(),
             optCustomConstructor->functionPtr,
-            asCALL_CDECL_OBJLAST);
+            asCALL_GENERIC);
         if (result < 0) [[unlikely]] {
             Error::showErrorAndThrowException(std::format(
                 "failed to register constructor \"{}\" for type \"{}\", see logs",
@@ -249,7 +249,7 @@ inline void ScriptManager::registerValueType(
                 sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.iVariableOffset);
         } else {
             result = pScriptEngine->RegisterObjectMethod(
-                sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.functionPtr, asCALL_THISCALL);
+                sTypeName.c_str(), memberInfo.sDeclaration.c_str(), memberInfo.functionPtr, asCALL_GENERIC);
         }
 
         if (result < 0) [[unlikely]] {
