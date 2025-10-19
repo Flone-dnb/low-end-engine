@@ -199,7 +199,9 @@ void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bo
     animState.vPlayingAnimations.push_back(pSampler);
 }
 
-void SkeletonNode::setBlendFactor(float blendFactor) { animState.blendFactor = blendFactor; }
+void SkeletonNode::setBlendFactor(float blendFactor) {
+    animState.blendFactor = std::clamp(blendFactor, 0.0F, 1.0F);
+}
 
 void SkeletonNode::playBlendedAnimations(
     const std::vector<std::string>& vRelativePathsToAnimations, float blendFactor) {
@@ -287,11 +289,16 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
             vLayers[i].weight = animState.vPlayingAnimations[i]->getWeight();
         }
 
-        ozz::animation::BlendingJob blend_job;
-        blend_job.threshold = ozz::animation::BlendingJob().threshold;
-        blend_job.layers = ozz::make_span(vLayers);
-        blend_job.rest_pose = pSkeleton->joint_rest_poses();
-        blend_job.output = ozz::make_span(vResultingLocalTransforms);
+        // Blend animations.
+        ozz::animation::BlendingJob blendJob;
+        blendJob.threshold = ozz::animation::BlendingJob().threshold;
+        blendJob.layers = ozz::make_span(vLayers);
+        blendJob.rest_pose = pSkeleton->joint_rest_poses();
+        blendJob.output = ozz::make_span(vResultingLocalTransforms);
+        if (!blendJob.Run()) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("failed to run animation blend job for node \"{}\"", getNodeName()));
+        }
     } else {
         vResultingLocalTransforms = animState.vPlayingAnimations[0]->getLocalTransforms();
     }

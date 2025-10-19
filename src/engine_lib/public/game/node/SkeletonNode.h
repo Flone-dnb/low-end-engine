@@ -37,7 +37,10 @@ public:
     AnimationSampler(const AnimationSampler&) = delete;
     AnimationSampler& operator=(const AnimationSampler&) = delete;
 
+    /** Move constructor. */
     AnimationSampler(AnimationSampler&&) noexcept = default;
+
+    /** Move operator=. @return This. */
     AnimationSampler& operator=(AnimationSampler&&) noexcept = default;
 
     /**

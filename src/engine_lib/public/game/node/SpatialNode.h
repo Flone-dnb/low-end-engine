@@ -55,7 +55,7 @@ public:
     void setRelativeLocation(const glm::vec3& location);
 
     /**
-     * Sets node's relative rotation (roll, pitch, yaw in degrees), if there is another SpatialNode in the
+     * Sets node's relative rotation (pitch, yaw, roll in degrees), if there is another SpatialNode in the
      * parent chain then this rotation is relative to the first SpatialNode in the parent chain, otherwise
      * if there is no SpatialNode in the parent chain, this rotation is relative to the world.
      *
