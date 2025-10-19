@@ -94,6 +94,7 @@ SkeletonNode::SkeletonNode() : SkeletonNode("Skeleton Node") {}
 
 SkeletonNode::SkeletonNode(const std::string& sNodeName) : SpatialNode(sNodeName) {
     setIsCalledEveryFrame(true);
+    setTickGroup(TickGroup::FIRST); // this node first, then bone attachment node second
 }
 
 void SkeletonNode::setPathToSkeletonRelativeRes(std::string sPathToNewSkeleton) {
@@ -317,6 +318,7 @@ void SkeletonNode::convertResultingLocalTransformsToSkinning() {
             "failed to convert bone local space matrices to model space for node \"{}\"", getNodeName()));
     }
 
+    // Prepare skinning matrices.
     for (size_t i = 0; i < vBoneMatrices.size(); i++) {
         glm::mat4x4 boneMatrix = glm::identity<glm::mat4x4>();
         for (int k = 0; k < 4; k++) {

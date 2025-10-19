@@ -204,12 +204,20 @@ public:
     void playBlendedAnimations(const std::vector<std::string>& vRelativePathsToAnimations, float blendFactor);
 
     /**
+     * Returns matrices used for skinning.
+     * Returned matrices are updated every frame if an animation is being played.
+     *
+     * @return Matrices.
+     */
+    const std::vector<glm::mat4x4>& getSkinningMatrices() const { return vSkinningMatrices; }
+
+    /**
      * Returns matrices that convert skeleton bones from local space to model space.
      * Returned matrices are updated every frame if an animation is being played.
      *
      * @return Matrices.
      */
-    const std::vector<glm::mat4x4>& getSkeletonBoneMatrices() const { return vSkinningMatrices; }
+    const ozz::vector<ozz::math::Float4x4>& getModelBoneMatrices() const { return vBoneMatrices; }
 
     /**
      * Returns path (if was set) to the `skeleton.ozz` file relative to the `res` directory.

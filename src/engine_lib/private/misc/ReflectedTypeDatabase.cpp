@@ -12,6 +12,7 @@
 #include "game/node/MeshNode.h"
 #include "game/node/CameraNode.h"
 #include "game/node/SkeletonNode.h"
+#include "game/node/SkeletonBoneAttachmentNode.h"
 #include "game/node/SkeletalMeshNode.h"
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/PointLightNode.h"
@@ -38,13 +39,19 @@ std::unordered_map<std::string, TypeReflectionInfo> ReflectedTypeDatabase::refle
 void ReflectedTypeDatabase::registerEngineTypes() {
     // General.
     registerType(Node::getTypeGuidStatic(), Node::getReflectionInfo());
-    registerType(Sound2dNode::getTypeGuidStatic(), Sound2dNode::getReflectionInfo());
     registerType(SpatialNode::getTypeGuidStatic(), SpatialNode::getReflectionInfo());
     registerType(CameraNode::getTypeGuidStatic(), CameraNode::getReflectionInfo());
-    registerType(Sound3dNode::getTypeGuidStatic(), Sound3dNode::getReflectionInfo());
     registerType(MeshNode::getTypeGuidStatic(), MeshNode::getReflectionInfo());
+
+    // Sound.
+    registerType(Sound2dNode::getTypeGuidStatic(), Sound2dNode::getReflectionInfo());
+    registerType(Sound3dNode::getTypeGuidStatic(), Sound3dNode::getReflectionInfo());
+
+    // Skeleton.
     registerType(SkeletalMeshNode::getTypeGuidStatic(), SkeletalMeshNode::getReflectionInfo());
     registerType(SkeletonNode::getTypeGuidStatic(), SkeletonNode::getReflectionInfo());
+    registerType(
+        SkeletonBoneAttachmentNode::getTypeGuidStatic(), SkeletonBoneAttachmentNode::getReflectionInfo());
 
     // Light.
     registerType(DirectionalLightNode::getTypeGuidStatic(), DirectionalLightNode::getReflectionInfo());

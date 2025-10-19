@@ -124,7 +124,7 @@ void SkeletalMeshNode::onSpawning() {
 
 #if defined(DEBUG)
         // Make sure our per-vertex bone indices won't reference bones out of bounds for the skeleton.
-        const auto iBoneCount = pSpawnedSkeleton->getSkeletonBoneMatrices().size();
+        const auto iBoneCount = pSpawnedSkeleton->getSkinningMatrices().size();
         for (const auto& vertex : skeletalMeshGeometry.getVertices()) {
             for (SkeletalMeshNodeVertex::BoneIndexType iBoneIndex : vertex.vBoneIndices) {
                 if (iBoneIndex >= iBoneCount) [[unlikely]] {
@@ -143,7 +143,7 @@ void SkeletalMeshNode::onSpawning() {
     }
 
     getShaderConstantsSetterWhileSpawned().addSetterFunction([this](ShaderProgram* pShaderProgram) {
-        const auto& matrices = pSpawnedSkeleton->getSkeletonBoneMatrices();
+        const auto& matrices = pSpawnedSkeleton->getSkinningMatrices();
         pShaderProgram->setMatrix4ArrayToShader(
             "vSkinningMatrices[0]", static_cast<int>(matrices.size()), glm::value_ptr(matrices[0]));
     });

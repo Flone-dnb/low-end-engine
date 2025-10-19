@@ -158,6 +158,8 @@ set(PROJECT_SOURCES
     private/game/node/Sound3dNode.cpp
     public/game/node/SkeletonNode.h
     private/game/node/SkeletonNode.cpp
+    private/game/node/SkeletonBoneAttachmentNode.cpp
+    public/game/node/SkeletonBoneAttachmentNode.h
     private/game/node/physics/CollisionNode.cpp
     public/game/node/physics/CollisionNode.h
     private/game/node/physics/SimulatedBodyNode.cpp
