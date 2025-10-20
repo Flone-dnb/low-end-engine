@@ -1056,6 +1056,8 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install --no-install-recommends build-essential git wget libdrm-dev libopenal-dev premake4 autoconf libevdev-dev pkg-config zlib1g-dev cmake cmake-data libarchive13 libcurl4 libfreetype6-dev librhash0 libuv1 libgbm-dev
 ```
 
+Then install SDL dependencies: https://github.com/libsdl-org/SDL/blob/main/docs/README-linux.md#build-dependencies
+
 ## Steps for each release of your game
 
 Copy your game using the Windows explorer into a new directory at ~/arm64ubuntu/tmp/game (directory inside of the chroot). Then back into the WSL:
