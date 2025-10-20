@@ -32,7 +32,7 @@ TEST_CASE("add action") {
 
     const unsigned int iActionEvent3Id = 2;
     const std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>> vActionEvent3Buttons = {
-        GamepadButton::X};
+        GamepadButton::BUTTON_RIGHT};
 
     // Register action events.
     InputManager manager;
@@ -69,7 +69,7 @@ TEST_CASE("remove action") {
 
     const unsigned int iActionEvent3Id = 2;
     const std::vector<std::variant<KeyboardButton, MouseButton, GamepadButton>> vActionEvent3Buttons = {
-        GamepadButton::X};
+        GamepadButton::BUTTON_RIGHT};
 
     // Register action events.
     InputManager manager;

@@ -413,8 +413,10 @@ void GameManager::onKeyboardInput(
     if (!bIsRepeat && !bIsPressedDown && key == KeyboardButton::TILDE) {
         if (DebugConsole::get().isShown()) {
             DebugConsole::get().hide();
+            SDL_StopTextInput(pWindow->getSdlWindow());
         } else {
             DebugConsole::get().show();
+            SDL_StartTextInput(pWindow->getSdlWindow());
         }
     }
 #endif

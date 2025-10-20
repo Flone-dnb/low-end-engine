@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 // External.
-#include "SDL_mouse.h"
+#include "SDL3/SDL_mouse.h"
 
 enum class MouseButton {
     LEFT = SDL_BUTTON_LEFT,

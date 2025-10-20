@@ -15,8 +15,8 @@
 #include "misc/Profiler.hpp"
 
 // External.
-#include "SDL_timer.h"
-#include "SDL_events.h"
+#include "SDL3/SDL_timer.h"
+#include "SDL3/SDL_events.h"
 
 class GameManager;
 
@@ -251,7 +251,7 @@ private:
      *
      * @return `nullptr` if there's no gamepad connected.
      */
-    static SDL_GameController* findConnectedGamepad();
+    static SDL_Gamepad* findConnectedGamepad();
 
     /**
      * Returns the current cursor position on window.
@@ -285,7 +285,7 @@ private:
     SDL_Window* pSdlWindow = nullptr;
 
     /** `nullptr` if there's a connected gamepad. */
-    SDL_GameController* pConnectedGamepad = nullptr;
+    SDL_Gamepad* pConnectedGamepad = nullptr;
 
     /** Width and height of the window. */
     std::pair<unsigned int, unsigned int> windowSize;
@@ -322,7 +322,7 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
 
     // Notify game about controller state.
     if (pConnectedGamepad != nullptr) {
-        const auto pControllerName = SDL_GameControllerName(pConnectedGamepad);
+        const auto pControllerName = SDL_GetGamepadName(pConnectedGamepad);
         pGameManager->onGamepadConnected(pControllerName != nullptr ? pControllerName : "");
     }
 
@@ -344,7 +344,7 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
         // Process available window events.
         SDL_Event event;
         bool bHaveEventsToProcess = false;
-        while (SDL_PollEvent(&event) != 0) {
+        while (SDL_PollEvent(&event)) {
             bHaveEventsToProcess = true;
             const auto bReceivedQuitEvent = processWindowEvent(event);
 

@@ -37,7 +37,7 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     }
 
     // After creating the context - initialize GLAD.
-    if (gladLoadGLES2Loader(SDL_GL_GetProcAddress) == 0) {
+    if (gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) == 0) {
         return Error("failed to load OpenGL ES");
     }
 
@@ -50,7 +50,7 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     glClearDepthf(1.0F);
 
     // Disable VSync.
-    if (SDL_GL_SetSwapInterval(0) < 0) [[unlikely]] {
+    if (!SDL_GL_SetSwapInterval(0)) [[unlikely]] {
         Error::showErrorAndThrowException(SDL_GetError());
     }
 
@@ -424,7 +424,7 @@ Renderer::~Renderer() {
         glDeleteSync(fence);
     }
 
-    SDL_GL_DeleteContext(pContext);
+    SDL_GL_DestroyContext(pContext);
 }
 
 void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {

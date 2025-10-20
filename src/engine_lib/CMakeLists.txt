@@ -291,8 +291,8 @@ set(SDL_TEST OFF CACHE BOOL "" FORCE)
 set(SDL_AUDIO OFF CACHE BOOL "" FORCE) # we don't use SDL audio
 target_include_directories(${ENGINE_LIB_DEPS_TARGET} SYSTEM INTERFACE ${RELATIVE_EXT_PATH}/SDL/include)
 add_subdirectory(${RELATIVE_EXT_PATH}/SDL ${DEPENDENCY_BUILD_DIR_NAME}/SDL EXCLUDE_FROM_ALL)
-target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE SDL2::SDL2)
-set_target_properties(SDL2-static PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE SDL3::SDL3)
+set_target_properties(SDL3-static PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 
 # Add GLAD.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"GLAD\"...")

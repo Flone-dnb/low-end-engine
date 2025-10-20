@@ -11,7 +11,7 @@
 #include "math/GLMath.hpp"
 
 // External.
-#include "SDL_video.h"
+#include "SDL3/SDL_video.h"
 
 typedef struct __GLsync* GLsync;
 

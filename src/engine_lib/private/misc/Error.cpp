@@ -9,7 +9,7 @@
 #include "misc/MemoryUsage.hpp"
 
 // External.
-#include "SDL_messagebox.h"
+#include "SDL3/SDL_messagebox.h"
 #include "glad/glad.h"
 #if defined(WIN32)
 #include <Windows.h>

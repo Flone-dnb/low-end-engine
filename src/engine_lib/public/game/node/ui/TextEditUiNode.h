@@ -167,6 +167,18 @@ protected:
     /** Called after text is changed. */
     virtual void onAfterTextChanged() override;
 
+    /**
+     * Called before this node is despawned from the world to execute custom despawn logic.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This node will be marked as despawned after this function is called.
+     * @remark This function is called after all child nodes were despawned.
+     * @remark @ref getSpawnDespawnMutex is locked while this function is called.
+     */
+    virtual void onDespawning() override;
+
 private:
     /**
      * Converts mouse cursor position to offset (in characters) in the text.
@@ -208,4 +220,7 @@ private:
 
     /** `true` if inside @ref changeText. */
     bool bIsChangingText = false;
+
+    /** `true` if we enabled text input for SDL. */
+    bool bEnableSdlTextInput = false;
 };

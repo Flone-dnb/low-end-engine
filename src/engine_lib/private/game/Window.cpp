@@ -44,45 +44,59 @@ std::variant<std::unique_ptr<Window>, Error> WindowBuilder::build() { return Win
 std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderParameters& params) {
     InitManager::init();
 
-    // Get display resolution.
-    SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
-    int iWindowWidth = mode.w;
-    int iWindowHeight = mode.h;
+    int iWindowWidth = 0;
+    int iWindowHeight = 0;
+
+    {
+        int iDisplayCount = 0;
+        const auto pDisplays = SDL_GetDisplays(&iDisplayCount);
+        if (iDisplayCount == 0) [[unlikely]] {
+            Error::showErrorAndThrowException("unable to find at least 1 display");
+        }
+
+        // Get display resolution.
+        const SDL_DisplayMode* pMode = SDL_GetDesktopDisplayMode(pDisplays[iUsedDisplayIndex]);
+        iWindowWidth = pMode->w;
+        iWindowHeight = pMode->h;
+
+        SDL_free(pDisplays);
+    }
 
     if (!params.bFullscreen && !params.bMaximized) {
         iWindowWidth = static_cast<int>(params.iWindowWidth);
         iWindowHeight = static_cast<int>(params.iWindowHeight);
     }
 
-    // Prepare flags.
-    unsigned int iWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
-    if (params.bFullscreen) {
-        iWindowFlags |= SDL_WINDOW_BORDERLESS | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED;
-    } else {
-        iWindowFlags |= SDL_WINDOW_RESIZABLE;
-        if (params.bMaximized) {
-            iWindowFlags |= SDL_WINDOW_MAXIMIZED;
-        }
-    }
-    if (params.bHidden) {
-        iWindowFlags |= SDL_WINDOW_HIDDEN;
-    }
-
     // We don't need depth buffer for window's framebuffer (we have a depth buffer in our custom framebuffer).
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
 
     // Create SDL window.
-    const auto pSdlWindow = SDL_CreateWindow(
-        params.sWindowTitle.data(),
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        iWindowWidth,
-        iWindowHeight,
-        iWindowFlags);
+    SDL_PropertiesID props{SDL_CreateProperties()};
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, params.sWindowTitle.data());
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, iWindowWidth);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, iWindowHeight);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN, true);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HIGH_PIXEL_DENSITY_BOOLEAN, true);
+    if (params.bFullscreen) {
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN, true);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN, true);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_MAXIMIZED_BOOLEAN, true);
+    } else {
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+        if (params.bMaximized) {
+            SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_MAXIMIZED_BOOLEAN, true);
+        }
+    }
+    if (params.bHidden) {
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, true);
+    }
+    const auto pSdlWindow = SDL_CreateWindowWithProperties(props);
     if (pSdlWindow == nullptr) [[unlikely]] {
         return Error(SDL_GetError());
     }
+    SDL_DestroyProperties(props);
 
     auto pWindow = std::unique_ptr<Window>(new Window(pSdlWindow, params.bFullscreen));
 
@@ -99,7 +113,7 @@ void Window::setIsMouseCursorVisible(bool bIsVisible) {
         return;
     }
 
-    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!bIsVisible)) != 0) {
+    if (!SDL_SetWindowRelativeMouseMode(pSdlWindow, !bIsVisible)) {
         Log::error(SDL_GetError());
         return;
     }
@@ -115,97 +129,98 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     PROFILE_FUNC
 
     switch (event.type) {
-    case (SDL_MOUSEMOTION): {
-        pGameManager->onMouseMove(event.motion.xrel, event.motion.yrel);
+    case (SDL_EVENT_MOUSE_MOTION): {
+        pGameManager->onMouseMove(static_cast<int>(event.motion.xrel), static_cast<int>(event.motion.yrel));
         break;
     }
-    case (SDL_MOUSEBUTTONDOWN): {
+    case (SDL_EVENT_MOUSE_BUTTON_DOWN): {
         onMouseInput(
             static_cast<MouseButton>(event.button.button), KeyboardModifiers(SDL_GetModState()), true);
         break;
     }
-    case (SDL_MOUSEBUTTONUP): {
+    case (SDL_EVENT_MOUSE_BUTTON_UP): {
         onMouseInput(
             static_cast<MouseButton>(event.button.button), KeyboardModifiers(SDL_GetModState()), false);
         break;
     }
-    case (SDL_KEYDOWN): {
+    case (SDL_EVENT_KEY_DOWN): {
         onKeyboardInput(
-            static_cast<KeyboardButton>(event.key.keysym.scancode),
-            KeyboardModifiers(event.key.keysym.mod),
+            static_cast<KeyboardButton>(event.key.scancode),
+            KeyboardModifiers(event.key.mod),
             true,
             event.key.repeat != 0);
         break;
     }
-    case (SDL_KEYUP): {
+    case (SDL_EVENT_KEY_UP): {
         onKeyboardInput(
-            static_cast<KeyboardButton>(event.key.keysym.scancode),
-            KeyboardModifiers(event.key.keysym.mod),
+            static_cast<KeyboardButton>(event.key.scancode),
+            KeyboardModifiers(event.key.mod),
             false,
             event.key.repeat != 0);
         break;
     }
-    case (SDL_TEXTINPUT): {
+    case (SDL_EVENT_TEXT_INPUT): {
         onKeyboardInputTextCharacter(event.text.text);
         break;
     }
-    case (SDL_MOUSEWHEEL): {
-        pGameManager->onMouseScrollMove(event.wheel.y);
+    case (SDL_EVENT_MOUSE_WHEEL): {
+        pGameManager->onMouseScrollMove(static_cast<int>(event.wheel.y));
         break;
     }
-    case (SDL_CONTROLLERBUTTONDOWN): {
-        pGameManager->onGamepadInput(static_cast<GamepadButton>(event.cbutton.button), true);
+    case (SDL_EVENT_GAMEPAD_BUTTON_DOWN): {
+        pGameManager->onGamepadInput(static_cast<GamepadButton>(event.gbutton.button), true);
         break;
     }
-    case (SDL_CONTROLLERBUTTONUP): {
-        pGameManager->onGamepadInput(static_cast<GamepadButton>(event.cbutton.button), false);
+    case (SDL_EVENT_GAMEPAD_BUTTON_UP): {
+        pGameManager->onGamepadInput(static_cast<GamepadButton>(event.gbutton.button), false);
         break;
     }
-    case (SDL_CONTROLLERAXISMOTION): {
-        static_assert(std::is_same_v<decltype(event.caxis.value), short>, "expecting short");
-        const auto movementPortion = static_cast<float>(event.caxis.value) / SHRT_MAX;
-        pGameManager->onGamepadAxisMoved(static_cast<GamepadAxis>(event.caxis.axis), movementPortion);
+    case (SDL_EVENT_GAMEPAD_AXIS_MOTION): {
+        static_assert(std::is_same_v<decltype(event.gaxis.value), short>, "expecting short");
+        const auto movementPortion = static_cast<float>(event.gaxis.value) / SHRT_MAX;
+        pGameManager->onGamepadAxisMoved(static_cast<GamepadAxis>(event.gaxis.axis), movementPortion);
         break;
     }
-    case (SDL_WINDOWEVENT): {
-        if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-            pGameManager->onWindowFocusChanged(true);
-        } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-            pGameManager->onWindowFocusChanged(false);
-        } else if (
-            event.window.event == SDL_WINDOWEVENT_RESIZED ||
-            event.window.event == SDL_WINDOWEVENT_MAXIMIZED ||
-            event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
-            // Save new size.
-            int iWidth = 0;
-            int iHeight = 0;
-            SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
-            windowSize.first = static_cast<unsigned int>(iWidth);
-            windowSize.second = static_cast<unsigned int>(iHeight);
+    case (SDL_EVENT_WINDOW_FOCUS_GAINED): {
+        pGameManager->onWindowFocusChanged(true);
+        break;
+    }
+    case (SDL_EVENT_WINDOW_FOCUS_LOST): {
+        pGameManager->onWindowFocusChanged(false);
+        break;
+    }
+    case (SDL_EVENT_WINDOW_RESIZED):
+    case (SDL_EVENT_WINDOW_MAXIMIZED):
+    case (SDL_EVENT_WINDOW_MINIMIZED): {
+        // Save new size.
+        int iWidth = 0;
+        int iHeight = 0;
+        SDL_GetWindowSizeInPixels(pSdlWindow, &iWidth, &iHeight);
+        windowSize.first = static_cast<unsigned int>(iWidth);
+        windowSize.second = static_cast<unsigned int>(iHeight);
 
-            // Notify.
-            pGameManager->onWindowSizeChanged();
-        }
+        // Notify.
+        pGameManager->onWindowSizeChanged();
         break;
     }
-    case (SDL_CONTROLLERDEVICEADDED): {
+    case (SDL_EVENT_GAMEPAD_ADDED): {
         if (pConnectedGamepad == nullptr) {
-            pConnectedGamepad = SDL_GameControllerOpen(event.cdevice.which);
-            const auto pControllerName = SDL_GameControllerName(pConnectedGamepad);
+            pConnectedGamepad = SDL_OpenGamepad(event.cdevice.which);
+            const auto pControllerName = SDL_GetGamepadName(pConnectedGamepad);
             pGameManager->onGamepadConnected(pControllerName != nullptr ? pControllerName : "");
         }
         break;
     }
-    case (SDL_CONTROLLERDEVICEREMOVED): {
+    case (SDL_EVENT_GAMEPAD_REMOVED): {
         if (pConnectedGamepad != nullptr &&
-            event.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pConnectedGamepad))) {
-            SDL_GameControllerClose(pConnectedGamepad);
+            event.cdevice.which == SDL_GetJoystickID(SDL_GetGamepadJoystick(pConnectedGamepad))) {
+            SDL_CloseGamepad(pConnectedGamepad);
             pConnectedGamepad = nullptr;
             pGameManager->onGamepadDisconnected();
         }
         break;
     }
-    case (SDL_QUIT): {
+    case (SDL_EVENT_QUIT): {
         return true;
         break;
     }
@@ -214,14 +229,22 @@ bool Window::processWindowEvent(const SDL_Event& event) {
     return false;
 }
 
-SDL_GameController* Window::findConnectedGamepad() {
-    for (int i = 0; i < SDL_NumJoysticks(); i++) {
-        if (SDL_IsGameController(i) == SDL_TRUE) {
-            return SDL_GameControllerOpen(i);
+SDL_Gamepad* Window::findConnectedGamepad() {
+    int iCount = 0;
+    const auto pIds = SDL_GetGamepads(&iCount);
+
+    SDL_Gamepad* pGamepad = nullptr;
+
+    for (int i = 0; i < iCount; i++) {
+        if (SDL_IsGamepad(pIds[i])) {
+            pGamepad = SDL_OpenGamepad(pIds[i]);
+            break;
         }
     }
 
-    return nullptr;
+    SDL_free(pIds);
+
+    return pGamepad;
 }
 
 void Window::setWindowSize(const std::pair<unsigned int, unsigned int>& size) {
@@ -245,11 +268,11 @@ std::pair<unsigned int, unsigned int> Window::getWindowSize() const { return win
 std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
     showErrorIfNotOnMainThread();
 
-    int iXPos = 0;
-    int iYPos = 0;
-    SDL_GetMouseState(&iXPos, &iYPos);
+    float xPos = 0.0F;
+    float yPos = 0.0F;
+    SDL_GetMouseState(&xPos, &yPos);
 
-    return {iXPos, iYPos};
+    return {static_cast<unsigned int>(xPos), static_cast<unsigned int>(yPos)};
 }
 
 SDL_Window* Window::getSdlWindow() const { return pSdlWindow; }
@@ -261,11 +284,18 @@ bool Window::isMouseCursorVisible() const { return bIsCursorVisible; }
 bool Window::isGamepadConnected() const { return pConnectedGamepad != nullptr; }
 
 unsigned int Window::getScreenRefreshRate() {
-    // Get display resolution.
-    SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(iUsedDisplayIndex, &mode);
+    int iDisplayCount = 0;
+    const auto pDisplays = SDL_GetDisplays(&iDisplayCount);
+    if (iDisplayCount == 0) [[unlikely]] {
+        Error::showErrorAndThrowException("unable to find at least 1 display");
+    }
 
-    return static_cast<unsigned int>(mode.refresh_rate);
+    const SDL_DisplayMode* pMode = SDL_GetDesktopDisplayMode(pDisplays[iUsedDisplayIndex]);
+    const auto refreshRate = pMode->refresh_rate;
+
+    SDL_free(pDisplays);
+
+    return static_cast<unsigned int>(refreshRate);
 }
 
 void Window::onKeyboardInput(

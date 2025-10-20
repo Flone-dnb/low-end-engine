@@ -332,14 +332,28 @@ void TextEditUiNode::onGainedFocus() {
     TextUiNode::onGainedFocus();
 
     optionalCursorOffset = getText().size();
+
+    SDL_StartTextInput(getGameInstanceWhileSpawned()->getWindow()->getSdlWindow());
+    bEnableSdlTextInput = true;
 }
 
 void TextEditUiNode::onLostFocus() {
     TextUiNode::onLostFocus();
 
+    SDL_StopTextInput(getGameInstanceWhileSpawned()->getWindow()->getSdlWindow());
+    bEnableSdlTextInput = false;
+
     optionalCursorOffset = {};
     optionalSelection = {};
     bIsTextSelectionStarted = false;
+}
+
+void TextEditUiNode::onDespawning() {
+    TextUiNode::onDespawning();
+
+    if (bEnableSdlTextInput) {
+        SDL_StopTextInput(getGameInstanceWhileSpawned()->getWindow()->getSdlWindow());
+    }
 }
 
 size_t TextEditUiNode::convertCursorPosToTextOffset() {

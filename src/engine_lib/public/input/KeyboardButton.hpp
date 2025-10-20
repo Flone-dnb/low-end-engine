@@ -4,8 +4,8 @@
 #include <string>
 
 // External.
-#include "SDL_keycode.h"
-#include "SDL_keyboard.h"
+#include "SDL3/SDL_keycode.h"
+#include "SDL3/SDL_keyboard.h"
 
 /** Provides a mapping from SDL keyboard modifiers to a class. */
 class KeyboardModifiers {
@@ -24,35 +24,35 @@ public:
      *
      * @return 'true' if the Shift key is pressed, 'false' otherwise.
      */
-    bool isShiftPressed() const { return iModifiers & KMOD_LSHIFT; }
+    bool isShiftPressed() const { return iModifiers & SDL_KMOD_LSHIFT; }
 
     /**
      * Whether the Control (Ctrl) key is pressed or not.
      *
      * @return 'true' if the Control (Ctrl) key is pressed, 'false' otherwise.
      */
-    bool isControlPressed() const { return iModifiers & KMOD_LCTRL; }
+    bool isControlPressed() const { return iModifiers & SDL_KMOD_LCTRL; }
 
     /**
      * Whether the Alt key is pressed or not.
      *
      * @return 'true' if the Alt key is pressed, 'false' otherwise.
      */
-    bool isAltPressed() const { return iModifiers & KMOD_LALT; }
+    bool isAltPressed() const { return iModifiers & SDL_KMOD_LALT; }
 
     /**
      * Whether the Caps Lock key is pressed or not.
      *
      * @return 'true' if the Caps Lock key is pressed, 'false' otherwise.
      */
-    bool isCapsLockPressed() const { return iModifiers & KMOD_CAPS; }
+    bool isCapsLockPressed() const { return iModifiers & SDL_KMOD_CAPS; }
 
     /**
      * Whether the Num Lock key is pressed or not.
      *
      * @return 'true' if the Num Lock key is pressed, 'false' otherwise.
      */
-    bool isNumLockPressed() const { return iModifiers & KMOD_NUM; }
+    bool isNumLockPressed() const { return iModifiers & SDL_KMOD_NUM; }
 
 private:
     /** SDL modifiers value. */

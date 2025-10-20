@@ -9,7 +9,7 @@
 // External.
 #include "fpng.h"
 #define SDL_MAIN_HANDLED
-#include "SDL.h"
+#include "SDL3/SDL.h"
 #include "glad/glad.h"
 
 /** Handles initialization and shutdown of some systems. */
@@ -22,9 +22,7 @@ public:
 
 private:
     InitManager() {
-        SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
-
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
             Error::showErrorAndThrowException(
                 std::format("failed to initialize SDL, error: {}", SDL_GetError()));
         }
