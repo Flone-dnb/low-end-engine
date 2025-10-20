@@ -293,11 +293,11 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     // and do physics interpolation in case the FPS is higher than 60 but because
     // physics interpolation is a pain in the back I go the stupid way:
 
-    constexpr float MIN_UPDATE_TIME = 1.0F / 50.0F;
+    constexpr float MIN_UPDATE_TIME = 1.0F / 40.0F;
 
 #if !defined(ENGINE_EDITOR)
-    float deltaTimeLeftToSimulate = timeSincePrevFrameInSec;
-    do {
+    float deltaTimeLeftToSimulate = std::min(timeSincePrevFrameInSec, 2.0F * MIN_UPDATE_TIME);
+    for (size_t i = 0; (i < 2) && (deltaTimeLeftToSimulate > 0.001F); i++) { // do at max 2 iterations
         PROFILE_SCOPE("physics tick")
 
         const float deltaTime = std::min(MIN_UPDATE_TIME, deltaTimeLeftToSimulate);
@@ -442,7 +442,7 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
                 mtxContactData.second.newContactsRemoved = {};
             }
         }
-    } while (deltaTimeLeftToSimulate > 0.001F);
+    }
 #endif
 
 #if defined(DEBUG)

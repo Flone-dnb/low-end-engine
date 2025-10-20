@@ -28,7 +28,8 @@ void main() {
         float boneWeight = boneWeights[i];
         mat4 boneMatrix = vSkinningMatrices[iBoneIndex];
 
-        skinnedPosition += (boneMatrix * vec4(position, 1.0F)) * boneWeight;
+        // passing 0 as 4th component for position to avoid applying translation twice
+        skinnedPosition += (boneMatrix * vec4(position, 0.0F)) * boneWeight;
         skinnedNormal += (boneMatrix * vec4(normal, 0.0F)) * boneWeight;
     }
 

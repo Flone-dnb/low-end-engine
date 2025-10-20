@@ -1,5 +1,8 @@
 #pragma once
 
+// Standard.
+#include <format>
+
 // Custom.
 #include "misc/Error.h"
 
@@ -22,7 +25,8 @@ private:
         SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
 
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
-            Error::showErrorAndThrowException("failed to initialize SDL");
+            Error::showErrorAndThrowException(
+                std::format("failed to initialize SDL, error: {}", SDL_GetError()));
         }
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // IF CHANGING
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1); // ALSO CHANGE GLAD
