@@ -858,14 +858,15 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
         float newEventState = position;
         const float oldEventState = axisEventState.state;
 
-        if (abs(newEventState) < inputManager.getGamepadDeadzone()) {
+        if (static_cast<float>(std::abs(newEventState)) < inputManager.getGamepadDeadzone()) {
             newEventState = 0.0F;
         }
 
         // Save new state.
         axisEventState.state = newEventState;
 
-        if (abs(oldEventState) < inputManager.getGamepadDeadzone() && newEventState == 0.0F) {
+        if (static_cast<float>(std::abs(oldEventState)) < inputManager.getGamepadDeadzone() &&
+            newEventState == 0.0F) {
             // Don't broadcast a notification since we had 0 input before and still have 0 input.
             continue;
         }
