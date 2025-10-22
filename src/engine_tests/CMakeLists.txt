@@ -57,7 +57,7 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -O0)
 endif()
 
-create_symlink_to_res()
+create_symlink_to_res(${PROJECT_NAME})
 
 # -------------------------------------------------------------------------------------------------
 #                                           TOOLS

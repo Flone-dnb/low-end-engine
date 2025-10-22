@@ -45,9 +45,9 @@ function(add_node_super_call_checker_for_target TARGET_NAME GLOBAL_PATH_TO_NODES
     )
 endfunction()
 
-function(create_symlink_to_res)
-    set(PROJ_BIN_DIR ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME})
-    set(RES_SYMLINK_PATH ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${PROJECT_NAME}/res)
+function(create_symlink_to_res DIR_NAME)
+    set(PROJ_BIN_DIR ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${DIR_NAME})
+    set(RES_SYMLINK_PATH ${CMAKE_BINARY_DIR}/${BUILD_DIRECTORY_NAME}/${DIR_NAME}/res)
 
     if(NOT EXISTS ${PROJ_BIN_DIR})
         file(MAKE_DIRECTORY ${PROJ_BIN_DIR})
