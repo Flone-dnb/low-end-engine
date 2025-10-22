@@ -106,8 +106,7 @@ void UiNodeManager::onNodeSpawning(RectUiNode* pNode) {
         auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
         ADD_NODE_TO_RENDERING(RectUiNode);
     } else [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("unhandled case for node \"{}\"", pNode->getNodeName()));
+        Error::showErrorAndThrowException("unhandled case");
     }
 }
 
@@ -167,8 +166,7 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
             REMOVE_NODE_FROM_RENDERING(RectUiNode);
         }
     } else [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("unhandled case for node \"{}\"", pNode->getNodeName()));
+        Error::showErrorAndThrowException("unhandled case");
     }
 }
 
@@ -224,8 +222,7 @@ void UiNodeManager::onNodeDespawning(RectUiNode* pNode) {
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
         REMOVE_NODE_FROM_RENDERING(RectUiNode);
     } else [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("unhandled case for node \"{}\"", pNode->getNodeName()));
+        Error::showErrorAndThrowException("unhandled case");
     }
 
     // don't unload rect shader program because it's also used for drawing cursors
