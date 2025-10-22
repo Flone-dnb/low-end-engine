@@ -58,16 +58,17 @@ if (DEFINED GAME_PROJECT_NAME) # <- comes from engine_settings.cmake
     # Game directories should have been generated using our project manager.
 
     # Add game_lib.
-    set(GAME_LIB_DIR ${GAME_PROJECT_NAME}_lib)
+    set(GAME_LIB_DIR game_lib)
     message(STATUS "Adding ${GAME_LIB_DIR}...")
     add_subdirectory(src/${GAME_LIB_DIR} ${BUILD_DIRECTORY_NAME}/${GAME_LIB_DIR})
 
     # Add game.
-    message(STATUS "Adding ${GAME_PROJECT_NAME}...")
-    add_subdirectory(src/${GAME_PROJECT_NAME} ${BUILD_DIRECTORY_NAME}/${GAME_PROJECT_NAME})
+    set(GAME_DIR game)
+    message(STATUS "Adding ${GAME_DIR}...")
+    add_subdirectory(src/${GAME_DIR} ${BUILD_DIRECTORY_NAME}/${GAME_DIR})
 
     # Add game_tests.
-    set(GAME_TESTS_DIR ${GAME_PROJECT_NAME}_tests)
+    set(GAME_TESTS_DIR game_tests)
     message(STATUS "Adding ${GAME_TESTS_DIR}...")
     add_subdirectory(src/${GAME_TESTS_DIR} ${BUILD_DIRECTORY_NAME}/${GAME_TESTS_DIR})
 endif()
