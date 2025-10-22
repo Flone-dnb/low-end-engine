@@ -196,6 +196,8 @@ set(PROJECT_SOURCES
     public/game/node/ui/SliderUiNode.h
     private/game/node/ui/CheckboxUiNode.cpp
     public/game/node/ui/CheckboxUiNode.h
+    private/game/node/ui/ProgressBarUiNode.cpp
+    public/game/node/ui/ProgressBarUiNode.h
     private/game/camera/CameraManager.cpp
     private/game/camera/CameraProperties.cpp
     public/game/camera/CameraManager.h

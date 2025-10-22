@@ -413,6 +413,14 @@ if (std::holds_alternative<Error>(result)) [[unlikely]] {
 const auto pImportedRootNode = getWorldRootNode()->addChildNode(std::get<std::unique_ptr<Node>>(std::move(result)));
 ```
 
+## Working with UIs
+
+UI is also build as a node tree, in the directory `engine_lib/public/game/node/ui` you will find all available UI elements. These UI nodes can be attached to any node in your level but generally you can't attach 3D nodes to UI nodes (for example attaching a mesh node to a UI node will result in an error).
+
+The base `UiNode` provides various functionality on top of the basic position, size and visibility, functionality such as being a modal UI element (takes all the input) or having a focus (for text input) or changing UI layer or changing node's portion in the layout and so on.
+
+Vertical or horizontal layouts are implemented as the `LayoutUiNode` so this node type is a container node but other UI nodes can also be containers for example: `ButtonUiNode` provides button functionality on which you can click but you can add a child `TextUiNode` to it to have a text on the button. Some UI nodes don't allow child nodes to be attached for example `CheckboxUiNode`. In order to know which nodes don't allow child nodes every UI node type may override the `UiNode::getMaxChildCount` which is used in the editor to determine if attaching child nodes is allowed or not.
+
 ## Texture import and texture filtering
 
 In order to import a texture you can use the editor: right click on a directory in the content browser (left-bottom corner) and select "Import texture" in the opened context menu. Select a texture and a converted version of the texture will appear in that directory.

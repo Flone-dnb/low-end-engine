@@ -1,5 +1,8 @@
 #include "game/node/ui/RectUiNode.h"
 
+// Standard.
+#include <format>
+
 // Custom.
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
@@ -74,6 +77,18 @@ void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
         return;
     }
     this->sPathToTextureRelativeRes = sPathToTextureRelativeRes;
+
+    // Make sure the path is valid.
+    const auto pathToTexture =
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
+    if (!std::filesystem::exists(pathToTexture)) {
+        Log::error(std::format("path \"{}\" does not exist", pathToTexture.string()));
+        return;
+    }
+    if (std::filesystem::is_directory(pathToTexture)) {
+        Log::error(std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
+        return;
+    }
 
     if (isSpawned()) {
         if (sPathToTextureRelativeRes.empty()) {

@@ -11,6 +11,7 @@
 #include "game/node/ui/SliderUiNode.h"
 #include "game/node/ui/CheckboxUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
+#include "game/node/ui/ProgressBarUiNode.h"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
 #include "misc/Error.h"
@@ -38,7 +39,7 @@
     }                                                                                                        \
                                                                                                              \
     if (pNodeArray == nullptr) {                                                                             \
-        vNodesByDepth.push_back({iNodeDepth, {pNode}});                                                      \
+        vNodesByDepth.push_back({iNodeDepth, {reinterpret_cast<nodeType*>(pNode)}});                         \
         std::sort(                                                                                           \
             vNodesByDepth.begin(),                                                                           \
             vNodesByDepth.end(),                                                                             \
@@ -47,7 +48,7 @@
                 return left.first < right.first;                                                             \
             });                                                                                              \
     } else {                                                                                                 \
-        const auto [it, isAdded] = pNodeArray->insert(pNode);                                                \
+        const auto [it, isAdded] = pNodeArray->insert(reinterpret_cast<nodeType*>(pNode));                   \
         if (!isAdded) [[unlikely]] {                                                                         \
             Error::showErrorAndThrowException(                                                               \
                 std::format("node \"{}\" is already added", pNode->getNodeName()));                          \
@@ -72,7 +73,7 @@
     }                                                                                                        \
     const auto iArrayIndex = *optionalArrayIndex;                                                            \
                                                                                                              \
-    vNodesByDepth[iArrayIndex].second.erase(pNode);                                                          \
+    vNodesByDepth[iArrayIndex].second.erase(reinterpret_cast<nodeType*>(pNode));                             \
     if (vNodesByDepth[iArrayIndex].second.empty()) {                                                         \
         vNodesByDepth.erase(vNodesByDepth.begin() + static_cast<long>(iArrayIndex));                         \
     }
@@ -96,9 +97,18 @@ void UiNodeManager::onNodeSpawning(RectUiNode* pNode) {
 
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
-    auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
 
-    ADD_NODE_TO_RENDERING(RectUiNode);
+    if (dynamic_cast<ProgressBarUiNode*>(pNode) != nullptr) {
+        auto& vNodesByDepth =
+            data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vProgressBarNodes;
+        ADD_NODE_TO_RENDERING(ProgressBarUiNode);
+    } else if (dynamic_cast<RectUiNode*>(pNode) != nullptr) {
+        auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
+        ADD_NODE_TO_RENDERING(RectUiNode);
+    } else [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("unhandled case for node \"{}\"", pNode->getNodeName()));
+    }
 }
 
 void UiNodeManager::onNodeSpawning(SliderUiNode* pNode) {
@@ -139,13 +149,26 @@ void UiNodeManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
 
 void UiNodeManager::onSpawnedNodeChangedVisibility(RectUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
-    auto& vNodesByDepth =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
 
-    if (pNode->isRenderingAllowed() && pNode->isVisible()) {
-        ADD_NODE_TO_RENDERING(RectUiNode);
-    } else {
-        REMOVE_NODE_FROM_RENDERING(RectUiNode);
+    if (dynamic_cast<ProgressBarUiNode*>(pNode) != nullptr) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vProgressBarNodes;
+        if (pNode->isRenderingAllowed() && pNode->isVisible()) {
+            ADD_NODE_TO_RENDERING(ProgressBarUiNode);
+        } else {
+            REMOVE_NODE_FROM_RENDERING(ProgressBarUiNode);
+        }
+    } else if (dynamic_cast<RectUiNode*>(pNode) != nullptr) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
+        if (pNode->isRenderingAllowed() && pNode->isVisible()) {
+            ADD_NODE_TO_RENDERING(RectUiNode);
+        } else {
+            REMOVE_NODE_FROM_RENDERING(RectUiNode);
+        }
+    } else [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("unhandled case for node \"{}\"", pNode->getNodeName()));
     }
 }
 
@@ -191,10 +214,19 @@ void UiNodeManager::onNodeDespawning(RectUiNode* pNode) {
     }
 
     std::scoped_lock guard(mtxData.first);
-    auto& vNodesByDepth =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
 
-    REMOVE_NODE_FROM_RENDERING(RectUiNode);
+    if (dynamic_cast<ProgressBarUiNode*>(pNode) != nullptr) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vProgressBarNodes;
+        REMOVE_NODE_FROM_RENDERING(ProgressBarUiNode);
+    } else if (dynamic_cast<RectUiNode*>(pNode) != nullptr) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
+        REMOVE_NODE_FROM_RENDERING(RectUiNode);
+    } else [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("unhandled case for node \"{}\"", pNode->getNodeName()));
+    }
 
     // don't unload rect shader program because it's also used for drawing cursors
 }
@@ -241,6 +273,17 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
             ADD_NODE_TO_RENDERING(TextUiNode);
         }
         // clang-format on
+    } else if (auto pNode = dynamic_cast<ProgressBarUiNode*>(pTargetNode)) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vProgressBarNodes;
+        // clang-format off
+        {
+            REMOVE_NODE_FROM_RENDERING(ProgressBarUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(ProgressBarUiNode);
+        }
+        // clang-format on
     } else if (auto pNode = dynamic_cast<RectUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vRectNodes;
@@ -279,9 +322,9 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
     }
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 248, "add new variables here");
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 272, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 232, "add new variables here");
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 256, "add new variables here");
 #endif
 }
 
@@ -792,6 +835,7 @@ void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
     glDisable(GL_DEPTH_TEST);
     for (size_t i = 0; i < mtxData.second.vSpawnedVisibleNodes.size(); i++) {
         drawRectNodes(i);
+        drawProgressBarNodes(i);
         drawTextNodes(i);
         drawSliderNodes(i);
         drawCheckboxNodes(i);
@@ -854,6 +898,84 @@ void UiNodeManager::drawRectNodes(size_t iLayer) {
                     size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
 
                 drawQuad(pos, size, iWindowHeight);
+            }
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindVertexArray(0);
+    }
+    glDisable(GL_BLEND);
+}
+
+void UiNodeManager::drawProgressBarNodes(size_t iLayer) {
+    PROFILE_FUNC;
+
+    std::scoped_lock guard(mtxData.first);
+
+    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vProgressBarNodes;
+    if (vNodesByDepth.empty()) {
+        return;
+    }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+
+        // Set shader program.
+        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+        if (pShaderProgram == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+        }
+        glUseProgram(pShaderProgram->getShaderProgramId());
+
+        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+
+        for (const auto& [iDepth, nodes] : vNodesByDepth) {
+            for (const auto& pProgressBarNode : nodes) {
+                if (pProgressBarNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state
+                                                                  // here (it will wait on our mutex)
+                    vInputNodesRendered.push_back(pProgressBarNode);
+                }
+
+                auto pos = pProgressBarNode->getPosition();
+                auto relativeSize = pProgressBarNode->getSize();
+
+                // Set background shader parameters.
+                pShaderProgram->setVector4ToShader("color", pProgressBarNode->getColor());
+                if (pProgressBarNode->pTexture != nullptr) {
+                    pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pTexture->getTextureId());
+                } else {
+                    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+                }
+
+                // Draw background.
+                pos = glm::vec2(
+                    pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
+                auto size = glm::vec2(
+                    relativeSize.x * static_cast<float>(iWindowWidth),
+                    relativeSize.y * static_cast<float>(iWindowHeight));
+                drawQuad(pos, size, iWindowHeight);
+
+                // Set foreground shader parameters.
+                pShaderProgram->setVector4ToShader("color", pProgressBarNode->getForegroundColor());
+                if (pProgressBarNode->pForegroundTexture != nullptr) {
+                    pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pForegroundTexture->getTextureId());
+                } else {
+                    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+                }
+
+                // Draw foreground.
+                const auto clipRect = glm::vec4(0.0F, 0.0F, pProgressBarNode->getProgressFactor(), 1.0F);
+                drawQuad(pos, size, iWindowHeight, clipRect);
             }
         }
 
@@ -1508,19 +1630,27 @@ void UiNodeManager::changeFocusedNode(UiNode* pNode) {
 }
 
 void UiNodeManager::drawQuad(
-    const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const {
+    const glm::vec2& screenPos,
+    const glm::vec2& screenSize,
+    unsigned int iScreenHeight,
+    const glm::vec4& clipRect) const {
+    float xPos = screenPos.x + screenSize.x * clipRect.x;
+    float yPos = screenPos.y + screenSize.y * clipRect.y;
+    float xSize = screenSize.x * clipRect.z;
+    float ySize = screenSize.y * clipRect.w;
+
     // Flip Y from our top-left origin to OpenGL's bottom-left origin.
-    const float posY = static_cast<float>(iScreenHeight) - screenPos.y;
+    yPos = static_cast<float>(iScreenHeight) - yPos;
 
     // Update vertices.
     const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+        glm::vec4(xPos, yPos, clipRect.x, clipRect.y),
+        glm::vec4(xPos, yPos - ySize, clipRect.x, clipRect.w),
+        glm::vec4(xPos + xSize, yPos - ySize, clipRect.z, clipRect.w),
 
-        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
+        glm::vec4(xPos, yPos, clipRect.x, clipRect.y),
+        glm::vec4(xPos + xSize, yPos - ySize, clipRect.z, clipRect.w),
+        glm::vec4(xPos + xSize, yPos, clipRect.z, clipRect.y),
     };
 
     // Copy new vertex data to VBO.

@@ -21,6 +21,7 @@ class ShaderProgram;
 class UiNode;
 class TextUiNode;
 class RectUiNode;
+class ProgressBarUiNode;
 class LayoutUiNode;
 class SliderUiNode;
 class CheckboxUiNode;
@@ -260,9 +261,9 @@ private:
              * @return Node count.
              */
             size_t getTotalNodeCount() const {
-                return vTextNodes.size() + vRectNodes.size() + vSliderNodes.size() +
-                       receivingInputUiNodes.size() + receivingInputUiNodesRenderedLastFrame.size() +
-                       layoutNodesWithScrollBars.size();
+                return vTextNodes.size() + vRectNodes.size() + vProgressBarNodes.size() +
+                       vSliderNodes.size() + receivingInputUiNodes.size() +
+                       receivingInputUiNodesRenderedLastFrame.size() + layoutNodesWithScrollBars.size();
             }
 
             /** Node depth - text nodes on this depth. */
@@ -270,6 +271,9 @@ private:
 
             /** Node depth - rect nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<RectUiNode*>>> vRectNodes;
+
+            /** Node depth - progress bar nodes on this depth. */
+            std::vector<std::pair<size_t, std::unordered_set<ProgressBarUiNode*>>> vProgressBarNodes;
 
             /** Node depth - slider nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<SliderUiNode*>>> vSliderNodes;
@@ -358,6 +362,13 @@ private:
     void drawRectNodes(size_t iLayer);
 
     /**
+     * Renders the UI progress bar nodes on the current framebuffer.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawProgressBarNodes(size_t iLayer);
+
+    /**
      * Renders the UI slider nodes on the current framebuffer.
      *
      * @param iLayer UI layer to render to.
@@ -409,8 +420,14 @@ private:
      * @param screenPos     Position of the top-left corner of the quad.
      * @param screenSize    Size of the quad.
      * @param iScreenHeight Height of the screen.
+     * @param clipRect      Clipping rectangle in range [0.0; 1.0] where XY mark clip start
+     * and ZW mark clip size.
      */
-    void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
+    void drawQuad(
+        const glm::vec2& screenPos,
+        const glm::vec2& screenSize,
+        unsigned int iScreenHeight,
+        const glm::vec4& clipRect = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F)) const;
 
     /**
      * Collects all visible child nodes (recursively) that receive input and returns them.
