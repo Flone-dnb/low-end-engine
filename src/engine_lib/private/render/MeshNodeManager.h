@@ -13,6 +13,7 @@ class ShaderProgram;
 class MeshNode;
 class CameraProperties;
 class LightSourceManager;
+class Renderer;
 
 /** Keeps track of spawned 3D nodes and handles mesh rendering. */
 class MeshNodeManager {
@@ -40,10 +41,11 @@ public:
      * Queues OpenGL draw commands to draw all spawned and visible meshes
      * on the currently set framebuffer.
      *
-     * @param pCameraProperties   Camera properties.
+     * @param pRenderer          Renderer.
+     * @param pCameraProperties  Camera properties.
      * @param lightSourceManager Light source manager.
      */
-    void drawMeshes(CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager);
+    void drawMeshes(Renderer* pRenderer, CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager);
 
     /**
      * Called by mesh nodes during their spawn.

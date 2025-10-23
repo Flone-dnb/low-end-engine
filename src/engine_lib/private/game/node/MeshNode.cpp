@@ -49,6 +49,17 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToDiffuseTexture();
         }};
 
+    variables.vec2s["materialTextureTilingMultiplier"] = ReflectedVariableInfo<glm::vec2>{
+        .setter =
+            [](Serializable* pThis, const glm::vec2& newValue) {
+                auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
+                material.setTextureTilingMultiplier(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec2 {
+            auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
+            return material.getTextureTilingMultiplier();
+        }};
+
     variables.strings["materialCustomVertexShader"] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {

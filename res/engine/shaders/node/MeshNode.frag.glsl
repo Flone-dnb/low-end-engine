@@ -8,6 +8,7 @@ uniform bool bIsAffectedByLightSources;
 
 uniform bool bIsUsingDiffuseTexture;
 layout(location = 0) uniform sampler2D diffuseTexture;
+uniform vec2 textureTilingMultiplier;
 
 #ifdef ENGINE_EDITOR
     // Used for GPU picking.
@@ -18,8 +19,6 @@ layout(location = 0) uniform sampler2D diffuseTexture;
 out vec4 color;
 
 layout(early_fragment_tests) in;
-
-/// Entry point.
 void main() {
     #ifdef ENGINE_EDITOR
         imageStore(nodeIdTexture, ivec2(gl_FragCoord.xy), uvec4(iNodeId, 0u, 0u, 0u));
@@ -31,7 +30,7 @@ void main() {
     // Diffuse color.
     vec4 fragmentDiffuseColor = diffuseColor;
     if (bIsUsingDiffuseTexture) {
-        fragmentDiffuseColor *= texture(diffuseTexture, fragmentUv);
+        fragmentDiffuseColor *= texture(diffuseTexture, fragmentUv * textureTilingMultiplier);
     }
 
     // Light.

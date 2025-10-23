@@ -104,6 +104,11 @@ void LightSourceShaderArray::setArrayPropertiesToShader(ShaderProgram* pShaderPr
     pShaderProgram->setUniformBlockToShader(sUniformBlockName, mtxData.second.pUniformBufferObject.get());
 }
 
+size_t LightSourceShaderArray::getVisibleLightSourceCount() {
+    std::scoped_lock guard(mtxData.first);
+    return mtxData.second.visibleLightNodes.size();
+}
+
 void LightSourceShaderArray::removeLightSourceFromRendering(Node* pLightSource) {
     std::scoped_lock guard(mtxData.first);
 

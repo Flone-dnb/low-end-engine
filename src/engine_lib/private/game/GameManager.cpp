@@ -50,6 +50,10 @@ GameManager::GameManager(
 #endif
 
     ReflectedTypeDatabase::registerEngineTypes();
+
+#if defined(DEBUG)
+    DebugConsole::get().registerStatsCommand();
+#endif
 }
 
 void GameManager::onBeforeWorldDestroyed(Node* pRootNode) {

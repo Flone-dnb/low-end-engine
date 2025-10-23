@@ -101,6 +101,13 @@ public:
      */
     void setArrayPropertiesToShader(ShaderProgram* pShaderProgram);
 
+    /**
+     * Returns the number of visible light sources.
+     *
+     * @return Light source count.
+     */
+    size_t getVisibleLightSourceCount();
+
 private:
     /** Groups mutex-guarded data. */
     struct LightData {

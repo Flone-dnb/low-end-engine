@@ -25,9 +25,9 @@ Note for Windows OS users:
 > Windows users need to run their IDE with admin privileges when building the project for the first time (only for the first build) when executing a post-build step the engine creates a symlink next to the built executable that points to the directory with engine/editor/game resources (called `res`). Creating symlinks on Windows requires admin privileges. When releasing your project we expect you to put an actual copy of your `res` directory next to the built executable.
 
 After your game project is created:
-    - in the `src` directory your game's targets will be located in the directories `game`, `game_lib` and `game_tests`, `game` is just a small executable wrapper for the `game_lib` where all of your game's source code should be
-    - in the IDE you need to open the root `CMakeLists.txt` file (next to the `src` directory) not the specific cmake files like `src/game/CMakeLists.txt`
-    - if you want you can change the name of your game by changing the contents of the `engine_settings.cmake` file in the root of your game project directory
+- in the `src` directory your game's targets will be located in the directories `game`, `game_lib` and `game_tests`, `game` is just a small executable wrapper for the `game_lib` where all of your game's source code should be
+- in the IDE you need to open the root `CMakeLists.txt` file (next to the `src` directory) not the specific cmake files like `src/game/CMakeLists.txt`
+- if you want you can change the name of your game by changing the contents of the `engine_settings.cmake` file in the root of your game project directory
 
 ## Build mode
 

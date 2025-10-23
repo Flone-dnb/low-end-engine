@@ -4,7 +4,10 @@
 #include "game/node/MeshNode.h"
 #include "game/camera/CameraProperties.h"
 #include "render/LightSourceManager.h"
+#include "render/shader/LightSourceShaderArray.h"
 #include "render/wrapper/ShaderProgram.h"
+#include "game/DebugConsole.h"
+#include "render/Renderer.h"
 
 // External.
 #include "glad/glad.h"
@@ -24,8 +27,17 @@ MeshNodeManager::~MeshNodeManager() {
 }
 
 void MeshNodeManager::drawMeshes(
-    CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager) {
+    Renderer* pRenderer, CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager) {
     std::scoped_lock guard(mtxSpawnedVisibleNodes.first);
+
+#if defined(DEBUG)
+    DebugConsole::getStats().iRenderedOpaqueMeshCount = 0;
+    DebugConsole::getStats().iRenderedTransparentMeshCount = 0;
+    DebugConsole::getStats().iRenderedLightSourceCount =
+        lightSourceManager.getDirectionalLightsArray().getVisibleLightSourceCount() +
+        lightSourceManager.getPointLightsArray().getVisibleLightSourceCount() +
+        lightSourceManager.getSpotlightsArray().getVisibleLightSourceCount();
+#endif
 
     const auto drawLayer = [pCameraProperties, &lightSourceManager](SpawnedVisibleNodes& layerNodes) {
         if (!layerNodes.opaqueMeshes.empty()) {
@@ -40,22 +52,24 @@ void MeshNodeManager::drawMeshes(
             }
             glDisable(GL_BLEND);
         }
+
+#if defined(DEBUG)
+        for (auto& [pShaderProgram, meshNodes] : layerNodes.opaqueMeshes) {
+            DebugConsole::getStats().iRenderedOpaqueMeshCount += meshNodes.size();
+        }
+        for (auto& [pShaderProgram, meshNodes] : layerNodes.transparentMeshes) {
+            DebugConsole::getStats().iRenderedTransparentMeshCount += meshNodes.size();
+        }
+#endif
     };
 
     drawLayer(mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER1)]);
 
-    auto& layer2 = mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER2)];
-    if (layer2.opaqueMeshes.size() > 0) {
-        auto it = layer2.opaqueMeshes.begin();
-        const auto size = it->second.size();
-        if (size != 3) {
-            Error::showErrorAndThrowException("here");
-        }
-    }
-
     glDepthFunc(GL_ALWAYS);
-    drawLayer(mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER2)]);
-    glDepthFunc(GL_LESS);
+    {
+        drawLayer(mtxSpawnedVisibleNodes.second[static_cast<unsigned int>(MeshDrawLayer::LAYER2)]);
+    }
+    glDepthFunc(pRenderer->getCurrentGlDepthFunc());
 }
 
 void MeshNodeManager::drawMeshes(

@@ -306,6 +306,9 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - SimulatedBodyNode")
             for (const auto& pSimulatedNode : simulatedBodies) {
+                if (!pSimulatedNode->pBody->IsActive()) {
+                    continue;
+                }
                 pSimulatedNode->onBeforePhysicsUpdate(deltaTime);
             }
         }
@@ -313,6 +316,9 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         {
             PROFILE_SCOPE("onBeforePhysicsUpdate - MovingBodyNode")
             for (const auto& pMovingBody : movingBodies) {
+                if (!pMovingBody->pBody->IsActive()) {
+                    continue;
+                }
 #if defined(DEBUG)
                 pMovingBody->bIsInPhysicsTick = true;
 #endif
@@ -347,6 +353,10 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
             PROFILE_SCOPE("update simulated bodies after simulation")
 
             for (const auto& pSimulatedBodyNode : simulatedBodies) {
+                if (!pSimulatedBodyNode->pBody->IsActive()) {
+                    continue;
+                }
+
                 JPH::Vec3 position{};
                 JPH::Quat rotation{};
                 pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
@@ -360,6 +370,10 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
             PROFILE_SCOPE("update moving bodies after simulation")
 
             for (const auto& pMovingBodyNode : movingBodies) {
+                if (!pMovingBodyNode->pBody->IsActive()) {
+                    continue;
+                }
+
                 JPH::Vec3 position{};
                 JPH::Quat rotation{};
                 pPhysicsSystem->GetBodyInterface().GetPositionAndRotation(
@@ -464,6 +478,27 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         }
 
         pPhysicsDebugDrawer->submitDrawData();
+    }
+
+    {
+        PROFILE_SCOPE("collect debug stats")
+
+        auto& stats = DebugConsole::getStats();
+        stats.iActiveCharacterBodyCount = characterBodies.size();
+        stats.iActiveSimulatedBodyCount = 0;
+        stats.iActiveMovingBodyCount = 0;
+
+        for (const auto& pNode : simulatedBodies) {
+            if (pNode->pBody->IsActive()) {
+                stats.iActiveSimulatedBodyCount += 1;
+            }
+        }
+
+        for (const auto& pNode : movingBodies) {
+            if (pNode->pBody->IsActive()) {
+                stats.iActiveMovingBodyCount += 1;
+            }
+        }
     }
 #endif
 }

@@ -91,6 +91,13 @@ public:
     void setPathToCustomFragmentShader(std::string sPathToCustomFragmentShader);
 
     /**
+     * Sets texture tiling multiplier.
+     *
+     * @param mult New multiplier.
+     */
+    void setTextureTilingMultiplier(const glm::vec2& mult);
+
+    /**
      * Returns color of the diffuse light.
      *
      * @return Diffuse light color.
@@ -142,6 +149,13 @@ public:
      */
     ShaderProgram* getShaderProgram() const { return pShaderProgram.get(); }
 
+    /**
+     * Returns texture tiling multiplier.
+     *
+     * @return Multiplier.
+     */
+    glm::vec2 getTextureTilingMultiplier() const { return textureTilingMultiplier; }
+
 private:
     /**
      * Called after node that owns this material was spawned.
@@ -166,6 +180,9 @@ private:
 
     /** Diffuse light color. */
     glm::vec4 diffuseColor = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+
+    /** Texture tiling multiplier. */
+    glm::vec2 textureTilingMultiplier = glm::vec2(1.0F);
 
     /**
      * Node that uses this material. It's safe to store a raw pointer here because the node will notify the

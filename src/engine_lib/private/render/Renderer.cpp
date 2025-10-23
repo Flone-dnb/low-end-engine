@@ -67,6 +67,9 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
 Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWindow) {
     this->pContext = pCreatedContext;
 
+    iCurrentGlDepthFunc = GL_LESS;
+    glDepthFunc(iCurrentGlDepthFunc);
+
     pShaderManager = std::unique_ptr<ShaderManager>(new ShaderManager(this));
     pTextureManager = std::unique_ptr<TextureManager>(new TextureManager());
     pFontManager = FontManager::create(this);
@@ -204,7 +207,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
     if (!vActiveCameras.empty()) {
         glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
+        glDepthFunc(iCurrentGlDepthFunc);
 
         // Draw meshes from each camera.
         for (const auto& mtxActiveCamera : vActiveCameras) {
@@ -218,7 +221,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
             glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
-            pWorld->getMeshNodeManager().drawMeshes(pCameraProperties, pWorld->getLightSourceManager());
+            pWorld->getMeshNodeManager().drawMeshes(this, pCameraProperties, pWorld->getLightSourceManager());
 
             pGameInstance->onFinishedSubmittingMeshDrawCommands(
                 mtxActiveCamera.second.pCameraNode, *pFramebuffer);

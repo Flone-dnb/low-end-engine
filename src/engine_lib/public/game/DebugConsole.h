@@ -22,6 +22,27 @@ class DebugConsole {
     friend class GameManager;
 
 public:
+    /** Various counters and statistics. */
+    struct Stats {
+        /** Total number of currently active simulated bodies. */
+        size_t iActiveSimulatedBodyCount = 0;
+
+        /** Total number of currently active moving bodies. */
+        size_t iActiveMovingBodyCount = 0;
+
+        /** Total number of currently active simulated character bodies. */
+        size_t iActiveCharacterBodyCount = 0;
+
+        /** Total number of light sources considered in the renderer. */
+        size_t iRenderedLightSourceCount = 0;
+
+        /** Total number of opaque meshes considered in the renderer. */
+        size_t iRenderedOpaqueMeshCount = 0;
+
+        /** Total number of transparent meshes considered in the renderer. */
+        size_t iRenderedTransparentMeshCount = 0;
+    };
+
     DebugConsole(const DebugConsole&) = delete;
     DebugConsole& operator=(const DebugConsole&) = delete;
     ~DebugConsole() = default;
@@ -49,6 +70,13 @@ public:
     static void
     registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*, int)>& callback);
 
+    /**
+     * Returns debug statistics for various systems to update.
+     *
+     * @return Stats.
+     */
+    static Stats& getStats() { return DebugConsole::get().stats; }
+
 private:
     /** Groups info about a registered command. */
     struct RegisteredCommand {
@@ -60,6 +88,9 @@ private:
     };
 
     DebugConsole() = default;
+
+    /** Registers a command to display @ref stats. */
+    void registerStatsCommand();
 
     /**
      * Returns a reference to the debug console instance.
@@ -116,11 +147,17 @@ private:
     /** Pairs of "command name" - "callback to trigger on command". */
     std::unordered_map<std::string, RegisteredCommand> registeredCommands;
 
+    /** Debug statistics. */
+    Stats stats;
+
     /** Input by the user. */
     std::string sCurrentInput;
 
     /** Current state. */
     bool bIsShown = false;
+
+    /** `true` if @ref stats needs to be displayed. */
+    bool bShowStats = false;
 };
 
 #endif

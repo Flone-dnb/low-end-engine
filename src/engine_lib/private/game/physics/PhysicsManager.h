@@ -412,14 +412,14 @@ private:
     /** Used to update node position/rotation according to the simulated Jolt body. */
     std::unordered_set<SimulatedBodyNode*> simulatedBodies;
 
-    /** Mapping from body ID to body pointer for non destroyed bodies. */
-    std::unordered_map<JPH::BodyID, JPH::Body*> bodyIdToPtr;
-
     /** Used to update node position/rotation according to the Jolt body. */
     std::unordered_set<MovingBodyNode*> movingBodies;
 
     /** Active character bodies. */
     std::unordered_set<CharacterBodyNode*> characterBodies;
+
+    /** Mapping from body ID to body pointer for non destroyed bodies. */
+    std::unordered_map<JPH::BodyID, JPH::Body*> bodyIdToPtr;
 
     /** Broad phase layers. */
     std::unique_ptr<BroadPhaseLayerInterfaceImpl> pBroadPhaseLayerInterfaceImpl;

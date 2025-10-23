@@ -48,6 +48,13 @@ public:
     unsigned int getFpsLimit() const { return renderStats.fpsLimitInfo.iFpsLimit; }
 
     /**
+     * Returns the currently used GL depth func.
+     *
+     * @return Depth func.
+     */
+    unsigned int getCurrentGlDepthFunc() const { return iCurrentGlDepthFunc; }
+
+    /**
      * Returns game's window.
      *
      * @warning Do not delete (free) returned pointer.
@@ -128,13 +135,6 @@ private:
     void drawNextFrame(float timeSincePrevCallInSec);
 
     /**
-     * Does post processing on the rendered image.
-     *
-     * @param pCameraProperties Properties of the main camera.
-     */
-    void drawPostProcessingScreenQuad(CameraProperties* pCameraProperties);
-
-    /**
      * Calculates some frame-related statistics.
      *
      * @remark Must be called after a frame was submitted.
@@ -172,4 +172,7 @@ private:
 
     /** Do not delete (free) this pointer. Always valid pointer. */
     Window* const pWindow = nullptr;
+
+    /** Current GL depth func. */
+    unsigned int iCurrentGlDepthFunc = 0;
 };

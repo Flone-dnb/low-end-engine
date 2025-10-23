@@ -64,8 +64,7 @@ void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
         return;
     }
     if (std::filesystem::is_directory(pathToTexture)) {
-        Log::error(
-            std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
+        Log::error(std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
         return;
     }
 
@@ -169,6 +168,8 @@ void Material::setPathToCustomFragmentShader(std::string sPathToCustomFragmentSh
     pNode->registerToRendering();
 }
 
+void Material::setTextureTilingMultiplier(const glm::vec2& mult) { textureTilingMultiplier = mult; }
+
 void Material::onNodeSpawning(
     MeshNode* pNode,
     Renderer* pRenderer,
@@ -215,6 +216,8 @@ void Material::onNodeSpawning(
                 pShaderProgram->setBoolToShader("bIsUsingDiffuseTexture", true);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, pDiffuseTexture->getTextureId());
+
+                pShaderProgram->setVector2ToShader("textureTilingMultiplier", textureTilingMultiplier);
             });
     } else {
         pNode->getShaderConstantsSetterWhileSpawned().addSetterFunction(

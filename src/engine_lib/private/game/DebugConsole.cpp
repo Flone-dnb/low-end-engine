@@ -16,8 +16,16 @@
 namespace {
     constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0F, 0.96F);
     constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0F, 1.0F - consoleScreenPos.y);
+
+    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.6F);
+
     constexpr float textPadding = consoleScreenSize.y * 0.1F;
     constexpr float textHeight = 0.025F;
+}
+
+void DebugConsole::registerStatsCommand() {
+    registerCommand("showStats", [this](GameInstance*) { bShowStats = true; });
+    registerCommand("hideStats", [this](GameInstance*) { bShowStats = false; });
 }
 
 DebugConsole& DebugConsole::get() {
@@ -69,38 +77,57 @@ void DebugConsole::hide() {
 }
 
 void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
-    if (!bIsShown) {
-        return;
-    }
+    if (bIsShown) {
+        // Draw background.
+        DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
 
-    // Draw background.
-    DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
+        if (sCurrentInput.empty()) {
+            // Prepare stats text.
+            std::string sStatsText = std::format(
+                "FPS: {} (limit: {}) ",
+                pRenderer->getRenderStatistics().getFramesPerSecond(),
+                pRenderer->getFpsLimit());
 
-    if (sCurrentInput.empty()) {
-        // Prepare stats text.
-        std::string sStatsText = std::format(
-            "FPS: {} (limit: {}) ",
-            pRenderer->getRenderStatistics().getFramesPerSecond(),
-            pRenderer->getFpsLimit());
+            const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
+            const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
+            const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
 
-        const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
-        const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
-        const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
-
-        sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
+            sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
 #if defined(ENGINE_ASAN_ENABLED)
-        sStatsText += " (big RAM usage due to ASan)";
+            sStatsText += " (big RAM usage due to ASan)";
 #endif
 
-        DebugDrawer::drawText(
-            "type a command...               | " + sStatsText,
-            0.0F,
-            glm::vec3(0.5F),
-            consoleScreenPos + textPadding,
-            textHeight);
-    } else {
-        DebugDrawer::drawText(
-            sCurrentInput, 0.0F, glm::vec3(1.0F), consoleScreenPos + textPadding, textHeight);
+            DebugDrawer::drawText(
+                "type a command...               | " + sStatsText,
+                0.0F,
+                glm::vec3(0.5F),
+                consoleScreenPos + textPadding,
+                textHeight);
+        } else {
+            DebugDrawer::drawText(
+                sCurrentInput, 0.0F, glm::vec3(1.0F), consoleScreenPos + textPadding, textHeight);
+        }
+    }
+
+    if (bShowStats) {
+        glm::vec2 currentPos = statsScreenPos;
+
+        const auto drawText = [&](const std::string& sText) {
+            DebugDrawer::drawText(
+                sText,
+                0.0F,
+                glm::vec3(1.0F),
+                glm::vec2(currentPos.x + textPadding, currentPos.y),
+                textHeight);
+            currentPos.y += textHeight + textPadding;
+        };
+
+        drawText(std::format("active moving bodies: {}", stats.iActiveMovingBodyCount));
+        drawText(std::format("active simulated bodies: {}", stats.iActiveSimulatedBodyCount));
+        drawText(std::format("active character bodies: {}", stats.iActiveCharacterBodyCount));
+        drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
+        drawText(std::format("rendered opaque meshes: {}", stats.iRenderedOpaqueMeshCount));
+        drawText(std::format("rendered transparent meshes: {}", stats.iRenderedTransparentMeshCount));
     }
 }
 
