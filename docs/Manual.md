@@ -71,7 +71,9 @@ You should always prefer to include `math/GLMath.hpp` instead of the original GL
 
 The engine uses `clang-format` for formatting the code.
 
-`clang-format` can be used in your IDE to automatically format your code (for example) each time you press Ctrl+S. If you want to make sure that your IDE is using our `.clang-format` config you can do the following check: in your source code create 2 or more consecutive empty lines, since our `.clang-format` config contains a rule `MaxEmptyLinesToKeep: 1` after you format the file only 1 empty line should remain. The action with which you format your source code depends on your IDE settings that you might want to configure, generally IDEs have a shortcut to "format" your source code but some have option to automatically use "format" action when you are saving your file.
+`clang-format` can be used in your IDE to automatically format your code, for example each time you press Ctrl+S. If you want to make sure that your IDE is using our `.clang-format` config you can do the following check: in your source code create 2 or more consecutive empty lines, since our `.clang-format` config contains a rule `MaxEmptyLinesToKeep: 1` after you format the file only 1 empty line should remain. The action with which you format your source code depends on your IDE settings that you might want to configure, generally IDEs have a shortcut to "format" your source code but some have option to automatically use "format" action when you are saving your file.
+
+There's also a shader formatter that you should use: https://github.com/Flone-dnb/shader-formatter. Config for this shader formatter is located in the root directory named `shader-formatter.toml`.
 
 ## GUI applications
 
