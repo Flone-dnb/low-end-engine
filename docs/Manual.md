@@ -836,7 +836,7 @@ As it was shown `InputManager` can be acquired using `GameInstance::getInputMana
 
 The engine has AngelScript integrated (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html), it's a scripting language which is very similar to C++. The main purpose of a scripting language in this engine is to provide support for advanced modding for your game.
 
-It process goes like this:
+The process goes like this:
 1. expose your game's custom node type and node's functions to scripts
 2. provide a way for modders to put script files somewhere to "override"/react to some game events
 3. trigger functions from scripts and pass some arguments (like a pointer to some node)
