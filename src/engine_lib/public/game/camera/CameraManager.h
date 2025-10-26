@@ -123,7 +123,7 @@ public:
      *
      * @return Framebuffer.
      */
-    Framebuffer& getMainFramebuffer() { return *pMainFramebuffer; }
+    Framebuffer& getMainFramebuffer() const;
 
 private:
     /**

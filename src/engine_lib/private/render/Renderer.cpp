@@ -142,21 +142,12 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     if (!mtxWorlds.second.vWorlds.empty()) {
         const auto pWorld = mtxWorlds.second.vWorlds[0].get();
 
-        // Check camera.
-        auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
-        std::scoped_lock cameraGuard(mtxActiveCamera.first);
-        if (mtxActiveCamera.second.pNode != nullptr) {
-            const auto& pMainFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
+        // Draw on window's framebuffer.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, iWindowWidth, iWindowHeight);
 
-            glBindFramebuffer(GL_FRAMEBUFFER, pMainFramebuffer->getFramebufferId());
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glViewport(0, 0, iWindowWidth, iWindowHeight);
-
-            pWorld->getUiNodeManager().drawUiOnFramebuffer(pMainFramebuffer->getFramebufferId());
-
-            copyFramebufferToWindowFramebuffer(
-                *pMainFramebuffer, glm::ivec4(0, 0, iWindowWidth, iWindowHeight));
-        }
+        pWorld->getUiNodeManager().drawUiOnFramebuffer(0);
     }
 #else
     // Get active cameras from all worlds.
