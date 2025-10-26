@@ -318,6 +318,26 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
     }
     pGameManager = std::get<std::unique_ptr<GameManager>>(std::move(result));
 
+#if defined(WIN32)
+    // On a small number of Windows machines the created window has (extra) gamma applied (everything looks
+    // bleached out) but after you resize, minimize or maximize the window everything looks correct.
+    // Note that fullscreen windows are not affected by this somehow.
+    if (!bIsCreatedAsFullscreenWindow) {
+        if ((SDL_GetWindowFlags(pSdlWindow) & SDL_WINDOW_MAXIMIZED) != 0) {
+            // The window is maximized, minimize and back.
+            SDL_MinimizeWindow(pSdlWindow);
+            SDL_MaximizeWindow(pSdlWindow);
+        } else {
+            // Resize and back.
+            int width = 0;
+            int height = 0;
+            SDL_GetWindowSize(pSdlWindow, &width, &height);
+            SDL_SetWindowSize(pSdlWindow, width + 1, height);
+            SDL_SetWindowSize(pSdlWindow, width, height);
+        }
+    }
+#endif
+
     pGameManager->onGameStarted();
 
     // Notify game about controller state.
