@@ -82,27 +82,8 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
         DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
 
         if (sCurrentInput.empty()) {
-            // Prepare stats text.
-            std::string sStatsText = std::format(
-                "FPS: {} (limit: {}) ",
-                pRenderer->getRenderStatistics().getFramesPerSecond(),
-                pRenderer->getFpsLimit());
-
-            const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
-            const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
-            const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
-
-            sStatsText += std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
-#if defined(ENGINE_ASAN_ENABLED)
-            sStatsText += " (big RAM usage due to ASan)";
-#endif
-
             DebugDrawer::drawText(
-                "type a command...               | " + sStatsText,
-                0.0F,
-                glm::vec3(0.5F),
-                consoleScreenPos + textPadding,
-                textHeight);
+                "type a command...", 0.0F, glm::vec3(0.5F), consoleScreenPos + textPadding, textHeight);
         } else {
             DebugDrawer::drawText(
                 sCurrentInput, 0.0F, glm::vec3(1.0F), consoleScreenPos + textPadding, textHeight);
@@ -122,12 +103,33 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
             currentPos.y += textHeight + textPadding;
         };
 
+        const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
+        const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
+        const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
+
+        std::string sRamStats = std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
+#if defined(ENGINE_ASAN_ENABLED)
+        sRamStats += " (big RAM usage due to ASan)";
+#endif
+
+        drawText(std::format(
+            "FPS: {} (limit: {})",
+            pRenderer->getRenderStatistics().getFramesPerSecond(),
+            pRenderer->getFpsLimit()));
+        drawText(sRamStats);
         drawText(std::format("active moving bodies: {}", stats.iActiveMovingBodyCount));
         drawText(std::format("active simulated bodies: {}", stats.iActiveSimulatedBodyCount));
         drawText(std::format("active character bodies: {}", stats.iActiveCharacterBodyCount));
         drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
         drawText(std::format("rendered opaque meshes: {}", stats.iRenderedOpaqueMeshCount));
         drawText(std::format("rendered transparent meshes: {}", stats.iRenderedTransparentMeshCount));
+        if (stats.gpuTimeDrawMeshesMs < 0.0F) {
+            drawText("GPU time metrics are not supported on this GPU");
+        } else {
+            drawText(std::format("GPU time (ms) draw meshes: {:.2F}", stats.gpuTimeDrawMeshesMs));
+            drawText(std::format("GPU time (ms) post processing: {:.2F}", stats.gpuTimePostProcessingMs));
+            drawText(std::format("GPU time (ms) draw ui: {:.2F}", stats.gpuTimeDrawUiMs));
+        }
     }
 }
 

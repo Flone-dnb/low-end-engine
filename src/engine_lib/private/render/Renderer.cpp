@@ -29,6 +29,32 @@
 #include <time.h>
 #endif
 
+#if defined(DEBUG)
+
+static bool bIsGpuTimeElapsedExtSupported = false;
+
+class ScopedGpuTimeQuery {
+public:
+    ScopedGpuTimeQuery() = delete;
+    ScopedGpuTimeQuery(unsigned int& iGlQuery) {
+        if (bIsGpuTimeElapsedExtSupported) {
+            glBeginQueryEXT(GL_TIME_ELAPSED_EXT, iGlQuery);
+        }
+    }
+
+    ~ScopedGpuTimeQuery() {
+        if (bIsGpuTimeElapsedExtSupported) {
+            glEndQueryEXT(GL_TIME_ELAPSED_EXT);
+        }
+    }
+};
+
+//                                              variable name not unique because queries should not intersect
+#define MEASURE_GPU_TIME_SCOPED(iGlQuery) ScopedGpuTimeQuery gpuQuery(iGlQuery);
+#else
+#define MEASURE_GPU_TIME_SCOPED(iGlQuery)
+#endif
+
 std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow) {
     // Create context.
     const auto pContext = SDL_GL_CreateContext(pWindow->getSdlWindow());
@@ -40,6 +66,8 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     if (gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) == 0) {
         return Error("failed to load OpenGL ES");
     }
+
+    bIsGpuTimeElapsedExtSupported = GLAD_GL_EXT_disjoint_timer_query == 1;
 
     // Enable back face culling.
     glEnable(GL_CULL_FACE);
@@ -77,7 +105,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pFullscreenQuad = GpuResourceManager::createQuad(false);
 
     // Initialize fences.
-    for (auto& fence : frameSync.vFences) {
+    for (auto& fence : frameSyncData.vFences) {
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
     }
 
@@ -90,7 +118,49 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
         }
         setFpsLimit(static_cast<unsigned int>(iNewLimit));
     });
+
+    if (bIsGpuTimeElapsedExtSupported) {
+        // Initialize queries.
+        for (auto& frameQueries : frameSyncData.vFrameQueries) {
+            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
+            {
+                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
+            }
+
+            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawPostProcess));
+            {
+                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawPostProcess);
+            }
+
+            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
+            {
+                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
+            }
+        }
+    }
 #endif
+}
+
+Renderer::~Renderer() {
+#if defined(DEBUG)
+    DebugDrawer::get().destroy(); // clear render resources
+    if (bIsGpuTimeElapsedExtSupported) {
+        for (auto& frameQueries : frameSyncData.vFrameQueries) {
+            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
+            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawPostProcess));
+            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
+        }
+    }
+#endif
+
+    pFullscreenQuad = nullptr;
+    pFontManager = nullptr;
+
+    for (auto& fence : frameSyncData.vFences) {
+        glDeleteSync(fence);
+    }
+
+    SDL_GL_DestroyContext(pContext);
 }
 
 void Renderer::recreateFramebuffers() {
@@ -130,8 +200,36 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     }
 
     // Wait for GPU.
-    glWaitSync(frameSync.vFences[frameSync.iCurrentFrameIndex], 0, GL_TIMEOUT_IGNORED);
-    glDeleteSync(frameSync.vFences[frameSync.iCurrentFrameIndex]);
+    const auto waitResult =
+        glClientWaitSync(frameSyncData.vFences[frameSyncData.iCurrentFrameIndex], 0, GL_TIMEOUT_IGNORED);
+    if (waitResult == GL_WAIT_FAILED) [[unlikely]] {
+        Error::showErrorAndThrowException("failed to wait for a GPU fence");
+    }
+    glDeleteSync(frameSyncData.vFences[frameSyncData.iCurrentFrameIndex]);
+    auto& frameQueries = frameSyncData.vFrameQueries[frameSyncData.iCurrentFrameIndex];
+
+#if defined(DEBUG)
+    if (bIsGpuTimeElapsedExtSupported) {
+        // Prepare a lambda to query time.
+        const auto getQueryTimeMs = [](unsigned int iQuery) -> float {
+            GLuint iAvailable = 0;
+            GLuint64 iTimeElapsed = 0;
+
+            glGetQueryObjectuivEXT(iQuery, GL_QUERY_RESULT_AVAILABLE_EXT, &iAvailable);
+            if (iAvailable != GL_TRUE) [[unlikely]] {
+                Error::showErrorAndThrowException(
+                    "finished waiting for a GPU fence but a query is not available for some reason");
+            }
+
+            glGetQueryObjectui64vEXT(iQuery, GL_QUERY_RESULT_EXT, &iTimeElapsed);
+            return static_cast<float>(iTimeElapsed) / 1000000.0F; // nanoseconds to milliseconds
+        };
+        auto& stats = DebugConsole::getStats();
+        stats.gpuTimeDrawMeshesMs = getQueryTimeMs(frameQueries.iGlQueryToDrawMeshes);
+        stats.gpuTimePostProcessingMs = getQueryTimeMs(frameQueries.iGlQueryToDrawPostProcess);
+        stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
+    }
+#endif
 
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
 
@@ -201,48 +299,58 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         glDepthFunc(iCurrentGlDepthFunc);
 
         // Draw meshes from each camera.
-        for (const auto& mtxActiveCamera : vActiveCameras) {
-            const auto pWorld = mtxActiveCamera.second.pWorld;
-            const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
-            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
-            const auto& pFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
+            for (const auto& mtxActiveCamera : vActiveCameras) {
+                const auto pWorld = mtxActiveCamera.second.pWorld;
+                const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
+                const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+                const auto& pFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
 
-            GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId()));
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId()));
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
+                glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
-            pWorld->getMeshNodeManager().drawMeshes(this, pCameraProperties, pWorld->getLightSourceManager());
+                pWorld->getMeshNodeManager().drawMeshes(
+                    this, pCameraProperties, pWorld->getLightSourceManager());
 
-            pGameInstance->onFinishedSubmittingMeshDrawCommands(
-                mtxActiveCamera.second.pCameraNode, *pFramebuffer);
+                pGameInstance->onFinishedSubmittingMeshDrawCommands(
+                    mtxActiveCamera.second.pCameraNode, *pFramebuffer);
+            }
         }
 
         // Draw post processing before UI.
-        for (const auto& mtxActiveCamera : vActiveCameras) {
-            const auto pWorld = mtxActiveCamera.second.pWorld;
-            const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
-            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawPostProcess);
+            for (const auto& mtxActiveCamera : vActiveCameras) {
+                const auto pWorld = mtxActiveCamera.second.pWorld;
+                const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
+                const auto& viewportSize = mtxActiveCamera.second.viewportSize;
 
-            // Use window-size viewport to avoid "applying viewport twice".
-            glViewport(0, 0, iWindowWidth, iWindowHeight);
-            {
-                pWorld->getCameraManager().getPostProcessManager().drawPostProcessing(
-                    *pFullscreenQuad, *pWorld->getCameraManager().pMainFramebuffer, pCameraProperties);
+                // Use window-size viewport to avoid "applying viewport twice".
+                glViewport(0, 0, iWindowWidth, iWindowHeight);
+                {
+                    pWorld->getCameraManager().getPostProcessManager().drawPostProcessing(
+                        *pFullscreenQuad, *pWorld->getCameraManager().pMainFramebuffer, pCameraProperties);
+                }
+                glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
             }
-            glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
         }
 
         // Draw UI nodes on post-processing framebuffer.
-        for (const auto& mtxActiveCamera : vActiveCameras) {
-            const auto pWorld = mtxActiveCamera.second.pWorld;
-            auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
-            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
+            for (const auto& mtxActiveCamera : vActiveCameras) {
+                const auto pWorld = mtxActiveCamera.second.pWorld;
+                auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
+                const auto& viewportSize = mtxActiveCamera.second.viewportSize;
 
-            glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
+                glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
-            pWorld->getUiNodeManager().drawUiOnFramebuffer(
-                postProcessManager.pFramebuffer->getFramebufferId());
+                pWorld->getUiNodeManager().drawUiOnFramebuffer(
+                    postProcessManager.pFramebuffer->getFramebufferId());
+            }
         }
 
         // Copy results from different worlds in order (consider viewport size).
@@ -285,9 +393,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
 
     // Insert a fence.
-    frameSync.vFences[frameSync.iCurrentFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    frameSync.iCurrentFrameIndex =
-        static_cast<unsigned int>((frameSync.iCurrentFrameIndex + 1) % frameSync.vFences.size());
+    frameSyncData.vFences[frameSyncData.iCurrentFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    frameSyncData.iCurrentFrameIndex =
+        static_cast<unsigned int>((frameSyncData.iCurrentFrameIndex + 1) % frameSyncData.vFences.size());
 
     calculateFrameStatistics();
 
@@ -404,21 +512,6 @@ void Renderer::calculateFrameStatistics() {
     QueryPerformanceCounter(&counter);
     renderStats.fpsLimitInfo.iPerfCounterLastFrameEnd = counter.QuadPart;
 #endif
-}
-
-Renderer::~Renderer() {
-#if defined(DEBUG)
-    DebugDrawer::get().destroy(); // clear render resources
-#endif
-
-    pFullscreenQuad = nullptr;
-    pFontManager = nullptr;
-
-    for (auto& fence : frameSync.vFences) {
-        glDeleteSync(fence);
-    }
-
-    SDL_GL_DestroyContext(pContext);
 }
 
 void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {

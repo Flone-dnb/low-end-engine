@@ -717,7 +717,7 @@ DebugConsole::registerCommand("testCommand", [](GameInstance* pGameInstance) {
 
 In order to show/hide the debug console press the tilde (~) button on your keyboard and write the desired command.
 
-When shown debug console will also print some useful stats such as FPS and RAM usage.
+Debug console can also show various statistics such as FPS, RAM usage, number of active physics bodies, number of drawn meshes and etc. In order to view such statistics use the commands `showStats` and `hideStats`.
 
 ## Saving and loading config files
 

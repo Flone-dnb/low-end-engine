@@ -655,7 +655,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText = pRootNode->addChildNode(
         std::make_unique<TextUiNode>(std::format("{}: stats", EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pStatsText->setSerialize(false);
-    gameWorldNodes.pStatsText->setTextHeight(0.035F);
+    gameWorldNodes.pStatsText->setTextHeight(0.03F);
     gameWorldNodes.pStatsText->setSize(glm::vec2(1.0F, 1.0F));
     gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
 

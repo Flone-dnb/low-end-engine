@@ -95,9 +95,26 @@ public:
 
 private:
     /** Groups stuff used to synchronize GPU and CPU. */
-    struct FrameSync {
+    struct FrameSyncData {
+        /** 2 frames in-flight seems optimal, more can affect input latency. */
+        static constexpr size_t iFramesInFlight = 2;
+
+        /** GL GPU time queries. */
+        struct FrameQueries {
+            /** GL query ID for measuring GPU time that we spent drawing meshes. */
+            unsigned int iGlQueryToDrawMeshes = 0;
+
+            /** GL query ID for measuring GPU time that we spent on post processing. */
+            unsigned int iGlQueryToDrawPostProcess = 0;
+
+            /** GL query ID for measuring GPU time that we spent drawing UI. */
+            unsigned int iGlQueryToDrawUi = 0;
+        };
+        /** GL queries. */
+        std::array<FrameQueries, iFramesInFlight> vFrameQueries;
+
         /** Fence per frame in-flight. */
-        std::array<GLsync, 2> vFences; // 2 frames in-flight sees optimal, more can affect input latency
+        std::array<GLsync, iFramesInFlight> vFences;
 
         /** Current index into @ref vFences. */
         unsigned int iCurrentFrameIndex = 0;
@@ -165,7 +182,7 @@ private:
     RenderStatistics renderStats;
 
     /** GPU-CPU synchronization. */
-    FrameSync frameSync;
+    FrameSyncData frameSyncData;
 
     /** OpenGL context. */
     SDL_GLContext pContext = nullptr;

@@ -41,6 +41,15 @@ public:
 
         /** Total number of transparent meshes considered in the renderer. */
         size_t iRenderedTransparentMeshCount = 0;
+
+        /** Time in milliseconds spent on the GPU drawing meshes. */
+        float gpuTimeDrawMeshesMs = -1.0F;
+
+        /** Time in milliseconds spent on the GPU on post processing. */
+        float gpuTimePostProcessingMs = -1.0F;
+
+        /** Time in milliseconds spent on the GPU drawing UI. */
+        float gpuTimeDrawUiMs = -1.0F;
     };
 
     DebugConsole(const DebugConsole&) = delete;
