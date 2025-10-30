@@ -49,7 +49,7 @@ public:
     }
 };
 
-//                                              variable name not unique because queries should not intersect
+//                                              variable name NOT UNIQUE because queries should not intersect
 #define MEASURE_GPU_TIME_SCOPED(iGlQuery) ScopedGpuTimeQuery gpuQuery(iGlQuery);
 #else
 #define MEASURE_GPU_TIME_SCOPED(iGlQuery)
@@ -63,11 +63,13 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     }
 
     // After creating the context - initialize GLAD.
-    if (gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) == 0) {
+    if (gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) == 0) [[unlikely]] {
         return Error("failed to load OpenGL ES");
     }
 
+#if defined(DEBUG)
     bIsGpuTimeElapsedExtSupported = GLAD_GL_EXT_disjoint_timer_query == 1;
+#endif
 
     // Enable back face culling.
     glEnable(GL_CULL_FACE);
@@ -216,9 +218,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             GLuint64 iTimeElapsed = 0;
 
             glGetQueryObjectuivEXT(iQuery, GL_QUERY_RESULT_AVAILABLE_EXT, &iAvailable);
-            if (iAvailable != GL_TRUE) [[unlikely]] {
-                Error::showErrorAndThrowException(
-                    "finished waiting for a GPU fence but a query is not available for some reason");
+            if (iAvailable == GL_FALSE) {
+                // We waited for a GPU fence and all previous operations should be finished at this point
+                // but this situation still may rarely happen.
+                return -1.0F;
             }
 
             glGetQueryObjectui64vEXT(iQuery, GL_QUERY_RESULT_EXT, &iTimeElapsed);
@@ -229,6 +232,8 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         stats.gpuTimePostProcessingMs = getQueryTimeMs(frameQueries.iGlQueryToDrawPostProcess);
         stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
     }
+
+    const auto cpuFrameSubmitStartTime = std::chrono::steady_clock::now();
 #endif
 
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
@@ -389,6 +394,14 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     }
 #endif
 
+#if defined(DEBUG)
+    const auto cpuFrameSubmitEndTime = std::chrono::steady_clock::now();
+    DebugConsole::getStats().cpuTimeToSubmitFrameMs =
+        std::chrono::duration<float, std::chrono::milliseconds::period>(
+            cpuFrameSubmitEndTime - cpuFrameSubmitStartTime)
+            .count();
+#endif
+
     // Swap.
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
 
@@ -476,7 +489,7 @@ void Renderer::calculateFrameStatistics() {
         if (iFrameEndTime < limitInfo.iPerfCounterLastFrameEnd + limitInfo.iMinTimeStampsPerSecond) {
             iSleepTimeMs = static_cast<unsigned long>(std::max(
                 (limitInfo.iPerfCounterLastFrameEnd + limitInfo.iMinTimeStampsPerSecond - iFrameEndTime) *
-                    1000 / limitInfo.iTimeStampsPerSecond, // NOLINT
+                    1000 / limitInfo.iTimeStampsPerSecond,
                 1LL));
 
             if (iSleepTimeMs > 0) {

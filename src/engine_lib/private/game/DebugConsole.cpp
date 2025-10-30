@@ -17,7 +17,7 @@ namespace {
     constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0F, 0.96F);
     constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0F, 1.0F - consoleScreenPos.y);
 
-    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.6F);
+    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.5F);
 
     constexpr float textPadding = consoleScreenSize.y * 0.1F;
     constexpr float textHeight = 0.025F;
@@ -123,12 +123,14 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
         drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
         drawText(std::format("rendered opaque meshes: {}", stats.iRenderedOpaqueMeshCount));
         drawText(std::format("rendered transparent meshes: {}", stats.iRenderedTransparentMeshCount));
+        drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
+        drawText(std::format("CPU time (ms) to submit a frame: {:.1F}", stats.cpuTimeToSubmitFrameMs));
         if (stats.gpuTimeDrawMeshesMs < 0.0F) {
             drawText("GPU time metrics are not supported on this GPU");
         } else {
-            drawText(std::format("GPU time (ms) draw meshes: {:.2F}", stats.gpuTimeDrawMeshesMs));
-            drawText(std::format("GPU time (ms) post processing: {:.2F}", stats.gpuTimePostProcessingMs));
-            drawText(std::format("GPU time (ms) draw ui: {:.2F}", stats.gpuTimeDrawUiMs));
+            drawText(std::format("GPU time (ms) draw meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
+            drawText(std::format("GPU time (ms) post processing: {:.1F}", stats.gpuTimePostProcessingMs));
+            drawText(std::format("GPU time (ms) draw ui: {:.1F}", stats.gpuTimeDrawUiMs));
         }
     }
 }

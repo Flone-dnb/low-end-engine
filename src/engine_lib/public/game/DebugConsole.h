@@ -42,6 +42,12 @@ public:
         /** Total number of transparent meshes considered in the renderer. */
         size_t iRenderedTransparentMeshCount = 0;
 
+        /** Time in milliseconds that the CPU spent submitting the last frame. */
+        float cpuTimeToSubmitFrameMs = 0.0F;
+
+        /** Time in milliseconds that the CPU spent doing the last tick. */
+        float cpuTickTimeMs = 0.0F;
+
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawMeshesMs = -1.0F;
 

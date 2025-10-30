@@ -229,6 +229,10 @@ void GameManager::onWindowSizeChanged() {
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     PROFILE_FUNC
 
+#if defined(DEBUG)
+    const auto startTime = std::chrono::steady_clock::now();
+#endif
+
     // Create world if needed.
     {
         PROFILE_SCOPE("check world creation task")
@@ -352,44 +356,43 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     // Notify world.
     {
         std::scoped_lock guard(mtxWorldData.first);
-        if (mtxWorldData.second.vWorlds.empty()) {
-            return;
-        }
-        auto& vWorlds = mtxWorldData.second.vWorlds;
+        if (!mtxWorldData.second.vWorlds.empty()) {
+            auto& vWorlds = mtxWorldData.second.vWorlds;
 
-        // Device change.
-        if (bInputDeviceChanged) {
-            PROFILE_SCOPE("Node::onLastInputSourceChanged")
-            for (auto& pWorld : vWorlds) {
-                // Call on nodes that receive input.
-                const auto nodesGuard = pWorld->getReceivingInputNodes();
-                const auto pNodes = nodesGuard.getNodes();
-                for (const auto& pNode : *pNodes) {
-                    pNode->onLastInputSourceChanged(bReceivedGamepadInputThisFrame);
+            // Device change.
+            if (bInputDeviceChanged) {
+                PROFILE_SCOPE("Node::onLastInputSourceChanged")
+                for (auto& pWorld : vWorlds) {
+                    // Call on nodes that receive input.
+                    const auto nodesGuard = pWorld->getReceivingInputNodes();
+                    const auto pNodes = nodesGuard.getNodes();
+                    for (const auto& pNode : *pNodes) {
+                        pNode->onLastInputSourceChanged(bReceivedGamepadInputThisFrame);
+                    }
                 }
             }
-        }
 
-        // Tick nodes.
-        {
-            PROFILE_SCOPE("tick nodes")
+            // Tick nodes.
+            {
+                PROFILE_SCOPE("tick nodes")
+                for (const auto& pWorld : vWorlds) {
+                    pWorld->tickTickableNodes(timeSincePrevCallInSec);
+                }
+            }
+
+            // Update sound info.
             for (const auto& pWorld : vWorlds) {
-                pWorld->tickTickableNodes(timeSincePrevCallInSec);
+                auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
+                std::scoped_lock guard(mtxActiveCamera.first);
+                if (mtxActiveCamera.second.pNode == nullptr) {
+                    continue;
+                }
+                if (!mtxActiveCamera.second.bIsSoundListener) {
+                    continue;
+                }
+                pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
+                break;
             }
-        }
-
-        // Update sound info.
-        for (const auto& pWorld : vWorlds) {
-            auto& mtxActiveCamera = pWorld->getCameraManager().getActiveCamera();
-            std::scoped_lock guard(mtxActiveCamera.first);
-            if (mtxActiveCamera.second.pNode == nullptr) {
-                continue;
-            }
-            if (!mtxActiveCamera.second.bIsSoundListener) {
-                continue;
-            }
-            pSoundManager->onBeforeNewFrame(pWorld->getCameraManager());
-            break;
         }
     }
 
@@ -399,6 +402,10 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 
 #if defined(DEBUG)
     DebugConsole::get().onBeforeNewFrame(pRenderer.get());
+
+    const auto endTime = std::chrono::steady_clock::now();
+    DebugConsole::get().getStats().cpuTickTimeMs =
+        std::chrono::duration<float, std::chrono::milliseconds::period>(endTime - startTime).count();
 #endif
 }
 
