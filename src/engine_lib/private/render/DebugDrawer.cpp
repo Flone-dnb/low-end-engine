@@ -1,6 +1,6 @@
 #include "render/DebugDrawer.h"
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 
 // Custom.
 #include "misc/Error.h"
@@ -96,7 +96,8 @@ void DebugDrawer::destroy() {
 
 void DebugDrawer::drawCube(
     float size, const glm::vec3& worldPosition, float timeInSec, const glm::vec3& color) {
-    drawMesh(get().vCubePositions, glm::translate(worldPosition) * glm::scale(glm::vec3(size)), timeInSec, color);
+    drawMesh(
+        get().vCubePositions, glm::translate(worldPosition) * glm::scale(glm::vec3(size)), timeInSec, color);
 }
 
 void DebugDrawer::drawSphere(

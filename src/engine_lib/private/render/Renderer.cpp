@@ -113,7 +113,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 
     recreateFramebuffers();
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::registerCommand("setFpsLimit", [this](GameInstance*, int iNewLimit) {
         if (iNewLimit < 0) {
             iNewLimit = 0;
@@ -144,7 +144,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 }
 
 Renderer::~Renderer() {
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     DebugDrawer::get().destroy(); // clear render resources
     if (bIsGpuTimeElapsedExtSupported) {
         for (auto& frameQueries : frameSyncData.vFrameQueries) {
@@ -210,7 +210,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     glDeleteSync(frameSyncData.vFences[frameSyncData.iCurrentFrameIndex]);
     auto& frameQueries = frameSyncData.vFrameQueries[frameSyncData.iCurrentFrameIndex];
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     if (bIsGpuTimeElapsedExtSupported) {
         // Prepare a lambda to query time.
         const auto getQueryTimeMs = [](unsigned int iQuery) -> float {
@@ -367,10 +367,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             copyFramebufferToWindowFramebuffer(*postProcessManager.pFramebuffer, viewportSize);
         }
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
         // Draw debug after all worlds.
         CameraProperties* pCameraProperties = nullptr;
-#ifdef ENGINE_EDITOR
+#if defined(ENGINE_EDITOR)
         // Find game world. In the editor debug drawing should only be done for game world.
         for (const auto& cameraInfo : vActiveCameras) {
             if (cameraInfo.second.pWorld->getName() == "game") {
@@ -394,7 +394,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     }
 #endif
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     const auto cpuFrameSubmitEndTime = std::chrono::steady_clock::now();
     DebugConsole::getStats().cpuTimeToSubmitFrameMs =
         std::chrono::duration<float, std::chrono::milliseconds::period>(

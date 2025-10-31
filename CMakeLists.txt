@@ -4,6 +4,15 @@ project(low_end_engine)
 
 option(ENGINE_UI_ONLY "Enable in case you're making a UI-only app, this way the app will be slightly more performant and will use slightly less RAM." OFF)
 
+# Check build mode.
+if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
+    # There's very little reason to use slow debug build type.
+    message(FATAL_ERROR "Use RelWithDebInfo build type instead of the Debug build type for development.")
+endif()
+if (NOT CMAKE_BUILD_TYPE)
+    message(FATAL_ERROR "Build type is not defined.")
+endif()
+
 if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/engine_settings.cmake")
     # This file is used to override global engine cmake options.
     message(STATUS "Including engine settings from \"engine_settings.cmake\"")
@@ -18,15 +27,6 @@ endif()
 
 # Include essential stuff.
 include(src/.cmake/essential.cmake)
-
-# Set default build mode.
-if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
-    # There's very little reason to use slow debug build type.
-    message(FATAL_ERROR "Use RelWithDebInfo build type instead of the Debug build type.")
-endif()
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
-endif()
 
 # Add node_super_call_checker.
 set(NODE_SUPER_CALL_CHECKER_DIR node_super_call_checker)

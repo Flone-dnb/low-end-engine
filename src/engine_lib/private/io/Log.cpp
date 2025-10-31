@@ -1,4 +1,4 @@
-﻿#include "io/Log.h"
+#include "io/Log.h"
 
 // Standard.
 #include <ctime>
@@ -8,9 +8,7 @@
 // Custom.
 #include "misc/Globals.h"
 #include "misc/ProjectPaths.h"
-#if defined(DEBUG)
 #include "render/DebugDrawer.h"
-#endif
 
 // External.
 #include "spdlog/sinks/basic_file_sink.h"
@@ -77,7 +75,7 @@ void Log::warn(std::string_view sText, const std::source_location location) {
         get().onLogMessage(LogMessageCategory::WARNING, sMessage);
     }
 
-#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+#if defined(ENGINE_DEBUG_TOOLS) && !defined(ENGINE_EDITOR)
     DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 1.0F, 0.0F), {}, debugTextHeight);
 #endif
 }
@@ -96,7 +94,7 @@ void Log::error(std::string_view sText, const std::source_location location) {
         get().onLogMessage(LogMessageCategory::ERROR, sMessage);
     }
 
-#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+#if defined(ENGINE_DEBUG_TOOLS) && !defined(ENGINE_EDITOR)
     DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 0.0F, 0.0F), {}, debugTextHeight);
 #endif
 }

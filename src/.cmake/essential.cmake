@@ -10,8 +10,9 @@ endif()
 
 # Add `DEBUG` macro in debug builds.
 if(NOT IS_RELEASE_BUILD)
-    message(STATUS "${PROJECT_NAME}: adding DEBUG macro for this build type.")
+    message(STATUS "${PROJECT_NAME}: adding DEBUG and ENGINE_DEBUG_TOOLS macros for this build type.")
     add_compile_definitions(DEBUG)
+    add_compile_definitions(ENGINE_DEBUG_TOOLS)
 endif()
 
 # Define ENGINE_UI_ONLY macro.

@@ -30,7 +30,7 @@ void MeshNodeManager::drawMeshes(
     Renderer* pRenderer, CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager) {
     std::scoped_lock guard(mtxSpawnedVisibleNodes.first);
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::getStats().iRenderedOpaqueMeshCount = 0;
     DebugConsole::getStats().iRenderedTransparentMeshCount = 0;
     DebugConsole::getStats().iRenderedLightSourceCount =
@@ -53,7 +53,7 @@ void MeshNodeManager::drawMeshes(
             glDisable(GL_BLEND);
         }
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
         for (auto& [pShaderProgram, meshNodes] : layerNodes.opaqueMeshes) {
             DebugConsole::getStats().iRenderedOpaqueMeshCount += meshNodes.size();
         }

@@ -1,4 +1,4 @@
-﻿#include "GameManager.h"
+#include "GameManager.h"
 
 // Custom.
 #include "io/Log.h"
@@ -51,7 +51,7 @@ GameManager::GameManager(
 
     ReflectedTypeDatabase::registerEngineTypes();
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::get().registerStatsCommand();
 #endif
 }
@@ -400,7 +400,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     pPhysicsManager->onBeforeNewFrame(timeSincePrevCallInSec);
 #endif
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::get().onBeforeNewFrame(pRenderer.get());
 
     const auto endTime = std::chrono::steady_clock::now();
@@ -413,7 +413,7 @@ void GameManager::onKeyboardInput(
     KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) {
     bReceivedGamepadInputThisFrame = false;
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     if (DebugConsole::get().isShown() && key != KeyboardButton::TILDE) {
         if (bIsRepeat || !bIsPressedDown) {
             return;
@@ -457,7 +457,7 @@ void GameManager::onKeyboardInput(
 void GameManager::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
     bReceivedGamepadInputThisFrame = false;
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     if (DebugConsole::get().isShown()) {
         DebugConsole::get().onKeyboardInputTextCharacter(sTextCharacter);
         return;

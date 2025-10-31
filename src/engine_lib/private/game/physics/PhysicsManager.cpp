@@ -243,7 +243,7 @@ PhysicsManager::PhysicsManager(GameManager* pGameManager) : pGameManager(pGameMa
     pPhysicsSystem->SetPhysicsSettings(settings);
     pPhysicsSystem->SetContactListener(pContactListener.get());
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     pPhysicsDebugDrawer = std::make_unique<PhysicsDebugDrawer>();
 
 #if defined(ENGINE_EDITOR)
@@ -459,7 +459,7 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     }
 #endif
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     if (bEnableDebugRendering) {
         PROFILE_SCOPE("draw collision")
 

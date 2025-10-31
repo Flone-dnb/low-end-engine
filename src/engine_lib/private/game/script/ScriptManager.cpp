@@ -270,14 +270,14 @@ void ScriptManager::registerGlmTypes() {
     registerGlobalFunction("glm", "float radians(float)", SCRIPT_GLOBAL_FUNC(glmRadians));
 }
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 static void scriptDrawText(std::string sText, float timeInSec) { DebugDrawer::drawText(sText, timeInSec); }
 static void scriptDrawSphere(float radius, glm::vec3 worldPosition, float timeInSec) {
     DebugDrawer::drawSphere(radius, worldPosition, timeInSec);
 }
 #endif
 void ScriptManager::registerDebugDrawer() {
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     registerGlobalFunction(
         "DebugDrawer", "void drawText(std::string sText, float)", SCRIPT_GLOBAL_FUNC(scriptDrawText));
     registerGlobalFunction(

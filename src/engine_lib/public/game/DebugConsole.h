@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 
 // Standard.
 #include <unordered_map>

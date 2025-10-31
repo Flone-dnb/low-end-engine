@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 
 // Standard.
 #include <vector>
@@ -169,10 +169,7 @@ public:
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      */
     static void drawScreenRect(
-        const glm::vec2& screenPos,
-        const glm::vec2& screenSize,
-        const glm::vec3& color,
-        float timeInSec);
+        const glm::vec2& screenPos, const glm::vec2& screenSize, const glm::vec3& color, float timeInSec);
 
 private:
     DebugDrawer();

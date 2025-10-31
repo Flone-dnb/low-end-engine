@@ -1,6 +1,6 @@
 #include "game/DebugConsole.h"
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 
 // Standard.
 #include <format>

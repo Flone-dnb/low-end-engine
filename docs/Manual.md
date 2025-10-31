@@ -706,10 +706,10 @@ Often during development developers need some cheats for debugging and/or testin
 ```Cpp
 #include "game/DebugConsole.h"
 
-#if defined(DEBUG) // DebugConsole is only available when DEBUG is defined
+#if defined(ENGINE_DEBUG_TOOLS) // for DebugConsole
 
 DebugConsole::registerCommand("testCommand", [](GameInstance* pGameInstance) {
-    DebugDrawer::drawText("hello"); // <- example command logic
+    // do something
 });
 
 #endif
