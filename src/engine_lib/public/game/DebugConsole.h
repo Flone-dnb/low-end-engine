@@ -42,11 +42,20 @@ public:
         /** Total number of transparent meshes considered in the renderer. */
         size_t iRenderedTransparentMeshCount = 0;
 
+        /** Time in milliseconds that the CPU spent doing the last tick. */
+        float cpuTickTimeMs = 0.0F;
+
         /** Time in milliseconds that the CPU spent submitting the last frame. */
         float cpuTimeToSubmitFrameMs = 0.0F;
 
-        /** Time in milliseconds that the CPU spent doing the last tick. */
-        float cpuTickTimeMs = 0.0F;
+        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit meshes. */
+        float cpuTimeToSubmitMeshesMs = 0.0F;
+
+        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit UI. */
+        float cpuTimeToSubmitUiMs = 0.0F;
+
+        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit debug drawer things. */
+        float cpuTimeToSubmitDebugDrawMs = 0.0F;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawMeshesMs = -1.0F;
@@ -56,6 +65,9 @@ public:
 
         /** Time in milliseconds spent on the GPU drawing UI. */
         float gpuTimeDrawUiMs = -1.0F;
+
+        /** Time in milliseconds spent on the GPU drawing debug objects. */
+        float gpuTimeDrawDebug = -1.0F;
     };
 
     DebugConsole(const DebugConsole&) = delete;
@@ -126,9 +138,11 @@ private:
     /**
      * Called every frame by game manager regardless if the state (shown/hidden).
      *
+     * @param timeSincePrevFrameInSec Also known as deltatime - time in seconds that has passed since
+     * the last frame was rendered.
      * @param pRenderer Renderer.
      */
-    void onBeforeNewFrame(Renderer* pRenderer);
+    void onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRenderer);
 
     /** Shows the console. */
     void show();
@@ -167,6 +181,9 @@ private:
 
     /** Input by the user. */
     std::string sCurrentInput;
+
+    /** Time in seconds since stats were updated the last time. */
+    float timeSinceLastStatsUpdateSec = 0.0F;
 
     /** Current state. */
     bool bIsShown = false;

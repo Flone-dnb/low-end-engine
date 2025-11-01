@@ -401,7 +401,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 #endif
 
 #if defined(ENGINE_DEBUG_TOOLS)
-    DebugConsole::get().onBeforeNewFrame(pRenderer.get());
+    DebugConsole::get().onBeforeNewFrame(timeSincePrevCallInSec, pRenderer.get());
 
     const auto endTime = std::chrono::steady_clock::now();
     DebugConsole::get().getStats().cpuTickTimeMs =

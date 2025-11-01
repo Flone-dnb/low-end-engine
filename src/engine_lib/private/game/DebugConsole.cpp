@@ -17,14 +17,19 @@ namespace {
     constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0F, 0.96F);
     constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0F, 1.0F - consoleScreenPos.y);
 
-    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.5F);
+    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.48F);
 
     constexpr float textPadding = consoleScreenSize.y * 0.1F;
     constexpr float textHeight = 0.025F;
+
+    constexpr float statsRefreshTimeSec = 1.0F;
 }
 
 void DebugConsole::registerStatsCommand() {
-    registerCommand("showStats", [this](GameInstance*) { bShowStats = true; });
+    registerCommand("showStats", [this](GameInstance*) {
+        bShowStats = true;
+        timeSinceLastStatsUpdateSec = statsRefreshTimeSec;
+    });
     registerCommand("hideStats", [this](GameInstance*) { bShowStats = false; });
 }
 
@@ -76,8 +81,10 @@ void DebugConsole::hide() {
     sCurrentInput = "";
 }
 
-void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
+void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRenderer) {
     if (bIsShown) {
+        timeSinceLastStatsUpdateSec += timeSincePrevFrameInSec;
+
         // Draw background.
         DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
 
@@ -91,46 +98,62 @@ void DebugConsole::onBeforeNewFrame(Renderer* pRenderer) {
     }
 
     if (bShowStats) {
-        glm::vec2 currentPos = statsScreenPos;
+        timeSinceLastStatsUpdateSec += timeSincePrevFrameInSec;
 
-        const auto drawText = [&](const std::string& sText) {
-            DebugDrawer::drawText(
-                sText,
-                0.0F,
-                glm::vec3(1.0F),
-                glm::vec2(currentPos.x + textPadding, currentPos.y),
-                textHeight);
-            currentPos.y += textHeight + textPadding;
-        };
+        if (timeSinceLastStatsUpdateSec >= statsRefreshTimeSec) {
+            timeSinceLastStatsUpdateSec = 0.0F;
 
-        const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
-        const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
-        const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
+            glm::vec2 currentPos = statsScreenPos;
 
-        std::string sRamStats = std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
+            const auto drawText = [&](const std::string& sText) {
+                DebugDrawer::drawText(
+                    sText,
+                    statsRefreshTimeSec,
+                    glm::vec3(1.0F),
+                    glm::vec2(currentPos.x + textPadding, currentPos.y),
+                    textHeight);
+                currentPos.y += textHeight + textPadding;
+            };
+
+            const auto iRamTotalMb = MemoryUsage::getTotalMemorySize() / 1024 / 1024;
+            const auto iRamUsedMb = MemoryUsage::getTotalMemorySizeUsed() / 1024 / 1024;
+            const auto iAppRamMb = MemoryUsage::getMemorySizeUsedByProcess() / 1024 / 1024;
+
+            std::string sRamStats =
+                std::format("RAM used (MB): {} ({}/{})", iAppRamMb, iRamUsedMb, iRamTotalMb);
 #if defined(ENGINE_ASAN_ENABLED)
-        sRamStats += " (big RAM usage due to ASan)";
+            sRamStats += " (big RAM usage due to ASan)";
 #endif
 
-        drawText(std::format(
-            "FPS: {} (limit: {})",
-            pRenderer->getRenderStatistics().getFramesPerSecond(),
-            pRenderer->getFpsLimit()));
-        drawText(sRamStats);
-        drawText(std::format("active moving bodies: {}", stats.iActiveMovingBodyCount));
-        drawText(std::format("active simulated bodies: {}", stats.iActiveSimulatedBodyCount));
-        drawText(std::format("active character bodies: {}", stats.iActiveCharacterBodyCount));
-        drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
-        drawText(std::format("rendered opaque meshes: {}", stats.iRenderedOpaqueMeshCount));
-        drawText(std::format("rendered transparent meshes: {}", stats.iRenderedTransparentMeshCount));
-        drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
-        drawText(std::format("CPU time (ms) to submit a frame: {:.1F}", stats.cpuTimeToSubmitFrameMs));
-        if (stats.gpuTimeDrawMeshesMs < 0.0F) {
-            drawText("GPU time metrics are not supported on this GPU");
-        } else {
-            drawText(std::format("GPU time (ms) draw meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
-            drawText(std::format("GPU time (ms) post processing: {:.1F}", stats.gpuTimePostProcessingMs));
-            drawText(std::format("GPU time (ms) draw ui: {:.1F}", stats.gpuTimeDrawUiMs));
+            drawText(std::format(
+                "FPS: {} (limit: {})",
+                pRenderer->getRenderStatistics().getFramesPerSecond(),
+                pRenderer->getFpsLimit()));
+            drawText(sRamStats);
+            drawText(std::format("active moving bodies: {}", stats.iActiveMovingBodyCount));
+            drawText(std::format("active simulated bodies: {}", stats.iActiveSimulatedBodyCount));
+            drawText(std::format("active character bodies: {}", stats.iActiveCharacterBodyCount));
+            drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
+            drawText(std::format("rendered opaque meshes: {}", stats.iRenderedOpaqueMeshCount));
+            drawText(std::format("rendered transparent meshes: {}", stats.iRenderedTransparentMeshCount));
+            drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
+            drawText(std::format(
+                "CPU time (ms) to submit a frame: {:.1F} | meshes: {:.1F} | ui: {:.1F} | debug drawer: "
+                "{:.1F} | other: {:.1F}",
+                stats.cpuTimeToSubmitFrameMs,
+                stats.cpuTimeToSubmitMeshesMs,
+                stats.cpuTimeToSubmitUiMs,
+                stats.cpuTimeToSubmitDebugDrawMs,
+                stats.cpuTimeToSubmitFrameMs - (stats.cpuTimeToSubmitMeshesMs + stats.cpuTimeToSubmitUiMs +
+                                                stats.cpuTimeToSubmitDebugDrawMs)));
+            if (stats.gpuTimeDrawMeshesMs < 0.0F) {
+                drawText("GPU time metrics are not supported on this GPU");
+            } else {
+                drawText(std::format("GPU time (ms) draw meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
+                drawText(std::format("GPU time (ms) post processing: {:.1F}", stats.gpuTimePostProcessingMs));
+                drawText(std::format("GPU time (ms) draw ui: {:.1F}", stats.gpuTimeDrawUiMs));
+                drawText(std::format("GPU time (ms) debug drawer: {:.1F}", stats.gpuTimeDrawDebug));
+            }
         }
     }
 }

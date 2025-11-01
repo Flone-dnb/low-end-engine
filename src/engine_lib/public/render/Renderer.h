@@ -109,6 +109,9 @@ private:
 
             /** GL query ID for measuring GPU time that we spent drawing UI. */
             unsigned int iGlQueryToDrawUi = 0;
+
+            /** GL query ID for measuring GPU time that we spent drawing debug objects. */
+            unsigned int iGlQueryToDrawDebug = 0;
         };
         /** GL queries. */
         std::array<FrameQueries, iFramesInFlight> vFrameQueries;

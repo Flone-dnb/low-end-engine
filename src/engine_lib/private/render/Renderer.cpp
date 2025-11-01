@@ -138,6 +138,11 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
             {
                 MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
             }
+
+            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
+            {
+                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
+            }
         }
     }
 #endif
@@ -151,6 +156,7 @@ Renderer::~Renderer() {
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawPostProcess));
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
+            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
         }
     }
 #endif
@@ -231,6 +237,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         stats.gpuTimeDrawMeshesMs = getQueryTimeMs(frameQueries.iGlQueryToDrawMeshes);
         stats.gpuTimePostProcessingMs = getQueryTimeMs(frameQueries.iGlQueryToDrawPostProcess);
         stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
+        stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
     }
 
     const auto cpuFrameSubmitStartTime = std::chrono::steady_clock::now();
@@ -305,6 +312,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Draw meshes from each camera.
         {
+#if defined(ENGINE_DEBUG_TOOLS)
+            const auto cpuSubmitMeshesStartTime = std::chrono::steady_clock::now();
+#endif
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
@@ -323,6 +333,12 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                 pGameInstance->onFinishedSubmittingMeshDrawCommands(
                     mtxActiveCamera.second.pCameraNode, *pFramebuffer);
             }
+#if defined(ENGINE_DEBUG_TOOLS)
+            DebugConsole::getStats().cpuTimeToSubmitMeshesMs =
+                std::chrono::duration<float, std::chrono::milliseconds::period>(
+                    std::chrono::steady_clock::now() - cpuSubmitMeshesStartTime)
+                    .count();
+#endif
         }
 
         // Draw post processing before UI.
@@ -345,6 +361,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Draw UI nodes on post-processing framebuffer.
         {
+#if defined(ENGINE_DEBUG_TOOLS)
+            const auto cpuSubmitUiStartTime = std::chrono::steady_clock::now();
+#endif
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
@@ -356,6 +375,12 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                 pWorld->getUiNodeManager().drawUiOnFramebuffer(
                     postProcessManager.pFramebuffer->getFramebufferId());
             }
+#if defined(ENGINE_DEBUG_TOOLS)
+            DebugConsole::getStats().cpuTimeToSubmitUiMs =
+                std::chrono::duration<float, std::chrono::milliseconds::period>(
+                    std::chrono::steady_clock::now() - cpuSubmitUiStartTime)
+                    .count();
+#endif
         }
 
         // Copy results from different worlds in order (consider viewport size).
@@ -383,7 +408,15 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         pCameraProperties = vActiveCameras[0].second.pCameraNode->getCameraProperties();
 #endif
         if (pCameraProperties != nullptr) {
+            const auto cpuSubmitDebugStartTime = std::chrono::steady_clock::now();
+
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
             DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
+
+            DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs =
+                std::chrono::duration<float, std::chrono::milliseconds::period>(
+                    std::chrono::steady_clock::now() - cpuSubmitDebugStartTime)
+                    .count();
         }
 #endif
     }
