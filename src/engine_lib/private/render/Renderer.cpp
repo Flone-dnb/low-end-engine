@@ -67,7 +67,7 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
         return Error("failed to load OpenGL ES");
     }
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     bIsGpuTimeElapsedExtSupported = GLAD_GL_EXT_disjoint_timer_query == 1;
 #endif
 
