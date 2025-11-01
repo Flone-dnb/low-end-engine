@@ -425,7 +425,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 #endif
 
 #if defined(ENGINE_DEBUG_TOOLS)
-    const auto cpuFrameSubmitEndTime = std::chrono::steady_clock::now();
     DebugConsole::getStats().cpuTimeToSubmitFrameMs = static_cast<float>(
         static_cast<double>(SDL_GetPerformanceCounter() - cpuFrameSubmitStartCounter) * 1000.0 /
         static_cast<double>(SDL_GetPerformanceFrequency()));
