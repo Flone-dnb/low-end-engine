@@ -42,7 +42,7 @@ class GameManager;
 class TriggerVolumeNode;
 class Node;
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 class PhysicsDebugDrawer;
 #endif
 
