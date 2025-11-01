@@ -230,7 +230,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     PROFILE_FUNC
 
 #if defined(DEBUG)
-    const auto startTime = std::chrono::steady_clock::now();
+    const auto startCounter = SDL_GetPerformanceCounter();
 #endif
 
     // Create world if needed.
@@ -403,9 +403,9 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::get().onBeforeNewFrame(timeSincePrevCallInSec, pRenderer.get());
 
-    const auto endTime = std::chrono::steady_clock::now();
-    DebugConsole::get().getStats().cpuTickTimeMs =
-        std::chrono::duration<float, std::chrono::milliseconds::period>(endTime - startTime).count();
+    DebugConsole::get().getStats().cpuTickTimeMs = static_cast<float>(
+        static_cast<double>(SDL_GetPerformanceCounter() - startCounter) * 1000.0 /
+        static_cast<double>(SDL_GetPerformanceFrequency()));
 #endif
 }
 

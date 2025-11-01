@@ -22,7 +22,7 @@ namespace {
     constexpr float textPadding = consoleScreenSize.y * 0.1F;
     constexpr float textHeight = 0.025F;
 
-    constexpr float statsRefreshTimeSec = 1.0F;
+    constexpr float statsRefreshTimeSec = 2.0F;
 }
 
 void DebugConsole::registerStatsCommand() {

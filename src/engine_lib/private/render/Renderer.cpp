@@ -240,7 +240,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
     }
 
-    const auto cpuFrameSubmitStartTime = std::chrono::steady_clock::now();
+    const auto cpuFrameSubmitStartCounter = SDL_GetPerformanceCounter();
 #endif
 
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
@@ -313,7 +313,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         // Draw meshes from each camera.
         {
 #if defined(ENGINE_DEBUG_TOOLS)
-            const auto cpuSubmitMeshesStartTime = std::chrono::steady_clock::now();
+            const auto cpuSubmitMeshesStartCounter = SDL_GetPerformanceCounter();
 #endif
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
             for (const auto& mtxActiveCamera : vActiveCameras) {
@@ -334,10 +334,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                     mtxActiveCamera.second.pCameraNode, *pFramebuffer);
             }
 #if defined(ENGINE_DEBUG_TOOLS)
-            DebugConsole::getStats().cpuTimeToSubmitMeshesMs =
-                std::chrono::duration<float, std::chrono::milliseconds::period>(
-                    std::chrono::steady_clock::now() - cpuSubmitMeshesStartTime)
-                    .count();
+            DebugConsole::getStats().cpuTimeToSubmitMeshesMs = static_cast<float>(
+                static_cast<double>(SDL_GetPerformanceCounter() - cpuSubmitMeshesStartCounter) * 1000.0 /
+                static_cast<double>(SDL_GetPerformanceFrequency()));
 #endif
         }
 
@@ -362,7 +361,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         // Draw UI nodes on post-processing framebuffer.
         {
 #if defined(ENGINE_DEBUG_TOOLS)
-            const auto cpuSubmitUiStartTime = std::chrono::steady_clock::now();
+            const auto cpuSubmitUiStartCounter = SDL_GetPerformanceCounter();
 #endif
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
             for (const auto& mtxActiveCamera : vActiveCameras) {
@@ -376,10 +375,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                     postProcessManager.pFramebuffer->getFramebufferId());
             }
 #if defined(ENGINE_DEBUG_TOOLS)
-            DebugConsole::getStats().cpuTimeToSubmitUiMs =
-                std::chrono::duration<float, std::chrono::milliseconds::period>(
-                    std::chrono::steady_clock::now() - cpuSubmitUiStartTime)
-                    .count();
+            DebugConsole::getStats().cpuTimeToSubmitUiMs = static_cast<float>(
+                static_cast<double>(SDL_GetPerformanceCounter() - cpuSubmitUiStartCounter) * 1000.0 /
+                static_cast<double>(SDL_GetPerformanceFrequency()));
 #endif
         }
 
@@ -408,15 +406,14 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         pCameraProperties = vActiveCameras[0].second.pCameraNode->getCameraProperties();
 #endif
         if (pCameraProperties != nullptr) {
-            const auto cpuSubmitDebugStartTime = std::chrono::steady_clock::now();
+            const auto cpuSubmitDebugStartCounter = SDL_GetPerformanceCounter();
 
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
             DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
 
-            DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs =
-                std::chrono::duration<float, std::chrono::milliseconds::period>(
-                    std::chrono::steady_clock::now() - cpuSubmitDebugStartTime)
-                    .count();
+            DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs = static_cast<float>(
+                static_cast<double>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0 /
+                static_cast<double>(SDL_GetPerformanceFrequency()));
         }
 #endif
     }
@@ -429,10 +426,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
 #if defined(ENGINE_DEBUG_TOOLS)
     const auto cpuFrameSubmitEndTime = std::chrono::steady_clock::now();
-    DebugConsole::getStats().cpuTimeToSubmitFrameMs =
-        std::chrono::duration<float, std::chrono::milliseconds::period>(
-            cpuFrameSubmitEndTime - cpuFrameSubmitStartTime)
-            .count();
+    DebugConsole::getStats().cpuTimeToSubmitFrameMs = static_cast<float>(
+        static_cast<double>(SDL_GetPerformanceCounter() - cpuFrameSubmitStartCounter) * 1000.0 /
+        static_cast<double>(SDL_GetPerformanceFrequency()));
 #endif
 
     // Swap.
