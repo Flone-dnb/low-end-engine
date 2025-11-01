@@ -531,7 +531,7 @@ void PhysicsManager::destroyBody(const JPH::BodyID& bodyId) {
     pPhysicsSystem->GetBodyInterface().DestroyBody(bodyId);
 }
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 void PhysicsManager::setEnableDebugRendering(bool bEnable) { bEnableDebugRendering = bEnable; }
 #endif
 

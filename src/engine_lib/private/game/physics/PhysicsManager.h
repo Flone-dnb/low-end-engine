@@ -72,7 +72,7 @@ public:
     PhysicsManager(const PhysicsManager&) = delete;
     PhysicsManager& operator=(const PhysicsManager) = delete;
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     /**
      * Enables/disabled rendering of the physics bodies.
      *
@@ -448,12 +448,10 @@ private:
     /** Game manager. */
     GameManager* const pGameManager = nullptr;
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     /** Debug rendering of the physics. */
     std::unique_ptr<PhysicsDebugDrawer> pPhysicsDebugDrawer;
-#endif
 
-#if defined(DEBUG)
     /** Enables/disabled rendering of the physics bodies. */
     bool bEnableDebugRendering = false;
 #endif
