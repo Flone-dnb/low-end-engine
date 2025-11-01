@@ -29,7 +29,7 @@
 #include <time.h>
 #endif
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 
 static bool bIsGpuTimeElapsedExtSupported = false;
 
