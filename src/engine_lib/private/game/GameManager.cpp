@@ -229,7 +229,7 @@ void GameManager::onWindowSizeChanged() {
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     PROFILE_FUNC
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
     const auto startCounter = SDL_GetPerformanceCounter();
 #endif
 
