@@ -73,6 +73,18 @@ class LightSourceShaderArray {
     friend class ActiveLightSourceHandle;
 
 public:
+    /** Groups mutex-guarded data. */
+    struct LightData {
+        /** Spawned and visible light nodes. */
+        std::unordered_set<Node*> visibleLightNodes;
+
+        /** UBO that stores array of light sources (data from @ref visibleLightNodes). */
+        std::unique_ptr<Buffer> pUniformBufferObject;
+
+        /** Provides indices into the array. */
+        std::unique_ptr<ShaderArrayIndexManager> pArrayIndexManager;
+    };
+
     LightSourceShaderArray() = delete;
 
     LightSourceShaderArray(const LightSourceShaderArray&) = delete;
@@ -95,32 +107,16 @@ public:
     addLightSourceToRendering(Node* pLightSource, const void* pProperties);
 
     /**
-     * Sets array to be used in the shader.
+     * Returns internal light data.
      *
-     * @param pShaderProgram Shader program.
-     */
-    void setArrayPropertiesToShader(ShaderProgram* pShaderProgram);
-
-    /**
-     * Returns the number of visible light sources.
+     * @warning You should not modify returned light data, this getter
+     * only exists for specific cases to read (not modify) light data.
      *
-     * @return Light source count.
+     * @return Data.
      */
-    size_t getVisibleLightSourceCount();
+    std::pair<std::mutex, LightData>& getInternalLightData() { return mtxData; }
 
 private:
-    /** Groups mutex-guarded data. */
-    struct LightData {
-        /** Spawned and visible light nodes. */
-        std::unordered_set<Node*> visibleLightNodes;
-
-        /** UBO that stores array of light sources (data from @ref visibleLightNodes). */
-        std::unique_ptr<Buffer> pUniformBufferObject;
-
-        /** Provides indices into the array. */
-        std::unique_ptr<ShaderArrayIndexManager> pArrayIndexManager;
-    };
-
     /**
      * Constructs a new array.
      *
@@ -145,7 +141,7 @@ private:
     void removeLightSourceFromRendering(Node* pLightSource);
 
     /** All spawned and visible light nodes. */
-    std::pair<std::recursive_mutex, LightData> mtxData;
+    std::pair<std::mutex, LightData> mtxData;
 
     /** Manager. */
     LightSourceManager* const pLightSourceManager = nullptr;

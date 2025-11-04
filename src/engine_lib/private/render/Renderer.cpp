@@ -268,6 +268,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         World* pWorld = nullptr;
         CameraNode* pCameraNode = nullptr;
         glm::ivec4 viewportSize;
+        glm::mat4 viewProjectionMatrix;
     };
     std::vector<std::pair<std::recursive_mutex*, WorldRenderInfo>> vActiveCameras;
     vActiveCameras.reserve(2);
@@ -300,8 +301,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
              WorldRenderInfo{
                  .pWorld = pWorld.get(),
                  .pCameraNode = mtxActiveCamera.second.pNode,
-                 .viewportSize =
-                     glm::ivec4(iViewportX, iViewportLeftBottom, iViewportWidth, iViewportHeight)}});
+                 .viewportSize = glm::ivec4(iViewportX, iViewportLeftBottom, iViewportWidth, iViewportHeight),
+                 .viewProjectionMatrix =
+                     pCameraProperties->getProjectionMatrix() * pCameraProperties->getViewMatrix()}});
     }
 
     const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
@@ -318,7 +320,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
-                const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
                 const auto& viewportSize = mtxActiveCamera.second.viewportSize;
                 const auto& pFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
 
@@ -328,7 +329,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                 glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
                 pWorld->getMeshRenderer().drawMeshes(
-                    this, pCameraProperties, pWorld->getLightSourceManager());
+                    this, mtxActiveCamera.second.viewProjectionMatrix, pWorld->getLightSourceManager());
             }
 #if defined(ENGINE_DEBUG_TOOLS)
             DebugConsole::getStats().cpuTimeToSubmitMeshesMs =
@@ -394,24 +395,25 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
 #if defined(ENGINE_DEBUG_TOOLS)
         // Draw debug after all worlds.
-        CameraProperties* pCameraProperties = nullptr;
+        WorldRenderInfo* pDebugWorldRenderInfo = nullptr;
 #if defined(ENGINE_EDITOR)
         // Find game world. In the editor debug drawing should only be done for game world.
-        for (const auto& cameraInfo : vActiveCameras) {
+        for (auto& cameraInfo : vActiveCameras) {
             if (cameraInfo.second.pWorld->getName() == "game") {
-                pCameraProperties = cameraInfo.second.pCameraNode->getCameraProperties();
+                pDebugWorldRenderInfo = &cameraInfo.second;
                 break;
             }
         }
 #else
         // In the game just use the first camera.
-        pCameraProperties = vActiveCameras[0].second.pCameraNode->getCameraProperties();
+        pDebugWorldRenderInfo = &vActiveCameras[0].second;
 #endif
-        if (pCameraProperties != nullptr) {
+        if (pDebugWorldRenderInfo != nullptr) {
             const auto cpuSubmitDebugStartCounter = SDL_GetPerformanceCounter();
 
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
-            DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
+            DebugDrawer::get().drawDebugObjects(
+                this, pDebugWorldRenderInfo->viewProjectionMatrix, timeSincePrevCallInSec);
 
             DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs =
                 static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0F /

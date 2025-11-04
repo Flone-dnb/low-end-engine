@@ -34,6 +34,19 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
 
     info.iSkinningMatricesUniform = pShaderProgram->tryGetShaderUniformLocation("vSkinningMatrices[0]");
 
+    info.iAmbientLightColorUniform = pShaderProgram->getShaderUniformLocation("ambientLightColor");
+    info.iPointLightCountUniform = pShaderProgram->getShaderUniformLocation("iPointLightCount");
+    info.iSpotlightCountUniform = pShaderProgram->getShaderUniformLocation("iSpotlightCount");
+    info.iDirectionalLightCountUniform = pShaderProgram->getShaderUniformLocation("iDirectionalLightCount");
+    info.iPointLightsUniformBlockBindingIndex =
+        pShaderProgram->getShaderUniformBlockBindingIndex("PointLights");
+    info.iSpotlightsUniformBlockBindingIndex =
+        pShaderProgram->getShaderUniformBlockBindingIndex("Spotlights");
+    info.iDirectionalLightsUniformBlockBindingIndex =
+        pShaderProgram->getShaderUniformBlockBindingIndex("DirectionalLights");
+
+    info.iViewProjectionMatrixUniform = pShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
+
 #if defined(ENGINE_EDITOR)
     info.iNodeIdUniform = pShaderProgram->getShaderUniformLocation("iNodeId");
 #endif
@@ -465,29 +478,52 @@ MeshRenderDataGuard MeshRenderer::getMeshRenderData(MeshRenderingHandle& handle)
 }
 
 void MeshRenderer::drawMeshes(
-    Renderer* pRenderer, CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager) {
+    Renderer* pRenderer, const glm::mat4& viewProjectionMatrix, LightSourceManager& lightSourceManager) {
     std::scoped_lock guard(mtxRenderData.first);
     auto& data = mtxRenderData.second;
+
+    // Prepare light parameters.
+    glm::vec3 ambientLightColor = lightSourceManager.getAmbientLightColor();
+    auto& mtxPointLightData = lightSourceManager.getPointLightsArray().getInternalLightData();
+    auto& mtxSpotlightData = lightSourceManager.getSpotlightsArray().getInternalLightData();
+    auto& mtxDirectionalLightData = lightSourceManager.getDirectionalLightsArray().getInternalLightData();
+
+    std::scoped_lock pointLightDataGuard(mtxPointLightData.first);
+    std::scoped_lock spotlightDataGuard(mtxSpotlightData.first);
+    std::scoped_lock directionalLightDataGuard(mtxDirectionalLightData.first);
 
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::getStats().iRenderedMeshCount = 0;
     DebugConsole::getStats().iRenderedLightSourceCount =
-        lightSourceManager.getDirectionalLightsArray().getVisibleLightSourceCount() +
-        lightSourceManager.getPointLightsArray().getVisibleLightSourceCount() +
-        lightSourceManager.getSpotlightsArray().getVisibleLightSourceCount();
+        mtxPointLightData.second.visibleLightNodes.size() + mtxSpotlightData.second.visibleLightNodes.size() +
+        mtxDirectionalLightData.second.visibleLightNodes.size();
 #endif
 
     // Prepare slot for diffuse texture.
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    drawMeshes(data.vOpaqueShaders, data, pCameraProperties, lightSourceManager);
+    drawMeshes(
+        data.vOpaqueShaders,
+        data,
+        viewProjectionMatrix,
+        ambientLightColor,
+        mtxPointLightData.second,
+        mtxSpotlightData.second,
+        mtxDirectionalLightData.second);
 
     if (!data.vTransparentShaders.empty()) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         {
-            drawMeshes(data.vTransparentShaders, data, pCameraProperties, lightSourceManager);
+            drawMeshes(
+                data.vTransparentShaders,
+                data,
+                viewProjectionMatrix,
+                ambientLightColor,
+                mtxPointLightData.second,
+                mtxSpotlightData.second,
+                mtxDirectionalLightData.second);
         }
         glDisable(GL_BLEND);
     }
@@ -496,8 +532,11 @@ void MeshRenderer::drawMeshes(
 void MeshRenderer::drawMeshes(
     const std::vector<RenderData::ShaderInfo>& vShaders,
     const RenderData& data,
-    CameraProperties* pCameraProperties,
-    LightSourceManager& lightSourceManager) {
+    const glm::mat4& viewProjectionMatrix,
+    const glm::vec3& ambientLightColor,
+    LightSourceShaderArray::LightData& pointLightData,
+    LightSourceShaderArray::LightData& spotlightData,
+    LightSourceShaderArray::LightData& directionalLightData) {
     PROFILE_FUNC
 
 #if defined(ENGINE_DEBUG_TOOLS)
@@ -509,15 +548,45 @@ void MeshRenderer::drawMeshes(
         PROFILE_ADD_SCOPE_TEXT(
             shaderInfo.pShaderProgram->getName().data(), shaderInfo.pShaderProgram->getName().size());
 
-        // Set shader program.
         glUseProgram(shaderInfo.pShaderProgram->getShaderProgramId());
 
+        shaderConstantsSetter.setConstantsToShader(shaderInfo.pShaderProgram);
+
         // Set camera uniforms.
-        pCameraProperties->getShaderConstantsSetter().setConstantsToShader(shaderInfo.pShaderProgram);
+        glUniformMatrix4fv(
+            shaderInfo.iViewProjectionMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
 
-        // Set light arrays.
-        lightSourceManager.setArrayPropertiesToShader(shaderInfo.pShaderProgram);
+        // Set light uniforms.
+        glUniform3fv(shaderInfo.iAmbientLightColorUniform, 1, glm::value_ptr(ambientLightColor));
 
+        // Point lights.
+        glUniform1ui(
+            shaderInfo.iPointLightCountUniform,
+            static_cast<unsigned int>(pointLightData.visibleLightNodes.size()));
+        glBindBufferBase(
+            GL_UNIFORM_BUFFER,
+            shaderInfo.iPointLightsUniformBlockBindingIndex,
+            pointLightData.pUniformBufferObject->getBufferId());
+
+        // Spotlights.
+        glUniform1ui(
+            shaderInfo.iSpotlightCountUniform,
+            static_cast<unsigned int>(spotlightData.visibleLightNodes.size()));
+        glBindBufferBase(
+            GL_UNIFORM_BUFFER,
+            shaderInfo.iSpotlightsUniformBlockBindingIndex,
+            spotlightData.pUniformBufferObject->getBufferId());
+
+        // Directional lights.
+        glUniform1ui(
+            shaderInfo.iDirectionalLightCountUniform,
+            static_cast<unsigned int>(directionalLightData.visibleLightNodes.size()));
+        glBindBufferBase(
+            GL_UNIFORM_BUFFER,
+            shaderInfo.iDirectionalLightsUniformBlockBindingIndex,
+            directionalLightData.pUniformBufferObject->getBufferId());
+
+        // Submit meshes.
         for (unsigned short iMeshDataIndex = shaderInfo.iFirstMeshIndex;
              iMeshDataIndex < shaderInfo.iFirstMeshIndex + shaderInfo.iMeshCount;
              iMeshDataIndex++) {

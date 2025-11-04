@@ -197,7 +197,7 @@ void DebugDrawer::drawQuad(
 }
 
 void DebugDrawer::drawDebugObjects(
-    Renderer* pRenderer, CameraProperties* pCameraProperties, float timeSincePrevFrameInSec) {
+    Renderer* pRenderer, const glm::mat4& viewProjectionMatrix, float timeSincePrevFrameInSec) {
     PROFILE_FUNC
 
     // Initialize resources if needed.
@@ -212,6 +212,9 @@ void DebugDrawer::drawDebugObjects(
             "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/RectUiNode.frag.glsl");
 
         pScreenQuadGeometry = GpuResourceManager::createQuad(true);
+
+        iMeshProgramViewProjectionMatrixUniform =
+            pMeshShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -219,7 +222,8 @@ void DebugDrawer::drawDebugObjects(
         // Prepare for drawing meshes.
         GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, 0));
         glUseProgram(pMeshShaderProgram->getShaderProgramId());
-        pCameraProperties->getShaderConstantsSetter().setConstantsToShader(pMeshShaderProgram.get());
+        glUniformMatrix4fv(
+            iMeshProgramViewProjectionMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
 
         for (auto it = vMeshesToDraw.begin(); it != vMeshesToDraw.end();) {
             auto& mesh = *it;

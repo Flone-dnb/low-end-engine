@@ -8,6 +8,8 @@
 #include <memory>
 
 // Custom.
+#include "render/shader/LightSourceShaderArray.h"
+#include "render/ShaderConstantsSetter.hpp"
 #include "math/GLMath.hpp"
 
 class ShaderProgram;
@@ -139,28 +141,31 @@ public:
             /** The total number of meshes starting from @ref iFirstMeshIndex that use the same shader. */
             unsigned short iMeshCount = 0;
 
-            /** Location of the uniform variable. */
+            /// @cond UNDOCUMENTED
+            // uniform locations below:
+
             int iWorldMatrixUniform = 0;
-
-            /** Location of the uniform variable. */
             int iNormalMatrixUniform = 0;
-
-            /** Location of the uniform variable. */
             int iDiffuseColorUniform = 0;
-
-            /** Location of the uniform variable. */
             int iTextureTilingMultiplierUniform = 0;
-
-            /** Location of the uniform variable. */
             int iIsUsingDiffuseTextureUniform = 0;
 
-            /** Location of the uniform variable. -1 if not used. */
             int iSkinningMatricesUniform = -1;
 
+            int iAmbientLightColorUniform = 0;
+            int iPointLightCountUniform = 0;
+            int iSpotlightCountUniform = 0;
+            int iDirectionalLightCountUniform = 0;
+            unsigned int iPointLightsUniformBlockBindingIndex = 0;
+            unsigned int iSpotlightsUniformBlockBindingIndex = 0;
+            unsigned int iDirectionalLightsUniformBlockBindingIndex = 0;
+
+            int iViewProjectionMatrixUniform = 0;
+
 #if defined(ENGINE_EDITOR)
-            /** Location of the uniform variable. */
             int iNodeIdUniform = 0;
 #endif
+            /// @endcond
         };
 
         /** Stores indices into @ref vMeshRenderData, indices are sorted in the ascending order. */
@@ -197,12 +202,12 @@ public:
      * Queues OpenGL draw commands to draw all spawned and visible meshes
      * on the currently set framebuffer.
      *
-     * @param pRenderer          Renderer.
-     * @param pCameraProperties  Camera properties.
-     * @param lightSourceManager Light source manager.
+     * @param pRenderer            Renderer.
+     * @param viewProjectionMatrix Camera's view projection matrix.
+     * @param lightSourceManager   Light source manager.
      */
     void drawMeshes(
-        Renderer* pRenderer, CameraProperties* pCameraProperties, LightSourceManager& lightSourceManager);
+        Renderer* pRenderer, const glm::mat4& viewProjectionMatrix, LightSourceManager& lightSourceManager);
 
     /**
      * Registers a new mesh to be rendered.
@@ -224,6 +229,14 @@ public:
      * @return Data guard used to modify the data.
      */
     MeshRenderDataGuard getMeshRenderData(MeshRenderingHandle& handle);
+
+    /**
+     * Returns shader constants setter that will be called for every shader program used for rendering to set
+     * custom global parameters.
+     *
+     * @return Constants setter.
+     */
+    ShaderConstantsSetter& getGlobalShaderConstantsSetter() { return shaderConstantsSetter; }
 
 private:
     MeshRenderer() = default;
@@ -247,16 +260,25 @@ private:
     /**
      * Queues OpenGL draw commands to draw the specified meshes on the currently set framebuffer.
      *
-     * @param vShaders           Shaders to draw.
-     * @param data               Render data.
-     * @param pCameraProperties  Camera properties.
-     * @param lightSourceManager Light source manager.
+     * @param vShaders             Shaders to draw.
+     * @param data                 Render data.
+     * @param viewProjectionMatrix Camera's view projection matrix.
+     * @param ambientLightColor    Ambient light color.
+     * @param pointLightData       Light array data.
+     * @param spotlightData        Light array data.
+     * @param directionalLightData Light array data.
      */
-    static void drawMeshes(
+    void drawMeshes(
         const std::vector<RenderData::ShaderInfo>& vShaders,
         const RenderData& data,
-        CameraProperties* pCameraProperties,
-        LightSourceManager& lightSourceManager);
+        const glm::mat4& viewProjectionMatrix,
+        const glm::vec3& ambientLightColor,
+        LightSourceShaderArray::LightData& pointLightData,
+        LightSourceShaderArray::LightData& spotlightData,
+        LightSourceShaderArray::LightData& directionalLightData);
+
+    /** Will be called for every shader program used for rendering to set custom global parameters. */
+    ShaderConstantsSetter shaderConstantsSetter;
 
     /** Groups data for rendering. */
     std::pair<std::mutex, RenderData> mtxRenderData;

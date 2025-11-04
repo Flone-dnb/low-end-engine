@@ -7,7 +7,6 @@
 // Custom.
 #include "game/node/Node.h"
 #include "misc/Error.h"
-#include "render/Renderer.h"
 #include "render/LightSourceManager.h"
 #include "render/GpuResourceManager.h"
 #include "render/ShaderAlignmentConstants.hpp"
@@ -57,56 +56,48 @@ LightSourceShaderArray::~LightSourceShaderArray() {
 
 std::unique_ptr<ActiveLightSourceHandle>
 LightSourceShaderArray::addLightSourceToRendering(Node* pLightSource, const void* pProperties) {
-    std::scoped_lock guard(mtxData.first);
+    std::unique_ptr<ActiveLightSourceHandle> pHandle;
 
-    if (mtxData.second.visibleLightNodes.size() == iArrayMaxSize) {
-        static std::chrono::time_point<std::chrono::steady_clock> lastWarningTime =
-            std::chrono::steady_clock::now();
-        static bool bIsFirstWarning = true;
+    {
+        std::scoped_lock guard(mtxData.first);
 
-        const auto timeSecSinceLastWarning = std::chrono::duration<float, std::chrono::seconds::period>(
-                                                 std::chrono::steady_clock::now() - lastWarningTime)
-                                                 .count();
-        if (bIsFirstWarning || timeSecSinceLastWarning > 10.0F) { // NOLINT: don't spam warnings
-            Log::warn(std::format(
-                "light array \"{}\" is unable to add the light node \"{}\" to be rendered because the "
-                "array "
-                "has reached the maximum number of visible light sources of {}",
-                sUniformBlockName,
-                pLightSource->getNodeName(),
-                iArrayMaxSize));
+        if (mtxData.second.visibleLightNodes.size() == iArrayMaxSize) {
+            static std::chrono::time_point<std::chrono::steady_clock> lastWarningTime =
+                std::chrono::steady_clock::now();
+            static bool bIsFirstWarning = true;
 
-            lastWarningTime = std::chrono::steady_clock::now();
-            bIsFirstWarning = false;
+            const auto timeSecSinceLastWarning = std::chrono::duration<float, std::chrono::seconds::period>(
+                                                     std::chrono::steady_clock::now() - lastWarningTime)
+                                                     .count();
+            if (bIsFirstWarning || timeSecSinceLastWarning > 10.0F) { // NOLINT: don't spam warnings
+                Log::warn(std::format(
+                    "light array \"{}\" is unable to add the light node \"{}\" to be rendered because the "
+                    "array "
+                    "has reached the maximum number of visible light sources of {}",
+                    sUniformBlockName,
+                    pLightSource->getNodeName(),
+                    iArrayMaxSize));
+
+                lastWarningTime = std::chrono::steady_clock::now();
+                bIsFirstWarning = false;
+            }
         }
-    }
 
-    // Add light.
-    const auto [it, isAdded] = mtxData.second.visibleLightNodes.insert(pLightSource);
-    if (!isAdded) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("light node \"{}\" is already added to rendering", pLightSource->getNodeName()));
+        // Add light.
+        const auto [it, isAdded] = mtxData.second.visibleLightNodes.insert(pLightSource);
+        if (!isAdded) [[unlikely]] {
+            Error::showErrorAndThrowException(
+                std::format("light node \"{}\" is already added to rendering", pLightSource->getNodeName()));
+        }
+
+        pHandle = std::unique_ptr<ActiveLightSourceHandle>(new ActiveLightSourceHandle(
+            this, mtxData.second.pArrayIndexManager->reserveIndex(), pLightSource));
     }
 
     // Copy initial data.
-    auto pHandle = std::unique_ptr<ActiveLightSourceHandle>(
-        new ActiveLightSourceHandle(this, mtxData.second.pArrayIndexManager->reserveIndex(), pLightSource));
     pHandle->copyNewProperties(pProperties);
 
     return pHandle;
-}
-
-void LightSourceShaderArray::setArrayPropertiesToShader(ShaderProgram* pShaderProgram) {
-    std::scoped_lock guard(mtxData.first);
-
-    pShaderProgram->setUintToShader(
-        sLightCountUniformName, static_cast<unsigned int>(mtxData.second.visibleLightNodes.size()));
-    pShaderProgram->setUniformBlockToShader(sUniformBlockName, mtxData.second.pUniformBufferObject.get());
-}
-
-size_t LightSourceShaderArray::getVisibleLightSourceCount() {
-    std::scoped_lock guard(mtxData.first);
-    return mtxData.second.visibleLightNodes.size();
 }
 
 void LightSourceShaderArray::removeLightSourceFromRendering(Node* pLightSource) {

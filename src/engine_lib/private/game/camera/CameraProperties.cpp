@@ -6,7 +6,7 @@
 
 // Custom.
 #include "misc/Error.h"
-#include "render/wrapper/ShaderProgram.h"
+#include "misc/Profiler.hpp"
 
 void CameraProperties::setRenderTargetProportions(
     unsigned int iRenderTargetWidth, unsigned int iRenderTargetHeight) {
@@ -26,14 +26,7 @@ void CameraProperties::setRenderTargetProportions(
     mtxData.second.projectionData.bProjectionMatrixNeedsUpdate = true;
 }
 
-CameraProperties::CameraProperties() {
-    shaderConstantsSetter.addSetterFunction([this](ShaderProgram* pShaderProgram) {
-        std::scoped_lock guard(mtxData.first);
-
-        // Set value (use getter functions to check if an update is needed).
-        pShaderProgram->setMatrix4ToShader("viewProjectionMatrix", getProjectionMatrix() * getViewMatrix());
-    });
-}
+CameraProperties::CameraProperties() {}
 
 void CameraProperties::setFov(unsigned int iVerticalFov) {
     std::scoped_lock guard(mtxData.first);
@@ -160,6 +153,8 @@ glm::mat4x4 CameraProperties::getInverseViewMatrix() {
 }
 
 void CameraProperties::makeSureViewMatrixIsUpToDate() {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtxData.first);
 
     // Only continue if the view matrix is marked as "needs update".
@@ -182,6 +177,8 @@ void CameraProperties::makeSureViewMatrixIsUpToDate() {
 }
 
 void CameraProperties::makeSureProjectionMatrixAndClipPlanesAreUpToDate() {
+    PROFILE_FUNC
+
     std::scoped_lock guard(mtxData.first);
 
     auto& projectionData = mtxData.second.projectionData;

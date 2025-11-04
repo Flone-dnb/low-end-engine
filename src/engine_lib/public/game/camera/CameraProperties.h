@@ -7,7 +7,6 @@
 #include "math/GLMath.hpp"
 #include "misc/Globals.h"
 #include "game/geometry/shapes/Frustum.h"
-#include "render/ShaderConstantsSetter.hpp"
 
 /** Defines how camera can move and rotate. */
 enum class CameraMode {
@@ -271,13 +270,6 @@ public:
     inline Frustum* getCameraFrustum() { return &mtxData.second.frustum; }
 
     /**
-     * Returns object used to add setter functions for shader `uniform` variables.
-     *
-     * @return Manager.
-     */
-    inline ShaderConstantsSetter& getShaderConstantsSetter() { return shaderConstantsSetter; }
-
-    /**
      * Returns position of the top-left corner of the viewport rectangle in XY and size in ZW
      * (in range [0; 1]).
      *
@@ -321,9 +313,6 @@ private:
 
     /** Internal properties. */
     std::pair<std::recursive_mutex, Data> mtxData{};
-
-    /** To pass values to shaders. */
-    ShaderConstantsSetter shaderConstantsSetter;
 
     /** Position of the top-left corner of the viewport rectangle in XY and size in ZW (in range [0; 1]). */
     glm::vec4 viewport = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);

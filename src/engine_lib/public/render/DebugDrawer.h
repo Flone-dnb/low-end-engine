@@ -187,12 +187,12 @@ private:
      * Called by the renderer to draw all available debug objects.
      *
      * @param pRenderer               Renderer.
-     * @param pCameraProperties       Properties of the active camera.
+     * @param viewProjectionMatrix    Camera's view projection matrix.
      * @param timeSincePrevFrameInSec Also known as deltatime - time in seconds that has passed since
      * the last frame was rendered.
      */
-    void
-    drawDebugObjects(Renderer* pRenderer, CameraProperties* pCameraProperties, float timeSincePrevFrameInSec);
+    void drawDebugObjects(
+        Renderer* pRenderer, const glm::mat4& viewProjectionMatrix, float timeSincePrevFrameInSec);
 
     /** Destroys used render resources such as @ref pMeshShaderProgram and removes any geometry to render. */
     void destroy();
@@ -232,6 +232,9 @@ private:
 
     /** Quad used for rendering text. */
     std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
+
+    /** Uniform location for @ref pMeshShaderProgram. */
+    int iMeshProgramViewProjectionMatrixUniform = 0;
 
     /** Orthographic projection matrix for rendering UI elements. */
     glm::mat4 uiProjMatrix;

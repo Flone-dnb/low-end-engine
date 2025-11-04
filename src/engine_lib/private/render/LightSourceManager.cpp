@@ -40,16 +40,6 @@ LightSourceManager::LightSourceManager(PostProcessManager* pPostProcessManager)
         "iPointLightCount"));
 }
 
-LightSourceShaderArray& LightSourceManager::getDirectionalLightsArray() { return *pDirectionalLightsArray; }
-
-LightSourceShaderArray& LightSourceManager::getSpotlightsArray() { return *pSpotlightsArray; }
-
-LightSourceShaderArray& LightSourceManager::getPointLightsArray() { return *pPointLightsArray; }
-
-void LightSourceManager::setArrayPropertiesToShader(ShaderProgram* pShaderProgram) {
-    pDirectionalLightsArray->setArrayPropertiesToShader(pShaderProgram);
-    pSpotlightsArray->setArrayPropertiesToShader(pShaderProgram);
-    pPointLightsArray->setArrayPropertiesToShader(pShaderProgram);
-
-    pShaderProgram->setVector3ToShader("ambientLightColor", pPostProcessManager->getAmbientLightColor());
+glm::vec3 LightSourceManager::getAmbientLightColor() const {
+    return pPostProcessManager->getAmbientLightColor();
 }

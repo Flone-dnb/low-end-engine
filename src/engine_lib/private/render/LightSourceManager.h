@@ -3,9 +3,14 @@
 // Standard.
 #include <memory>
 
+// Custom.
+#include "math/GLMath.hpp"
+
 class PostProcessManager;
 class LightSourceShaderArray;
 class ShaderProgram;
+class ActiveLightSourceHandle;
+class Node;
 
 /** Manages active (spawned and visible) light nodes that will be rendered. */
 class LightSourceManager {
@@ -23,32 +28,44 @@ public:
     LightSourceManager& operator=(LightSourceManager&&) noexcept = delete;
 
     /**
-     * Returns array used by directional lights.
+     * Returns point light array.
      *
-     * @return Shader array.
+     * @return Array.
      */
-    LightSourceShaderArray& getDirectionalLightsArray();
+    LightSourceShaderArray& getPointLightsArray() { return *pPointLightsArray; }
 
     /**
-     * Returns array used by spotlights.
+     * Returns point light array.
      *
-     * @return Shader array.
+     * @return Array.
      */
-    LightSourceShaderArray& getSpotlightsArray();
+    LightSourceShaderArray& getSpotlightsArray() { return *pSpotlightsArray; }
 
     /**
-     * Returns array used by point lights.
+     * Returns point light array.
      *
-     * @return Shader array.
+     * @return Array.
      */
-    LightSourceShaderArray& getPointLightsArray();
+    LightSourceShaderArray& getDirectionalLightsArray() { return *pDirectionalLightsArray; }
 
     /**
-     * Sets (binds) properties of all light arrays to the specified shader program.
+     * Called by spawned light sources that need to be rendered.
      *
-     * @param pShaderProgram Shader program.
+     * @param pLightSource Light to add to rendering.
+     * @param pProperties  Initial light properties data to copy to shaders.
+     *
+     * @return `nullptr` if the maximum number of visible lights was reached (try again later), otherwise
+     * handle of the specified light node.
      */
-    void setArrayPropertiesToShader(ShaderProgram* pShaderProgram);
+    std::unique_ptr<ActiveLightSourceHandle>
+    addLightSourceToRendering(Node* pLightSource, const void* pProperties);
+
+    /**
+     * Returns ambient light color used for rendering.
+     *
+     * @return Ambient light color.
+     */
+    glm::vec3 getAmbientLightColor() const;
 
 private:
     /**

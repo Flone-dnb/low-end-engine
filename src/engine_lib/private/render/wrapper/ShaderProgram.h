@@ -171,6 +171,17 @@ public:
     inline int getShaderUniformLocation(const std::string& sUniformName);
 
     /**
+     * Returns binding index of a shader uniform block with the specified name.
+     *
+     * @warning Shows an error if not found.
+     *
+     * @param sUniformBlockName Name of a uniform block.
+     *
+     * @return Binding index.
+     */
+    inline unsigned int getShaderUniformBlockBindingIndex(const std::string& sUniformBlockName);
+
+    /**
      * Return manager that created this program.
      *
      * @return Manager.
@@ -200,17 +211,6 @@ private:
         const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
         unsigned int iShaderProgramId,
         const std::string& sShaderProgramName);
-
-    /**
-     * Returns binding index of a shader uniform block with the specified name.
-     *
-     * @warning Shows an error if not found.
-     *
-     * @param sUniformBlockName Name of a uniform block.
-     *
-     * @return Binding index.
-     */
-    inline unsigned int getShaderUniformBlockBindingIndex(const std::string& sUniformBlockName);
 
     /** Locations of all uniform variables. */
     std::unordered_map<std::string, int> cachedUniformLocations;

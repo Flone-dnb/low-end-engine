@@ -14,7 +14,7 @@
 #include "node/GizmoNode.h"
 #include "input/EditorInputEventIds.hpp"
 #include "input/InputManager.h"
-#include "math/MathHelpers.hpp"
+#include "render/MeshRenderer.h"
 #include "node/EditorCameraNode.h"
 #include "render/FontManager.h"
 #include "misc/MemoryUsage.hpp"
@@ -654,8 +654,8 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
 void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pRoot = pRootNode;
 
-    pRootNode->getWorldWhileSpawned()->getCameraManager().getPostProcessManager().setAmbientLightColor(
-        editorAmbientLight);
+    const auto pGameWorld = pRootNode->getWorldWhileSpawned();
+    pGameWorld->getCameraManager().getPostProcessManager().setAmbientLightColor(editorAmbientLight);
 
     if (editorWorldNodes.pViewportUiPlaceholder == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected editor's viewport UI node to be created at this point");
@@ -684,6 +684,15 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
 
     editorWorldNodes.pNodeTreeInspector->onGameNodeTreeLoaded(gameWorldNodes.pRoot);
+
+    // Bind node ID texture for GPU picking.
+    pGameWorld->getMeshRenderer().getGlobalShaderConstantsSetter().addSetterFunction([this](ShaderProgram*
+                                                                                                pProgram) {
+        if (gpuPickingData.pNodeIdTexture != nullptr) {
+            GL_CHECK_ERROR(glBindImageTexture(
+                0, gpuPickingData.pNodeIdTexture->getTextureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI));
+        }
+    });
 }
 
 void EditorGameInstance::GpuPickingData::recreateNodeIdTexture(
@@ -693,14 +702,6 @@ void EditorGameInstance::GpuPickingData::recreateNodeIdTexture(
 
     pNodeIdTexture =
         GpuResourceManager::createStorageTexture(iFramebufferWidth, iFramebufferHeight, GL_R32UI);
-
-    if (bIsCameraRecreated) {
-        pViewportCamera->getCameraProperties()->getShaderConstantsSetter().addSetterFunction(
-            [this](ShaderProgram* pProgram) {
-                GL_CHECK_ERROR(glBindImageTexture(
-                    0, pNodeIdTexture->getTextureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI));
-            });
-    }
 }
 
 void EditorGameInstance::openContextMenu(
