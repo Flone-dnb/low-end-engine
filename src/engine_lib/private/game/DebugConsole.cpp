@@ -74,6 +74,14 @@ void DebugConsole::registerCommand(
     registeredCommands[sCommandName] = RegisteredCommand{.intArg = callback};
 }
 
+void DebugConsole::toggleStats() {
+    auto& console = DebugConsole::get();
+    console.bShowStats = !console.bShowStats;
+    if (console.bShowStats) {
+        console.timeSinceLastStatsUpdateSec = statsRefreshTimeSec;
+    }
+}
+
 void DebugConsole::show() { bIsShown = true; }
 
 void DebugConsole::hide() {

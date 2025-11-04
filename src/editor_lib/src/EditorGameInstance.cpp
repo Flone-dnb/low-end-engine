@@ -10,6 +10,7 @@
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
+#include "input/GamepadButton.hpp"
 #include "node/GizmoNode.h"
 #include "input/EditorInputEventIds.hpp"
 #include "input/InputManager.h"
@@ -24,6 +25,7 @@
 #include "node/LogViewNode.h"
 #include "render/UiNodeManager.h"
 #include "node/menu/ContextMenuNode.h"
+#include "game/DebugConsole.h"
 #include "render/wrapper/Buffer.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "render/wrapper/Framebuffer.h"
@@ -454,6 +456,11 @@ void EditorGameInstance::registerEditorInputEvents() {
             static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR),
             {MouseButton::RIGHT}));
 
+        // Toggle stats.
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::GAMEPAD_TOGGLE_STATS),
+            {GamepadButton::BACK}));
+
         // Increase camera movement speed.
         showErrorIfNotEmpty(getInputManager()->addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED),
@@ -494,6 +501,14 @@ void EditorGameInstance::registerEditorInputEvents() {
                     getWindow()->setIsMouseCursorVisible(true);
                     gameWorldNodes.pViewportCamera->setIsMouseCaptured(false);
                 }};
+
+        // Toggle stats.
+        getActionEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Action::GAMEPAD_TOGGLE_STATS)] =
+            ActionEventCallbacks{.onPressed = {}, .onReleased = [this](KeyboardModifiers modifiers) {
+                                     getRenderer()->setFpsLimit(0);
+                                     DebugConsole::toggleStats();
+                                 }};
     }
 
     // Register axis events.

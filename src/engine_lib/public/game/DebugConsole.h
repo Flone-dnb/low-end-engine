@@ -94,6 +94,9 @@ public:
     static void
     registerCommand(const std::string& sCommandName, const std::function<void(GameInstance*, int)>& callback);
 
+    /** Shows debug statistics (this function can be called using a debug command). */
+    static void toggleStats();
+
     /**
      * Returns debug statistics for various systems to update.
      *

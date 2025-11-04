@@ -730,7 +730,7 @@ void Node::onInputActionEvent(unsigned int iActionId, KeyboardModifiers modifier
     // Trigger user logic.
     if (bIsPressedDown && it->second.onPressed != nullptr) {
         it->second.onPressed(modifiers);
-    } else if (it->second.onReleased != nullptr) {
+    } else if (!bIsPressedDown && it->second.onReleased != nullptr) {
         it->second.onReleased(modifiers);
     }
 }
