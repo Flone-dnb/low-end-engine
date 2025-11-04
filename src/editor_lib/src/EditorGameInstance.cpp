@@ -461,6 +461,11 @@ void EditorGameInstance::registerEditorInputEvents() {
             static_cast<unsigned int>(EditorInputEventIds::Action::GAMEPAD_TOGGLE_STATS),
             {GamepadButton::BACK}));
 
+        // Close editor.
+        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+            static_cast<unsigned int>(EditorInputEventIds::Action::GAMEPAD_CLOSE_EDITOR),
+            {GamepadButton::START}));
+
         // Increase camera movement speed.
         showErrorIfNotEmpty(getInputManager()->addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED),
@@ -509,6 +514,11 @@ void EditorGameInstance::registerEditorInputEvents() {
                                      getRenderer()->setFpsLimit(0);
                                      DebugConsole::toggleStats();
                                  }};
+
+        // Close editor.
+        getActionEventBindings()[static_cast<unsigned int>(
+            EditorInputEventIds::Action::GAMEPAD_CLOSE_EDITOR)] = ActionEventCallbacks{
+            .onPressed = {}, .onReleased = [this](KeyboardModifiers modifiers) { getWindow()->close(); }};
     }
 
     // Register axis events.

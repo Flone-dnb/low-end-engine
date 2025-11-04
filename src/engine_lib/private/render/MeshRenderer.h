@@ -92,7 +92,7 @@ private:
 
 /** Handles mesh rendering. */
 class MeshRenderer {
-    // Only world is expected to create this manager.
+    // Only world is expected to create mesh render for world's specific entities.
     friend class World;
 
     // Notifies us in destructor.
@@ -119,6 +119,8 @@ public:
 
         /** Marks some meshes that use the same shader. */
         struct ShaderInfo {
+            ShaderInfo() = default;
+
             /**
              * Creates a new shader info and caches locations of all uniform variables that we need.
              *
