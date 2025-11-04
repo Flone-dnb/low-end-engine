@@ -353,8 +353,7 @@ void SkeletonNode::loadAnimationContextData() {
     // Allocate matrices.
     vResultingLocalTransforms.resize(static_cast<size_t>(pSkeleton->num_soa_joints()));
     vBoneMatrices.resize(static_cast<size_t>(pSkeleton->num_joints()));
-    vSkinningMatrices.resize(vBoneMatrices.size());
-    if (vInverseBindPoseMatrices.size() != vSkinningMatrices.size()) [[unlikely]] {
+    if (vInverseBindPoseMatrices.size() > vSkinningMatrices.size()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "skeleton bone matrix mismatch {} != {}",
             vInverseBindPoseMatrices.size(),
@@ -388,9 +387,6 @@ void SkeletonNode::unloadAnimationContextData() {
 
     vInverseBindPoseMatrices.clear();
     vInverseBindPoseMatrices.shrink_to_fit();
-
-    vSkinningMatrices.clear();
-    vSkinningMatrices.shrink_to_fit();
 }
 
 std::unique_ptr<ozz::animation::Skeleton> SkeletonNode::loadSkeleton(

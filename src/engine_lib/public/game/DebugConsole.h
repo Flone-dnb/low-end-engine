@@ -36,11 +36,8 @@ public:
         /** Total number of light sources considered in the renderer. */
         size_t iRenderedLightSourceCount = 0;
 
-        /** Total number of opaque meshes considered in the renderer. */
-        size_t iRenderedOpaqueMeshCount = 0;
-
-        /** Total number of transparent meshes considered in the renderer. */
-        size_t iRenderedTransparentMeshCount = 0;
+        /** Total number of meshes rendered last frame. */
+        size_t iRenderedMeshCount = 0;
 
         /** Time in milliseconds that the CPU spent doing the last tick. */
         float cpuTickTimeMs = 0.0F;

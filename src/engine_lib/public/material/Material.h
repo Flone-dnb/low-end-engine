@@ -133,9 +133,9 @@ public:
     std::string getPathToCustomFragmentShader() const { return sPathToCustomFragmentShader; }
 
     /**
-     * Returns path to diffuse texture to use.
+     * Returns path to diffuse texture to use (if exists)
      *
-     * @return Path relative to the `res` directory.
+     * @return Empty string (if no texture was set) or path relative to the `res` directory.
      */
     std::string getPathToDiffuseTexture() const { return sPathToDiffuseTextureRelativeRes; }
 
@@ -150,6 +150,13 @@ public:
     ShaderProgram* getShaderProgram() const { return pShaderProgram.get(); }
 
     /**
+     * Returns OpenGL ID for the diffuse texture.
+     *
+     * @return 0 if the texture was not set.
+     */
+    unsigned int getDiffuseTextureId() const;
+
+    /**
      * Returns texture tiling multiplier.
      *
      * @return Multiplier.
@@ -158,25 +165,20 @@ public:
 
 private:
     /**
-     * Called after node that owns this material was spawned.
-     *
-     * @param pNode      Node that triggered this event.
-     * @param pRenderer Renderer.
-     * @param onShaderProgramReceived Callback to query shader `uniform` locations from the program that will
-     * be used to render this mesh node.
-     */
-    void onNodeSpawning(
-        MeshNode* pNode,
-        Renderer* pRenderer,
-        const std::function<void(ShaderProgram*)>& onShaderProgramReceived);
-
-    /**
-     * Called before node that owns this material is despawned.
+     * Called when the node that uses this material prepares to be rendered.
      *
      * @param pNode     Node that triggered this event.
      * @param pRenderer Renderer.
      */
-    void onNodeDespawning(MeshNode* pNode, Renderer* pRenderer);
+    void initShaderProgramAndResources(MeshNode* pNode, Renderer* pRenderer);
+
+    /**
+     * Called before the node that uses this material is removed from rendering.
+     *
+     * @param pNode     Node that triggered this event.
+     * @param pRenderer Renderer.
+     */
+    void deinitShaderProgramAndResources(MeshNode* pNode, Renderer* pRenderer);
 
     /** Diffuse light color. */
     glm::vec4 diffuseColor = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);

@@ -82,13 +82,10 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pYAxisGizmoNode->setSerialize(false);
     pZAxisGizmoNode->setSerialize(false);
 
-    pXAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
-    pYAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
-    pZAxisGizmoNode->setDrawLayer(MeshDrawLayer::LAYER2);
-
-    pXAxisGizmoNode->setIsAffectedByLightSources(false);
-    pYAxisGizmoNode->setIsAffectedByLightSources(false);
-    pZAxisGizmoNode->setIsAffectedByLightSources(false);
+    // Draw gizmo as transparent with 1.0F alpha to draw gizmo on top of most meshes.
+    pXAxisGizmoNode->getMaterial().setEnableTransparency(true);
+    pYAxisGizmoNode->getMaterial().setEnableTransparency(true);
+    pZAxisGizmoNode->getMaterial().setEnableTransparency(true);
 
     addChildNode(std::move(pXAxisGizmoU));
     addChildNode(std::move(pYAxisMeshU));

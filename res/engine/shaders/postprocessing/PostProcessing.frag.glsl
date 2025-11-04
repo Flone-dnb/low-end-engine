@@ -1,5 +1,3 @@
-#include "../Base.glsl"
-
 in vec2 fragmentUv;
 
 layout(binding = 0) uniform sampler2D renderedColorTexture;

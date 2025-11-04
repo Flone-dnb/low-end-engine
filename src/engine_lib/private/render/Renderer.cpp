@@ -9,7 +9,7 @@
 #include "game/node/MeshNode.h"
 #include "render/FontManager.h"
 #include "render/UiNodeManager.h"
-#include "render/MeshNodeManager.h"
+#include "render/MeshRenderer.h"
 #include "render/GpuResourceManager.h"
 #include "render/PostProcessManager.h"
 #include "misc/ProjectPaths.h"
@@ -327,7 +327,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
                 glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
-                pWorld->getMeshNodeManager().drawMeshes(
+                pWorld->getMeshRenderer().drawMeshes(
                     this, pCameraProperties, pWorld->getLightSourceManager());
 
                 pGameInstance->onFinishedSubmittingMeshDrawCommands(

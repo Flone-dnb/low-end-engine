@@ -1,5 +1,3 @@
-#include "../Base.glsl"
-
 #include "../vertex_format/MeshNodeVertexFormat.glsl"
 
 out vec3 fragmentPosition;

@@ -1,5 +1,3 @@
-#include "../Base.glsl"
-
 in vec2 fragmentUv;
 out vec4 color;
 

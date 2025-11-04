@@ -149,6 +149,28 @@ public:
     unsigned int getShaderProgramId() const { return iShaderProgramId; }
 
     /**
+     * Returns location of a shader uniform with the specified name or -1 if not found.
+     *
+     * @warning Shows an error if not found.
+     *
+     * @param sUniformName Name of a uniform.
+     *
+     * @return Location.
+     */
+    inline int tryGetShaderUniformLocation(const std::string& sUniformName);
+
+    /**
+     * Returns location of a shader uniform with the specified name.
+     *
+     * @warning Shows an error if not found.
+     *
+     * @param sUniformName Name of a uniform.
+     *
+     * @return Location.
+     */
+    inline int getShaderUniformLocation(const std::string& sUniformName);
+
+    /**
      * Return manager that created this program.
      *
      * @return Manager.
@@ -178,17 +200,6 @@ private:
         const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
         unsigned int iShaderProgramId,
         const std::string& sShaderProgramName);
-
-    /**
-     * Returns location of a shader uniform with the specified name.
-     *
-     * @warning Shows an error if not found.
-     *
-     * @param sUniformName Name of a uniform.
-     *
-     * @return Location.
-     */
-    inline int getShaderUniformLocation(const std::string& sUniformName);
 
     /**
      * Returns binding index of a shader uniform block with the specified name.
@@ -225,6 +236,15 @@ inline int ShaderProgram::getShaderUniformLocation(const std::string& sUniformNa
     if (cachedIt == cachedUniformLocations.end()) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("unable to find uniform \"{}\" location", sUniformName));
+    }
+
+    return cachedIt->second;
+}
+
+inline int ShaderProgram::tryGetShaderUniformLocation(const std::string& sUniformName) {
+    const auto cachedIt = cachedUniformLocations.find(sUniformName);
+    if (cachedIt == cachedUniformLocations.end()) {
+        return -1;
     }
 
     return cachedIt->second;

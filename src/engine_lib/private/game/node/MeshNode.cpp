@@ -6,7 +6,8 @@
 #include "game/geometry/PrimitiveMeshGenerator.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "game/World.h"
-#include "render/MeshNodeManager.h"
+#include "render/MeshRenderer.h"
+#include "render/RenderingHandle.h"
 
 // External.
 #include "nameof.hpp"
@@ -96,28 +97,6 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().isTransparencyEnabled();
         }};
 
-    variables.bools[NAMEOF_MEMBER(&MeshNode::bIsAffectedByLightSources).data()] = ReflectedVariableInfo<bool>{
-        .setter =
-            [](Serializable* pThis, const bool& bNewValue) {
-                reinterpret_cast<MeshNode*>(pThis)->setIsAffectedByLightSources(bNewValue);
-            },
-        .getter = [](Serializable* pThis) -> bool {
-            return reinterpret_cast<MeshNode*>(pThis)->isAffectedByLightSources();
-        }};
-
-    variables.unsignedInts[NAMEOF_MEMBER(&MeshNode::drawLayer).data()] = ReflectedVariableInfo<unsigned int>{
-        .setter =
-            [](Serializable* pThis, const unsigned int& iNewValue) {
-                MeshDrawLayer layer = MeshDrawLayer::LAYER1;
-                if (iNewValue < static_cast<unsigned int>(MeshDrawLayer::COUNT)) {
-                    layer = static_cast<MeshDrawLayer>(iNewValue);
-                }
-                reinterpret_cast<MeshNode*>(pThis)->setDrawLayer(layer);
-            },
-        .getter = [](Serializable* pThis) -> unsigned int {
-            return static_cast<unsigned int>(reinterpret_cast<MeshNode*>(pThis)->getDrawLayer());
-        }};
-
     variables.meshNodeGeometries[NAMEOF_MEMBER(&MeshNode::meshGeometry).data()] =
         ReflectedVariableInfo<MeshNodeGeometry>{
             .setter =
@@ -138,10 +117,10 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
 MeshNode::MeshNode() : MeshNode("Mesh Node") {}
 
 MeshNode::MeshNode(const std::string& sNodeName) : SpatialNode(sNodeName) {
-    mtxIsVisible.second = true;
-
     meshGeometry = PrimitiveMeshGenerator::createCube(1.0F);
 }
+
+MeshNode::~MeshNode() {}
 
 void MeshNode::setMaterialBeforeSpawned(Material&& material) {
     std::scoped_lock guard(getSpawnDespawnMutex());
@@ -200,36 +179,24 @@ void MeshNode::setMeshGeometryBeforeSpawned(MeshNodeGeometry&& meshGeometry) {
     this->meshGeometry = std::move(meshGeometry);
 }
 
-void MeshNode::setIsVisible(bool bVisible) {
-    std::scoped_lock guard(getSpawnDespawnMutex(), mtxIsVisible.first);
+void MeshNode::setIsVisible(bool bNewVisible) {
+    std::scoped_lock guard(getSpawnDespawnMutex());
 
-    if (mtxIsVisible.second == bVisible) {
+    if (bIsVisible == bNewVisible) {
         return;
     }
-    mtxIsVisible.second = bVisible;
+    bIsVisible = bNewVisible;
 
     if (isSpawned()) {
-        getWorldWhileSpawned()->getMeshNodeManager().onSpawnedMeshNodeChangingVisibility(this, bVisible);
+        if (bIsVisible) {
+            registerToRendering();
+        } else {
+            unregisterFromRendering();
+        }
     }
 }
-
-void MeshNode::setDrawLayer(MeshDrawLayer layer) {
-    drawLayer = layer;
-
-    if (isSpawned()) {
-        unregisterFromRendering();
-        registerToRendering();
-    }
-}
-
-void MeshNode::setIsAffectedByLightSources(bool bEnable) { bIsAffectedByLightSources = bEnable; }
 
 Material& MeshNode::getMaterial() { return material; }
-
-bool MeshNode::isVisible() {
-    std::scoped_lock guard(mtxIsVisible.first);
-    return mtxIsVisible.second;
-}
 
 std::unique_ptr<VertexArrayObject> MeshNode::createVertexArrayObject() {
     // SpatialNode::createVertexArrayObject(); // <- commended out to silence our node super call checker
@@ -247,49 +214,68 @@ void MeshNode::clearMeshNodeGeometry() { meshGeometry = {}; }
 void MeshNode::registerToRendering() {
     PROFILE_FUNC
 
-    if (pVao != nullptr) [[unlikely]] {
+    if (pRenderingHandle != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException(
             std::format("mesh node \"{}\" already created GPU resources", getNodeName()));
     }
 
-    // Create VAO.
+    if (!bIsVisible) {
+        return;
+    }
+
+    // Init render resources.
+    material.initShaderProgramAndResources(this, getGameInstanceWhileSpawned()->getRenderer());
     pVao = createVertexArrayObject();
 
-    // Create shader constants setter.
-    shaderConstantsSetter = ShaderConstantsSetter();
+    // After we initialized render resources, add to rendering.
+    pRenderingHandle = getWorldWhileSpawned()->getMeshRenderer().addMeshForRendering(
+        material.getShaderProgram(), material.isTransparencyEnabled());
+    onRenderingHandleInitialized(pRenderingHandle.get());
 
-    // Request shader program.
-    material.onNodeSpawning(
-        this, getGameInstanceWhileSpawned()->getRenderer(), [this](ShaderProgram* pShaderProgram) {
-            // Prepare setter for the aquired shader program.
-            shaderConstantsSetter->addSetterFunction([this](ShaderProgram* pShaderProgram) {
-                pShaderProgram->setMatrix4ToShader("worldMatrix", cachedWorldMatrices.worldMatrix);
-                pShaderProgram->setMatrix3ToShader("normalMatrix", cachedWorldMatrices.normalMatrix);
-                pShaderProgram->setBoolToShader("bIsAffectedByLightSources", bIsAffectedByLightSources);
-            });
-        });
+    // Initialize shader data.
+    updateShaderData();
+}
 
-    // After we initialized render resources notify manager.
-    getWorldWhileSpawned()->getMeshNodeManager().onMeshNodeSpawning(this);
+void MeshNode::updateShaderData() {
+    if (pRenderingHandle == nullptr) {
+        return;
+    }
+
+    auto renderDataGuard = getWorldWhileSpawned()->getMeshRenderer().getMeshRenderData(*pRenderingHandle);
+    auto& data = renderDataGuard.getData();
+
+    data.worldMatrix = getWorldMatrix();
+    data.normalMatrix = glm::transpose(glm::inverse(data.worldMatrix));
+    data.diffuseColor = glm::vec4(material.getDiffuseColor(), material.getOpacity());
+    data.textureTilingMultiplier = material.getTextureTilingMultiplier();
+    data.iDiffuseTextureId = material.getDiffuseTextureId();
+    data.iVertexArrayObject = pVao->getVertexArrayObjectId();
+    data.iIndexCount = pVao->getIndexCount();
+#if defined(ENGINE_EDITOR)
+    auto iNodeId = *getNodeId();
+    if (iNodeId > std::numeric_limits<unsigned int>::max()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "unable to set node ID to shaders because it reached shader type limit, id: {}, node: {}",
+            iNodeId,
+            getNodeName()));
+    }
+    data.iNodeId = static_cast<unsigned int>(iNodeId);
+#endif
 }
 
 void MeshNode::unregisterFromRendering() {
     PROFILE_FUNC
 
-    if (pVao == nullptr) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            std::format("mesh node \"{}\" already destroyed GPU resources", getNodeName()));
+    if (pRenderingHandle == nullptr) {
+        return;
     }
 
-    // Before destroying render resources notify manager.
-    getWorldWhileSpawned()->getMeshNodeManager().onMeshNodeDespawning(this);
+    // Remove from rendering.
+    pRenderingHandle = nullptr;
 
-    // Destroy VAO and constants manager.
+    // Deinit render resources.
     pVao = nullptr;
-    shaderConstantsSetter = {};
-
-    // Notify material.
-    material.onNodeDespawning(this, getGameInstanceWhileSpawned()->getRenderer());
+    material.deinitShaderProgramAndResources(this, getGameInstanceWhileSpawned()->getRenderer());
 }
 
 void MeshNode::onSpawning() {
@@ -311,6 +297,14 @@ void MeshNode::onWorldLocationRotationScaleChanged() {
 
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-    cachedWorldMatrices.worldMatrix = getWorldMatrix();
-    cachedWorldMatrices.normalMatrix = glm::transpose(glm::inverse(cachedWorldMatrices.worldMatrix));
+    if (pRenderingHandle == nullptr) {
+        return;
+    }
+
+    // Update shader data.
+    auto renderDataGuard = getWorldWhileSpawned()->getMeshRenderer().getMeshRenderData(*pRenderingHandle);
+    auto& data = renderDataGuard.getData();
+
+    data.worldMatrix = getWorldMatrix();
+    data.normalMatrix = glm::transpose(glm::inverse(data.worldMatrix));
 }

@@ -62,8 +62,10 @@ set(PROJECT_SOURCES
     private/render/LightSourceManager.h
     private/render/UiNodeManager.cpp
     private/render/UiNodeManager.h
-    private/render/MeshNodeManager.h
-    private/render/MeshNodeManager.cpp
+    private/render/MeshRenderer.h
+    private/render/MeshRenderer.cpp
+    private/render/RenderingHandle.h
+    private/render/RenderingHandle.cpp
     public/render/ShaderAlignmentConstants.hpp
     private/render/FontManager.cpp
     public/render/FontManager.h

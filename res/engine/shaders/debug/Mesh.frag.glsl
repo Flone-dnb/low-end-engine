@@ -1,5 +1,3 @@
-#include "../Base.glsl"
-
 uniform vec3 meshColor;
 
 out vec4 outColor;

@@ -8,7 +8,7 @@
 #include "render/UiNodeManager.h"
 #include "game/camera/CameraManager.h"
 #include "game/GameManager.h"
-#include "render/MeshNodeManager.h"
+#include "render/MeshRenderer.h"
 #include "render/LightSourceManager.h"
 #if !defined(ENGINE_UI_ONLY)
 #include "game/physics/PhysicsManager.h"
@@ -35,7 +35,7 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
     pUiNodeManager = std::unique_ptr<UiNodeManager>(new UiNodeManager(pGameManager->getRenderer(), this));
 
 #if !defined(ENGINE_UI_ONLY)
-    pMeshNodeManager = std::unique_ptr<MeshNodeManager>(new MeshNodeManager());
+    pMeshRenderer = std::unique_ptr<MeshRenderer>(new MeshRenderer());
     pLightSourceManager =
         std::unique_ptr<LightSourceManager>(new LightSourceManager(&pCameraManager->getPostProcessManager()));
 #endif
@@ -57,8 +57,7 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
 
 void World::destroyWorld() {
     if (!sName.empty()) {
-        Log::info(
-            std::format("world \"{}\" is being destroyed, despawning world's root node...", sName));
+        Log::info(std::format("world \"{}\" is being destroyed, despawning world's root node...", sName));
     } else {
         Log::info("world is being destroyed, despawning world's root node...");
     }
@@ -70,7 +69,7 @@ void World::destroyWorld() {
     mtxRootNode.second->despawn();
     mtxRootNode.second = nullptr;
 
-    pMeshNodeManager = nullptr;
+    pMeshRenderer = nullptr;
     pUiNodeManager = nullptr;
     pLightSourceManager = nullptr;
     pCameraManager = nullptr;
@@ -184,11 +183,11 @@ CameraManager& World::getCameraManager() const { return *pCameraManager; }
 
 UiNodeManager& World::getUiNodeManager() const { return *pUiNodeManager; }
 
-MeshNodeManager& World::getMeshNodeManager() const {
+MeshRenderer& World::getMeshRenderer() const {
 #if defined(ENGINE_UI_ONLY)
     Error::showErrorAndThrowException("mesh node manager is not used in UI only apps");
 #endif
-    return *pMeshNodeManager;
+    return *pMeshRenderer;
 }
 
 LightSourceManager& World::getLightSourceManager() const {

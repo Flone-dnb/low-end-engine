@@ -20,6 +20,10 @@ Material::Material(
 
 void Material::setDiffuseColor(const glm::vec3& color) {
     diffuseColor = glm::vec4(color.x, color.y, color.z, diffuseColor.w);
+
+    if (pOwnerNode != nullptr) {
+        pOwnerNode->updateShaderData();
+    }
 }
 
 void Material::setEnableTransparency(bool bEnable) {
@@ -42,7 +46,13 @@ void Material::setEnableTransparency(bool bEnable) {
     pNode->registerToRendering();
 }
 
-void Material::setOpacity(float opacity) { diffuseColor.w = opacity; }
+void Material::setOpacity(float opacity) {
+    diffuseColor.w = opacity;
+
+    if (pOwnerNode != nullptr) {
+        pOwnerNode->updateShaderData();
+    }
+}
 
 void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
     // Normalize slash.
@@ -168,12 +178,15 @@ void Material::setPathToCustomFragmentShader(std::string sPathToCustomFragmentSh
     pNode->registerToRendering();
 }
 
-void Material::setTextureTilingMultiplier(const glm::vec2& mult) { textureTilingMultiplier = mult; }
+void Material::setTextureTilingMultiplier(const glm::vec2& mult) {
+    textureTilingMultiplier = mult;
 
-void Material::onNodeSpawning(
-    MeshNode* pNode,
-    Renderer* pRenderer,
-    const std::function<void(ShaderProgram*)>& onShaderProgramReceived) {
+    if (pOwnerNode != nullptr) {
+        pOwnerNode->updateShaderData();
+    }
+}
+
+void Material::initShaderProgramAndResources(MeshNode* pNode, Renderer* pRenderer) {
     PROFILE_FUNC
 
     // Self check:
@@ -189,17 +202,9 @@ void Material::onNodeSpawning(
                                           : sPathToCustomVertexShader,
         sPathToCustomFragmentShader.empty() ? MeshNode::getPathToDefaultFragmentShader().data()
                                             : sPathToCustomFragmentShader);
-    onShaderProgramReceived(pShaderProgram.get());
 
-// Set general shader constants (branch independent constants).
-#define SHADER_CONSTANTS_CODE                                                                                \
-    pShaderProgram->setVector4ToShader(NAMEOF(diffuseColor).c_str(), diffuseColor);                          \
-    pShaderProgram->setBoolToShader("bIsUsingDiffuseTexture", false);                                        \
-    glActiveTexture(GL_TEXTURE0);                                                                            \
-    glBindTexture(GL_TEXTURE_2D, 0);
-
+    // Initialize diffuse texture.
     if (!sPathToDiffuseTextureRelativeRes.empty()) {
-        // Get texture.
         auto result = pRenderer->getTextureManager().getTexture(
             sPathToDiffuseTextureRelativeRes, TextureUsage::DIFFUSE);
         if (std::holds_alternative<Error>(result)) [[unlikely]] {
@@ -208,26 +213,20 @@ void Material::onNodeSpawning(
             error.showErrorAndThrowException();
         }
         pDiffuseTexture = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
-
-        pNode->getShaderConstantsSetterWhileSpawned().addSetterFunction(
-            [this](ShaderProgram* pShaderProgram) {
-                SHADER_CONSTANTS_CODE
-
-                pShaderProgram->setBoolToShader("bIsUsingDiffuseTexture", true);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, pDiffuseTexture->getTextureId());
-
-                pShaderProgram->setVector2ToShader("textureTilingMultiplier", textureTilingMultiplier);
-            });
-    } else {
-        pNode->getShaderConstantsSetterWhileSpawned().addSetterFunction(
-            [this](ShaderProgram* pShaderProgram) { SHADER_CONSTANTS_CODE });
     }
 
     pOwnerNode = pNode;
 }
 
-void Material::onNodeDespawning(MeshNode* pNode, Renderer* pRenderer) {
+unsigned int Material::getDiffuseTextureId() const {
+    if (pDiffuseTexture == nullptr) {
+        return 0;
+    } else {
+        return pDiffuseTexture->getTextureId();
+    }
+}
+
+void Material::deinitShaderProgramAndResources(MeshNode* pNode, Renderer* pRenderer) {
     PROFILE_FUNC
 
     // Self check:

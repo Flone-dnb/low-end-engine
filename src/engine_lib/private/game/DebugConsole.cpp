@@ -134,8 +134,7 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
             drawText(std::format("active simulated bodies: {}", stats.iActiveSimulatedBodyCount));
             drawText(std::format("active character bodies: {}", stats.iActiveCharacterBodyCount));
             drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
-            drawText(std::format("rendered opaque meshes: {}", stats.iRenderedOpaqueMeshCount));
-            drawText(std::format("rendered transparent meshes: {}", stats.iRenderedTransparentMeshCount));
+            drawText(std::format("rendered meshes: {}", stats.iRenderedMeshCount));
             drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
             drawText(std::format(
                 "CPU time (ms) to submit a frame: {:.1F} | meshes: {:.1F} | ui: {:.1F} | debug drawer: "

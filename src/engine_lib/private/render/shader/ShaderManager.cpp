@@ -54,6 +54,13 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
             sPathToShaderRelativeRes));
     }
 
+    // Insert base code for all shaders.
+    sSourceCode.insert(
+        0,
+        "#version 310 es\n"
+        "precision highp float;\n"
+        "precision highp int;\n");
+
     // Define some macros.
     std::vector<std::string_view> vDefinedMacros;
     if (shaderType == GL_VERTEX_SHADER) {

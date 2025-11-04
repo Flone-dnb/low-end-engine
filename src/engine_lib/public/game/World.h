@@ -15,7 +15,7 @@ class Node;
 class GameManager;
 class CameraManager;
 class UiNodeManager;
-class MeshNodeManager;
+class MeshRenderer;
 class LightSourceManager;
 
 /** Tiny RAII-like class that locks a mutex and changes a boolean while alive. */
@@ -155,7 +155,7 @@ public:
      *
      * @return Manager.
      */
-    MeshNodeManager& getMeshNodeManager() const;
+    MeshRenderer& getMeshRenderer() const;
 
     /**
      * Returns manager used to add/remove light sources to/from rendering.
@@ -322,7 +322,7 @@ private:
     std::unique_ptr<UiNodeManager> pUiNodeManager;
 
     /** Manages all 3D mesh nodes. */
-    std::unique_ptr<MeshNodeManager> pMeshNodeManager;
+    std::unique_ptr<MeshRenderer> pMeshRenderer;
 
     /** Manages light sources (nodes). */
     std::unique_ptr<LightSourceManager> pLightSourceManager;

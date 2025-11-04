@@ -6,7 +6,7 @@
 #include "game/geometry/PrimitiveMeshGenerator.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "game/World.h"
-#include "render/MeshNodeManager.h"
+#include "render/MeshRenderer.h"
 #include "game/node/SkeletonNode.h"
 
 // External.
@@ -142,11 +142,34 @@ void SkeletalMeshNode::onSpawning() {
 #endif
     }
 
-    getShaderConstantsSetterWhileSpawned().addSetterFunction([this](ShaderProgram* pShaderProgram) {
-        const auto& matrices = pSpawnedSkeleton->getSkinningMatrices();
-        pShaderProgram->setMatrix4ArrayToShader(
-            "vSkinningMatrices[0]", static_cast<int>(matrices.size()), glm::value_ptr(matrices[0]));
-    });
+    // Bind skinning matrices.
+    const auto pRenderingHandle = getRenderingHandle();
+    if (pRenderingHandle == nullptr) {
+        // It's OK, maybe the mesh is not visible.
+        return;
+    }
+    onRenderingHandleInitialized(pRenderingHandle);
+}
+
+void SkeletalMeshNode::onRenderingHandleInitialized(MeshRenderingHandle* pRenderingHandle) {
+    MeshNode::onRenderingHandleInitialized(pRenderingHandle);
+
+    if (pRenderingHandle == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" received invalid rendering handle", getNodeName()));
+    }
+
+    if (pSpawnedSkeleton == nullptr) {
+        // Our spawn logic was not run yet, we will do it in onSpawned.
+    }
+
+    // Bind skinning matrices.
+    auto renderDataGuard = getWorldWhileSpawned()->getMeshRenderer().getMeshRenderData(*pRenderingHandle);
+    auto& data = renderDataGuard.getData();
+
+    const auto& vSkinningMatrices = pSpawnedSkeleton->getSkinningMatrices();
+    data.iSkinningMatrixCount = static_cast<int>(vSkinningMatrices.size());
+    data.pSkinningMatrices = glm::value_ptr(vSkinningMatrices[0]);
 }
 
 void SkeletalMeshNode::onDespawning() {

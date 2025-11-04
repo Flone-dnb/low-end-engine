@@ -4,13 +4,14 @@
 #include <mutex>
 
 // Custom.
-#include "render/MeshDrawLayer.hpp"
 #include "math/GLMath.hpp"
 #include "game/node/SpatialNode.h"
 #include "game/geometry/MeshNodeGeometry.h"
 #include "material/Material.h"
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/ShaderConstantsSetter.hpp"
+
+class MeshRenderingHandle;
 
 /** Represents a node that can have 3D geometry to display (mesh). */
 class MeshNode : public SpatialNode {
@@ -27,7 +28,7 @@ public:
      */
     MeshNode(const std::string& sNodeName);
 
-    virtual ~MeshNode() override = default;
+    virtual ~MeshNode() override;
 
     /**
      * Returns reflection info about this type.
@@ -103,25 +104,9 @@ public:
     /**
      * Sets whether this mesh is visible or not.
      *
-     * @param bVisible Whether this mesh is visible or not.
+     * @param bNewVisible Whether this mesh is visible or not.
      */
-    void setIsVisible(bool bVisible);
-
-    /**
-     * Determine the layer in which a mesh is drawn. Meshes of layer 1 will be drawn first, then meshes of
-     * layer 2 and so on.
-     *
-     * @param layer Layer to use.
-     */
-    void setDrawLayer(MeshDrawLayer layer);
-
-    /**
-     * `true` (default) to enable shadows on the mesh according to the light sources and ambient light in the
-     * scene.
-     *
-     * @param bEnable `true` to enable.
-     */
-    void setIsAffectedByLightSources(bool bEnable);
+    void setIsVisible(bool bNewVisible);
 
     /**
      * Returns material.
@@ -133,39 +118,6 @@ public:
     Material& getMaterial();
 
     /**
-     * Returns VAO.
-     *
-     * @warning Shows an error if the node is not spawned.
-     *
-     * @return VAO.
-     */
-    VertexArrayObject& getVertexArrayObjectWhileSpawned() {
-#if defined(DEBUG)
-        if (pVao == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException(std::format("VAO is invalid on node \"{}\"", getNodeName()));
-        }
-#endif
-        return *pVao.get();
-    }
-
-    /**
-     * Returns object used to add setter functions for shader `uniform` variables.
-     *
-     * @warning Shows an error if the node is not spawned.
-     *
-     * @return Manager.
-     */
-    ShaderConstantsSetter& getShaderConstantsSetterWhileSpawned() {
-#if defined(DEBUG)
-        if (!shaderConstantsSetter.has_value()) [[unlikely]] {
-            Error::showErrorAndThrowException(
-                std::format("constants manager is invalid on node \"{}\"", getNodeName()));
-        }
-#endif
-        return *shaderConstantsSetter;
-    }
-
-    /**
      * Returns a copy of the mesh's geometry.
      *
      * @return Geometry.
@@ -173,26 +125,11 @@ public:
     MeshNodeGeometry copyMeshData() const { return meshGeometry; }
 
     /**
-     * Determine the layer in which a mesh is drawn.
-     *
-     * @return Layer.
-     */
-    MeshDrawLayer getDrawLayer() const { return drawLayer; }
-
-    /**
      * Tells whether this mesh is currently visible or not.
      *
      * @return Whether the mesh is visible or not.
      */
-    bool isVisible();
-
-    /**
-     * Returns `true` to enable shadows on the mesh according to the light sources and ambient light in the
-     * scene.
-     *
-     * @return Light affect state.
-     */
-    bool isAffectedByLightSources() const { return bIsAffectedByLightSources; }
+    bool isVisible() const { return bIsVisible; }
 
 protected:
     /**
@@ -242,24 +179,36 @@ protected:
      */
     virtual bool isUsingSkeletalMeshGeometry() { return false; }
 
+    /**
+     * Called after the rendering handle was received.
+     *
+     * @param pRenderingHandle New rendering handle.
+     */
+    virtual void onRenderingHandleInitialized(MeshRenderingHandle* pRenderingHandle) {}
+
     /** Makes sure mesh node geometry is empty (used by derived nodes with different type of geometry. */
     void clearMeshNodeGeometry();
 
+    /**
+     * Returns rendering handle.
+     *
+     * @return `nullptr` if not being rendered.
+     */
+    MeshRenderingHandle* getRenderingHandle() const { return pRenderingHandle.get(); }
+
 private:
-    /** Matrices prepared to set to shaders. */
-    struct CachedWorldMatrices {
-        /** World matrix. */
-        glm::mat4 worldMatrix;
-
-        /** Normal matrix. */
-        glm::mat3 normalMatrix;
-    };
-
     /** Creates GPU resources and adds this object to be rendered. */
     void registerToRendering();
 
     /** Removes this object from rendering and destroys GPU resources. */
     void unregisterFromRendering();
+
+    /**
+     * Copies up to date data to shaders.
+     *
+     * @remark Does nothing if not registered in the rendering.
+     */
+    void updateShaderData();
 
     /** Mesh geometry. */
     MeshNodeGeometry meshGeometry;
@@ -270,18 +219,9 @@ private:
     /** Not `nullptr` while spawned. */
     std::unique_ptr<VertexArrayObject> pVao;
 
-    /** Only valid while spawned. */
-    std::optional<ShaderConstantsSetter> shaderConstantsSetter;
-
-    /** Matrices to set to shaders. */
-    CachedWorldMatrices cachedWorldMatrices;
+    /** Not `nullptr` if spawned and visible. */
+    std::unique_ptr<MeshRenderingHandle> pRenderingHandle;
 
     /** Whether mesh is visible or not. */
-    std::pair<std::mutex, bool> mtxIsVisible;
-
-    /** Determine the layer in which a mesh is drawn. */
-    MeshDrawLayer drawLayer = MeshDrawLayer::LAYER1;
-
-    /** `true` to enable shadows on the mesh according to the light sources and ambient light in the scene. */
-    bool bIsAffectedByLightSources = true;
+    bool bIsVisible = true;
 };

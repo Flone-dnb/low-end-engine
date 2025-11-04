@@ -1,5 +1,3 @@
-#include "../Base.glsl"
-
 /** Stores position in screen space in XY and UV in ZW. */
 layout (location = 0) in vec4 vertex;
 

@@ -3,6 +3,7 @@
 // Standard.
 #include <unordered_set>
 #include <unordered_map>
+#include <array>
 #include <memory>
 
 // Custom.
@@ -121,6 +122,9 @@ private:
 
 /** Plays animations and moves child nodes SkeletalMeshNode according to their per-vertex weights. */
 class SkeletonNode : public SpatialNode {
+    /** The maximum number of bones allowed (per skeleton). */
+    static constexpr unsigned int iMaxBoneCountAllowed = 64; // same as in shaders
+
 public:
     SkeletonNode();
 
@@ -209,7 +213,9 @@ public:
      *
      * @return Matrices.
      */
-    const std::vector<glm::mat4x4>& getSkinningMatrices() const { return vSkinningMatrices; }
+    const std::array<glm::mat4x4, iMaxBoneCountAllowed>& getSkinningMatrices() const {
+        return vSkinningMatrices;
+    }
 
     /**
      * Returns matrices that convert skeleton bones from local space to model space.
@@ -352,12 +358,16 @@ private:
     /** Matrix per bone in @ref vBoneMatrices to create @ref vSkinningMatrices. */
     std::vector<glm::mat4x4> vInverseBindPoseMatrices;
 
-    /** Matrices used for skinning. */
-    std::vector<glm::mat4x4> vSkinningMatrices;
+    /**
+     * Matrices used for skinning.
+     *
+     * @warning Using `std::array` because skeletal mesh node saves a pointer to this array
+     * and does not expect the data to be moved.
+     *
+     * Actual (used) size of this array is size of @ref vInverseBindPoseMatrices.
+     */
+    std::array<glm::mat4x4, iMaxBoneCountAllowed> vSkinningMatrices;
 
     /** Path to the `skeleton.ozz` file relative to the `res` directory. */
     std::string sPathToSkeletonRelativeRes;
-
-    /** The maximum number of bones allowed (per skeleton). */
-    static constexpr unsigned int iMaxBoneCountAllowed = 64; // same as in shaders
 };

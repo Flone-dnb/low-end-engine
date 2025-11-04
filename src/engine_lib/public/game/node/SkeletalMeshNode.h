@@ -4,7 +4,6 @@
 #include <mutex>
 
 // Custom.
-#include "render/MeshDrawLayer.hpp"
 #include "math/GLMath.hpp"
 #include "game/node/MeshNode.h"
 #include "game/geometry/SkeletalMeshNodeGeometry.h"
@@ -141,6 +140,13 @@ protected:
      * @return Type of this node.
      */
     virtual bool isUsingSkeletalMeshGeometry() override;
+
+    /**
+     * Called after the rendering handle was received.
+     *
+     * @param pRenderingHandle New rendering handle.
+     */
+    virtual void onRenderingHandleInitialized(MeshRenderingHandle* pRenderingHandle) override;
 
 private:
     /** Mesh geometry. */

@@ -1,10 +1,8 @@
-#include "../Base.glsl"
 #include "../Light.glsl"
 
 #include "../vertex_format/MeshNodeVertexFormat.glsl"
 
 uniform vec4 diffuseColor;
-uniform bool bIsAffectedByLightSources;
 
 uniform bool bIsUsingDiffuseTexture;
 layout(location = 0) uniform sampler2D diffuseTexture;
@@ -34,10 +32,18 @@ void main() {
     }
 
     // Light.
-    vec3 lightColor = fragmentDiffuseColor.rgb;
-    if (bIsAffectedByLightSources) {
-        lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
-    }
+    #ifdef EDITOR_GIZMO
+        // Editor's gizmo mesh should not have lighting.
+        vec3 lightColor = fragmentDiffuseColor.rgb;
+
+        // TODO: because gizmo shader does not use normal for lighting the CPU code that sets
+        // normalMatrix will fail because it's also not used and is optimized out. To avoid this:
+        if (fragmentNormalUnit.y > 100.0) {
+            discard;
+        }
+    #else
+        vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
+    #endif
 
     color = vec4(lightColor, fragmentDiffuseColor.a);
 } 
