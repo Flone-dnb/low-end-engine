@@ -348,7 +348,7 @@ void EditorGameInstance::onWindowClose() {
     gpuPickingData.pNodeIdTexture = nullptr;
 }
 
-void EditorGameInstance::onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) {
+void EditorGameInstance::onFinishedSubmittingMeshDrawCommands() {
     PROFILE_FUNC
 
     if (!gpuPickingData.bMouseClickedThisTick) {
@@ -359,9 +359,8 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands(CameraNode* pCamer
         return;
     }
 
-    if (pCamera != gameWorldNodes.pViewportCamera) {
-        return;
-    }
+    auto& framebuffer =
+        gameWorldNodes.pViewportCamera->getWorldWhileSpawned()->getCameraManager().getMainFramebuffer();
 
     gpuPickingData.bMouseClickedThisTick = false;
 

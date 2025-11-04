@@ -179,13 +179,8 @@ protected:
      */
     virtual void onWindowClose() override;
 
-    /**
-     * Called after the renderer finished submitting draw commands to render meshes.
-     *
-     * @param pCamera     Active camera.
-     * @param framebuffer Framebuffer that was used to draw on.
-     */
-    virtual void onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) override;
+    /** Called after the renderer finished submitting draw commands to render meshes. */
+    virtual void onFinishedSubmittingMeshDrawCommands() override;
 
 private:
     /** Groups pointers to nodes from game's level. */

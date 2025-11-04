@@ -312,10 +312,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Draw meshes from each camera.
         {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
 #if defined(ENGINE_DEBUG_TOOLS)
             const auto cpuSubmitMeshesStartCounter = SDL_GetPerformanceCounter();
 #endif
-            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
                 const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
@@ -329,15 +329,17 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
                 pWorld->getMeshRenderer().drawMeshes(
                     this, pCameraProperties, pWorld->getLightSourceManager());
-
-                pGameInstance->onFinishedSubmittingMeshDrawCommands(
-                    mtxActiveCamera.second.pCameraNode, *pFramebuffer);
             }
 #if defined(ENGINE_DEBUG_TOOLS)
-            DebugConsole::getStats().cpuTimeToSubmitMeshesMs = static_cast<float>(
-                static_cast<double>(SDL_GetPerformanceCounter() - cpuSubmitMeshesStartCounter) * 1000.0 /
-                static_cast<double>(SDL_GetPerformanceFrequency()));
+            DebugConsole::getStats().cpuTimeToSubmitMeshesMs =
+                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitMeshesStartCounter) * 1000.0F /
+                static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
+        }
+
+        // Notify game instance.
+        {
+            pGameInstance->onFinishedSubmittingMeshDrawCommands();
         }
 
         // Draw post processing before UI.
@@ -360,10 +362,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Draw UI nodes on post-processing framebuffer.
         {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
 #if defined(ENGINE_DEBUG_TOOLS)
             const auto cpuSubmitUiStartCounter = SDL_GetPerformanceCounter();
 #endif
-            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
                 auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
@@ -375,9 +377,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                     postProcessManager.pFramebuffer->getFramebufferId());
             }
 #if defined(ENGINE_DEBUG_TOOLS)
-            DebugConsole::getStats().cpuTimeToSubmitUiMs = static_cast<float>(
-                static_cast<double>(SDL_GetPerformanceCounter() - cpuSubmitUiStartCounter) * 1000.0 /
-                static_cast<double>(SDL_GetPerformanceFrequency()));
+            DebugConsole::getStats().cpuTimeToSubmitUiMs =
+                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitUiStartCounter) * 1000.0F /
+                static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
         }
 
@@ -411,9 +413,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
             DebugDrawer::get().drawDebugObjects(this, pCameraProperties, timeSincePrevCallInSec);
 
-            DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs = static_cast<float>(
-                static_cast<double>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0 /
-                static_cast<double>(SDL_GetPerformanceFrequency()));
+            DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs =
+                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0F /
+                static_cast<float>(SDL_GetPerformanceFrequency());
         }
 #endif
     }
@@ -425,9 +427,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 #endif
 
 #if defined(ENGINE_DEBUG_TOOLS)
-    DebugConsole::getStats().cpuTimeToSubmitFrameMs = static_cast<float>(
-        static_cast<double>(SDL_GetPerformanceCounter() - cpuFrameSubmitStartCounter) * 1000.0 /
-        static_cast<double>(SDL_GetPerformanceFrequency()));
+    DebugConsole::getStats().cpuTimeToSubmitFrameMs =
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuFrameSubmitStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 
     // Swap.

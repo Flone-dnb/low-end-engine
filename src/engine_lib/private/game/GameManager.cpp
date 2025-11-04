@@ -403,9 +403,9 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::get().onBeforeNewFrame(timeSincePrevCallInSec, pRenderer.get());
 
-    DebugConsole::get().getStats().cpuTickTimeMs = static_cast<float>(
-        static_cast<double>(SDL_GetPerformanceCounter() - startCounter) * 1000.0 /
-        static_cast<double>(SDL_GetPerformanceFrequency()));
+    DebugConsole::get().getStats().cpuTickTimeMs =
+        static_cast<float>(SDL_GetPerformanceCounter() - startCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 }
 

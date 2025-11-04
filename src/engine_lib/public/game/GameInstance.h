@@ -322,13 +322,8 @@ protected:
      */
     virtual void onWindowClose() {}
 
-    /**
-     * Called after the renderer finished submitting draw commands to render meshes.
-     *
-     * @param pCamera     Active camera.
-     * @param framebuffer Framebuffer that was used to draw on.
-     */
-    virtual void onFinishedSubmittingMeshDrawCommands(CameraNode* pCamera, Framebuffer& framebuffer) {}
+    /** Called after the renderer finished submitting draw commands to render meshes. */
+    virtual void onFinishedSubmittingMeshDrawCommands() {}
 
     /**
      * Returns map of action events that this GameInstance is bound to.
