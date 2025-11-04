@@ -281,5 +281,5 @@ private:
     ShaderConstantsSetter shaderConstantsSetter;
 
     /** Groups data for rendering. */
-    std::pair<std::mutex, RenderData> mtxRenderData;
+    std::pair<std::mutex, RenderData> mtxRenderData{};
 };
