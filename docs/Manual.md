@@ -921,6 +921,7 @@ In order to view profiled data you need to build and launch the tracy server app
 
 ```
 cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release
+# or if you're on Linux with X11: cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DLEGACY=ON
 cmake --build profiler/build --config=Release --parallel
 ```
 
