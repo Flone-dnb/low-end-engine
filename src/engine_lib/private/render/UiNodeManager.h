@@ -283,9 +283,10 @@ private:
              * @return Node count.
              */
             size_t getTotalNodeCount() const {
-                return vTextNodes.size() + vRectNodes.size() + vProgressBarNodes.size() +
-                       vSliderNodes.size() + receivingInputUiNodes.size() +
-                       receivingInputUiNodesRenderedLastFrame.size() + layoutNodesWithScrollBars.size();
+                return vTextNodes.size() + vTextEditNodes.size() + vRectNodes.size() +
+                       vProgressBarNodes.size() + vSliderNodes.size() + vCheckboxNodes.size() +
+                       receivingInputUiNodes.size() + receivingInputUiNodesRenderedLastFrame.size() +
+                       layoutNodesWithScrollBars.size();
             }
 
             /** Node depth - text nodes on this depth. */
@@ -375,51 +376,79 @@ private:
     /**
      * Renders the UI text nodes on the current framebuffer.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawTextNodes(size_t iLayer);
+    void drawTextNodesDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders the UI text edit nodes on the current framebuffer.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawTextEditNodes(size_t iLayer);
+    void drawTextEditNodesDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders the UI rect nodes on the current framebuffer.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawRectNodes(size_t iLayer);
+    void drawRectNodesDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders the UI progress bar nodes on the current framebuffer.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawProgressBarNodes(size_t iLayer);
+    void drawProgressBarNodesDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders the UI slider nodes on the current framebuffer.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawSliderNodes(size_t iLayer);
+    void drawSliderNodesDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders the UI checkbox nodes on the current framebuffer.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawCheckboxNodes(size_t iLayer);
+    void drawCheckboxNodesDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders scroll bars for layout UI nodes.
      *
+     * @remark Expects that @ref mtxData is locked.
+     *
      * @param iLayer UI layer to render to.
+     * @param iWindowWidth Width of the window (in pixels).
+     * @param iWindowHeight Height of the window (in pixels).
      */
-    void drawLayoutScrollBars(size_t iLayer);
+    void drawLayoutScrollBarsDataLocked(size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight);
 
     /**
      * Renders scroll bars.

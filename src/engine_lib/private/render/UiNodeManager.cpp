@@ -19,10 +19,10 @@
 #include "misc/Error.h"
 #include "render/FontManager.h"
 #include "render/wrapper/ShaderProgram.h"
-#include "render/wrapper/Texture.h"
 #include "game/Window.h"
 #include "render/GpuResourceManager.h"
 #include "game/camera/CameraManager.h"
+#include "render/wrapper/Texture.h"
 
 // External.
 #include "glad/glad.h"
@@ -880,7 +880,7 @@ void UiNodeManager::onWindowSizeChanged() {
 void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
     PROFILE_FUNC;
 
-    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId));
+    glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
 
     std::scoped_lock guard(mtxData.first);
 
@@ -890,23 +890,31 @@ void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
         nodes.receivingInputUiNodesRenderedLastFrame.clear(); // clear but don't shrink
     }
 
+    const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+
     glDisable(GL_DEPTH_TEST);
-    for (size_t i = 0; i < mtxData.second.vSpawnedVisibleNodes.size(); i++) {
-        drawRectNodes(i);
-        drawProgressBarNodes(i);
-        drawTextNodes(i);
-        drawTextEditNodes(i);
-        drawSliderNodes(i);
-        drawCheckboxNodes(i);
-        drawLayoutScrollBars(i);
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        {
+            for (size_t i = 0; i < mtxData.second.vSpawnedVisibleNodes.size(); i++) {
+                drawRectNodesDataLocked(i, iWindowWidth, iWindowHeight);
+                drawProgressBarNodesDataLocked(i, iWindowWidth, iWindowHeight);
+                drawTextNodesDataLocked(i, iWindowWidth, iWindowHeight);
+                drawTextEditNodesDataLocked(i, iWindowWidth, iWindowHeight);
+                drawSliderNodesDataLocked(i, iWindowWidth, iWindowHeight);
+                drawCheckboxNodesDataLocked(i, iWindowWidth, iWindowHeight);
+                drawLayoutScrollBarsDataLocked(i, iWindowWidth, iWindowHeight);
+            }
+        }
+        glDisable(GL_BLEND);
     }
     glEnable(GL_DEPTH_TEST);
 }
 
-void UiNodeManager::drawRectNodes(size_t iLayer) {
+void UiNodeManager::drawRectNodesDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
     PROFILE_FUNC;
-
-    std::scoped_lock guard(mtxData.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vRectNodes;
     if (vNodesByDepth.empty()) {
@@ -915,61 +923,53 @@ void UiNodeManager::drawRectNodes(size_t iLayer) {
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
-
-        // Set shader program.
-        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
-        if (pShaderProgram == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-        }
-        glUseProgram(pShaderProgram->getShaderProgramId());
-
-        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-
-        for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pRectNode : nodes) {
-                if (pRectNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
-                                                           // (it will wait on our mutex)
-                    vInputNodesRendered.push_back(pRectNode);
-                }
-
-                auto pos = pRectNode->getPosition();
-                auto size = pRectNode->getSize();
-
-                // Set shader parameters.
-                pShaderProgram->setVector4ToShader("color", pRectNode->getColor());
-                if (pRectNode->pTexture != nullptr) {
-                    pShaderProgram->setBoolToShader("bIsUsingTexture", true);
-                    glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, pRectNode->pTexture->getTextureId());
-                } else {
-                    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
-                }
-
-                pos = glm::vec2(
-                    pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
-                size = glm::vec2(
-                    size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
-
-                drawQuad(pos, size, iWindowHeight);
-            }
-        }
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
     }
-    glDisable(GL_BLEND);
+    glUseProgram(pShaderProgram->getShaderProgramId());
+
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+
+    for (const auto& [iDepth, nodes] : vNodesByDepth) {
+        for (const auto& pRectNode : nodes) {
+            if (pRectNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                       // (it will wait on our mutex)
+                vInputNodesRendered.push_back(pRectNode);
+            }
+
+            auto pos = pRectNode->getPosition();
+            auto size = pRectNode->getSize();
+
+            // Set shader parameters.
+            pShaderProgram->setVector4ToShader("color", pRectNode->getColor());
+            if (pRectNode->pTexture != nullptr) {
+                pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, pRectNode->pTexture->getTextureId());
+            } else {
+                pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            }
+
+            pos = glm::vec2(
+                pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
+            size = glm::vec2(
+                size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
+
+            drawQuad(pos, size, iWindowHeight);
+        }
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
 }
 
-void UiNodeManager::drawProgressBarNodes(size_t iLayer) {
+void UiNodeManager::drawProgressBarNodesDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
     PROFILE_FUNC;
-
-    std::scoped_lock guard(mtxData.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vProgressBarNodes;
     if (vNodesByDepth.empty()) {
@@ -978,76 +978,68 @@ void UiNodeManager::drawProgressBarNodes(size_t iLayer) {
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
-
-        // Set shader program.
-        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
-        if (pShaderProgram == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-        }
-        glUseProgram(pShaderProgram->getShaderProgramId());
-
-        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-
-        for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pProgressBarNode : nodes) {
-                if (pProgressBarNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state
-                                                                  // here (it will wait on our mutex)
-                    vInputNodesRendered.push_back(pProgressBarNode);
-                }
-
-                auto pos = pProgressBarNode->getPosition();
-                auto relativeSize = pProgressBarNode->getSize();
-
-                // Set background shader parameters.
-                pShaderProgram->setVector4ToShader("color", pProgressBarNode->getColor());
-                if (pProgressBarNode->pTexture != nullptr) {
-                    pShaderProgram->setBoolToShader("bIsUsingTexture", true);
-                    glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pTexture->getTextureId());
-                } else {
-                    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
-                }
-
-                // Draw background.
-                pos = glm::vec2(
-                    pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
-                auto size = glm::vec2(
-                    relativeSize.x * static_cast<float>(iWindowWidth),
-                    relativeSize.y * static_cast<float>(iWindowHeight));
-                drawQuad(pos, size, iWindowHeight);
-
-                // Set foreground shader parameters.
-                pShaderProgram->setVector4ToShader("color", pProgressBarNode->getForegroundColor());
-                if (pProgressBarNode->pForegroundTexture != nullptr) {
-                    pShaderProgram->setBoolToShader("bIsUsingTexture", true);
-                    glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pForegroundTexture->getTextureId());
-                } else {
-                    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
-                }
-
-                // Draw foreground.
-                const auto clipRect = glm::vec4(0.0F, 0.0F, pProgressBarNode->getProgressFactor(), 1.0F);
-                drawQuad(pos, size, iWindowHeight, clipRect);
-            }
-        }
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
     }
-    glDisable(GL_BLEND);
+    glUseProgram(pShaderProgram->getShaderProgramId());
+
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+
+    for (const auto& [iDepth, nodes] : vNodesByDepth) {
+        for (const auto& pProgressBarNode : nodes) {
+            if (pProgressBarNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state
+                                                              // here (it will wait on our mutex)
+                vInputNodesRendered.push_back(pProgressBarNode);
+            }
+
+            auto pos = pProgressBarNode->getPosition();
+            auto relativeSize = pProgressBarNode->getSize();
+
+            // Set background shader parameters.
+            pShaderProgram->setVector4ToShader("color", pProgressBarNode->getColor());
+            if (pProgressBarNode->pTexture != nullptr) {
+                pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pTexture->getTextureId());
+            } else {
+                pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            }
+
+            // Draw background.
+            pos = glm::vec2(
+                pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
+            auto size = glm::vec2(
+                relativeSize.x * static_cast<float>(iWindowWidth),
+                relativeSize.y * static_cast<float>(iWindowHeight));
+            drawQuad(pos, size, iWindowHeight);
+
+            // Set foreground shader parameters.
+            pShaderProgram->setVector4ToShader("color", pProgressBarNode->getForegroundColor());
+            if (pProgressBarNode->pForegroundTexture != nullptr) {
+                pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pForegroundTexture->getTextureId());
+            } else {
+                pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            }
+
+            // Draw foreground.
+            const auto clipRect = glm::vec4(0.0F, 0.0F, pProgressBarNode->getProgressFactor(), 1.0F);
+            drawQuad(pos, size, iWindowHeight, clipRect);
+        }
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
 }
 
-void UiNodeManager::drawCheckboxNodes(size_t iLayer) {
+void UiNodeManager::drawCheckboxNodesDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
     PROFILE_FUNC;
-
-    std::scoped_lock guard(mtxData.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vCheckboxNodes;
     if (vNodesByDepth.empty()) {
@@ -1056,77 +1048,70 @@ void UiNodeManager::drawCheckboxNodes(size_t iLayer) {
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
-        const auto aspectRatio = static_cast<float>(iWindowWidth) / static_cast<float>(iWindowHeight);
+    const auto aspectRatio = static_cast<float>(iWindowWidth) / static_cast<float>(iWindowHeight);
 
-        // Set shader program.
-        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
-        if (pShaderProgram == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-        }
-        glUseProgram(pShaderProgram->getShaderProgramId());
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+    }
+    glUseProgram(pShaderProgram->getShaderProgramId());
 
-        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-        pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
 
-        constexpr float boundsWidthInPix = 2.0F;
-        constexpr float backgroundPaddingInPix = 6.0F;
+    constexpr float boundsWidthInPix = 2.0F;
+    constexpr float backgroundPaddingInPix = 6.0F;
 
-        for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pCheckboxNode : nodes) {
-                // Update input-related things.
-                if (pCheckboxNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
-                                                               // (it will wait on our mutex)
-                    vInputNodesRendered.push_back(pCheckboxNode);
-                }
+    for (const auto& [iDepth, nodes] : vNodesByDepth) {
+        for (const auto& pCheckboxNode : nodes) {
+            // Update input-related things.
+            if (pCheckboxNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                           // (it will wait on our mutex)
+                vInputNodesRendered.push_back(pCheckboxNode);
+            }
 
-                auto pos = pCheckboxNode->getPosition();
-                auto size = pCheckboxNode->getSize();
-                size = glm::vec2(std::min(size.x, size.y));
+            auto pos = pCheckboxNode->getPosition();
+            auto size = pCheckboxNode->getSize();
+            size = glm::vec2(std::min(size.x, size.y));
 
-                // Adjust size to be square according to aspect ratio.
-                // TODO: this creates inconsistency between UI logic (which operates on `getPos` and
-                // `getSize`) and rendered image (which is adjusted `getSize`) this means that things like
-                // clicks and hovering will work slightly outside of the rendered checkbox.
-                size.x *= 1.0F / aspectRatio;
+            // Adjust size to be square according to aspect ratio.
+            // TODO: this creates inconsistency between UI logic (which operates on `getPos` and
+            // `getSize`) and rendered image (which is adjusted `getSize`) this means that things like
+            // clicks and hovering will work slightly outside of the rendered checkbox.
+            size.x *= 1.0F / aspectRatio;
 
-                // Draw bounds.
+            // Draw bounds.
+            pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
+            pos = glm::vec2(
+                pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
+            size = glm::vec2(
+                size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
+            drawQuad(pos, size, iWindowHeight);
+
+            // Draw background.
+            pShaderProgram->setVector4ToShader("color", pCheckboxNode->getBackgroundColor());
+            pos += boundsWidthInPix;
+            size -= boundsWidthInPix * 2.0F;
+            drawQuad(pos, size, iWindowHeight);
+
+            if (pCheckboxNode->isChecked()) {
                 pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
-                pos = glm::vec2(
-                    pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
-                size = glm::vec2(
-                    size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
+                pos += backgroundPaddingInPix;
+                size -= backgroundPaddingInPix * 2.0F;
                 drawQuad(pos, size, iWindowHeight);
-
-                // Draw background.
-                pShaderProgram->setVector4ToShader("color", pCheckboxNode->getBackgroundColor());
-                pos += boundsWidthInPix;
-                size -= boundsWidthInPix * 2.0F;
-                drawQuad(pos, size, iWindowHeight);
-
-                if (pCheckboxNode->isChecked()) {
-                    pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
-                    pos += backgroundPaddingInPix;
-                    size -= backgroundPaddingInPix * 2.0F;
-                    drawQuad(pos, size, iWindowHeight);
-                }
             }
         }
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
     }
-    glDisable(GL_BLEND);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
 }
 
-void UiNodeManager::drawSliderNodes(size_t iLayer) {
+void UiNodeManager::drawSliderNodesDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
     PROFILE_FUNC;
-
-    std::scoped_lock guard(mtxData.first);
 
     auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vSliderNodes;
     if (vNodesByDepth.empty()) {
@@ -1135,10 +1120,509 @@ void UiNodeManager::drawSliderNodes(size_t iLayer) {
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+    }
+    glUseProgram(pShaderProgram->getShaderProgramId());
+
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+    constexpr float sliderHeightToWidthRatio = 0.5F; // NOLINT
+    constexpr float sliderHandleWidth = 0.1F;        // NOLINT: in range [0.0; 1.0] relative to slider width
+
+    for (const auto& [iDepth, nodes] : vNodesByDepth) {
+        for (const auto& pSliderNode : nodes) {
+            // Update input-related things.
+            if (pSliderNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                         // (it will wait on our mutex)
+                vInputNodesRendered.push_back(pSliderNode);
+            }
+
+            const auto pos = pSliderNode->getPosition();
+            const auto size = pSliderNode->getSize();
+            const auto handlePos = pSliderNode->getHandlePosition();
+
+            // Draw slider base.
+            pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderColor());
+            const auto baseHeight = size.y * sliderHeightToWidthRatio;
+            drawQuad(
+                glm::vec2(
+                    pos.x * static_cast<float>(iWindowWidth),
+                    (pos.y + size.y / 2.0F - baseHeight / 2.0F) * static_cast<float>(iWindowHeight)),
+                glm::vec2(
+                    size.x * static_cast<float>(iWindowWidth),
+                    baseHeight * static_cast<float>(iWindowHeight)),
+                iWindowHeight);
+
+            // Draw slider handle.
+            pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderHandleColor());
+            const auto handleWidth = size.x * sliderHandleWidth;
+            const auto handleCenterPos = glm::vec2(pos.x + handlePos * size.x, pos.y);
+            drawQuad(
+                glm::vec2(
+                    (handleCenterPos.x - handleWidth / 2.0F) * static_cast<float>(iWindowWidth),
+                    handleCenterPos.y * static_cast<float>(iWindowHeight)),
+                glm::vec2(
+                    handleWidth * static_cast<float>(iWindowWidth),
+                    size.y * static_cast<float>(iWindowHeight)),
+                iWindowHeight);
+        }
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
+}
+
+void UiNodeManager::drawTextNodesDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
+    PROFILE_FUNC;
+
+    auto& fontManager = pRenderer->getFontManager();
+    auto glyphGuard = fontManager.getGlyphs();
+
+    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextNodes;
+    if (vNodesByDepth.empty()) {
+        return;
+    }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pTextShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+    }
+    glUseProgram(pShaderProgram->getShaderProgramId());
+
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+    glActiveTexture(GL_TEXTURE0); // glyph's bitmap
+
+    // Prepare info to later draw scroll bars.
+    std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
+
+    for (const auto& [iDepth, nodes] : vNodesByDepth) {
+        for (const auto& pTextNode : nodes) {
+            if (pTextNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                       // (it will wait on our mutex)
+                vInputNodesRendered.push_back(pTextNode);
+            }
+
+            // Prepare some variables for rendering.
+            const auto sText = pTextNode->getText();
+            const auto textPos = pTextNode->getPosition();
+            const auto screenMaxXForWordWrap =
+                (textPos.x + pTextNode->getSize().x) * static_cast<float>(iWindowWidth);
+
+            float screenX = textPos.x * static_cast<float>(iWindowWidth);
+            float screenY = textPos.y * static_cast<float>(iWindowHeight);
+            const auto screenYEnd = screenY + pTextNode->getSize().y * static_cast<float>(iWindowHeight);
+            const auto scale = pTextNode->getTextHeight() / fontManager.getFontHeightToLoad();
+
+            const float textHeightInPixels =
+                static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
+            const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
+
+            // Check scroll bar.
+            size_t iLinesToSkip = 0;
+            if (pTextNode->getIsScrollBarEnabled()) {
+                iLinesToSkip = pTextNode->getCurrentScrollOffset();
+            }
+
+            // Set color.
+            pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
+
+            // Switch to the first row of text.
+            screenY += textHeightInPixels;
+
+            // Render each character.
+            size_t iLineIndex = 0;
+            size_t iCharIndex = 0;
+            bool bReachedEndOfUiNode = false;
+            for (; iCharIndex < sText.size(); iCharIndex++) {
+                const auto& character = sText[iCharIndex];
+
+                // Prepare a handy lambda.
+                const auto switchToNewLine = [&]() {
+                    // Switch to a new line.
+                    if (iLineIndex >= iLinesToSkip) {
+                        screenY += textHeightInPixels + lineSpacingInPixels;
+                    }
+                    screenX = textPos.x * static_cast<float>(iWindowWidth);
+
+                    if (screenY > screenYEnd) {
+                        bReachedEndOfUiNode = true;
+                    }
+
+                    iLineIndex += 1;
+                };
+
+                // Handle new line.
+                if (character == '\n' && pTextNode->getHandleNewLineChars()) {
+                    switchToNewLine();
+                    if (bReachedEndOfUiNode) {
+                        break;
+                    }
+                    continue; // don't render \n
+                }
+
+                const auto& glyph = glyphGuard.getGlyph(character);
+
+                const float distanceToNextGlyph =
+                    static_cast<float>(
+                        glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
+                    scale;
+
+                // Handle word wrap.
+                // TODO: do per-character wrap for now, rework later
+                if (pTextNode->getIsWordWrapEnabled() &&
+                    (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
+                    switchToNewLine();
+                    if (bReachedEndOfUiNode) {
+                        break;
+                    }
+                }
+
+                if (iLineIndex >= iLinesToSkip && screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
+                    float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
+                    float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
+
+                    float width = static_cast<float>(glyph.size.x) * scale;
+                    float height = static_cast<float>(glyph.size.y) * scale;
+
+                    // Space character has 0 width so don't submit any rendering.
+                    if (glyph.size.x != 0) {
+                        glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
+                        drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
+                    }
+                }
+
+                // Switch to next glyph.
+                screenX += distanceToNextGlyph;
+            }
+
+            // Check scroll bar.
+            if (pTextNode->getIsScrollBarEnabled()) {
+                const auto iAverageLineCountDisplayed = static_cast<size_t>(
+                    pTextNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
+
+                const float verticalSize = std::min(
+                    1.0F,
+                    static_cast<float>(iAverageLineCountDisplayed) /
+                        static_cast<float>(pTextNode->iNewLineCharCountInText));
+
+                const float verticalPos = std::min(
+                    1.0F,
+                    static_cast<float>(pTextNode->iCurrentScrollOffset) /
+                        static_cast<float>(
+                            std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
+
+                const auto scrollBarWidthInPixels =
+                    std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
+                vScrollBarToDraw.push_back(ScrollBarDrawInfo{
+                    .posInPixels = glm::vec2(
+                        screenMaxXForWordWrap - scrollBarWidthInPixels,
+                        textPos.y * static_cast<float>(iWindowHeight)),
+                    .heightInPixels = pTextNode->getSize().y * static_cast<float>(iWindowHeight),
+                    .verticalPos = verticalPos,
+                    .verticalSize = verticalSize,
+                    .color = pTextNode->getScrollBarColor(),
+                });
+            }
+        }
+    }
+
+    if (!vScrollBarToDraw.empty()) {
+        drawScrollBarsDataLocked(vScrollBarToDraw, iWindowWidth, iWindowHeight);
+    }
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void UiNodeManager::drawTextEditNodesDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
+    PROFILE_FUNC;
+
+    auto& fontManager = pRenderer->getFontManager();
+    auto glyphGuard = fontManager.getGlyphs();
+
+    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextEditNodes;
+    if (vNodesByDepth.empty()) {
+        return;
+    }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    // Set shader program.
+    auto& pShaderProgram = mtxData.second.pTextShaderProgram;
+    if (pShaderProgram == nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+    }
+    glUseProgram(pShaderProgram->getShaderProgramId());
+
+    glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+    pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+    glActiveTexture(GL_TEXTURE0); // glyph's bitmap
+
+    // Prepare info to later draw cursors for text edit UI nodes.
+    struct CursorDrawInfo {
+        glm::vec2 screenPos = glm::vec2(0.0F, 0.0F);
+        float height = 0.0F;
+    };
+    std::vector<CursorDrawInfo> vCursorScreenPosToDraw;
+
+    // Prepare info to later draw text selection.
+    struct TextSelectionDrawInfo {
+        std::vector<std::pair<glm::vec2, glm::vec2>> vLineStartEndScreenPos;
+        float textHeightInPixels;
+        glm::vec4 color;
+    };
+    std::vector<TextSelectionDrawInfo> vTextSelectionToDraw;
+
+    // Prepare info to later draw scroll bars.
+    std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
+
+    enum class SelectionDrawState { LOOKING_FOR_START, LOOKING_FOR_END, FINISHED };
+
+    for (const auto& [iDepth, nodes] : vNodesByDepth) {
+        for (const auto& pTextEditNode : nodes) {
+            if (pTextEditNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                           // (it will wait on our mutex)
+                vInputNodesRendered.push_back(pTextEditNode);
+            }
+
+            // Check cursor and selection.
+            const auto optionalCursorOffset = pTextEditNode->optionalCursorOffset;
+            const auto optionalSelection = pTextEditNode->optionalSelection;
+            const auto selectionColor = pTextEditNode->getTextSelectionColor();
+
+            std::vector<std::pair<glm::vec2, glm::vec2>> vSelectionLinesToDraw;
+            SelectionDrawState selectionDrawState = SelectionDrawState::LOOKING_FOR_START;
+
+            // Prepare some variables for rendering.
+            const auto sText = pTextEditNode->getText();
+            const auto textPos = pTextEditNode->getPosition();
+            const auto screenMaxXForWordWrap =
+                (textPos.x + pTextEditNode->getSize().x) * static_cast<float>(iWindowWidth);
+
+            float screenX = textPos.x * static_cast<float>(iWindowWidth);
+            float screenY = textPos.y * static_cast<float>(iWindowHeight);
+            const auto screenYEnd = screenY + pTextEditNode->getSize().y * static_cast<float>(iWindowHeight);
+            const auto scale = pTextEditNode->getTextHeight() / fontManager.getFontHeightToLoad();
+
+            const float textHeightInPixels =
+                static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
+            const float lineSpacingInPixels = pTextEditNode->getTextLineSpacing() * textHeightInPixels;
+
+            // Check scroll bar.
+            size_t iLinesToSkip = 0;
+            if (pTextEditNode->getIsScrollBarEnabled()) {
+                iLinesToSkip = pTextEditNode->getCurrentScrollOffset();
+            }
+
+            // Set color.
+            pShaderProgram->setVector4ToShader("textColor", pTextEditNode->getTextColor());
+
+            // Switch to the first row of text.
+            screenY += textHeightInPixels;
+
+            // Render each character.
+            size_t iLineIndex = 0;
+            size_t iRenderedCharCount = 0;
+            size_t iCharIndex = 0;
+            bool bReachedEndOfUiNode = false;
+            for (; iCharIndex < sText.size(); iCharIndex++) {
+                const auto& character = sText[iCharIndex];
+
+                // Prepare a handy lambda.
+                const auto switchToNewLine = [&]() {
+                    // Check cursor.
+                    if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
+                        vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                            .screenPos = glm::vec2(screenX, screenY),
+                            .height = fontManager.getFontHeightToLoad() * scale});
+                    }
+
+                    // Check selection.
+                    bool bStartNewSelectionRegionOnNewLine = false;
+                    if (optionalSelection.has_value() &&
+                        selectionDrawState == SelectionDrawState::LOOKING_FOR_END) {
+                        vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+
+                        if (optionalSelection->second == iCharIndex) {
+                            selectionDrawState = SelectionDrawState::FINISHED;
+                        } else {
+                            vSelectionLinesToDraw.push_back(
+                                {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                            bStartNewSelectionRegionOnNewLine = true;
+                        }
+                    }
+
+                    // Switch to a new line.
+                    if (iLineIndex >= iLinesToSkip) {
+                        screenY += textHeightInPixels + lineSpacingInPixels;
+                    }
+                    screenX = textPos.x * static_cast<float>(iWindowWidth);
+
+                    if (bStartNewSelectionRegionOnNewLine) {
+                        vSelectionLinesToDraw.push_back(
+                            {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                    }
+
+                    if (screenY > screenYEnd) {
+                        bReachedEndOfUiNode = true;
+                    }
+
+                    iLineIndex += 1;
+                };
+
+                // Handle new line.
+                if (character == '\n' && pTextEditNode->getHandleNewLineChars()) {
+                    switchToNewLine();
+                    if (bReachedEndOfUiNode) {
+                        break;
+                    }
+                    continue; // don't render \n
+                }
+
+                const auto& glyph = glyphGuard.getGlyph(character);
+
+                const float distanceToNextGlyph =
+                    static_cast<float>(
+                        glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
+                    scale;
+
+                // Handle word wrap.
+                // TODO: do per-character wrap for now, rework later
+                if (pTextEditNode->getIsWordWrapEnabled() &&
+                    (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
+                    switchToNewLine();
+                    if (bReachedEndOfUiNode) {
+                        break;
+                    }
+                } else if (iLineIndex >= iLinesToSkip) {
+                    // Check cursor.
+                    if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
+                        vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                            .screenPos = glm::vec2(screenX, screenY),
+                            .height = fontManager.getFontHeightToLoad() * scale});
+                    }
+
+                    // Check selection.
+                    if (optionalSelection.has_value() && selectionDrawState != SelectionDrawState::FINISHED) {
+                        if (selectionDrawState == SelectionDrawState::LOOKING_FOR_START) {
+                            if (optionalSelection->first == iCharIndex) {
+                                selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
+                                vSelectionLinesToDraw.push_back(
+                                    {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
+                            } else if (iLineIndex == iLinesToSkip && optionalSelection->first <= iCharIndex) {
+                                // Selection start was above (we skipped that line due to scroll).
+                                selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
+                                vSelectionLinesToDraw.push_back(
+                                    {glm::vec2(textPos.x * static_cast<float>(iWindowWidth), screenY),
+                                     glm::vec2(textPos.x * static_cast<float>(iWindowWidth), screenY)});
+                            }
+                        } else if (
+                            selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
+                            optionalSelection->second == iCharIndex) {
+                            if (iLineIndex >= iLinesToSkip) {
+                                vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+                            } else {
+                                vSelectionLinesToDraw.pop_back();
+                            }
+                            selectionDrawState = SelectionDrawState::FINISHED;
+                        }
+                    }
+                }
+
+                if (iLineIndex >= iLinesToSkip && screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
+                    float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
+                    float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
+
+                    float width = static_cast<float>(glyph.size.x) * scale;
+                    float height = static_cast<float>(glyph.size.y) * scale;
+
+                    // Space character has 0 width so don't submit any rendering.
+                    if (glyph.size.x != 0) {
+                        glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
+                        drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
+                        iRenderedCharCount += 1;
+                    }
+                }
+
+                // Switch to next glyph.
+                screenX += distanceToNextGlyph;
+            }
+
+            // Check cursor.
+            if (optionalCursorOffset.has_value()) {
+                if (*optionalCursorOffset == 0) {
+                    vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                        .screenPos = glm::vec2(
+                            static_cast<float>(iWindowWidth) * textPos.x,
+                            static_cast<float>(iWindowHeight) * textPos.y + textHeightInPixels),
+                        .height = fontManager.getFontHeightToLoad() * scale});
+                } else if (
+                    *optionalCursorOffset >= sText.size() && screenX < screenMaxXForWordWrap &&
+                    screenY < screenYEnd && iRenderedCharCount != 0) {
+                    vCursorScreenPosToDraw.push_back(CursorDrawInfo{
+                        .screenPos = glm::vec2(screenX, screenY),
+                        .height = fontManager.getFontHeightToLoad() * scale});
+                }
+            }
+
+            // Check selection.
+            if (optionalSelection.has_value() && !vSelectionLinesToDraw.empty()) {
+                if (selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
+                    optionalSelection->second >= sText.size()) {
+                    vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
+                }
+                vTextSelectionToDraw.push_back(TextSelectionDrawInfo{
+                    .vLineStartEndScreenPos = std::move(vSelectionLinesToDraw),
+                    .textHeightInPixels = textHeightInPixels,
+                    .color = selectionColor});
+            }
+
+            // Check scroll bar.
+            if (pTextEditNode->getIsScrollBarEnabled()) {
+                const auto iAverageLineCountDisplayed = static_cast<size_t>(
+                    pTextEditNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
+
+                const float verticalSize = std::min(
+                    1.0F,
+                    static_cast<float>(iAverageLineCountDisplayed) /
+                        static_cast<float>(pTextEditNode->iNewLineCharCountInText));
+
+                const float verticalPos = std::min(
+                    1.0F,
+                    static_cast<float>(pTextEditNode->iCurrentScrollOffset) /
+                        static_cast<float>(
+                            std::max(pTextEditNode->iNewLineCharCountInText, static_cast<size_t>(1))));
+
+                const auto scrollBarWidthInPixels =
+                    std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
+                vScrollBarToDraw.push_back(ScrollBarDrawInfo{
+                    .posInPixels = glm::vec2(
+                        screenMaxXForWordWrap - scrollBarWidthInPixels,
+                        textPos.y * static_cast<float>(iWindowHeight)),
+                    .heightInPixels = pTextEditNode->getSize().y * static_cast<float>(iWindowHeight),
+                    .verticalPos = verticalPos,
+                    .verticalSize = verticalSize,
+                    .color = pTextEditNode->getScrollBarColor(),
+                });
+            }
+        }
+    }
+
+    if (!vCursorScreenPosToDraw.empty()) {
+        // Draw cursors.
 
         // Set shader program.
         auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
@@ -1148,637 +1632,104 @@ void UiNodeManager::drawSliderNodes(size_t iLayer) {
         glUseProgram(pShaderProgram->getShaderProgramId());
 
         glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+        // Set shader parameters.
+        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+        pShaderProgram->setVector4ToShader("color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+        pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+
+        for (const auto& cursorInfo : vCursorScreenPosToDraw) {
+            const float cursorWidth = 2.0F;
+            const float cursorHeight = cursorInfo.height * static_cast<float>(iWindowHeight);
+            const auto screenPos =
+                glm::vec2(cursorInfo.screenPos.x, cursorInfo.screenPos.y - cursorHeight); // to draw from top
+
+            drawQuad(screenPos, glm::vec2(cursorWidth, cursorHeight), iWindowHeight);
+        }
+    }
+
+    if (!vTextSelectionToDraw.empty()) {
+        // Draw selections.
+
+        // Set shader program.
+        auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
+        if (pShaderProgram == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+        }
+        glUseProgram(pShaderProgram->getShaderProgramId());
+
+        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+        // Set shader parameters.
         pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
         pShaderProgram->setBoolToShader("bIsUsingTexture", false);
 
-        constexpr float sliderHeightToWidthRatio = 0.5F; // NOLINT
-        constexpr float sliderHandleWidth = 0.1F; // NOLINT: in range [0.0; 1.0] relative to slider width
+        for (auto& selectionInfo : vTextSelectionToDraw) {
+            pShaderProgram->setVector4ToShader("color", selectionInfo.color);
 
-        for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pSliderNode : nodes) {
-                // Update input-related things.
-                if (pSliderNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
-                                                             // (it will wait on our mutex)
-                    vInputNodesRendered.push_back(pSliderNode);
-                }
+            for (auto& [startPos, endPos] : selectionInfo.vLineStartEndScreenPos) {
+                const auto width = endPos.x - startPos.x;
+                const auto height = selectionInfo.textHeightInPixels;
+                const auto pos = glm::vec2(startPos.x, startPos.y - height); // to draw from top
 
-                const auto pos = pSliderNode->getPosition();
-                const auto size = pSliderNode->getSize();
-                const auto handlePos = pSliderNode->getHandlePosition();
-
-                // Draw slider base.
-                pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderColor());
-                const auto baseHeight = size.y * sliderHeightToWidthRatio;
-                drawQuad(
-                    glm::vec2(
-                        pos.x * static_cast<float>(iWindowWidth),
-                        (pos.y + size.y / 2.0F - baseHeight / 2.0F) * static_cast<float>(iWindowHeight)),
-                    glm::vec2(
-                        size.x * static_cast<float>(iWindowWidth),
-                        baseHeight * static_cast<float>(iWindowHeight)),
-                    iWindowHeight);
-
-                // Draw slider handle.
-                pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderHandleColor());
-                const auto handleWidth = size.x * sliderHandleWidth;
-                const auto handleCenterPos = glm::vec2(pos.x + handlePos * size.x, pos.y);
-                drawQuad(
-                    glm::vec2(
-                        (handleCenterPos.x - handleWidth / 2.0F) * static_cast<float>(iWindowWidth),
-                        handleCenterPos.y * static_cast<float>(iWindowHeight)),
-                    glm::vec2(
-                        handleWidth * static_cast<float>(iWindowWidth),
-                        size.y * static_cast<float>(iWindowHeight)),
-                    iWindowHeight);
+                drawQuad(pos, glm::vec2(width, height), iWindowHeight);
             }
         }
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
     }
-    glDisable(GL_BLEND);
+
+    if (!vScrollBarToDraw.empty()) {
+        drawScrollBarsDataLocked(vScrollBarToDraw, iWindowWidth, iWindowHeight);
+    }
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void UiNodeManager::drawTextNodes(size_t iLayer) {
-    PROFILE_FUNC;
-
-    auto& fontManager = pRenderer->getFontManager();
-    auto glyphGuard = fontManager.getGlyphs();
-    std::scoped_lock guard(mtxData.first);
-
-    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextNodes;
-    if (vNodesByDepth.empty()) {
-        return;
-    }
-    auto& vInputNodesRendered =
-        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
-
-        // Set shader program.
-        auto& pShaderProgram = mtxData.second.pTextShaderProgram;
-        if (pShaderProgram == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-        }
-        glUseProgram(pShaderProgram->getShaderProgramId());
-
-        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-        glActiveTexture(GL_TEXTURE0); // glyph's bitmap
-
-        // Prepare info to later draw scroll bars.
-        std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
-
-        for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pTextNode : nodes) {
-                if (pTextNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
-                                                           // (it will wait on our mutex)
-                    vInputNodesRendered.push_back(pTextNode);
-                }
-
-                // Prepare some variables for rendering.
-                const auto sText = pTextNode->getText();
-                const auto textPos = pTextNode->getPosition();
-                const auto screenMaxXForWordWrap =
-                    (textPos.x + pTextNode->getSize().x) * static_cast<float>(iWindowWidth);
-
-                float screenX = textPos.x * static_cast<float>(iWindowWidth);
-                float screenY = textPos.y * static_cast<float>(iWindowHeight);
-                const auto screenYEnd = screenY + pTextNode->getSize().y * static_cast<float>(iWindowHeight);
-                const auto scale = pTextNode->getTextHeight() / fontManager.getFontHeightToLoad();
-
-                const float textHeightInPixels =
-                    static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
-                const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
-
-                // Check scroll bar.
-                size_t iLinesToSkip = 0;
-                if (pTextNode->getIsScrollBarEnabled()) {
-                    iLinesToSkip = pTextNode->getCurrentScrollOffset();
-                }
-
-                // Set color.
-                pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
-
-                // Switch to the first row of text.
-                screenY += textHeightInPixels;
-
-                // Render each character.
-                size_t iLineIndex = 0;
-                size_t iCharIndex = 0;
-                bool bReachedEndOfUiNode = false;
-                for (; iCharIndex < sText.size(); iCharIndex++) {
-                    const auto& character = sText[iCharIndex];
-
-                    // Prepare a handy lambda.
-                    const auto switchToNewLine = [&]() {
-                        // Switch to a new line.
-                        if (iLineIndex >= iLinesToSkip) {
-                            screenY += textHeightInPixels + lineSpacingInPixels;
-                        }
-                        screenX = textPos.x * static_cast<float>(iWindowWidth);
-
-                        if (screenY > screenYEnd) {
-                            bReachedEndOfUiNode = true;
-                        }
-
-                        iLineIndex += 1;
-                    };
-
-                    // Handle new line.
-                    if (character == '\n' && pTextNode->getHandleNewLineChars()) {
-                        switchToNewLine();
-                        if (bReachedEndOfUiNode) {
-                            break;
-                        }
-                        continue; // don't render \n
-                    }
-
-                    const auto& glyph = glyphGuard.getGlyph(character);
-
-                    const float distanceToNextGlyph =
-                        static_cast<float>(
-                            glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
-                        scale;
-
-                    // Handle word wrap.
-                    // TODO: do per-character wrap for now, rework later
-                    if (pTextNode->getIsWordWrapEnabled() &&
-                        (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
-                        switchToNewLine();
-                        if (bReachedEndOfUiNode) {
-                            break;
-                        }
-                    }
-
-                    if (iLineIndex >= iLinesToSkip &&
-                        screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
-                        float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
-                        float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
-
-                        float width = static_cast<float>(glyph.size.x) * scale;
-                        float height = static_cast<float>(glyph.size.y) * scale;
-
-                        // Space character has 0 width so don't submit any rendering.
-                        if (glyph.size.x != 0) {
-                            glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-                            drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
-                        }
-                    }
-
-                    // Switch to next glyph.
-                    screenX += distanceToNextGlyph;
-                }
-
-                // Check scroll bar.
-                if (pTextNode->getIsScrollBarEnabled()) {
-                    const auto iAverageLineCountDisplayed = static_cast<size_t>(
-                        pTextNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
-
-                    const float verticalSize = std::min(
-                        1.0F,
-                        static_cast<float>(iAverageLineCountDisplayed) /
-                            static_cast<float>(pTextNode->iNewLineCharCountInText));
-
-                    const float verticalPos = std::min(
-                        1.0F,
-                        static_cast<float>(pTextNode->iCurrentScrollOffset) /
-                            static_cast<float>(
-                                std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
-
-                    const auto scrollBarWidthInPixels =
-                        std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
-                    vScrollBarToDraw.push_back(ScrollBarDrawInfo{
-                        .posInPixels = glm::vec2(
-                            screenMaxXForWordWrap - scrollBarWidthInPixels,
-                            textPos.y * static_cast<float>(iWindowHeight)),
-                        .heightInPixels = pTextNode->getSize().y * static_cast<float>(iWindowHeight),
-                        .verticalPos = verticalPos,
-                        .verticalSize = verticalSize,
-                        .color = pTextNode->getScrollBarColor(),
-                    });
-                }
-            }
-        }
-
-        if (!vScrollBarToDraw.empty()) {
-            drawScrollBarsDataLocked(vScrollBarToDraw, iWindowWidth, iWindowHeight);
-        }
-
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    glDisable(GL_BLEND);
-}
-
-void UiNodeManager::drawTextEditNodes(size_t iLayer) {
-    PROFILE_FUNC;
-
-    auto& fontManager = pRenderer->getFontManager();
-    auto glyphGuard = fontManager.getGlyphs();
-    std::scoped_lock guard(mtxData.first);
-
-    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextEditNodes;
-    if (vNodesByDepth.empty()) {
-        return;
-    }
-    auto& vInputNodesRendered =
-        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
-
-        // Set shader program.
-        auto& pShaderProgram = mtxData.second.pTextShaderProgram;
-        if (pShaderProgram == nullptr) [[unlikely]] {
-            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-        }
-        glUseProgram(pShaderProgram->getShaderProgramId());
-
-        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-        glActiveTexture(GL_TEXTURE0); // glyph's bitmap
-
-        // Prepare info to later draw cursors for text edit UI nodes.
-        struct CursorDrawInfo {
-            glm::vec2 screenPos = glm::vec2(0.0F, 0.0F);
-            float height = 0.0F;
-        };
-        std::vector<CursorDrawInfo> vCursorScreenPosToDraw;
-
-        // Prepare info to later draw text selection.
-        struct TextSelectionDrawInfo {
-            std::vector<std::pair<glm::vec2, glm::vec2>> vLineStartEndScreenPos;
-            float textHeightInPixels;
-            glm::vec4 color;
-        };
-        std::vector<TextSelectionDrawInfo> vTextSelectionToDraw;
-
-        // Prepare info to later draw scroll bars.
-        std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
-
-        enum class SelectionDrawState { LOOKING_FOR_START, LOOKING_FOR_END, FINISHED };
-
-        for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pTextEditNode : nodes) {
-                if (pTextEditNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
-                                                               // (it will wait on our mutex)
-                    vInputNodesRendered.push_back(pTextEditNode);
-                }
-
-                // Check cursor and selection.
-                const auto optionalCursorOffset = pTextEditNode->optionalCursorOffset;
-                const auto optionalSelection = pTextEditNode->optionalSelection;
-                const auto selectionColor = pTextEditNode->getTextSelectionColor();
-
-                std::vector<std::pair<glm::vec2, glm::vec2>> vSelectionLinesToDraw;
-                SelectionDrawState selectionDrawState = SelectionDrawState::LOOKING_FOR_START;
-
-                // Prepare some variables for rendering.
-                const auto sText = pTextEditNode->getText();
-                const auto textPos = pTextEditNode->getPosition();
-                const auto screenMaxXForWordWrap =
-                    (textPos.x + pTextEditNode->getSize().x) * static_cast<float>(iWindowWidth);
-
-                float screenX = textPos.x * static_cast<float>(iWindowWidth);
-                float screenY = textPos.y * static_cast<float>(iWindowHeight);
-                const auto screenYEnd =
-                    screenY + pTextEditNode->getSize().y * static_cast<float>(iWindowHeight);
-                const auto scale = pTextEditNode->getTextHeight() / fontManager.getFontHeightToLoad();
-
-                const float textHeightInPixels =
-                    static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
-                const float lineSpacingInPixels = pTextEditNode->getTextLineSpacing() * textHeightInPixels;
-
-                // Check scroll bar.
-                size_t iLinesToSkip = 0;
-                if (pTextEditNode->getIsScrollBarEnabled()) {
-                    iLinesToSkip = pTextEditNode->getCurrentScrollOffset();
-                }
-
-                // Set color.
-                pShaderProgram->setVector4ToShader("textColor", pTextEditNode->getTextColor());
-
-                // Switch to the first row of text.
-                screenY += textHeightInPixels;
-
-                // Render each character.
-                size_t iLineIndex = 0;
-                size_t iRenderedCharCount = 0;
-                size_t iCharIndex = 0;
-                bool bReachedEndOfUiNode = false;
-                for (; iCharIndex < sText.size(); iCharIndex++) {
-                    const auto& character = sText[iCharIndex];
-
-                    // Prepare a handy lambda.
-                    const auto switchToNewLine = [&]() {
-                        // Check cursor.
-                        if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
-                            vCursorScreenPosToDraw.push_back(CursorDrawInfo{
-                                .screenPos = glm::vec2(screenX, screenY),
-                                .height = fontManager.getFontHeightToLoad() * scale});
-                        }
-
-                        // Check selection.
-                        bool bStartNewSelectionRegionOnNewLine = false;
-                        if (optionalSelection.has_value() &&
-                            selectionDrawState == SelectionDrawState::LOOKING_FOR_END) {
-                            vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
-
-                            if (optionalSelection->second == iCharIndex) {
-                                selectionDrawState = SelectionDrawState::FINISHED;
-                            } else {
-                                vSelectionLinesToDraw.push_back(
-                                    {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
-                                bStartNewSelectionRegionOnNewLine = true;
-                            }
-                        }
-
-                        // Switch to a new line.
-                        if (iLineIndex >= iLinesToSkip) {
-                            screenY += textHeightInPixels + lineSpacingInPixels;
-                        }
-                        screenX = textPos.x * static_cast<float>(iWindowWidth);
-
-                        if (bStartNewSelectionRegionOnNewLine) {
-                            vSelectionLinesToDraw.push_back(
-                                {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
-                        }
-
-                        if (screenY > screenYEnd) {
-                            bReachedEndOfUiNode = true;
-                        }
-
-                        iLineIndex += 1;
-                    };
-
-                    // Handle new line.
-                    if (character == '\n' && pTextEditNode->getHandleNewLineChars()) {
-                        switchToNewLine();
-                        if (bReachedEndOfUiNode) {
-                            break;
-                        }
-                        continue; // don't render \n
-                    }
-
-                    const auto& glyph = glyphGuard.getGlyph(character);
-
-                    const float distanceToNextGlyph =
-                        static_cast<float>(
-                            glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
-                        scale;
-
-                    // Handle word wrap.
-                    // TODO: do per-character wrap for now, rework later
-                    if (pTextEditNode->getIsWordWrapEnabled() &&
-                        (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
-                        switchToNewLine();
-                        if (bReachedEndOfUiNode) {
-                            break;
-                        }
-                    } else if (iLineIndex >= iLinesToSkip) {
-                        // Check cursor.
-                        if (optionalCursorOffset.has_value() && *optionalCursorOffset == iCharIndex) {
-                            vCursorScreenPosToDraw.push_back(CursorDrawInfo{
-                                .screenPos = glm::vec2(screenX, screenY),
-                                .height = fontManager.getFontHeightToLoad() * scale});
-                        }
-
-                        // Check selection.
-                        if (optionalSelection.has_value() &&
-                            selectionDrawState != SelectionDrawState::FINISHED) {
-                            if (selectionDrawState == SelectionDrawState::LOOKING_FOR_START) {
-                                if (optionalSelection->first == iCharIndex) {
-                                    selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
-                                    vSelectionLinesToDraw.push_back(
-                                        {glm::vec2(screenX, screenY), glm::vec2(screenX, screenY)});
-                                } else if (
-                                    iLineIndex == iLinesToSkip && optionalSelection->first <= iCharIndex) {
-                                    // Selection start was above (we skipped that line due to scroll).
-                                    selectionDrawState = SelectionDrawState::LOOKING_FOR_END;
-                                    vSelectionLinesToDraw.push_back(
-                                        {glm::vec2(textPos.x * static_cast<float>(iWindowWidth), screenY),
-                                         glm::vec2(textPos.x * static_cast<float>(iWindowWidth), screenY)});
-                                }
-                            } else if (
-                                selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
-                                optionalSelection->second == iCharIndex) {
-                                if (iLineIndex >= iLinesToSkip) {
-                                    vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
-                                } else {
-                                    vSelectionLinesToDraw.pop_back();
-                                }
-                                selectionDrawState = SelectionDrawState::FINISHED;
-                            }
-                        }
-                    }
-
-                    if (iLineIndex >= iLinesToSkip &&
-                        screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
-                        float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
-                        float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
-
-                        float width = static_cast<float>(glyph.size.x) * scale;
-                        float height = static_cast<float>(glyph.size.y) * scale;
-
-                        // Space character has 0 width so don't submit any rendering.
-                        if (glyph.size.x != 0) {
-                            glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-                            drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
-                            iRenderedCharCount += 1;
-                        }
-                    }
-
-                    // Switch to next glyph.
-                    screenX += distanceToNextGlyph;
-                }
-
-                // Check cursor.
-                if (optionalCursorOffset.has_value()) {
-                    if (*optionalCursorOffset == 0) {
-                        vCursorScreenPosToDraw.push_back(CursorDrawInfo{
-                            .screenPos = glm::vec2(
-                                static_cast<float>(iWindowWidth) * textPos.x,
-                                static_cast<float>(iWindowHeight) * textPos.y + textHeightInPixels),
-                            .height = fontManager.getFontHeightToLoad() * scale});
-                    } else if (
-                        *optionalCursorOffset >= sText.size() && screenX < screenMaxXForWordWrap &&
-                        screenY < screenYEnd && iRenderedCharCount != 0) {
-                        vCursorScreenPosToDraw.push_back(CursorDrawInfo{
-                            .screenPos = glm::vec2(screenX, screenY),
-                            .height = fontManager.getFontHeightToLoad() * scale});
-                    }
-                }
-
-                // Check selection.
-                if (optionalSelection.has_value() && !vSelectionLinesToDraw.empty()) {
-                    if (selectionDrawState == SelectionDrawState::LOOKING_FOR_END &&
-                        optionalSelection->second >= sText.size()) {
-                        vSelectionLinesToDraw.back().second = glm::vec2(screenX, screenY);
-                    }
-                    vTextSelectionToDraw.push_back(TextSelectionDrawInfo{
-                        .vLineStartEndScreenPos = std::move(vSelectionLinesToDraw),
-                        .textHeightInPixels = textHeightInPixels,
-                        .color = selectionColor});
-                }
-
-                // Check scroll bar.
-                if (pTextEditNode->getIsScrollBarEnabled()) {
-                    const auto iAverageLineCountDisplayed = static_cast<size_t>(
-                        pTextEditNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
-
-                    const float verticalSize = std::min(
-                        1.0F,
-                        static_cast<float>(iAverageLineCountDisplayed) /
-                            static_cast<float>(pTextEditNode->iNewLineCharCountInText));
-
-                    const float verticalPos = std::min(
-                        1.0F,
-                        static_cast<float>(pTextEditNode->iCurrentScrollOffset) /
-                            static_cast<float>(
-                                std::max(pTextEditNode->iNewLineCharCountInText, static_cast<size_t>(1))));
-
-                    const auto scrollBarWidthInPixels =
-                        std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
-                    vScrollBarToDraw.push_back(ScrollBarDrawInfo{
-                        .posInPixels = glm::vec2(
-                            screenMaxXForWordWrap - scrollBarWidthInPixels,
-                            textPos.y * static_cast<float>(iWindowHeight)),
-                        .heightInPixels = pTextEditNode->getSize().y * static_cast<float>(iWindowHeight),
-                        .verticalPos = verticalPos,
-                        .verticalSize = verticalSize,
-                        .color = pTextEditNode->getScrollBarColor(),
-                    });
-                }
-            }
-        }
-
-        if (!vCursorScreenPosToDraw.empty()) {
-            // Draw cursors.
-
-            // Set shader program.
-            auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
-            if (pShaderProgram == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-            }
-            glUseProgram(pShaderProgram->getShaderProgramId());
-
-            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-            // Set shader parameters.
-            pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-            pShaderProgram->setVector4ToShader("color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
-            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
-
-            for (const auto& cursorInfo : vCursorScreenPosToDraw) {
-                const float cursorWidth = 2.0F;
-                const float cursorHeight = cursorInfo.height * static_cast<float>(iWindowHeight);
-                const auto screenPos = glm::vec2(
-                    cursorInfo.screenPos.x, cursorInfo.screenPos.y - cursorHeight); // to draw from top
-
-                drawQuad(screenPos, glm::vec2(cursorWidth, cursorHeight), iWindowHeight);
-            }
-        }
-
-        if (!vTextSelectionToDraw.empty()) {
-            // Draw selections.
-
-            // Set shader program.
-            auto& pShaderProgram = mtxData.second.pRectAndCursorShaderProgram;
-            if (pShaderProgram == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("expected the shader to be loaded at this point");
-            }
-            glUseProgram(pShaderProgram->getShaderProgramId());
-
-            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-
-            // Set shader parameters.
-            pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
-            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
-
-            for (auto& selectionInfo : vTextSelectionToDraw) {
-                pShaderProgram->setVector4ToShader("color", selectionInfo.color);
-
-                for (auto& [startPos, endPos] : selectionInfo.vLineStartEndScreenPos) {
-                    const auto width = endPos.x - startPos.x;
-                    const auto height = selectionInfo.textHeightInPixels;
-                    const auto pos = glm::vec2(startPos.x, startPos.y - height); // to draw from top
-
-                    drawQuad(pos, glm::vec2(width, height), iWindowHeight);
-                }
-            }
-        }
-
-        if (!vScrollBarToDraw.empty()) {
-            drawScrollBarsDataLocked(vScrollBarToDraw, iWindowWidth, iWindowHeight);
-        }
-
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    glDisable(GL_BLEND);
-}
-
-void UiNodeManager::drawLayoutScrollBars(size_t iLayer) {
-    std::scoped_lock guard(mtxData.first);
+void UiNodeManager::drawLayoutScrollBarsDataLocked(
+    size_t iLayer, unsigned int iWindowWidth, unsigned int iWindowHeight) {
     auto& layerNodes = mtxData.second.vSpawnedVisibleNodes[iLayer];
     if (layerNodes.layoutNodesWithScrollBars.empty()) {
         return;
     }
+    auto& renderedNodes = layerNodes.receivingInputUiNodesRenderedLastFrame;
 
-    const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+    std::vector<ScrollBarDrawInfo> vScrollBarsToDraw;
+    vScrollBarsToDraw.reserve(layerNodes.layoutNodesWithScrollBars.size());
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    {
-        auto& renderedNodes = layerNodes.receivingInputUiNodesRenderedLastFrame;
+    for (const auto& pLayoutNode : layerNodes.layoutNodesWithScrollBars) {
+        renderedNodes.push_back(pLayoutNode);
 
-        std::vector<ScrollBarDrawInfo> vScrollBarsToDraw;
-        vScrollBarsToDraw.reserve(layerNodes.layoutNodesWithScrollBars.size());
+        const auto nodePos = pLayoutNode->getPosition();
+        const auto nodeSize = pLayoutNode->getSize();
 
-        for (const auto& pLayoutNode : layerNodes.layoutNodesWithScrollBars) {
-            renderedNodes.push_back(pLayoutNode);
+        const float widthInPixels =
+            std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
+        const auto posInPixels = glm::vec2(
+            (nodePos.x + nodeSize.x) * static_cast<float>(iWindowWidth) - widthInPixels,
+            nodePos.y * static_cast<float>(iWindowHeight));
 
-            const auto nodePos = pLayoutNode->getPosition();
-            const auto nodeSize = pLayoutNode->getSize();
-
-            const float widthInPixels =
-                std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
-            const auto posInPixels = glm::vec2(
-                (nodePos.x + nodeSize.x) * static_cast<float>(iWindowWidth) - widthInPixels,
-                nodePos.y * static_cast<float>(iWindowHeight));
-
-            float verticalSize = 1.0F / pLayoutNode->totalScrollHeight;
-            if (pLayoutNode->totalScrollHeight < 1.0F) {
-                verticalSize = 1.0F;
-            }
-            const float verticalPos = std::min(
-                1.0F,
-                (static_cast<float>(pLayoutNode->iCurrentScrollOffset) * LayoutUiNode::scrollBarStepLocal) /
-                    pLayoutNode->totalScrollHeight);
-
-            vScrollBarsToDraw.push_back(ScrollBarDrawInfo{
-                .posInPixels = posInPixels,
-                .heightInPixels = pLayoutNode->getSize().y * static_cast<float>(iWindowHeight),
-                .verticalPos = verticalPos,
-                .verticalSize = verticalSize,
-                .color = pLayoutNode->getScrollBarColor(),
-            });
+        float verticalSize = 1.0F / pLayoutNode->totalScrollHeight;
+        if (pLayoutNode->totalScrollHeight < 1.0F) {
+            verticalSize = 1.0F;
         }
+        const float verticalPos = std::min(
+            1.0F,
+            (static_cast<float>(pLayoutNode->iCurrentScrollOffset) * LayoutUiNode::scrollBarStepLocal) /
+                pLayoutNode->totalScrollHeight);
 
-        drawScrollBarsDataLocked(vScrollBarsToDraw, iWindowWidth, iWindowHeight);
-
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        vScrollBarsToDraw.push_back(ScrollBarDrawInfo{
+            .posInPixels = posInPixels,
+            .heightInPixels = pLayoutNode->getSize().y * static_cast<float>(iWindowHeight),
+            .verticalPos = verticalPos,
+            .verticalSize = verticalSize,
+            .color = pLayoutNode->getScrollBarColor(),
+        });
     }
-    glDisable(GL_BLEND);
+
+    drawScrollBarsDataLocked(vScrollBarsToDraw, iWindowWidth, iWindowHeight);
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void UiNodeManager::drawScrollBarsDataLocked(
