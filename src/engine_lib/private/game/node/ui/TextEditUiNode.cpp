@@ -22,7 +22,7 @@ std::string TextEditUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 TextEditUiNode::TextEditUiNode() : TextEditUiNode("Text Edit UI Node") {}
 TextEditUiNode::TextEditUiNode(const std::string& sNodeName) : TextUiNode(sNodeName) {
     // Text generally needs less size that default for nodes.
-    setSize(glm::vec2(0.2F, 0.03F)); // NOLINT
+    setSize(glm::vec2(0.2F, 0.03F));
     setIsReceivingInput(true);
     setHandleNewLineChars(true);
     setIsWordWrapEnabled(true);

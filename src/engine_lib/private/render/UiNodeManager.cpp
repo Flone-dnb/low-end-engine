@@ -12,6 +12,8 @@
 #include "game/node/ui/CheckboxUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/ProgressBarUiNode.h"
+#include "game/node/ui/UiNode.h"
+#include "misc/Profiler.hpp"
 #include "render/ShaderManager.h"
 #include "render/Renderer.h"
 #include "misc/Error.h"
@@ -83,11 +85,27 @@ void UiNodeManager::onNodeSpawning(TextUiNode* pNode) {
         return;
     }
 
+    if (auto pTextEditNode = dynamic_cast<TextEditUiNode*>(pNode)) {
+        onNodeSpawning(pTextEditNode);
+    } else {
+        std::scoped_lock guard(mtxData.first);
+        auto& data = mtxData.second;
+        auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+
+        ADD_NODE_TO_RENDERING(TextUiNode);
+    }
+}
+
+void UiNodeManager::onNodeSpawning(TextEditUiNode* pNode) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
+        return;
+    }
+
     std::scoped_lock guard(mtxData.first);
     auto& data = mtxData.second;
-    auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+    auto& vNodesByDepth = data.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextEditNodes;
 
-    ADD_NODE_TO_RENDERING(TextUiNode);
+    ADD_NODE_TO_RENDERING(TextEditUiNode);
 }
 
 void UiNodeManager::onNodeSpawning(RectUiNode* pNode) {
@@ -135,14 +153,30 @@ void UiNodeManager::onNodeSpawning(CheckboxUiNode* pNode) {
 }
 
 void UiNodeManager::onSpawnedNodeChangedVisibility(TextUiNode* pNode) {
+    if (auto pTextEditNode = dynamic_cast<TextEditUiNode*>(pNode)) {
+        onSpawnedNodeChangedVisibility(pTextEditNode);
+    } else {
+        std::scoped_lock guard(mtxData.first);
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+
+        if (pNode->isRenderingAllowed() && pNode->isVisible()) {
+            ADD_NODE_TO_RENDERING(TextUiNode);
+        } else {
+            REMOVE_NODE_FROM_RENDERING(TextUiNode);
+        }
+    }
+}
+
+void UiNodeManager::onSpawnedNodeChangedVisibility(TextEditUiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextEditNodes;
 
     if (pNode->isRenderingAllowed() && pNode->isVisible()) {
-        ADD_NODE_TO_RENDERING(TextUiNode);
+        ADD_NODE_TO_RENDERING(TextEditUiNode);
     } else {
-        REMOVE_NODE_FROM_RENDERING(TextUiNode);
+        REMOVE_NODE_FROM_RENDERING(TextEditUiNode);
     }
 }
 
@@ -199,11 +233,27 @@ void UiNodeManager::onNodeDespawning(TextUiNode* pNode) {
         return;
     }
 
+    if (auto pTextEditNode = dynamic_cast<TextEditUiNode*>(pNode)) {
+        onNodeDespawning(pTextEditNode);
+    } else {
+        std::scoped_lock guard(mtxData.first);
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+
+        REMOVE_NODE_FROM_RENDERING(TextUiNode);
+    }
+}
+
+void UiNodeManager::onNodeDespawning(TextEditUiNode* pNode) {
+    if (!pNode->isRenderingAllowed() || !pNode->isVisible()) {
+        return;
+    }
+
     std::scoped_lock guard(mtxData.first);
     auto& vNodesByDepth =
-        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
+        mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextEditNodes;
 
-    REMOVE_NODE_FROM_RENDERING(TextUiNode);
+    REMOVE_NODE_FROM_RENDERING(TextEditUiNode);
 }
 
 void UiNodeManager::onNodeDespawning(RectUiNode* pNode) {
@@ -259,7 +309,18 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
         return;
     }
 
-    if (auto pNode = dynamic_cast<TextUiNode*>(pTargetNode)) {
+    if (auto pNode = dynamic_cast<TextEditUiNode*>(pTargetNode)) {
+        auto& vNodesByDepth =
+            mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextEditNodes;
+        // clang-format off
+        {
+            REMOVE_NODE_FROM_RENDERING(TextEditUiNode);
+        }
+        {
+            ADD_NODE_TO_RENDERING(TextEditUiNode);
+        }
+        // clang-format on
+    } else if (auto pNode = dynamic_cast<TextUiNode*>(pTargetNode)) {
         auto& vNodesByDepth =
             mtxData.second.vSpawnedVisibleNodes[static_cast<size_t>(pNode->getUiLayer())].vTextNodes;
         // clang-format off
@@ -321,7 +382,7 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
 #if defined(WIN32) && defined(DEBUG)
     static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 272, "add new variables here");
 #elif defined(DEBUG)
-    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 256, "add new variables here");
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 280, "add new variables here");
 #endif
 }
 
@@ -834,6 +895,7 @@ void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
         drawRectNodes(i);
         drawProgressBarNodes(i);
         drawTextNodes(i);
+        drawTextEditNodes(i);
         drawSliderNodes(i);
         drawCheckboxNodes(i);
         drawLayoutScrollBars(i);
@@ -1161,10 +1223,185 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
         if (pShaderProgram == nullptr) [[unlikely]] {
             Error::showErrorAndThrowException("expected the shader to be loaded at this point");
         }
-        GL_CHECK_ERROR(glUseProgram(pShaderProgram->getShaderProgramId()));
+        glUseProgram(pShaderProgram->getShaderProgramId());
 
-        GL_CHECK_ERROR(
-            glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId()));
+        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
+
+        pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+        glActiveTexture(GL_TEXTURE0); // glyph's bitmap
+
+        // Prepare info to later draw scroll bars.
+        std::vector<ScrollBarDrawInfo> vScrollBarToDraw;
+
+        for (const auto& [iDepth, nodes] : vNodesByDepth) {
+            for (const auto& pTextNode : nodes) {
+                if (pTextNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+                                                           // (it will wait on our mutex)
+                    vInputNodesRendered.push_back(pTextNode);
+                }
+
+                // Prepare some variables for rendering.
+                const auto sText = pTextNode->getText();
+                const auto textPos = pTextNode->getPosition();
+                const auto screenMaxXForWordWrap =
+                    (textPos.x + pTextNode->getSize().x) * static_cast<float>(iWindowWidth);
+
+                float screenX = textPos.x * static_cast<float>(iWindowWidth);
+                float screenY = textPos.y * static_cast<float>(iWindowHeight);
+                const auto screenYEnd = screenY + pTextNode->getSize().y * static_cast<float>(iWindowHeight);
+                const auto scale = pTextNode->getTextHeight() / fontManager.getFontHeightToLoad();
+
+                const float textHeightInPixels =
+                    static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
+                const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
+
+                // Check scroll bar.
+                size_t iLinesToSkip = 0;
+                if (pTextNode->getIsScrollBarEnabled()) {
+                    iLinesToSkip = pTextNode->getCurrentScrollOffset();
+                }
+
+                // Set color.
+                pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
+
+                // Switch to the first row of text.
+                screenY += textHeightInPixels;
+
+                // Render each character.
+                size_t iLineIndex = 0;
+                size_t iCharIndex = 0;
+                bool bReachedEndOfUiNode = false;
+                for (; iCharIndex < sText.size(); iCharIndex++) {
+                    const auto& character = sText[iCharIndex];
+
+                    // Prepare a handy lambda.
+                    const auto switchToNewLine = [&]() {
+                        // Switch to a new line.
+                        if (iLineIndex >= iLinesToSkip) {
+                            screenY += textHeightInPixels + lineSpacingInPixels;
+                        }
+                        screenX = textPos.x * static_cast<float>(iWindowWidth);
+
+                        if (screenY > screenYEnd) {
+                            bReachedEndOfUiNode = true;
+                        }
+
+                        iLineIndex += 1;
+                    };
+
+                    // Handle new line.
+                    if (character == '\n' && pTextNode->getHandleNewLineChars()) {
+                        switchToNewLine();
+                        if (bReachedEndOfUiNode) {
+                            break;
+                        }
+                        continue; // don't render \n
+                    }
+
+                    const auto& glyph = glyphGuard.getGlyph(character);
+
+                    const float distanceToNextGlyph =
+                        static_cast<float>(
+                            glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
+                        scale;
+
+                    // Handle word wrap.
+                    // TODO: do per-character wrap for now, rework later
+                    if (pTextNode->getIsWordWrapEnabled() &&
+                        (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
+                        switchToNewLine();
+                        if (bReachedEndOfUiNode) {
+                            break;
+                        }
+                    }
+
+                    if (iLineIndex >= iLinesToSkip &&
+                        screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
+                        float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
+                        float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
+
+                        float width = static_cast<float>(glyph.size.x) * scale;
+                        float height = static_cast<float>(glyph.size.y) * scale;
+
+                        // Space character has 0 width so don't submit any rendering.
+                        if (glyph.size.x != 0) {
+                            glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
+                            drawQuad(glm::vec2(xpos, ypos), glm::vec2(width, height), iWindowHeight);
+                        }
+                    }
+
+                    // Switch to next glyph.
+                    screenX += distanceToNextGlyph;
+                }
+
+                // Check scroll bar.
+                if (pTextNode->getIsScrollBarEnabled()) {
+                    const auto iAverageLineCountDisplayed = static_cast<size_t>(
+                        pTextNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
+
+                    const float verticalSize = std::min(
+                        1.0F,
+                        static_cast<float>(iAverageLineCountDisplayed) /
+                            static_cast<float>(pTextNode->iNewLineCharCountInText));
+
+                    const float verticalPos = std::min(
+                        1.0F,
+                        static_cast<float>(pTextNode->iCurrentScrollOffset) /
+                            static_cast<float>(
+                                std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
+
+                    const auto scrollBarWidthInPixels =
+                        std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
+                    vScrollBarToDraw.push_back(ScrollBarDrawInfo{
+                        .posInPixels = glm::vec2(
+                            screenMaxXForWordWrap - scrollBarWidthInPixels,
+                            textPos.y * static_cast<float>(iWindowHeight)),
+                        .heightInPixels = pTextNode->getSize().y * static_cast<float>(iWindowHeight),
+                        .verticalPos = verticalPos,
+                        .verticalSize = verticalSize,
+                        .color = pTextNode->getScrollBarColor(),
+                    });
+                }
+            }
+        }
+
+        if (!vScrollBarToDraw.empty()) {
+            drawScrollBarsDataLocked(vScrollBarToDraw, iWindowWidth, iWindowHeight);
+        }
+
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glDisable(GL_BLEND);
+}
+
+void UiNodeManager::drawTextEditNodes(size_t iLayer) {
+    PROFILE_FUNC;
+
+    auto& fontManager = pRenderer->getFontManager();
+    auto glyphGuard = fontManager.getGlyphs();
+    std::scoped_lock guard(mtxData.first);
+
+    auto& vNodesByDepth = mtxData.second.vSpawnedVisibleNodes[iLayer].vTextEditNodes;
+    if (vNodesByDepth.empty()) {
+        return;
+    }
+    auto& vInputNodesRendered =
+        mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    {
+        const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
+
+        // Set shader program.
+        auto& pShaderProgram = mtxData.second.pTextShaderProgram;
+        if (pShaderProgram == nullptr) [[unlikely]] {
+            Error::showErrorAndThrowException("expected the shader to be loaded at this point");
+        }
+        glUseProgram(pShaderProgram->getShaderProgramId());
+
+        glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
 
         pShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
         glActiveTexture(GL_TEXTURE0); // glyph's bitmap
@@ -1190,46 +1427,44 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
         enum class SelectionDrawState { LOOKING_FOR_START, LOOKING_FOR_END, FINISHED };
 
         for (const auto& [iDepth, nodes] : vNodesByDepth) {
-            for (const auto& pTextNode : nodes) {
-                // Check cursor and selection.
-                std::optional<size_t> optionalCursorOffset;
-                std::optional<std::pair<size_t, size_t>> optionalSelection;
-                glm::vec4 selectionColor;
-                if (auto pTextEdit = dynamic_cast<TextEditUiNode*>(pTextNode)) {
-                    if (pTextEdit->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
+            for (const auto& pTextEditNode : nodes) {
+                if (pTextEditNode->isReceivingInputUnsafe()) { // safe - node won't despawn/change state here
                                                                // (it will wait on our mutex)
-                        vInputNodesRendered.push_back(pTextNode);
-                    }
-                    optionalCursorOffset = pTextEdit->optionalCursorOffset;
-                    optionalSelection = pTextEdit->optionalSelection;
-                    selectionColor = pTextEdit->getTextSelectionColor();
+                    vInputNodesRendered.push_back(pTextEditNode);
                 }
+
+                // Check cursor and selection.
+                const auto optionalCursorOffset = pTextEditNode->optionalCursorOffset;
+                const auto optionalSelection = pTextEditNode->optionalSelection;
+                const auto selectionColor = pTextEditNode->getTextSelectionColor();
+
                 std::vector<std::pair<glm::vec2, glm::vec2>> vSelectionLinesToDraw;
                 SelectionDrawState selectionDrawState = SelectionDrawState::LOOKING_FOR_START;
 
                 // Prepare some variables for rendering.
-                const auto sText = pTextNode->getText();
-                const auto textPos = pTextNode->getPosition();
+                const auto sText = pTextEditNode->getText();
+                const auto textPos = pTextEditNode->getPosition();
                 const auto screenMaxXForWordWrap =
-                    (textPos.x + pTextNode->getSize().x) * static_cast<float>(iWindowWidth);
+                    (textPos.x + pTextEditNode->getSize().x) * static_cast<float>(iWindowWidth);
 
                 float screenX = textPos.x * static_cast<float>(iWindowWidth);
                 float screenY = textPos.y * static_cast<float>(iWindowHeight);
-                const auto screenYEnd = screenY + pTextNode->getSize().y * static_cast<float>(iWindowHeight);
-                const auto scale = pTextNode->getTextHeight() / fontManager.getFontHeightToLoad();
+                const auto screenYEnd =
+                    screenY + pTextEditNode->getSize().y * static_cast<float>(iWindowHeight);
+                const auto scale = pTextEditNode->getTextHeight() / fontManager.getFontHeightToLoad();
 
                 const float textHeightInPixels =
                     static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
-                const float lineSpacingInPixels = pTextNode->getTextLineSpacing() * textHeightInPixels;
+                const float lineSpacingInPixels = pTextEditNode->getTextLineSpacing() * textHeightInPixels;
 
                 // Check scroll bar.
                 size_t iLinesToSkip = 0;
-                if (pTextNode->getIsScrollBarEnabled()) {
-                    iLinesToSkip = pTextNode->getCurrentScrollOffset();
+                if (pTextEditNode->getIsScrollBarEnabled()) {
+                    iLinesToSkip = pTextEditNode->getCurrentScrollOffset();
                 }
 
                 // Set color.
-                pShaderProgram->setVector4ToShader("textColor", pTextNode->getTextColor());
+                pShaderProgram->setVector4ToShader("textColor", pTextEditNode->getTextColor());
 
                 // Switch to the first row of text.
                 screenY += textHeightInPixels;
@@ -1285,7 +1520,7 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
                     };
 
                     // Handle new line.
-                    if (character == '\n' && pTextNode->getHandleNewLineChars()) {
+                    if (character == '\n' && pTextEditNode->getHandleNewLineChars()) {
                         switchToNewLine();
                         if (bReachedEndOfUiNode) {
                             break;
@@ -1302,7 +1537,7 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
 
                     // Handle word wrap.
                     // TODO: do per-character wrap for now, rework later
-                    if (pTextNode->getIsWordWrapEnabled() &&
+                    if (pTextEditNode->getIsWordWrapEnabled() &&
                         (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
                         switchToNewLine();
                         if (bReachedEndOfUiNode) {
@@ -1395,20 +1630,20 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
                 }
 
                 // Check scroll bar.
-                if (pTextNode->getIsScrollBarEnabled()) {
+                if (pTextEditNode->getIsScrollBarEnabled()) {
                     const auto iAverageLineCountDisplayed = static_cast<size_t>(
-                        pTextNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
+                        pTextEditNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
 
                     const float verticalSize = std::min(
                         1.0F,
                         static_cast<float>(iAverageLineCountDisplayed) /
-                            static_cast<float>(pTextNode->iNewLineCharCountInText));
+                            static_cast<float>(pTextEditNode->iNewLineCharCountInText));
 
                     const float verticalPos = std::min(
                         1.0F,
-                        static_cast<float>(pTextNode->iCurrentScrollOffset) /
+                        static_cast<float>(pTextEditNode->iCurrentScrollOffset) /
                             static_cast<float>(
-                                std::max(pTextNode->iNewLineCharCountInText, static_cast<size_t>(1))));
+                                std::max(pTextEditNode->iNewLineCharCountInText, static_cast<size_t>(1))));
 
                     const auto scrollBarWidthInPixels =
                         std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
@@ -1416,10 +1651,10 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
                         .posInPixels = glm::vec2(
                             screenMaxXForWordWrap - scrollBarWidthInPixels,
                             textPos.y * static_cast<float>(iWindowHeight)),
-                        .heightInPixels = pTextNode->getSize().y * static_cast<float>(iWindowHeight),
+                        .heightInPixels = pTextEditNode->getSize().y * static_cast<float>(iWindowHeight),
                         .verticalPos = verticalPos,
                         .verticalSize = verticalSize,
-                        .color = pTextNode->getScrollBarColor(),
+                        .color = pTextEditNode->getScrollBarColor(),
                     });
                 }
             }
@@ -1443,7 +1678,7 @@ void UiNodeManager::drawTextNodes(size_t iLayer) {
             pShaderProgram->setBoolToShader("bIsUsingTexture", false);
 
             for (const auto& cursorInfo : vCursorScreenPosToDraw) {
-                const float cursorWidth = 2.0F; // NOLINT
+                const float cursorWidth = 2.0F;
                 const float cursorHeight = cursorInfo.height * static_cast<float>(iWindowHeight);
                 const auto screenPos = glm::vec2(
                     cursorInfo.screenPos.x, cursorInfo.screenPos.y - cursorHeight); // to draw from top

@@ -20,6 +20,7 @@ class Renderer;
 class ShaderProgram;
 class UiNode;
 class TextUiNode;
+class TextEditUiNode;
 class RectUiNode;
 class ProgressBarUiNode;
 class LayoutUiNode;
@@ -58,6 +59,13 @@ public:
      *
      * @param pNode UI node.
      */
+    void onNodeSpawning(TextEditUiNode* pNode);
+
+    /**
+     * Called by UI nodes after they are spawned.
+     *
+     * @param pNode UI node.
+     */
     void onNodeSpawning(RectUiNode* pNode);
 
     /**
@@ -86,6 +94,13 @@ public:
      *
      * @param pNode UI node.
      */
+    void onSpawnedNodeChangedVisibility(TextEditUiNode* pNode);
+
+    /**
+     * Called by spawned UI nodes after they changed their visibility.
+     *
+     * @param pNode UI node.
+     */
     void onSpawnedNodeChangedVisibility(RectUiNode* pNode);
 
     /**
@@ -108,6 +123,13 @@ public:
      * @param pNode UI node.
      */
     void onNodeDespawning(TextUiNode* pNode);
+
+    /**
+     * Called by UI nodes before they are despawned.
+     *
+     * @param pNode UI node.
+     */
+    void onNodeDespawning(TextEditUiNode* pNode);
 
     /**
      * Called by UI nodes before they are despawned.
@@ -269,6 +291,9 @@ private:
             /** Node depth - text nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<TextUiNode*>>> vTextNodes;
 
+            /** Node depth - text edit nodes on this depth. */
+            std::vector<std::pair<size_t, std::unordered_set<TextEditUiNode*>>> vTextEditNodes;
+
             /** Node depth - rect nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<RectUiNode*>>> vRectNodes;
 
@@ -353,6 +378,13 @@ private:
      * @param iLayer UI layer to render to.
      */
     void drawTextNodes(size_t iLayer);
+
+    /**
+     * Renders the UI text edit nodes on the current framebuffer.
+     *
+     * @param iLayer UI layer to render to.
+     */
+    void drawTextEditNodes(size_t iLayer);
 
     /**
      * Renders the UI rect nodes on the current framebuffer.

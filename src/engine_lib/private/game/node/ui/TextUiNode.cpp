@@ -146,8 +146,16 @@ void TextUiNode::setHandleNewLineChars(bool bHandleNewLineChars) {
 }
 
 void TextUiNode::setIsScrollBarEnabled(bool bEnable) {
+    if (bIsScrollBarEnabled == bEnable) {
+        return;
+    }
+
     bIsScrollBarEnabled = bEnable;
     iCurrentScrollOffset = 0;
+
+    if (bIsScrollBarEnabled && !isReceivingInput()) {
+        setIsReceivingInput(true);
+    }
 }
 
 void TextUiNode::moveScrollToTextCharacter(size_t iTextCharOffset) {
@@ -240,6 +248,10 @@ void TextUiNode::onSpawning() {
 
     // Notify manager.
     getWorldWhileSpawned()->getUiNodeManager().onNodeSpawning(this);
+
+    if (bIsScrollBarEnabled && !isReceivingInput()) {
+        setIsReceivingInput(true);
+    }
 }
 
 void TextUiNode::onDespawning() {
