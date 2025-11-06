@@ -857,21 +857,15 @@ UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRe
 
     // Prepare screen quad in [0.0; 1.0].
     std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
-        ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(0.0F, 0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-        ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(0.0F, 1.0F, 0.0F), .uv = glm::vec2(0.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
 
-        ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(0.0F, 0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-        ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{
-            .position = glm::vec3(1.0F, 0.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
     };
-    data.pScreenQuadGeometry = GpuResourceManager::createQuad(false, vVertices);
+    data.pScreenQuadGeometry = GpuResourceManager::createScreenQuad(false, vVertices);
 
     // Load shaders.
     data.rectShaderInfo.pShaderProgram = pRenderer->getShaderManager().getShaderProgram(

@@ -226,21 +226,15 @@ void DebugDrawer::drawDebugObjects(
 
         // Prepare screen quad in [0.0; 1.0].
         std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
-            ScreenQuadGeometry::VertexLayout{
-                .position = glm::vec3(0.0F, 0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-            ScreenQuadGeometry::VertexLayout{
-                .position = glm::vec3(0.0F, 1.0F, 0.0F), .uv = glm::vec2(0.0F, 1.0F)},
-            ScreenQuadGeometry::VertexLayout{
-                .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
 
-            ScreenQuadGeometry::VertexLayout{
-                .position = glm::vec3(0.0F, 0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-            ScreenQuadGeometry::VertexLayout{
-                .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
-            ScreenQuadGeometry::VertexLayout{
-                .position = glm::vec3(1.0F, 0.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
         };
-        pScreenQuadGeometry = GpuResourceManager::createQuad(false, vVertices);
+        pScreenQuadGeometry = GpuResourceManager::createScreenQuad(false, vVertices);
     }
 
     glDisable(GL_DEPTH_TEST);

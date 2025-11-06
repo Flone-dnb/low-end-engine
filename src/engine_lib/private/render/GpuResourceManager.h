@@ -50,7 +50,7 @@ public:
      *
      * @return Quad.
      */
-    static std::unique_ptr<ScreenQuadGeometry> createQuad(
+    static std::unique_ptr<ScreenQuadGeometry> createScreenQuad(
         bool bIsVertexDataDynamic,
         std::optional<std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount>>
             vertexData = {});
