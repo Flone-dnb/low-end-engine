@@ -79,9 +79,9 @@ private:
     /**
      * Creates a new handle.
      *
-     * @param pMeshRenderer Mesh renderer.
-     * @param uiLayer       Layer of the UI object this handle references.
-     * @param iMeshIndex    Index into the render data array.
+     * @param pManager   Manager.
+     * @param uiLayer    Layer of the UI object this handle references.
+     * @param iRenderDataIndex Index into the render data array.
      */
     TextRenderingHandle(UiNodeManager* pManager, UiLayer uiLayer, unsigned short iRenderDataIndex)
         : pManager(pManager), uiLayer(uiLayer), iRenderDataIndex(iRenderDataIndex) {}
