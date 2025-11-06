@@ -86,8 +86,7 @@ TypeReflectionInfo SimpleCharacterBodyNode::getReflectionInfo() {
 
 SimpleCharacterBodyNode::SimpleCharacterBodyNode() : SimpleCharacterBodyNode("Simple Character Body Node") {}
 SimpleCharacterBodyNode::SimpleCharacterBodyNode(const std::string& sNodeName)
-    : CharacterBodyNode(sNodeName) {
-}
+    : CharacterBodyNode(sNodeName) {}
 
 SimpleCharacterBodyNode::~SimpleCharacterBodyNode() {}
 
@@ -142,7 +141,7 @@ void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
 
     CharacterBodyNode::onBeforePhysicsUpdate(deltaTime);
 
-    MathHelpers::fixDiagonalMovementSpeedup(movementInput);
+    const auto fixedMovement = MathHelpers::fixDiagonalMovementSpeedup(movementInput);
 
     const auto upDirection = getWorldUpDirection();
     const auto groundState = getGroundState();
@@ -170,7 +169,7 @@ void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
 
     // Apply movement.
     const auto movementVec =
-        getWorldForwardDirection() * movementInput.x + getWorldRightDirection() * movementInput.y;
+        getWorldForwardDirection() * fixedMovement.x + getWorldRightDirection() * fixedMovement.y;
     if (groundState == GroundState::OnGround || groundState == GroundState::OnSteepGround) {
         newVelocity += movementVec * movementSpeed;
     } else {

@@ -98,8 +98,10 @@ public:
      * Used to fix a common problem where diagonal movement has ~1.4 speed instead of 1.
      *
      * @param vector Input vector to fix (forward and right input).
+     *
+     * @return Fixed vector.
      */
-    static inline void fixDiagonalMovementSpeedup(glm::vec2& vector);
+    static inline glm::vec2 fixDiagonalMovementSpeedup(const glm::vec2& vector);
 
     /**
      * Normalizes the specified vector while checking for zero division (to avoid NaNs in
@@ -259,19 +261,19 @@ float MathHelpers::normalizeToRange(float value, float min, float max) {
     return (offsetValue - (static_cast<float>(floor(offsetValue / width) * width))) + min;
 }
 
-inline void MathHelpers::fixDiagonalMovementSpeedup(glm::vec2& vector) {
+inline glm::vec2 MathHelpers::fixDiagonalMovementSpeedup(const glm::vec2& vector) {
     const auto squareSum = vector.x * vector.x + vector.y * vector.y;
     if (squareSum < 0.1F) { // don't normalize if vector is zero or very small to avoid NaNs
-        return;
+        return vector;
     }
 
     const auto length = glm::sqrt(squareSum);
     if (length <= 1.0F) { // only normalize when exceeding 1 to keep minor (small) thumbstick movements
-        return;
+        return vector;
     }
 
     // normalize
-    vector /= length;
+    return vector / length;
 }
 
 glm::vec2 MathHelpers::normalizeSafely(const glm::vec2& vector) {
