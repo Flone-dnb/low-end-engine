@@ -172,6 +172,42 @@ public:
         const glm::vec2& screenPos, const glm::vec2& screenSize, const glm::vec3& color, float timeInSec);
 
 private:
+    /** Groups info about shader program for rendering rectangles. */
+    struct RectShaderProgram {
+        /** Shader program used for rendering rectangle. */
+        std::shared_ptr<ShaderProgram> pShaderProgram;
+
+        /** Location of a shader uniform variable. */
+        int iScreenPosUniform = 0;
+
+        /** Location of a shader uniform variable. */
+        int iScreenSizeUniform = 0;
+
+        /** Location of a shader uniform variable. */
+        int iClipRectUniform = 0;
+
+        /** Location of a shader uniform variable. */
+        int iWindowSizeUniform = 0;
+    };
+
+    /** Groups info about shader program for rendering text. */
+    struct TextShaderProgram {
+        /** Shader program used for rendering text. */
+        std::shared_ptr<ShaderProgram> pShaderProgram;
+
+        /** Location of a shader uniform variable. */
+        int iScreenPosUniform = 0;
+
+        /** Location of a shader uniform variable. */
+        int iScreenSizeUniform = 0;
+
+        /** Location of a shader uniform variable. */
+        int iClipRectUniform = 0;
+
+        /** Location of a shader uniform variable. */
+        int iWindowSizeUniform = 0;
+    };
+
     DebugDrawer();
 
     /**
@@ -200,11 +236,24 @@ private:
     /**
      * Draws an quad in screen (window) coordinates.
      *
+     * @param iScreenPosUniform Location of the uniform variable.
+     * @param iScreenSizeUniform Location of the uniform variable.
+     * @param iClipRectUniform Location of the uniform variable.
+     * @param iWindowSizeUniform Location of the uniform variable.
      * @param screenPos     Position of the top-left corner of the quad.
      * @param screenSize    Size of the quad.
-     * @param iScreenHeight Height of the screen.
+     * @param iWindowWidth Width of the window.
+     * @param iWindowHeight Height of the window.
      */
-    void drawQuad(const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const;
+    void drawQuad(
+        int iScreenPosUniform,
+        int iScreenSizeUniform,
+        int iClipRectUniform,
+        int iWindowSizeUniform,
+        glm::vec2 screenPos,
+        glm::vec2 screenSize,
+        unsigned int iWindowWidth,
+        unsigned int iWindowHeight) const;
 
     /** Precalculated positions to draw an icosphere. */
     std::vector<glm::vec3> vIcospherePositions;
@@ -225,19 +274,16 @@ private:
     std::shared_ptr<ShaderProgram> pMeshShaderProgram;
 
     /** Shader program used to draw screen rectangles. */
-    std::shared_ptr<ShaderProgram> pRectShaderProgram;
+    RectShaderProgram rectShaderInfo;
 
     /** Shader program used to draw text. */
-    std::shared_ptr<ShaderProgram> pTextShaderProgram;
+    TextShaderProgram textShaderInfo;
 
     /** Quad used for rendering text. */
     std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
 
     /** Uniform location for @ref pMeshShaderProgram. */
     int iMeshProgramViewProjectionMatrixUniform = 0;
-
-    /** Orthographic projection matrix for rendering UI elements. */
-    glm::mat4 uiProjMatrix;
 
     /** `true` if @ref destroy was called. */
     bool bIsDestroyed = false;

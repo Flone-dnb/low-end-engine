@@ -6,6 +6,7 @@
 #include <memory>
 
 // Custom.
+#include "render/UiRenderData.h"
 #include "game/geometry/ScreenQuadGeometry.h"
 #include "render/UiLayer.hpp"
 #include "input/KeyboardButton.hpp"
@@ -33,12 +34,15 @@ class UiNodeManager {
     // Only world is expected to create objects of this type.
     friend class World;
 
+    // Notifies us in its destructor to remove a UI element from rendering.
+    friend class TextRenderingHandle;
+
+    // Unlocks render data mutex in destructor.
+    friend class TextRenderDataGuard;
+
 public:
     UiNodeManager() = delete;
     ~UiNodeManager();
-
-    /** Called after the window size changed. */
-    void onWindowSizeChanged();
 
     /**
      * Renders the UI on the specified framebuffer.
@@ -48,11 +52,23 @@ public:
     void drawUiOnFramebuffer(unsigned int iDrawFramebufferId);
 
     /**
-     * Called by UI nodes after they are spawned.
+     * Registers a new item to be rendered.
+     * Set parameters using the returned handle.
      *
-     * @param pNode UI node.
+     * @param uiLayer UI layer of the item.
+     *
+     * @return RAII-style handle for rendering.
      */
-    void onNodeSpawning(TextUiNode* pNode);
+    std::unique_ptr<TextRenderingHandle> addTextForRendering(UiLayer uiLayer);
+
+    /**
+     * Returns render data of a UI element to initialize/modify.
+     *
+     * @param handle Handle.
+     *
+     * @return Data guard used to modify the data.
+     */
+    TextRenderDataGuard getTextRenderData(TextRenderingHandle& handle);
 
     /**
      * Called by UI nodes after they are spawned.
@@ -87,13 +103,6 @@ public:
      *
      * @param pNode UI node.
      */
-    void onSpawnedNodeChangedVisibility(TextUiNode* pNode);
-
-    /**
-     * Called by spawned UI nodes after they changed their visibility.
-     *
-     * @param pNode UI node.
-     */
     void onSpawnedNodeChangedVisibility(TextEditUiNode* pNode);
 
     /**
@@ -116,13 +125,6 @@ public:
      * @param pNode UI node.
      */
     void onSpawnedNodeChangedVisibility(CheckboxUiNode* pNode);
-
-    /**
-     * Called by UI nodes before they are despawned.
-     *
-     * @param pNode UI node.
-     */
-    void onNodeDespawning(TextUiNode* pNode);
 
     /**
      * Called by UI nodes before they are despawned.
@@ -283,14 +285,14 @@ private:
              * @return Node count.
              */
             size_t getTotalNodeCount() const {
-                return vTextNodes.size() + vTextEditNodes.size() + vRectNodes.size() +
+                return vTextRenderData.size() + vTextEditNodes.size() + vRectNodes.size() +
                        vProgressBarNodes.size() + vSliderNodes.size() + vCheckboxNodes.size() +
                        receivingInputUiNodes.size() + receivingInputUiNodesRenderedLastFrame.size() +
                        layoutNodesWithScrollBars.size();
             }
 
-            /** Node depth - text nodes on this depth. */
-            std::vector<std::pair<size_t, std::unordered_set<TextUiNode*>>> vTextNodes;
+            /** Stores data used to submit a text for rendering. */
+            std::vector<TextRenderData> vTextRenderData;
 
             /** Node depth - text edit nodes on this depth. */
             std::vector<std::pair<size_t, std::unordered_set<TextEditUiNode*>>> vTextEditNodes;
@@ -320,6 +322,49 @@ private:
             std::vector<UiNode*> receivingInputUiNodesRenderedLastFrame;
         };
 
+        /** Groups info about shader program for rendering text. */
+        struct TextShaderProgram {
+            TextShaderProgram() = default;
+
+            /** Shader program used for rendering text. */
+            std::shared_ptr<ShaderProgram> pShaderProgram;
+
+            /** Location of a shader uniform variable. */
+            int iTextColorUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iScreenPosUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iScreenSizeUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iClipRectUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iWindowSizeUniform = 0;
+        };
+
+        /** Groups info about shader program for rendering rectangles. */
+        struct RectShaderProgram {
+            RectShaderProgram() = default;
+
+            /** Shader program used for rendering rect UI nodes and text edit's cursor. */
+            std::shared_ptr<ShaderProgram> pShaderProgram;
+
+            /** Location of a shader uniform variable. */
+            int iScreenPosUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iScreenSizeUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iClipRectUniform = 0;
+
+            /** Location of a shader uniform variable. */
+            int iWindowSizeUniform = 0;
+        };
+
         /** UI node that currently has the focus. */
         UiNode* pFocusedNode = nullptr;
 
@@ -335,10 +380,10 @@ private:
         std::array<SpawnedVisibleLayerUiNodes, static_cast<size_t>(UiLayer::COUNT)> vSpawnedVisibleNodes;
 
         /** Shader program used for rendering text. */
-        std::shared_ptr<ShaderProgram> pTextShaderProgram;
+        TextShaderProgram textShaderInfo;
 
-        /** Shader program used for rendering rect UI nodes and text edit's cursor. */
-        std::shared_ptr<ShaderProgram> pRectAndCursorShaderProgram;
+        /** Shader program used for rendering rectangles. */
+        RectShaderProgram rectShaderInfo;
 
         /** Quad used for rendering some nodes. */
         std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
@@ -369,6 +414,13 @@ private:
      * @param pWorld    World that created this manager.
      */
     UiNodeManager(Renderer* pRenderer, World* pWorld);
+
+    /**
+     * Called from handle's destructor to remove an item from rendering.
+     *
+     * @param pHandle Handle.
+     */
+    void onBeforeHandleDestroyed(TextRenderingHandle* pHandle);
 
     /** Triggers `onMouseEntered` and `onMouseLeft` events for UI nodes. */
     void processMouseHoverOnNodes();
@@ -478,16 +530,20 @@ private:
      *
      * @remark Assumes that @ref mtxData is locked.
      *
-     * @param screenPos     Position of the top-left corner of the quad.
-     * @param screenSize    Size of the quad.
-     * @param iScreenHeight Height of the screen.
-     * @param clipRect      Clipping rectangle in range [0.0; 1.0] where XY mark clip start
+     * @param iScreenPosUniform Location of the uniform variable.
+     * @param iScreenSizeUniform Location of the uniform variable.
+     * @param iClipRectUniform Location of the uniform variable.
+     * @param screenPos Position of the top-left corner of the quad.
+     * @param screenSize Size of the quad.
+     * @param clipRect Clipping rectangle in range [0.0; 1.0] where XY mark clip start
      * and ZW mark clip size.
      */
     void drawQuad(
+        int iScreenPosUniform,
+        int iScreenSizeUniform,
+        int iClipRectUniform,
         const glm::vec2& screenPos,
         const glm::vec2& screenSize,
-        unsigned int iScreenHeight,
         const glm::vec4& clipRect = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F)) const;
 
     /**
@@ -510,9 +566,6 @@ private:
 
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData;
-
-    /** Orthographic projection matrix for rendering UI elements. */
-    glm::mat4 uiProjMatrix;
 
     /** A single text entry is our clipboard. */
     std::string sClipboard;

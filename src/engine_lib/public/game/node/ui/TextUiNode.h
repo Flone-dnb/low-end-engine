@@ -2,16 +2,16 @@
 
 // Standard.
 #include <string>
+#include <memory>
 
 // Custom.
 #include "game/node/ui/UiNode.h"
 #include "math/GLMath.hpp"
 
+class TextRenderingHandle;
+
 /** Single-line or a multi-line text rendering. */
 class TextUiNode : public UiNode {
-    // Renderer uses scroll offset and text properties.
-    friend class UiNodeManager;
-
 public:
     TextUiNode();
 
@@ -22,7 +22,7 @@ public:
      */
     TextUiNode(const std::string& sNodeName);
 
-    virtual ~TextUiNode() override = default;
+    virtual ~TextUiNode() override;
 
     /**
      * Returns reflection info about this type.
@@ -62,13 +62,6 @@ public:
     void setTextColor(const glm::vec4& color);
 
     /**
-     * Sets color of the scroll bar.
-     *
-     * @param color Color in the RGBA format.
-     */
-    void setScrollBarColor(const glm::vec4& color);
-
-    /**
      * Sets height of the text in range [0.0; 1.0] relative to screen height.
      *
      * @param height Text height.
@@ -97,30 +90,6 @@ public:
     void setHandleNewLineChars(bool bHandleNewLineChars);
 
     /**
-     * Sets whether scroll bar is enabled or not.
-     *
-     * @param bEnable `true` to enable.
-     */
-    void setIsScrollBarEnabled(bool bEnable);
-
-    /**
-     * If scroll is enabled moves scroll to make sure the character with the specified offset is visible.
-     *
-     * @param iTextCharOffset Offset in @ref getText.
-     */
-    void moveScrollToTextCharacter(size_t iTextCharOffset);
-
-    /**
-     * Returns index of a line on which the character with the specified offset will be rendered considering
-     * new line handling and word wrapping.
-     *
-     * @param iTextCharOffset Offset in @ref getText.
-     *
-     * @return Line index.
-     */
-    size_t getLineIndexForTextChar(size_t iTextCharOffset);
-
-    /**
      * Returns displayed text.
      *
      * @return Text.
@@ -133,13 +102,6 @@ public:
      * @return RGBA color.
      */
     glm::vec4 getTextColor() const { return color; }
-
-    /**
-     * Returns color of the scroll bar.
-     *
-     * @return RGBA color.
-     */
-    glm::vec4 getScrollBarColor() const { return scrollBarColor; }
 
     /**
      * Height of the text in range [0.0; 1.0] relative to screen height.
@@ -169,20 +131,6 @@ public:
      * @return `true` to allow `\n` characters in the text to create new lines.
      */
     bool getHandleNewLineChars() const { return bHandleNewLineChars; }
-
-    /**
-     * Tells if scroll bar is enabled.
-     *
-     * @return `true` if enabled.
-     */
-    bool getIsScrollBarEnabled() const { return bIsScrollBarEnabled; }
-
-    /**
-     * Returns current offset of the scroll bar in lines of text.
-     *
-     * @return Offset.
-     */
-    size_t getCurrentScrollOffset() const { return iCurrentScrollOffset; }
 
     /**
      * Returns the maximum number of child nodes this type allows. This is generally 0, 1, or +inf.
@@ -219,54 +167,60 @@ protected:
     virtual void onVisibilityChanged() override;
 
     /**
+     * Called after this node or one of the node's parents (in the parent hierarchy)
+     * was attached to a new parent node.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     *
+     * @remark This function will also be called on all child nodes after this function
+     * is finished.
+     *
+     * @param bThisNodeBeingAttached `true` if this node was attached to a parent,
+     * `false` if some node in the parent hierarchy was attached to a parent.
+     */
+    virtual void onAfterAttachedToNewParent(bool bThisNodeBeingAttached) override;
+
+    /**
      * Called after some child node was attached to this node.
      *
      * @param pNewDirectChild New direct child node (child of this node, not a child of some child node).
      */
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
-    /**
-     * Called when the window receives mouse scroll movement while floating over this UI node.
-     *
-     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
-     * @remark This function will only be called while this node is spawned.
-     *
-     * @param iOffset Movement offset.
-     *
-     * @return `true` if the event was handled or `false` if the event needs to be passed to a parent UI node.
-     */
-    virtual bool onMouseScrollMoveWhileHovered(int iOffset) override;
+    /** Called after position of this UI node was changed. */
+    virtual void onAfterPositionChanged() override;
+
+    /** Called after size of this UI node was changed. */
+    virtual void onAfterSizeChanged() override;
 
     /** Called after text is changed. */
     virtual void onAfterTextChanged() {}
 
 private:
+    /** Initializes @ref pRenderingHandle. */
+    void initRenderingHandle();
+
+    /** Updates render data using @ref pRenderingHandle. */
+    void updateRenderData();
+
+    /** Not `nullptr` if this node is rendered. */
+    std::unique_ptr<TextRenderingHandle> pRenderingHandle;
+
     /** Color of the text in the RGBA format. */
     glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
-
-    /** Color of the scroll bar. */
-    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F); // NOLINT
 
     /**
      * Vertical space between horizontal lines of text, in range [0.0F; +inf]
      * proportional to the height of the text.
      */
-    float lineSpacing = 0.1F; // NOLINT
+    float lineSpacing = 0.1F;
 
     /** Height of the text in range [0.0; 1.0] relative to screen height. */
-    float textHeight = 0.035F; // NOLINT
+    float textHeight = 0.035F;
 
     /** Text to display. */
     std::u16string sText = u"text";
-
-    /** Scroll bar state. */
-    bool bIsScrollBarEnabled = false;
-
-    /** Offset of the scroll bar in lines of text. */
-    size_t iCurrentScrollOffset = 0;
-
-    /** The total number of `\n` chars in @ref sText. */
-    size_t iNewLineCharCountInText = 0;
 
     /** `true` to automatically transfer text to a new line if it does not fit in a single line. */
     bool bIsWordWrapEnabled = false;

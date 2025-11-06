@@ -45,14 +45,15 @@ public:
      *
      * @param bIsVertexDataDynamic Specify `true` if vertex positions/uvs will be changed often, otherwise
      * specify `false` if vertices of the quad will always be constant.
-     * @param vertexPositions      Optionally specify initial positions of quad vertices. If empty creates
-     * a full screen quad with positions in normalized device coordinates.
+     * @param vertexData           Optionally specify initial positions of quad vertices. If empty creates
+     * a full screen quad with data in normalized device coordinates.
      *
      * @return Quad.
      */
     static std::unique_ptr<ScreenQuadGeometry> createQuad(
         bool bIsVertexDataDynamic,
-        std::optional<std::array<glm::vec3, ScreenQuadGeometry::iVertexCount>> vertexPositions = {});
+        std::optional<std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount>>
+            vertexData = {});
 
     /**
      * Creates a VAO from the specified geometry.

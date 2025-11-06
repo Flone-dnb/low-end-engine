@@ -184,15 +184,6 @@ void Renderer::recreateFramebuffers() {
     }
 
     pFontManager->onWindowSizeChanged();
-
-    // Notify UI manager.
-    if (pGameManager != nullptr) {
-        auto& mtxWorldData = pGameManager->getWorlds();
-        std::scoped_lock guard(mtxWorldData.first);
-        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
-            pWorld->getUiNodeManager().onWindowSizeChanged();
-        }
-    }
 }
 
 void Renderer::onWindowSizeChanged() { recreateFramebuffers(); }

@@ -76,6 +76,27 @@ public:
     void setTextSelectionColor(const glm::vec4& textSelectionColor);
 
     /**
+     * Sets color of the scroll bar.
+     *
+     * @param color Color in the RGBA format.
+     */
+    void setScrollBarColor(const glm::vec4& color);
+
+    /**
+     * Sets whether scroll bar is enabled or not.
+     *
+     * @param bEnable `true` to enable.
+     */
+    void setIsScrollBarEnabled(bool bEnable);
+
+    /**
+     * If scroll is enabled moves scroll to make sure the character with the specified offset is visible.
+     *
+     * @param iTextCharOffset Offset in @ref getText.
+     */
+    void moveScrollToTextCharacter(size_t iTextCharOffset);
+
+    /**
      * Tells if editing text from the user input is not possible.
      *
      * @return Read only state.
@@ -88,6 +109,27 @@ public:
      * @return RGBA color.
      */
     glm::vec4 getTextSelectionColor() const { return textSelectionColor; }
+
+    /**
+     * Returns color of the scroll bar.
+     *
+     * @return RGBA color.
+     */
+    glm::vec4 getScrollBarColor() const { return scrollBarColor; }
+
+    /**
+     * Tells if scroll bar is enabled.
+     *
+     * @return `true` if enabled.
+     */
+    bool getIsScrollBarEnabled() const { return bIsScrollBarEnabled; }
+
+    /**
+     * Returns current offset of the scroll bar in lines of text.
+     *
+     * @return Offset.
+     */
+    size_t getCurrentScrollOffset() const { return iCurrentScrollOffset; }
 
 protected:
     /** Called after this object was finished deserializing from file. */
@@ -164,8 +206,32 @@ protected:
      */
     virtual void onMouseMove(double xOffset, double yOffset) override;
 
+    /**
+     * Called when the window receives mouse scroll movement while floating over this UI node.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     *
+     * @param iOffset Movement offset.
+     *
+     * @return `true` if the event was handled or `false` if the event needs to be passed to a parent UI node.
+     */
+    virtual bool onMouseScrollMoveWhileHovered(int iOffset) override;
+
     /** Called after text is changed. */
     virtual void onAfterTextChanged() override;
+
+    /**
+     * Called when this node was not spawned previously and it was either attached to a parent node
+     * that is spawned or set as world's root node to execute custom spawn logic.
+     *
+     * @remark This node will be marked as spawned before this function is called.
+     * @remark This function is called before any of the child nodes are spawned.
+     *
+     * @warning If overriding you must call the parent's version of this function first
+     * (before executing your logic) to execute parent's logic.
+     */
+    virtual void onSpawning() override;
 
     /**
      * Called before this node is despawned from the world to execute custom despawn logic.
@@ -178,6 +244,9 @@ protected:
      * @remark @ref getSpawnDespawnMutex is locked while this function is called.
      */
     virtual void onDespawning() override;
+
+    /** Called after node's visibility was changed. */
+    virtual void onVisibilityChanged() override;
 
 private:
     /**
@@ -211,6 +280,18 @@ private:
 
     /** Color of the selected region of the text. */
     glm::vec4 textSelectionColor = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F);
+
+    /** Color of the scroll bar. */
+    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F);
+
+    /** Offset of the scroll bar in lines of text. */
+    size_t iCurrentScrollOffset = 0;
+
+    /** The total number of `\n` chars in @ref sText. */
+    size_t iNewLineCharCountInText = 0;
+
+    /** Scroll bar state. */
+    bool bIsScrollBarEnabled = false;
 
     /** `true` if editing text from the user input is not possible. */
     bool bIsReadOnly = false;

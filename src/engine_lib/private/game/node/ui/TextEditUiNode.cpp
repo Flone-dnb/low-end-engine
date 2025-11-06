@@ -41,6 +41,15 @@ TypeReflectionInfo TextEditUiNode::getReflectionInfo() {
                 return reinterpret_cast<TextEditUiNode*>(pThis)->getTextSelectionColor();
             }};
 
+    variables.vec4s[NAMEOF_MEMBER(&TextEditUiNode::scrollBarColor).data()] = ReflectedVariableInfo<glm::vec4>{
+        .setter =
+            [](Serializable* pThis, const glm::vec4& newValue) {
+                reinterpret_cast<TextEditUiNode*>(pThis)->setScrollBarColor(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec4 {
+            return reinterpret_cast<TextEditUiNode*>(pThis)->getScrollBarColor();
+        }};
+
     variables.bools[NAMEOF_MEMBER(&TextEditUiNode::bIsReadOnly).data()] = ReflectedVariableInfo<bool>{
         .setter =
             [](Serializable* pThis, const bool& bNewValue) {
@@ -48,6 +57,15 @@ TypeReflectionInfo TextEditUiNode::getReflectionInfo() {
             },
         .getter = [](Serializable* pThis) -> bool {
             return reinterpret_cast<TextEditUiNode*>(pThis)->getIsReadOnly();
+        }};
+
+    variables.bools[NAMEOF_MEMBER(&TextEditUiNode::bIsScrollBarEnabled).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<TextEditUiNode*>(pThis)->setIsScrollBarEnabled(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<TextEditUiNode*>(pThis)->getIsScrollBarEnabled();
         }};
 
     return TypeReflectionInfo(
@@ -67,6 +85,8 @@ void TextEditUiNode::setIsReadOnly(bool bIsReadOnly) {
     }
 }
 
+void TextEditUiNode::setScrollBarColor(const glm::vec4& color) { scrollBarColor = color; }
+
 void TextEditUiNode::setOnTextChanged(const std::function<void(std::u16string_view)>& onTextChanged) {
     this->onTextChanged = onTextChanged;
 }
@@ -77,6 +97,96 @@ void TextEditUiNode::setOnEnterPressed(const std::function<void(std::u16string_v
 
 void TextEditUiNode::setTextSelectionColor(const glm::vec4& textSelectionColor) {
     this->textSelectionColor = textSelectionColor;
+}
+
+void TextEditUiNode::setIsScrollBarEnabled(bool bEnable) {
+    if (bIsScrollBarEnabled == bEnable) {
+        return;
+    }
+
+    bIsScrollBarEnabled = bEnable;
+    iCurrentScrollOffset = 0;
+}
+
+bool TextEditUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
+    const auto bResult = TextUiNode::onMouseScrollMoveWhileHovered(iOffset);
+
+    if (!bIsScrollBarEnabled) {
+        return bResult;
+    }
+
+    if (iOffset < 0) {
+        iCurrentScrollOffset += static_cast<size_t>(std::abs(iOffset));
+    } else if (iCurrentScrollOffset > 0) {
+        if (static_cast<size_t>(iOffset) > iCurrentScrollOffset) {
+            iCurrentScrollOffset = 0;
+        } else {
+            iCurrentScrollOffset -= static_cast<size_t>(iOffset);
+        }
+    }
+
+    return true;
+}
+
+void TextEditUiNode::moveScrollToTextCharacter(size_t iTextCharOffset) {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException("this function can only be called while spawned");
+    }
+
+    if (!bIsScrollBarEnabled) [[unlikely]] {
+        Error::showErrorAndThrowException("this function expects scroll bar to be enabled");
+    }
+
+    if (!getIsWordWrapEnabled() && !getHandleNewLineChars()) {
+        iCurrentScrollOffset = 0;
+        return;
+    }
+
+    // Get font glyphs.
+    auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
+    auto glyphGuard = fontManager.getGlyphs();
+
+    // Prepare some variables.
+    const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
+    const auto textScaleFullscreen = getTextHeight() / fontManager.getFontHeightToLoad();
+    const auto sizeInPixels = glm::vec2(
+        getSize().x * static_cast<float>(iWindowWidth), getSize().y * static_cast<float>(iWindowHeight));
+
+    float localX = 0.0F;
+    size_t iLineIndex = 0;
+    const auto sText = getText();
+
+    for (size_t i = 0; i < sText.size(); i++) {
+        if (iTextCharOffset == i) {
+            break;
+        }
+
+        const auto& character = sText[i];
+
+        // Handle new line.
+        if (character == '\n' && getHandleNewLineChars()) {
+            localX = 0.0F;
+            iLineIndex += 1;
+            continue;
+        }
+
+        const auto& glyph = glyphGuard.getGlyph(character);
+
+        const float distanceToNextGlyph =
+            static_cast<float>(glyph.advance >> 6) / // bitshift by 6 to get value in pixels (2^6 = 64)
+            sizeInPixels.x * textScaleFullscreen;
+        const float glyphWidth = std::max(
+            static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);
+
+        if (getIsWordWrapEnabled() && (localX + distanceToNextGlyph > 1.0F)) {
+            localX = 0.0F;
+            iLineIndex += 1;
+        }
+
+        localX += glyphWidth;
+    }
+
+    iCurrentScrollOffset = iLineIndex;
 }
 
 void TextEditUiNode::onAfterDeserialized() {
@@ -284,6 +394,15 @@ void TextEditUiNode::onKeyboardButtonPressedWhileFocused(KeyboardButton button, 
 void TextEditUiNode::onAfterTextChanged() {
     TextUiNode::onAfterTextChanged();
 
+    // Count lines.
+    iNewLineCharCountInText = 0;
+    const auto sText = getText();
+    for (const auto& ch : sText) {
+        if (ch == u'\n') {
+            iNewLineCharCountInText += 1;
+        }
+    }
+
     if (bIsChangingText) {
         return;
     }
@@ -348,11 +467,30 @@ void TextEditUiNode::onLostFocus() {
     bIsTextSelectionStarted = false;
 }
 
+void TextEditUiNode::onSpawning() {
+    TextUiNode::onSpawning();
+
+    // Notify manager.
+    getWorldWhileSpawned()->getUiNodeManager().onNodeSpawning(this);
+}
+
 void TextEditUiNode::onDespawning() {
     TextUiNode::onDespawning();
 
+    // Notify manager.
+    getWorldWhileSpawned()->getUiNodeManager().onNodeDespawning(this);
+
     if (bEnableSdlTextInput) {
         SDL_StopTextInput(getGameInstanceWhileSpawned()->getWindow()->getSdlWindow());
+    }
+}
+
+void TextEditUiNode::onVisibilityChanged() {
+    TextUiNode::onVisibilityChanged();
+
+    if (isSpawned()) {
+        // Notify manager.
+        getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
     }
 }
 

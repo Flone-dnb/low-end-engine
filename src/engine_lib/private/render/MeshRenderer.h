@@ -100,7 +100,7 @@ class MeshRenderer {
     // Notifies us in destructor.
     friend class MeshRenderingHandle;
 
-    // Unlocks render data mutex on destructor.
+    // Unlocks render data mutex in destructor.
     friend class MeshRenderDataGuard;
 
 public:

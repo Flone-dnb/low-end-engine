@@ -79,7 +79,7 @@ public:
      *
      * @return Font height.
      */
-    float getFontHeightToLoad() const { return fontHeightToLoad; }
+    inline float getFontHeightToLoad() const { return fontHeightToLoad; }
 
 private:
     /**

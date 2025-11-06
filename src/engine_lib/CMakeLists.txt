@@ -62,6 +62,8 @@ set(PROJECT_SOURCES
     private/render/LightSourceManager.h
     private/render/UiNodeManager.cpp
     private/render/UiNodeManager.h
+    private/render/UiRenderData.h
+    private/render/UiRenderData.cpp
     private/render/MeshRenderer.h
     private/render/MeshRenderer.cpp
     private/render/RenderingHandle.h

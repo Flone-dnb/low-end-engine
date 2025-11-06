@@ -8,7 +8,6 @@
 #include "render/ShaderManager.h"
 #include "render/GpuResourceManager.h"
 #include "misc/Profiler.hpp"
-#include "game/camera/CameraProperties.h"
 #include "game/geometry/PrimitiveMeshGenerator.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "render/FontManager.h"
@@ -83,9 +82,9 @@ DebugDrawer& DebugDrawer::get() {
 
 void DebugDrawer::destroy() {
     pMeshShaderProgram = nullptr;
-    pTextShaderProgram = nullptr;
     pScreenQuadGeometry = nullptr;
-    pRectShaderProgram = nullptr;
+    textShaderInfo.pShaderProgram = nullptr;
+    rectShaderInfo.pShaderProgram = nullptr;
 
     vMeshesToDraw.clear();
     vTextToDraw.clear();
@@ -172,25 +171,23 @@ void DebugDrawer::drawScreenRect(
 }
 
 void DebugDrawer::drawQuad(
-    const glm::vec2& screenPos, const glm::vec2& screenSize, unsigned int iScreenHeight) const {
-    // Flip Y from our top-left origin to OpenGL's bottom-left origin.
-    const float posY = static_cast<float>(iScreenHeight) - screenPos.y;
+    int iScreenPosUniform,
+    int iScreenSizeUniform,
+    int iClipRectUniform,
+    int iWindowSizeUniform,
+    glm::vec2 screenPos,
+    glm::vec2 screenSize,
+    unsigned int iWindowWidth,
+    unsigned int iWindowHeight) const {
+    const glm::vec2 windowSize =
+        glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
 
-    // Update vertices.
-    const std::array<glm::vec4, ScreenQuadGeometry::iVertexCount> vVertices = {
-        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x, posY - screenSize.y, 0.0F, 1.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
+    const glm::vec4 clipRect = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
 
-        glm::vec4(screenPos.x, posY, 0.0F, 0.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY - screenSize.y, 1.0F, 1.0F),
-        glm::vec4(screenPos.x + screenSize.x, posY, 1.0F, 0.0F),
-    };
-
-    // Copy new vertex data to VBO.
-    glBindBuffer(GL_ARRAY_BUFFER, pScreenQuadGeometry->getVao().getVertexBufferObjectId());
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), vVertices.data());
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUniform2fv(iScreenPosUniform, 1, glm::value_ptr(screenPos));
+    glUniform2fv(iScreenSizeUniform, 1, glm::value_ptr(screenSize));
+    glUniform4fv(iClipRectUniform, 1, glm::value_ptr(clipRect));
+    glUniform2fv(iWindowSizeUniform, 1, glm::value_ptr(windowSize));
 
     // Render quad.
     glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
@@ -204,23 +201,52 @@ void DebugDrawer::drawDebugObjects(
     if (pMeshShaderProgram == nullptr) {
         pMeshShaderProgram = pRenderer->getShaderManager().getShaderProgram(
             "engine/shaders/debug/Mesh.vert.glsl", "engine/shaders/debug/Mesh.frag.glsl");
-
-        pTextShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-            "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/TextNode.frag.glsl");
-
-        pRectShaderProgram = pRenderer->getShaderManager().getShaderProgram(
-            "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/RectUiNode.frag.glsl");
-
-        pScreenQuadGeometry = GpuResourceManager::createQuad(true);
-
         iMeshProgramViewProjectionMatrixUniform =
             pMeshShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
+
+        textShaderInfo.pShaderProgram = pRenderer->getShaderManager().getShaderProgram(
+            "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/TextNode.frag.glsl");
+
+        // Cache uniform locations for text shader.
+        auto& text = textShaderInfo;
+        text.iScreenPosUniform = text.pShaderProgram->getShaderUniformLocation("screenPos");
+        text.iScreenSizeUniform = text.pShaderProgram->getShaderUniformLocation("screenSize");
+        text.iClipRectUniform = text.pShaderProgram->getShaderUniformLocation("clipRect");
+        text.iWindowSizeUniform = text.pShaderProgram->getShaderUniformLocation("windowSize");
+
+        rectShaderInfo.pShaderProgram = pRenderer->getShaderManager().getShaderProgram(
+            "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/RectUiNode.frag.glsl");
+
+        // Cache uniform locations for rect shader.
+        auto& rect = rectShaderInfo;
+        rect.iScreenPosUniform = rect.pShaderProgram->getShaderUniformLocation("screenPos");
+        rect.iScreenSizeUniform = rect.pShaderProgram->getShaderUniformLocation("screenSize");
+        rect.iClipRectUniform = rect.pShaderProgram->getShaderUniformLocation("clipRect");
+        rect.iWindowSizeUniform = rect.pShaderProgram->getShaderUniformLocation("windowSize");
+
+        // Prepare screen quad in [0.0; 1.0].
+        std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
+            ScreenQuadGeometry::VertexLayout{
+                .position = glm::vec3(0.0F, 0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+            ScreenQuadGeometry::VertexLayout{
+                .position = glm::vec3(0.0F, 1.0F, 0.0F), .uv = glm::vec2(0.0F, 1.0F)},
+            ScreenQuadGeometry::VertexLayout{
+                .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
+
+            ScreenQuadGeometry::VertexLayout{
+                .position = glm::vec3(0.0F, 0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
+            ScreenQuadGeometry::VertexLayout{
+                .position = glm::vec3(1.0F, 1.0F, 0.0F), .uv = glm::vec2(1.0F, 1.0F)},
+            ScreenQuadGeometry::VertexLayout{
+                .position = glm::vec3(1.0F, 0.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
+        };
+        pScreenQuadGeometry = GpuResourceManager::createQuad(false, vVertices);
     }
 
     glDisable(GL_DEPTH_TEST);
     {
         // Prepare for drawing meshes.
-        GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(pMeshShaderProgram->getShaderProgramId());
         glUniformMatrix4fv(
             iMeshProgramViewProjectionMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
@@ -246,16 +272,13 @@ void DebugDrawer::drawDebugObjects(
 
         // Prepare for drawing screen rectangles.
         const auto [iWindowWidth, iWindowHeight] = pRenderer->getWindow()->getWindowSize();
-        uiProjMatrix =
-            glm::ortho(0.0F, static_cast<float>(iWindowWidth), 0.0F, static_cast<float>(iWindowHeight));
-        GL_CHECK_ERROR(glUseProgram(pRectShaderProgram->getShaderProgramId()));
-        GL_CHECK_ERROR(glBindVertexArray(pScreenQuadGeometry->getVao().getVertexArrayObjectId()));
-        pRectShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
+        glUseProgram(rectShaderInfo.pShaderProgram->getShaderProgramId());
+        glBindVertexArray(pScreenQuadGeometry->getVao().getVertexArrayObjectId());
 
         for (auto it = vRectsToDraw.begin(); it != vRectsToDraw.end();) {
             auto& rect = *it;
-            pRectShaderProgram->setVector4ToShader("color", glm::vec4(rect.color, 1.0F));
-            pRectShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            rectShaderInfo.pShaderProgram->setVector4ToShader("color", glm::vec4(rect.color, 1.0F));
+            rectShaderInfo.pShaderProgram->setBoolToShader("bIsUsingTexture", false);
 
             glm::vec2 pos = rect.screenPos;
             glm::vec2 size = rect.screenSize;
@@ -263,7 +286,15 @@ void DebugDrawer::drawDebugObjects(
             pos *= glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
             size *= glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
 
-            drawQuad(pos, size, iWindowHeight);
+            drawQuad(
+                rectShaderInfo.iScreenPosUniform,
+                rectShaderInfo.iScreenSizeUniform,
+                rectShaderInfo.iClipRectUniform,
+                rectShaderInfo.iWindowSizeUniform,
+                pos,
+                size,
+                iWindowWidth,
+                iWindowHeight);
 
             // Update state.
             rect.timeLeftSec -= timeSincePrevFrameInSec;
@@ -277,9 +308,8 @@ void DebugDrawer::drawDebugObjects(
         // Prepare for drawing text.
         auto& fontManager = pRenderer->getFontManager();
         auto glyphGuard = fontManager.getGlyphs();
-        GL_CHECK_ERROR(glUseProgram(pTextShaderProgram->getShaderProgramId()));
+        GL_CHECK_ERROR(glUseProgram(textShaderInfo.pShaderProgram->getShaderProgramId()));
         GL_CHECK_ERROR(glBindVertexArray(pScreenQuadGeometry->getVao().getVertexArrayObjectId()));
-        pTextShaderProgram->setMatrix4ToShader("projectionMatrix", uiProjMatrix);
         glActiveTexture(GL_TEXTURE0); // glyph's bitmap
 
         // Prepare starting position for the first text (relative to screen's top-left corner).
@@ -296,7 +326,7 @@ void DebugDrawer::drawDebugObjects(
                 screenX = static_cast<float>(iWindowWidth) * text.optForcePosition->x;
             }
 
-            pTextShaderProgram->setVector4ToShader("textColor", glm::vec4(text.color, 1.0F));
+            textShaderInfo.pShaderProgram->setVector4ToShader("textColor", glm::vec4(text.color, 1.0F));
 
             const auto fontScale = text.textHeight / fontManager.getFontHeightToLoad();
             const float textHeightInPixels =
@@ -328,7 +358,15 @@ void DebugDrawer::drawDebugObjects(
                 // Space character has 0 width so don't submit any rendering.
                 if (glyph.size.x != 0) {
                     glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-                    drawQuad(screenPos, glm::vec2(width, height), iWindowHeight);
+                    drawQuad(
+                        textShaderInfo.iScreenPosUniform,
+                        textShaderInfo.iScreenSizeUniform,
+                        textShaderInfo.iClipRectUniform,
+                        textShaderInfo.iWindowSizeUniform,
+                        screenPos,
+                        glm::vec2(width, height),
+                        iWindowWidth,
+                        iWindowHeight);
                 }
 
                 // Switch to next glyph.

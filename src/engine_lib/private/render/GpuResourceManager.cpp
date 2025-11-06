@@ -87,7 +87,8 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
 
 std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
     bool bIsVertexDataDynamic,
-    std::optional<std::array<glm::vec3, ScreenQuadGeometry::iVertexCount>> vertexPositions) {
+    std::optional<std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount>>
+        vertexData) {
     PROFILE_FUNC
 
     // Prepare initial vertex buffer (full screen quad with positions in normalized device coordinates).
@@ -107,10 +108,8 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createQuad(
             .position = glm::vec3(-1.0F, -1.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
     };
 
-    if (vertexPositions.has_value()) {
-        for (size_t i = 0; i < vertexPositions->size(); i++) {
-            vVertices[i].position = (*vertexPositions)[i];
-        }
+    if (vertexData.has_value()) {
+        vVertices = *vertexData;
     }
 
     std::scoped_lock guard(mtx);
