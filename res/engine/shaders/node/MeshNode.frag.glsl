@@ -16,7 +16,11 @@ uniform vec2 textureTilingMultiplier;
 
 out vec4 color;
 
-layout(early_fragment_tests) in;
+#ifndef EDITOR_GIZMO
+    // because gizmo modifies the depth
+    layout(early_fragment_tests) in;
+#endif
+
 void main() {
     #ifdef ENGINE_EDITOR
         imageStore(nodeIdTexture, ivec2(gl_FragCoord.xy), uvec4(iNodeId, 0u, 0u, 0u));
@@ -32,17 +36,19 @@ void main() {
     }
 
     // Light.
+    vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
     #ifdef EDITOR_GIZMO
-        // Editor's gizmo mesh should not have lighting.
-        vec3 lightColor = fragmentDiffuseColor.rgb;
-
-        // TODO: because gizmo shader does not use normal for lighting the CPU code that sets
-        // normalMatrix will fail because it's also not used and is optimized out. To avoid this:
-        if (fragmentNormalUnit.y > 100.0) {
+        // TODO: because gizmo shader does not use lighting the CPU code that sets
+        // normalMatrix and lighting info will fail because it's also not used and is optimized out. To avoid this:
+        if (lightColor.r > 100.0F) {
             discard;
         }
-    #else
-        vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
+
+        // Editor's gizmo mesh should not have lighting.
+        lightColor = fragmentDiffuseColor.rgb;
+
+        // Draw gizmo in front (it's simpler to do it this way rather than add a new feature to our MeshRenderer).
+        gl_FragDepth = 0.0F;
     #endif
 
     color = vec4(lightColor, fragmentDiffuseColor.a);

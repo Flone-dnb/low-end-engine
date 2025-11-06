@@ -67,6 +67,12 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pZAxisMeshU->setMeshGeometryBeforeSpawned(std::move(gizmoGeometry));
     pZAxisMeshU->setRelativeRotation(glm::vec3(0.0F, -90.0F, 0.0F));
 
+    // Set custom shader.
+    const std::string sFragmentShader = "editor/shaders/Gizmo.frag.glsl";
+    pXAxisMesh->getMaterial().setPathToCustomFragmentShader(sFragmentShader);
+    pYAxisMeshU->getMaterial().setPathToCustomFragmentShader(sFragmentShader);
+    pZAxisMeshU->getMaterial().setPathToCustomFragmentShader(sFragmentShader);
+
     // Set color.
     pXAxisMesh->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.0F, 0.0F));
     pYAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 1.0F, 0.0F));
@@ -83,9 +89,9 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pZAxisGizmoNode->setSerialize(false);
 
     // Draw gizmo as transparent with 1.0F alpha to draw gizmo on top of most meshes.
-    pXAxisGizmoNode->getMaterial().setEnableTransparency(true);
-    pYAxisGizmoNode->getMaterial().setEnableTransparency(true);
-    pZAxisGizmoNode->getMaterial().setEnableTransparency(true);
+    pXAxisMesh->getMaterial().setEnableTransparency(true);
+    pYAxisMeshU->getMaterial().setEnableTransparency(true);
+    pZAxisMeshU->getMaterial().setEnableTransparency(true);
 
     addChildNode(std::move(pXAxisGizmoU));
     addChildNode(std::move(pYAxisMeshU));
