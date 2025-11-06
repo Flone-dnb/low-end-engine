@@ -688,7 +688,11 @@ private:
 };
 ```
 
-## Debug drawer
+## Debug tools
+
+Debug tools include things like debug drawer (for quick debugging) and debug console (for dev cheat commands and performance stats). Debug tools are disabled in the "Release" build mode but for test builds you can enable them if you pass -DENGINE_ENABLE_DEBUG_TOOLS=ON while configuring cmake, cmake will then print a message that debug tools are enabled.
+
+### Debug drawer
 
 In case you need to quickly draw some temporary objects/text in the game world in order to debug something you can use `DebugDrawer` to do so. Here is an example:
 
@@ -699,7 +703,7 @@ In case you need to quickly draw some temporary objects/text in the game world i
 DebugDrawer::drawCube(1.0F, glm::vec3(1.0F, 1.0F, 0.0F));
 ```
 
-## Debug console
+### Debug console
 
 Often during development developers need some cheats for debugging and/or testing. `DebugConsole` exists exactly for such things, it allows you to create custom commands that will only work in non-release builds. Here is an example:
 

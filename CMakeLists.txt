@@ -3,6 +3,7 @@
 project(low_end_engine)
 
 option(ENGINE_UI_ONLY "Enable in case you're making a UI-only app, this way the app will be slightly more performant and will use slightly less RAM." OFF)
+option(ENGINE_ENABLE_DEBUG_TOOLS "Can be useful in Release builds to measure performance" OFF)
 
 # Check build mode.
 if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
@@ -19,14 +20,19 @@ if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/engine_settings.cmake")
     include(engine_settings.cmake)
 endif()
 
+# Include essential stuff.
+include(src/.cmake/essential.cmake)
+
 if (ENGINE_UI_ONLY)
     message(STATUS "ENGINE_UI_ONLY enabled.")
 else()
     message(STATUS "ENGINE_UI_ONLY disabled.")
 endif()
 
-# Include essential stuff.
-include(src/.cmake/essential.cmake)
+if (ENGINE_ENABLE_DEBUG_TOOLS AND IS_RELEASE_BUILD)
+    message(WARNING "Note: you enabled ENGINE_DEBUG_TOOLS in release build.")
+    add_compile_definitions(ENGINE_DEBUG_TOOLS)
+endif()
 
 # Add node_super_call_checker.
 set(NODE_SUPER_CALL_CHECKER_DIR node_super_call_checker)
