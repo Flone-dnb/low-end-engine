@@ -42,6 +42,12 @@ GameManager::GameManager(
     Log::info("DEBUG macro is NOT defined, running release build");
 #endif
 
+#if defined(ENGINE_DEBUG_TOOLS)
+    Log::info("ENGINE_DEBUG_TOOLS macro is defined, debug tools are enabled");
+#else
+    Log::info("ENGINE_DEBUG_TOOLS macro is NOT defined");
+#endif
+
     this->pRenderer = std::move(pRenderer);
     this->pGameInstance = std::move(pGameInstance);
     pSoundManager = std::unique_ptr<SoundManager>(new SoundManager());
