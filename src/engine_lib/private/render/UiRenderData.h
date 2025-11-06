@@ -8,57 +8,38 @@
 #include "math/GLMath.hpp"
 #include "render/UiLayer.hpp"
 
-/// @cond UNDOCUMENTED
-
-#ifdef __cpp_lib_hardware_interference_size
-using std::hardware_constructive_interference_size;
-#else
-constexpr std::size_t hardware_constructive_interference_size = 64;
-#endif
-
-// ------------------------------------------------------------------------------------------------
-
 class TextRenderingHandle;
 
+/** Data used to submit a text glyph for drawing. */
+struct GlythRenderData {
+    /** Offset relative to the pivot of the text. */
+    glm::vec2 relativePos;
+
+    /** Size in pixels. */
+    glm::vec2 screenSize;
+
+    /** Glyph texture ID. */
+    unsigned int iTextureId = 0;
+};
+
 /** Groups data needed to submit text for drawing. */
-struct alignas(hardware_constructive_interference_size) TextRenderData {
+struct TextRenderData {
+    /** Glyphs to submit for drawing. */
+    std::vector<GlythRenderData> vGlyphs;
+
     /** Color of the text in the RGBA format. */
     glm::vec4 textColor;
 
     /** Used by the manager to update handle's render data index. */
     TextRenderingHandle* pHandle = nullptr;
 
-    /** Pointer to text to display. */
-    std::u16string* pText = nullptr;
-
-    /** Top-left corner in range [0.0; 1.0] relative to screen. */
+    /** Top-left corner of the text in range [0.0; 1.0] relative to screen. */
     glm::vec2 pos;
-
-    /** Size in range [0.0; 1.0] relative to screen size. */
-    glm::vec2 size;
-
-    /** Height of the text in range [0.0; 1.0] relative to screen height. */
-    float textHeight = 0.035F;
-
-    /**
-     * Vertical space between horizontal lines of text, in range [0.0F; +inf]
-     * proportional to the height of the text.
-     */
-    float lineSpacing = 0.1F;
-
-    /** `true` to automatically transfer text to a new line if it does not fit in a single line. */
-    bool bIsWordWrapEnabled = false;
-
-    /** `true` to allow `\n` characters in the text to create new lines. */
-    bool bHandleNewLineChars = true;
 };
-static_assert(sizeof(TextRenderData) == hardware_constructive_interference_size);
-
-/// @endcond
-
-class UiNodeManager;
 
 // ------------------------------------------------------------------------------------------------
+
+class UiNodeManager;
 
 /**
  * While you hold an object of this type the text will be rendered,

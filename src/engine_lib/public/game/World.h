@@ -68,6 +68,9 @@ class World {
     // Nodes notify the world about being spawned/despawned.
     friend class Node;
 
+    // Ticks world nodes and destroys worlds.
+    friend class GameManager;
+
 public:
     ~World();
 
@@ -93,23 +96,12 @@ public:
      */
     void changeRootNode(std::unique_ptr<Node> pNewRoot);
 
-    /** Clears pointer to the root node which causes the world to recursively be despawned and destroyed. */
-    void destroyWorld();
-
     /**
      * Returns spawned nodes that receive input.
      *
      * @return Nodes.
      */
     ReceivingInputNodesGuard getReceivingInputNodes();
-
-    /**
-     * Called before a new frame is rendered.
-     *
-     * @param timeSincePrevCallInSec Time in seconds that has passed since the last call
-     * to this function.
-     */
-    void tickTickableNodes(float timeSincePrevCallInSec);
 
     /**
      * Quickly tests if a node with the specified ID is currently spawned or not.
@@ -215,6 +207,20 @@ private:
     };
 
     /**
+     * Called before a new frame is rendered.
+     *
+     * @param timeSincePrevCallInSec Time in seconds that has passed since the last call
+     * to this function.
+     */
+    void tickTickableNodes(float timeSincePrevCallInSec);
+
+    /** Clears pointer to the root node which causes the world to recursively be despawned and destroyed. */
+    void destroyWorld();
+
+    /** Called after window size changed. */
+    void onWindowSizeChanged();
+
+    /**
      * Called from Node to notify the World about a new node being spawned.
      *
      * @param pNode Node that is being spawned.
@@ -310,7 +316,7 @@ private:
     /** World's root node. */
     std::pair<std::mutex, std::unique_ptr<Node>> mtxRootNode;
 
-    /** Stores pairs of "Node ID" - "Spawned Node". */
+    /** Stores pairs of "Node ID" - "spawned Node". */
     std::pair<std::mutex, std::unordered_map<size_t, Node*>> mtxSpawnedNodes;
 
     /**

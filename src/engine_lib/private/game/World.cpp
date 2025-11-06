@@ -75,6 +75,13 @@ void World::destroyWorld() {
     pCameraManager = nullptr;
 }
 
+void World::onWindowSizeChanged() {
+    std::scoped_lock guard(mtxSpawnedNodes.first);
+    for (const auto& [iNodeId, pNode] : mtxSpawnedNodes.second) {
+        pNode->onWindowSizeChanged();
+    }
+}
+
 void World::changeRootNode(std::unique_ptr<Node> pNewRoot) {
     if (pNewRoot->isSpawned()) [[unlikely]] {
         Error::showErrorAndThrowException(

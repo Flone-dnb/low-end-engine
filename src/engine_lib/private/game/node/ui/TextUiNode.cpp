@@ -2,12 +2,14 @@
 
 // Custom.
 #include "game/GameInstance.h"
-#include "game/Window.h"
 #include "render/FontManager.h"
 #include "render/Renderer.h"
 #include "render/UiNodeManager.h"
+#include "game/World.h"
+#include "game/Window.h"
 #include "render/UiRenderData.h"
 #include "game/node/ui/TextEditUiNode.h"
+#include "render/wrapper/Texture.h"
 
 // External.
 #include "nameof.hpp"
@@ -174,14 +176,89 @@ void TextUiNode::updateRenderData() {
     auto renderDataGuard = uiManager.getTextRenderData(*pRenderingHandle);
     auto& data = renderDataGuard.getData();
 
-    data.pText = &sText;
     data.pos = getPosition();
-    data.size = getSize();
-    data.textHeight = textHeight;
-    data.lineSpacing = lineSpacing;
     data.textColor = color;
-    data.bIsWordWrapEnabled = bIsWordWrapEnabled;
-    data.bHandleNewLineChars = bHandleNewLineChars;
+
+    // Prepare glyph info.
+    data.vGlyphs.clear();
+
+    // If window size will change we will be notified and will re-run this code.
+    const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
+
+    auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
+    auto glyphGuard = fontManager.getGlyphs();
+
+    const float glyphScale = textHeight / fontManager.getFontHeightToLoad();
+    const float glyphHeight = fontManager.getFontHeightToLoad() * glyphScale;
+    const float glyphLineSpacing = lineSpacing * glyphHeight;
+
+    const auto maxXForWordWrap = getSize().x;
+    const auto yEndPos = getSize().y;
+
+    auto offset = glm::vec2(0.0F);
+
+    // Switch to the first row of text.
+    offset.y += glyphHeight;
+
+    for (const auto& character : sText) {
+        // Handle new line.
+        if (character == '\n' && bHandleNewLineChars) {
+            // Switch to a new line.
+            offset.y += glyphHeight + glyphLineSpacing;
+            offset.x = 0.0F;
+
+            if (offset.y > yEndPos) {
+                break;
+            }
+
+            continue; // don't render \n
+        }
+
+        const auto& glyph = glyphGuard.getGlyph(character);
+
+        const float distanceToNextGlyph =
+            static_cast<float>(
+                static_cast<double>(glyph.advance >> 6) // bitshift by 6 to get value in pixels (2^6 = 64)
+                / static_cast<double>(iWindowWidth)) *
+            glyphScale;
+
+        // Handle word wrap.
+        // TODO: do per-character wrap for now, rework later
+        if (offset.x + distanceToNextGlyph > maxXForWordWrap) {
+            if (bIsWordWrapEnabled) {
+                // Switch to a new line.
+                offset.y += glyphHeight + glyphLineSpacing;
+                offset.x = 0.0F;
+
+                if (offset.y > yEndPos) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        // Space character has 0 width so don't submit any rendering.
+        if (glyph.size.x != 0) {
+            const auto relativePos = glm::vec2(
+                offset.x + static_cast<float>(
+                               static_cast<double>(glyph.bearing.x) / static_cast<double>(iWindowWidth)) *
+                               glyphScale,
+                offset.y - static_cast<float>(
+                               static_cast<double>(glyph.bearing.y) / static_cast<double>(iWindowHeight)) *
+                               glyphScale);
+
+            data.vGlyphs.push_back(GlythRenderData{
+                .relativePos = relativePos,
+                .screenSize = glm::vec2(
+                    static_cast<float>(glyph.size.x) * glyphScale,
+                    static_cast<float>(glyph.size.y) * glyphScale),
+                .iTextureId = glyph.pTexture->getTextureId()});
+        }
+
+        // Switch to next glyph.
+        offset.x += distanceToNextGlyph;
+    }
 }
 
 void TextUiNode::onDespawning() {
@@ -201,6 +278,12 @@ void TextUiNode::onVisibilityChanged() {
             pRenderingHandle = nullptr;
         }
     }
+}
+
+void TextUiNode::onWindowSizeChanged() {
+    UiNode::onWindowSizeChanged();
+
+    updateRenderData();
 }
 
 void TextUiNode::onAfterPositionChanged() {

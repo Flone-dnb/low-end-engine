@@ -1232,8 +1232,7 @@ void UiNodeManager::drawTextNodesDataLocked(
         return;
     }
 
-    auto& fontManager = pRenderer->getFontManager();
-    auto glyphGuard = fontManager.getGlyphs();
+    const auto windowSize = glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
 
     // Set shader program.
     auto& shaderInfo = mtxData.second.textShaderInfo;
@@ -1245,81 +1244,17 @@ void UiNodeManager::drawTextNodesDataLocked(
     for (size_t i = 0; i < vTextRenderData.size(); i++) {
         const auto& renderData = vTextRenderData[i];
 
-        const auto screenMaxXForWordWrap =
-            (renderData.pos.x + renderData.size.x) * static_cast<float>(iWindowWidth);
-
-        float screenX = renderData.pos.x * static_cast<float>(iWindowWidth);
-        float screenY = renderData.pos.y * static_cast<float>(iWindowHeight);
-        const auto screenYEnd = screenY + renderData.size.y * static_cast<float>(iWindowHeight);
-        const auto scale = renderData.textHeight / fontManager.getFontHeightToLoad();
-
-        const float textHeightInPixels =
-            static_cast<float>(iWindowHeight) * fontManager.getFontHeightToLoad() * scale;
-        const float lineSpacingInPixels = renderData.lineSpacing * textHeightInPixels;
-
         glUniform4fv(shaderInfo.iTextColorUniform, 1, glm::value_ptr(renderData.textColor));
 
-        // Switch to the first row of text.
-        screenY += textHeightInPixels;
-
-        const auto& sText = *renderData.pText;
-
-        // Render each character.
-        for (size_t iCharIndex = 0; iCharIndex < sText.size(); iCharIndex++) {
-            const auto& character = sText[iCharIndex];
-
-            // Handle new line.
-            if (character == '\n' && renderData.bHandleNewLineChars) {
-                // Switch to a new line.
-                screenY += textHeightInPixels + lineSpacingInPixels;
-                screenX = renderData.pos.x * static_cast<float>(iWindowWidth);
-
-                if (screenY > screenYEnd) {
-                    break;
-                }
-
-                continue; // don't render \n
-            }
-
-            const auto& glyph = glyphGuard.getGlyph(character);
-
-            const float distanceToNextGlyph =
-                static_cast<float>(glyph.advance >> 6) * // bitshift by 6 to get value in pixels (2^6 = 64)
-                scale;
-
-            // Handle word wrap.
-            // TODO: do per-character wrap for now, rework later
-            if (renderData.bIsWordWrapEnabled && (screenX + distanceToNextGlyph > screenMaxXForWordWrap)) {
-                // Switch to a new line.
-                screenY += textHeightInPixels + lineSpacingInPixels;
-                screenX = renderData.pos.x * static_cast<float>(iWindowWidth);
-
-                if (screenY > screenYEnd) {
-                    break;
-                }
-            }
-
-            if (screenX + distanceToNextGlyph <= screenMaxXForWordWrap) {
-                float xpos = screenX + static_cast<float>(glyph.bearing.x) * scale;
-                float ypos = screenY - static_cast<float>(glyph.bearing.y) * scale;
-
-                float width = static_cast<float>(glyph.size.x) * scale;
-                float height = static_cast<float>(glyph.size.y) * scale;
-
-                // Space character has 0 width so don't submit any rendering.
-                if (glyph.size.x != 0) {
-                    glBindTexture(GL_TEXTURE_2D, glyph.pTexture->getTextureId());
-                    drawQuad(
-                        shaderInfo.iScreenPosUniform,
-                        shaderInfo.iScreenSizeUniform,
-                        shaderInfo.iClipRectUniform,
-                        glm::vec2(xpos, ypos),
-                        glm::vec2(width, height));
-                }
-            }
-
-            // Switch to next glyph.
-            screenX += distanceToNextGlyph;
+        // Render each glyph.
+        for (const auto& glyph : renderData.vGlyphs) {
+            glBindTexture(GL_TEXTURE_2D, glyph.iTextureId);
+            drawQuad(
+                shaderInfo.iScreenPosUniform,
+                shaderInfo.iScreenSizeUniform,
+                shaderInfo.iClipRectUniform,
+                (renderData.pos + glyph.relativePos) * windowSize,
+                glyph.screenSize);
         }
     }
 

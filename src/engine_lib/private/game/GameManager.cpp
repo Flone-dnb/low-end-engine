@@ -224,6 +224,11 @@ void GameManager::onWindowSizeChanged() {
     if (pGameInstance != nullptr) {
         pGameInstance->onWindowSizeChanged();
     }
+
+    std::scoped_lock guard(mtxWorldData.first);
+    for (const auto& pWorld : mtxWorldData.second.vWorlds) {
+        pWorld->onWindowSizeChanged();
+    }
 }
 
 void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {

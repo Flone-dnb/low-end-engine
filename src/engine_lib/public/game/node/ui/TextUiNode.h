@@ -194,6 +194,9 @@ protected:
     /** Called after size of this UI node was changed. */
     virtual void onAfterSizeChanged() override;
 
+    /** Called after window size was changed. */
+    virtual void onWindowSizeChanged() override;
+
     /** Called after text is changed. */
     virtual void onAfterTextChanged() {}
 

@@ -559,11 +559,14 @@ protected:
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
      * @remark This function will only be called while this node is spawned.
-     * 
+     *
      * @param bIsGamepadCurrent `true` if the last input was received from a gamepad, `false` if from mouse
      * and keyboard.
      */
     virtual void onLastInputSourceChanged(bool bIsGamepadCurrent) {}
+
+    /** Called after window size was changed. */
+    virtual void onWindowSizeChanged() {}
 
     /**
      * Determines if the @ref onBeforeNewFrame should be called each frame or not.
