@@ -52,10 +52,10 @@ void PostProcessManager::drawPostProcessing(
     PROFILE_FUNC
 
     // Set framebuffer.
-    GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId()));
+    glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId());
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GL_CHECK_ERROR(glUseProgram(pShaderProgram->getShaderProgramId()));
+    glUseProgram(pShaderProgram->getShaderProgramId());
 
     glDisable(GL_DEPTH_TEST);
     {
@@ -91,7 +91,7 @@ void PostProcessManager::drawPostProcessing(
 
         // Draw.
         glBindVertexArray(fullscreenQuadGeometry.getVao().getVertexArrayObjectId());
-        glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+        glDrawElements(GL_TRIANGLES, ScreenQuadGeometry::iIndexCount, GL_UNSIGNED_SHORT, nullptr);
 
         // Reset texture slots.
         glActiveTexture(GL_TEXTURE0);

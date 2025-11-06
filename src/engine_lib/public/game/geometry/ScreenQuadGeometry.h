@@ -26,7 +26,10 @@ public:
     ScreenQuadGeometry() = delete;
 
     /** 2 triangles. */
-    static constexpr unsigned int iVertexCount = 6; // NOLINT
+    static constexpr unsigned int iVertexCount = 4;
+
+    /** 2 triangles. */
+    static constexpr unsigned int iIndexCount = 6;
 
     /**
      * Returns vertex data.

@@ -189,8 +189,7 @@ void DebugDrawer::drawQuad(
     glUniform4fv(iClipRectUniform, 1, glm::value_ptr(clipRect));
     glUniform2fv(iWindowSizeUniform, 1, glm::value_ptr(windowSize));
 
-    // Render quad.
-    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+    glDrawElements(GL_TRIANGLES, ScreenQuadGeometry::iIndexCount, GL_UNSIGNED_SHORT, nullptr);
 }
 
 void DebugDrawer::drawDebugObjects(
@@ -229,12 +228,10 @@ void DebugDrawer::drawDebugObjects(
             ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
             ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
             ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
-
-            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
             ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
         };
-        pScreenQuadGeometry = GpuResourceManager::createScreenQuad(false, vVertices);
+        std::array<unsigned short, ScreenQuadGeometry::iIndexCount> vIndices = {0, 1, 2, 0, 2, 3};
+        pScreenQuadGeometry = GpuResourceManager::createScreenQuad(vVertices, vIndices);
     }
 
     glDisable(GL_DEPTH_TEST);

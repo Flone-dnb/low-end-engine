@@ -3,6 +3,7 @@
 // Standard.
 #include <memory>
 #include <mutex>
+#include <optional>
 
 // Custom.
 #include "game/geometry/MeshNodeGeometry.h"
@@ -43,17 +44,16 @@ public:
     /**
      * Creates a new quad.
      *
-     * @param bIsVertexDataDynamic Specify `true` if vertex positions/uvs will be changed often, otherwise
-     * specify `false` if vertices of the quad will always be constant.
-     * @param vertexData           Optionally specify initial positions of quad vertices. If empty creates
+     * @param vertexData Optionally specify initial positions of quad vertices. If empty creates
      * a full screen quad with data in normalized device coordinates.
+     * @param indexData  Optionally specify indices (otherwise default will be used).
      *
      * @return Quad.
      */
     static std::unique_ptr<ScreenQuadGeometry> createScreenQuad(
-        bool bIsVertexDataDynamic,
         std::optional<std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount>>
-            vertexData = {});
+            vertexData = {},
+        std::optional<std::array<unsigned short, ScreenQuadGeometry::iIndexCount>> indexData = {});
 
     /**
      * Creates a VAO from the specified geometry.

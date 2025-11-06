@@ -104,7 +104,7 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
     pTextureManager = std::unique_ptr<TextureManager>(new TextureManager());
     pFontManager = FontManager::create(this);
 
-    pFullscreenQuad = GpuResourceManager::createScreenQuad(false);
+    pFullscreenQuad = GpuResourceManager::createScreenQuad();
 
     // Initialize fences.
     for (auto& fence : frameSyncData.vFences) {

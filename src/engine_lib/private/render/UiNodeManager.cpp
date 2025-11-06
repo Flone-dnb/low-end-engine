@@ -6,6 +6,7 @@
 #include <ranges>
 
 // Custom.
+#include "game/geometry/ScreenQuadGeometry.h"
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/RectUiNode.h"
@@ -860,12 +861,10 @@ UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRe
         ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
         ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
         ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
-
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
         ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
     };
-    data.pScreenQuadGeometry = GpuResourceManager::createScreenQuad(false, vVertices);
+    std::array<unsigned short, ScreenQuadGeometry::iIndexCount> vIndices = {0, 1, 2, 0, 2, 3};
+    data.pScreenQuadGeometry = GpuResourceManager::createScreenQuad(vVertices, vIndices);
 
     // Load shaders.
     data.rectShaderInfo.pShaderProgram = pRenderer->getShaderManager().getShaderProgram(
@@ -1754,7 +1753,7 @@ void UiNodeManager::drawQuad(
     glUniform2fv(iScreenSizeUniform, 1, glm::value_ptr(screenSize));
     glUniform4fv(iClipRectUniform, 1, glm::value_ptr(clipRect));
 
-    glDrawArrays(GL_TRIANGLES, 0, ScreenQuadGeometry::iVertexCount);
+    glDrawElements(GL_TRIANGLES, ScreenQuadGeometry::iIndexCount, GL_UNSIGNED_SHORT, nullptr);
 }
 
 UiNodeManager::~UiNodeManager() {

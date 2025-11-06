@@ -42,9 +42,9 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
     glGenBuffers(1, &iVbo);
 
     glBindVertexArray(iVao);
-    glBindBuffer(GL_ARRAY_BUFFER, iVbo);
     {
         // Allocate vertices.
+        glBindBuffer(GL_ARRAY_BUFFER, iVbo);
         GL_CHECK_ERROR(glBufferData(
             GL_ARRAY_BUFFER,
             static_cast<long long>(vVertexPositions.size() * sizeof(vVertexPositions[0])),
@@ -60,35 +60,30 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
             GL_FALSE,          // whether data should be normalized or not
             sizeof(glm::vec3), // stride (size in bytes between elements)
             0);                // beginning offset
-
-        if (!vIndices.empty()) {
-            // Create EBO.
-            unsigned int iEbo = 0;
-            glGenBuffers(1, &iEbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iEbo);
-            optionalEbo = iEbo;
-            optionalIndexCount = static_cast<int>(vIndices.size());
-
-            // Allocate indices.
-            GL_CHECK_ERROR(glBufferData(
-                GL_ELEMENT_ARRAY_BUFFER,
-                vIndices.size() * sizeof(vIndices[0]),
-                vIndices.data(),
-                GL_STATIC_DRAW));
-        }
     }
+    if (!vIndices.empty()) {
+        // Create EBO.
+        unsigned int iEbo = 0;
+        glGenBuffers(1, &iEbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iEbo);
+        optionalEbo = iEbo;
+        optionalIndexCount = static_cast<int>(vIndices.size());
+
+        // Allocate indices.
+        GL_CHECK_ERROR(glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER, vIndices.size() * sizeof(vIndices[0]), vIndices.data(), GL_STATIC_DRAW));
+    }
+    glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     return std::unique_ptr<VertexArrayObject>(
         new VertexArrayObject(iVao, iVbo, iPositionCount, optionalEbo, optionalIndexCount));
 }
 
 std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createScreenQuad(
-    bool bIsVertexDataDynamic,
-    std::optional<std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount>>
-        vertexData) {
+    std::optional<std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount>> vertexData,
+    std::optional<std::array<unsigned short, ScreenQuadGeometry::iIndexCount>> indexData) {
     PROFILE_FUNC
 
     // Prepare initial vertex buffer (full screen quad with positions in normalized device coordinates).
@@ -97,49 +92,70 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createScreenQuad(
         ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
         ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0F, -1.0F), .uv = glm::vec2(0.0F, 0.0F)},
 
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, -1.0F), .uv = glm::vec2(1.0F, 0.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0F, -1.0F), .uv = glm::vec2(0.0F, 0.0F)},
-    };
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, -1.0F), .uv = glm::vec2(1.0F, 0.0F)}};
+
+    std::array<unsigned short, ScreenQuadGeometry::iIndexCount> vIndices = {0, 1, 2, 3, 0, 2};
 
     if (vertexData.has_value()) {
         vVertices = *vertexData;
+    }
+    if (indexData.has_value()) {
+        vIndices = *indexData;
     }
 
     std::scoped_lock guard(mtx);
 
     unsigned int iVao = 0;
     unsigned int iVbo = 0;
+    unsigned int iEbo = 0;
     glGenVertexArrays(1, &iVao);
     glGenBuffers(1, &iVbo);
+    glGenBuffers(1, &iEbo);
 
     glBindVertexArray(iVao);
-    glBindBuffer(GL_ARRAY_BUFFER, iVbo);
     {
-        // Allocate vertices.
-        GL_CHECK_ERROR(glBufferData(
-            GL_ARRAY_BUFFER,
-            static_cast<long long>(vVertices.size() * sizeof(ScreenQuadGeometry::VertexLayout)),
-            vVertices.data(),
-            bIsVertexDataDynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW));
+        {
+            // Allocate vertices.
+            glBindBuffer(GL_ARRAY_BUFFER, iVbo);
+            GL_CHECK_ERROR(glBufferData(
+                GL_ARRAY_BUFFER,
+                static_cast<long long>(vVertices.size() * sizeof(ScreenQuadGeometry::VertexLayout)),
+                vVertices.data(),
+                GL_STATIC_DRAW));
 
-        // Position (XY) and UV (ZW).
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(
-            0,                 // attribute index (layout location)
-            4,                 // number of components
-            GL_FLOAT,          // type of component
-            GL_FALSE,          // whether data should be normalized or not
-            sizeof(glm::vec4), // stride (size in bytes between elements)
-            0);                // beginning offset
+            // Position (XY) and UV (ZW).
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(
+                0,                 // attribute index (layout location)
+                4,                 // number of components
+                GL_FLOAT,          // type of component
+                GL_FALSE,          // whether data should be normalized or not
+                sizeof(glm::vec4), // stride (size in bytes between elements)
+                0);                // beginning offset
+        }
+
+        {
+            // Allocate indices.
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iEbo);
+            GL_CHECK_ERROR(glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                vIndices.size() * sizeof(vIndices[0]),
+                vIndices.data(),
+                GL_STATIC_DRAW));
+        }
     }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     return std::unique_ptr<ScreenQuadGeometry>(new ScreenQuadGeometry(
         vVertices,
-        std::unique_ptr<VertexArrayObject>(
-            new VertexArrayObject(iVao, iVbo, static_cast<unsigned int>(vVertices.size())))));
+        std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
+            iVao,
+            iVbo,
+            static_cast<unsigned int>(vVertices.size()),
+            iEbo,
+            static_cast<int>(vIndices.size())))));
 }
 
 std::unique_ptr<VertexArrayObject>

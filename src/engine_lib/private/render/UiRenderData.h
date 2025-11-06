@@ -1,9 +1,5 @@
 #pragma once
 
-// Standard.
-#include <new>
-#include <string>
-
 // Custom.
 #include "math/GLMath.hpp"
 #include "render/UiLayer.hpp"
