@@ -854,18 +854,6 @@ private:
     getInformationForSerialization(
         const std::filesystem::path& pathToSerializeTo, size_t& iId, std::optional<size_t> iParentId);
 
-    /**
-     * Checks if this node and all child nodes were deserialized from the same file
-     * (i.e. checks if this node tree is located in one file).
-     *
-     * @param sPathRelativeToRes Path relative to the `res` directory to the file to check,
-     * example: `game/test.toml`.
-     *
-     * @return `false` if this node or some child node(s) were deserialized from other file
-     * or if some nodes we not deserialized previously, otherwise `true`.
-     */
-    bool isTreeDeserializedFromOneFile(const std::string& sPathRelativeToRes);
-
     /** Map of action events that this node is bound to. */
     std::unordered_map<unsigned int, ActionEventCallbacks> boundActionEvents;
 

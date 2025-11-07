@@ -8,6 +8,7 @@
 
 // External.
 #include "catch2/catch_test_macros.hpp"
+#include "io/ConfigManager.h"
 
 TEST_CASE("build and check node hierarchy") {
     {
@@ -1711,6 +1712,200 @@ TEST_CASE("serialize node tree that references an external node tree") {
                     REQUIRE(
                         pDeserializedParentRootNode->getPathDeserializedFromRelativeToRes()->first !=
                         pExternalRootNode->getPathDeserializedFromRelativeToRes()->first);
+                }
+
+                getWindow()->close();
+            });
+        }
+    };
+
+    auto result = WindowBuilder().hidden().build();
+    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+        Error error = std::get<Error>(std::move(result));
+        error.addCurrentLocationToErrorStack();
+        INFO(error.getFullErrorMessage());
+        REQUIRE(false);
+    }
+
+    const std::unique_ptr<Window> pMainWindow = std::get<std::unique_ptr<Window>>(std::move(result));
+    pMainWindow->processEvents<TestGameInstance>();
+}
+
+TEST_CASE(
+    "serialize node tree that references an external node tree which references another external node tree") {
+    class TestGameInstance : public GameInstance {
+    public:
+        TestGameInstance(Window* pWindow) : GameInstance(pWindow) {}
+        virtual ~TestGameInstance() override = default;
+
+        virtual void onGameStarted() override {
+            createWorld([&](Node* pRootNode) {
+                const std::string rootTreeName = std::string(vUsedTestFileNames[3]) + ".toml";
+                const std::string extTreeName = std::string(vUsedTestFileNames[4]) + ".toml";
+                const std::string subExtTreeName = std::string(vUsedTestFileNames[11]) + ".toml";
+
+                const auto pathToRootTree = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
+                                            sTestDirName / rootTreeName;
+                const auto pathToExternalTree =
+                    ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName / extTreeName;
+                const auto pathToSubExternalTree =
+                    ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sTestDirName /
+                    subExtTreeName;
+
+                // We need to create the following node tree (root tree):
+                // - root node (root tree)
+                // -     external (ext) is a root node that has the following nodes:
+                // -         subexternal (ext) is a root node that has the following nodes:
+                // -             node
+                // when the root node is saved the TOML file should only have 2 items (root node and external
+                // tree root)
+
+                {
+                    // Create sub external tree.
+                    auto pSubExternalRootNode = std::make_unique<Node>("Subexternal root");
+                    pSubExternalRootNode->addChildNode(std::make_unique<SpatialNode>("Some node"));
+
+                    // Serialize it.
+                    auto optionalError =
+                        pSubExternalRootNode->serializeNodeTree(pathToSubExternalTree, false);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                }
+
+                {
+                    // Create external tree.
+                    auto pExternalRootNode = std::make_unique<Node>("External root");
+
+                    // Deserialize subexternal tree.
+                    auto result = Node::deserializeNodeTree(pathToSubExternalTree);
+                    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                        auto error = std::get<Error>(std::move(result));
+                        error.addCurrentLocationToErrorStack();
+                        INFO(error.getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    auto pSubExternalRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                    // Add as child.
+                    pExternalRootNode->addChildNode(std::move(pSubExternalRootNode));
+
+                    // Serialize it.
+                    auto optionalError = pExternalRootNode->serializeNodeTree(pathToExternalTree, false);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+
+                    // Make sure external tree has only 2 items (root and ext root).
+                    ConfigManager config;
+                    optionalError = config.loadFile(pathToExternalTree);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    REQUIRE(config.getAllSections().size() == 2);
+                }
+
+                {
+                    // Create root tree.
+                    auto pRootTreeRootNode = std::make_unique<Node>("Root tree root");
+
+                    // Deserialize external tree.
+                    auto result = Node::deserializeNodeTree(pathToExternalTree);
+                    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                        auto error = std::get<Error>(std::move(result));
+                        error.addCurrentLocationToErrorStack();
+                        INFO(error.getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    auto pExternalRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                    // Add as child.
+                    pRootTreeRootNode->addChildNode(std::move(pExternalRootNode));
+
+                    // Serialize it.
+                    auto optionalError = pRootTreeRootNode->serializeNodeTree(pathToRootTree, false);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+
+                    // Make sure external tree has only 2 items (root and ext root).
+                    ConfigManager config;
+                    optionalError = config.loadFile(pathToRootTree);
+                    if (optionalError.has_value()) [[unlikely]] {
+                        optionalError->addCurrentLocationToErrorStack();
+                        INFO(optionalError->getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    REQUIRE(config.getAllSections().size() == 2);
+                }
+
+                {
+                    // Deserialize root tree.
+                    auto result = Node::deserializeNodeTree(pathToRootTree);
+                    if (std::holds_alternative<Error>(result)) [[unlikely]] {
+                        auto error = std::get<Error>(std::move(result));
+                        error.addCurrentLocationToErrorStack();
+                        INFO(error.getFullErrorMessage());
+                        REQUIRE(false);
+                    }
+                    auto pRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+                    auto optDeserializedPath = pRootNode->getPathDeserializedFromRelativeToRes();
+                    REQUIRE(optDeserializedPath.has_value());
+                    REQUIRE(optDeserializedPath->first == (std::string(sTestDirName) + "/" + rootTreeName));
+                    REQUIRE(optDeserializedPath->second == "0");
+
+                    REQUIRE(pRootNode->getNodeName() == "Root tree root");
+                    {
+                        // Root node child nodes.
+                        auto mtxChildNodes = pRootNode->getChildNodes();
+                        REQUIRE(mtxChildNodes.second.size() == 1);
+                        REQUIRE(mtxChildNodes.second[0]->getNodeName() == "External root");
+
+                        optDeserializedPath = mtxChildNodes.second[0]->getPathDeserializedFromRelativeToRes();
+                        REQUIRE(optDeserializedPath.has_value());
+                        REQUIRE(
+                            optDeserializedPath->first == (std::string(sTestDirName) + "/" + extTreeName));
+                        REQUIRE(optDeserializedPath->second == "0");
+
+                        {
+                            // Ext root child nodes.
+                            mtxChildNodes = mtxChildNodes.second[0]->getChildNodes();
+                            REQUIRE(mtxChildNodes.second.size() == 1);
+                            REQUIRE(mtxChildNodes.second[0]->getNodeName() == "Subexternal root");
+
+                            optDeserializedPath =
+                                mtxChildNodes.second[0]->getPathDeserializedFromRelativeToRes();
+                            REQUIRE(optDeserializedPath.has_value());
+                            REQUIRE(
+                                optDeserializedPath->first ==
+                                (std::string(sTestDirName) + "/" + subExtTreeName));
+                            REQUIRE(optDeserializedPath->second == "0");
+
+                            {
+                                // Sub ext root child nodes.
+                                mtxChildNodes = mtxChildNodes.second[0]->getChildNodes();
+                                REQUIRE(mtxChildNodes.second.size() == 1);
+                                REQUIRE(mtxChildNodes.second[0]->getNodeName() == "Some node");
+
+                                optDeserializedPath =
+                                    mtxChildNodes.second[0]->getPathDeserializedFromRelativeToRes();
+                                REQUIRE(optDeserializedPath.has_value());
+                                REQUIRE(
+                                    optDeserializedPath->first ==
+                                    (std::string(sTestDirName) + "/" + subExtTreeName));
+                                REQUIRE(optDeserializedPath->second == "1");
+                            }
+                        }
+                    }
                 }
 
                 getWindow()->close();

@@ -854,13 +854,11 @@ Node::getInformationForSerialization(
             pOptionalOriginalObject = std::get<std::unique_ptr<Node>>(std::move(result));
             selfInfo.pOriginalObject = pOptionalOriginalObject.get();
 
-            // Check if child nodes are located in the same file
-            // (i.e. check if this node is a root of some external node tree).
-            if (!mtxChildNodes.second.empty() &&
-                isTreeDeserializedFromOneFile(sPathDeserializedFromRelativeRes)) {
+            // Check if this node is a root of some external node tree.
+            if (!mtxChildNodes.second.empty() && sObjectIdInDeserializedFile == "0") {
                 // Don't serialize information about child nodes,
                 // when referencing an external node tree, we should only
-                // allow modifying the root node, thus, because only root node
+                // allow modifying the root node because only root node
                 // can have changed fields, we don't include child nodes here.
                 bIncludeInformationAboutChildNodes = false;
                 selfInfo.customAttributes[sTomlKeyExternalNodeTreePath.data()] =
@@ -899,30 +897,6 @@ Node::getInformationForSerialization(
     }
 
     return vNodesInfo;
-}
-
-bool Node::isTreeDeserializedFromOneFile(const std::string& sPathRelativeToRes) {
-    if (!getPathDeserializedFromRelativeToRes().has_value()) {
-        return false;
-    }
-
-    if (getPathDeserializedFromRelativeToRes().value().first != sPathRelativeToRes) {
-        return false;
-    }
-
-    bool bPathEqual = true;
-    lockChildren();
-    {
-        for (const auto& pChildNode : mtxChildNodes.second) {
-            if (!pChildNode->isTreeDeserializedFromOneFile(sPathRelativeToRes)) {
-                bPathEqual = false;
-                break;
-            }
-        }
-    }
-    unlockChildren();
-
-    return bPathEqual;
 }
 
 void Node::getNodeWorldLocationRotationScale(
