@@ -39,26 +39,16 @@ std::unique_ptr<ShaderArrayIndex> ShaderArrayIndexManager::reserveIndex() {
         iIndexToReturn = mtxData.second.noLongerUsedIndices.front();
         mtxData.second.noLongerUsedIndices.pop();
     } else {
+        // Make sure we don't reach array size limit.
+        if (mtxData.second.iNextFreeIndex == iArraySize) [[unlikely]] {
+            Log::error(
+                std::format("index manager \"{}\" reached array's size limit of {}", sName, iArraySize));
+            return nullptr;
+        }
+
         // Generate a new index.
         iIndexToReturn = mtxData.second.iNextFreeIndex;
         mtxData.second.iNextFreeIndex += 1;
-
-        // Make sure we won't hit type limit.
-        if (mtxData.second.iNextFreeIndex == UINT_MAX) [[unlikely]] {
-            Log::warn(std::format(
-                "an index manager \"{}\"reached type limit for next free index of {}",
-                sName,
-                mtxData.second.iNextFreeIndex));
-        }
-
-        // Make sure we don't reach array size limit.
-        if (mtxData.second.iNextFreeIndex == iArraySize) [[unlikely]] {
-            Log::warn(std::format(
-                "index manager \"{}\" just reached array's size limit of {}, the next requested index "
-                "(if no unused indices exist) will reference out of array bounds",
-                sName,
-                iArraySize));
-        }
     }
 
     // Increment the number of active indices.

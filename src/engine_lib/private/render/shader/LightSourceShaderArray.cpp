@@ -2,7 +2,6 @@
 
 // Standard.
 #include <format>
-#include <chrono>
 
 // Custom.
 #include "game/node/Node.h"
@@ -10,7 +9,6 @@
 #include "render/LightSourceManager.h"
 #include "render/GpuResourceManager.h"
 #include "render/ShaderAlignmentConstants.hpp"
-#include "render/wrapper/ShaderProgram.h"
 
 LightSourceShaderArray::LightSourceShaderArray(
     LightSourceManager* pLightSourceManager,
@@ -62,25 +60,13 @@ LightSourceShaderArray::addLightSourceToRendering(Node* pLightSource, const void
         std::scoped_lock guard(mtxData.first);
 
         if (mtxData.second.visibleLightNodes.size() == iArrayMaxSize) {
-            static std::chrono::time_point<std::chrono::steady_clock> lastWarningTime =
-                std::chrono::steady_clock::now();
-            static bool bIsFirstWarning = true;
-
-            const auto timeSecSinceLastWarning = std::chrono::duration<float, std::chrono::seconds::period>(
-                                                     std::chrono::steady_clock::now() - lastWarningTime)
-                                                     .count();
-            if (bIsFirstWarning || timeSecSinceLastWarning > 10.0F) { // NOLINT: don't spam warnings
-                Log::warn(std::format(
-                    "light array \"{}\" is unable to add the light node \"{}\" to be rendered because the "
-                    "array "
-                    "has reached the maximum number of visible light sources of {}",
-                    sUniformBlockName,
-                    pLightSource->getNodeName(),
-                    iArrayMaxSize));
-
-                lastWarningTime = std::chrono::steady_clock::now();
-                bIsFirstWarning = false;
-            }
+            Log::warn(std::format(
+                "light array \"{}\" is unable to add the light node \"{}\" to be rendered because the "
+                "array has reached the maximum number of visible light sources of {}",
+                sUniformBlockName,
+                pLightSource->getNodeName(),
+                iArrayMaxSize));
+            return nullptr;
         }
 
         // Add light.

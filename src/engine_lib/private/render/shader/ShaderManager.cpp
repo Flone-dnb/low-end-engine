@@ -177,9 +177,9 @@ ShaderManager::~ShaderManager() {
 
 size_t ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro macro) {
     static std::unordered_map<EnginePredefinedMacro, size_t> enginePredefinedMacros{
-        {EnginePredefinedMacro::MAX_POINT_LIGHT_COUNT, 50},       // NOLINT: <- SAME AS IN SHADERS
-        {EnginePredefinedMacro::MAX_SPOT_LIGHT_COUNT, 30},        // NOLINT: <- IF CHANGING ALSO
-        {EnginePredefinedMacro::MAX_DIRECTIONAL_LIGHT_COUNT, 3}}; // NOLINT: <- CHANGE IN SHADERS
+        {EnginePredefinedMacro::MAX_POINT_LIGHT_COUNT, 30},       // <- SAME AS IN SHADERS
+        {EnginePredefinedMacro::MAX_SPOT_LIGHT_COUNT, 30},        // <- IF CHANGING ALSO
+        {EnginePredefinedMacro::MAX_DIRECTIONAL_LIGHT_COUNT, 2}}; // <- CHANGE IN SHADERS
 
     return enginePredefinedMacros[macro];
 }
