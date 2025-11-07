@@ -279,6 +279,8 @@ private:
 
         /** Groups various types of spawned and visible UI nodes to render per layer. */
         struct SpawnedVisibleLayerUiNodes {
+            SpawnedVisibleLayerUiNodes() = default;
+
             /**
              * Returns total number of nodes considered.
              *
@@ -380,10 +382,10 @@ private:
         std::array<SpawnedVisibleLayerUiNodes, static_cast<size_t>(UiLayer::COUNT)> vSpawnedVisibleNodes;
 
         /** Shader program used for rendering text. */
-        TextShaderProgram textShaderInfo;
+        TextShaderProgram textShaderInfo{};
 
         /** Shader program used for rendering rectangles. */
-        RectShaderProgram rectShaderInfo;
+        RectShaderProgram rectShaderInfo{};
 
         /** Quad used for rendering some nodes. */
         std::unique_ptr<ScreenQuadGeometry> pScreenQuadGeometry;
@@ -565,7 +567,7 @@ private:
     bool hasModalParent(UiNode* pNode) const;
 
     /** UI-related data. */
-    std::pair<std::recursive_mutex, Data> mtxData;
+    std::pair<std::recursive_mutex, Data> mtxData{};
 
     /** A single text entry is our clipboard. */
     std::string sClipboard;
