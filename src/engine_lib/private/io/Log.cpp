@@ -14,7 +14,7 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-#if defined(DEBUG)
+#if defined(ENGINE_DEBUG_TOOLS)
 namespace {
     constexpr float debugTextHeight = 0.025F;
     constexpr float debugTextTimeSec = 6.0F;
@@ -144,7 +144,7 @@ Log::Log() {
 std::string Log::getDateTime() {
     const time_t now = time(nullptr);
 
-    tm tm{}; // NOLINT
+    tm tm{};
 #if defined(WIN32)
     const auto iError = localtime_s(&tm, &now);
     if (iError != 0) {
