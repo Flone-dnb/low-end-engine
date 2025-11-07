@@ -373,7 +373,7 @@ void UiNodeManager::onNodeChangedDepth(UiNode* pTargetNode) {
     }
 
 #if defined(WIN32) && defined(DEBUG)
-    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 272, "add new variables here");
+    static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 296, "add new variables here");
 #elif defined(DEBUG)
     static_assert(sizeof(Data::SpawnedVisibleLayerUiNodes) == 280, "add new variables here");
 #endif
@@ -873,19 +873,23 @@ UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRe
         "engine/shaders/ui/UiScreenQuad.vert.glsl", "engine/shaders/ui/TextNode.frag.glsl");
 
     // Cache uniform locations for rect shader.
-    auto& rect = data.rectShaderInfo;
-    rect.iScreenPosUniform = rect.pShaderProgram->getShaderUniformLocation("screenPos");
-    rect.iScreenSizeUniform = rect.pShaderProgram->getShaderUniformLocation("screenSize");
-    rect.iClipRectUniform = rect.pShaderProgram->getShaderUniformLocation("clipRect");
-    rect.iWindowSizeUniform = rect.pShaderProgram->getShaderUniformLocation("windowSize");
+    {
+        auto& rect = data.rectShaderInfo;
+        rect.iScreenPosUniform = rect.pShaderProgram->getShaderUniformLocation("screenPos");
+        rect.iScreenSizeUniform = rect.pShaderProgram->getShaderUniformLocation("screenSize");
+        rect.iClipRectUniform = rect.pShaderProgram->getShaderUniformLocation("clipRect");
+        rect.iWindowSizeUniform = rect.pShaderProgram->getShaderUniformLocation("windowSize");
+    }
 
     // Cache uniform locations for text shader.
-    auto& text = data.textShaderInfo;
-    text.iTextColorUniform = text.pShaderProgram->getShaderUniformLocation("textColor");
-    text.iScreenPosUniform = text.pShaderProgram->getShaderUniformLocation("screenPos");
-    text.iScreenSizeUniform = text.pShaderProgram->getShaderUniformLocation("screenSize");
-    text.iClipRectUniform = rect.pShaderProgram->getShaderUniformLocation("clipRect");
-    text.iWindowSizeUniform = text.pShaderProgram->getShaderUniformLocation("windowSize");
+    {
+        auto& text = data.textShaderInfo;
+        text.iTextColorUniform = text.pShaderProgram->getShaderUniformLocation("textColor");
+        text.iScreenPosUniform = text.pShaderProgram->getShaderUniformLocation("screenPos");
+        text.iScreenSizeUniform = text.pShaderProgram->getShaderUniformLocation("screenSize");
+        text.iClipRectUniform = text.pShaderProgram->getShaderUniformLocation("clipRect");
+        text.iWindowSizeUniform = text.pShaderProgram->getShaderUniformLocation("windowSize");
+    }
 }
 
 void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
