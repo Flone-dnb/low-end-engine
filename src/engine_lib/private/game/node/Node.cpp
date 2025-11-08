@@ -614,7 +614,7 @@ void Node::spawn() {
     // Initialize world.
     pWorldWeSpawnedIn = askParentsAboutWorldPointer();
 
-#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+#if defined(DEBUG) && !defined(ENGINE_EDITOR) // <- editor's LogViewNode can be triggered in a non-main thread
     // This is a "just in case" check, generally nothing bad should happen but in case you
     // need to spawn nodes in a non-main thread remove this check.
     if (!pWorldWeSpawnedIn->getGameManager().isMainThread()) [[unlikely]] {
