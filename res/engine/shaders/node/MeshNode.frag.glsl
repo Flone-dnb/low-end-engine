@@ -16,8 +16,7 @@ uniform vec2 textureTilingMultiplier;
 
 out vec4 color;
 
-#ifndef EDITOR_GIZMO
-    // because gizmo modifies the depth
+#ifndef DISABLE_EARLY_Z
     layout(early_fragment_tests) in;
 #endif
 
@@ -37,18 +36,10 @@ void main() {
 
     // Light.
     vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
-    #ifdef EDITOR_GIZMO
-        // TODO: because gizmo shader does not use lighting the CPU code that sets
-        // normalMatrix and lighting info will fail because it's also not used and is optimized out. To avoid this:
-        if (lightColor.r > 100.0F) {
-            discard;
-        }
 
-        // Editor's gizmo mesh should not have lighting.
-        lightColor = fragmentDiffuseColor.rgb;
-
-        // Draw gizmo in front (it's simpler to do it this way rather than add a new feature to our MeshRenderer).
-        gl_FragDepth = 0.0F;
+    // Define this macro before including this file to add custom logic in a simple way:
+    #ifdef CUSTOM_CODE
+        CUSTOM_CODE
     #endif
 
     color = vec4(lightColor, fragmentDiffuseColor.a);
