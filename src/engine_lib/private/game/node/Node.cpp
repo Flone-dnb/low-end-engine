@@ -614,6 +614,15 @@ void Node::spawn() {
     // Initialize world.
     pWorldWeSpawnedIn = askParentsAboutWorldPointer();
 
+#if defined(DEBUG)
+    if (!pWorldWeSpawnedIn->getGameManager().isMainThread()) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "node \"{}\" is being spawned in a non-main thread which might be unsafe, you probably wanted "
+            "to spawn it in the main thread",
+            sNodeName));
+    }
+#endif
+
     // Get unique ID.
     iNodeId = iAvailableNodeId.fetch_add(1);
     if (iNodeId.value() + 1 == (std::numeric_limits<size_t>::max)()) [[unlikely]] {

@@ -4,6 +4,7 @@
 #include <memory>
 #include <variant>
 #include <mutex>
+#include <thread>
 #include <functional>
 #include <filesystem>
 
@@ -194,6 +195,13 @@ public:
      * @return Amount of spawned nodes that should be called every frame.
      */
     size_t getCalledEveryFrameNodeCount();
+
+    /**
+     * Tells if the current thread is the main thread.
+     *
+     * @return `true` if main thread.
+     */
+    bool isMainThread() const;
 
     /**
      * Returns window that owns this object.
@@ -450,6 +458,9 @@ private:
 
     /** Binds action/axis names with input keys. */
     InputManager inputManager;
+
+    /** Used for debug checks. */
+    std::thread::id mainThreadId;
 
     /** Created renderer. */
     std::unique_ptr<Renderer> pRenderer;

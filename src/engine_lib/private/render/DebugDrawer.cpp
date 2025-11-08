@@ -247,8 +247,8 @@ void DebugDrawer::drawDebugObjects(
 
             glBindVertexArray(mesh.pVao->getVertexArrayObjectId());
 
-            pMeshShaderProgram->setMatrix4ToShader("worldMatrix", mesh.worldMatrix);
-            pMeshShaderProgram->setVector3ToShader("meshColor", mesh.color);
+            pMeshShaderProgram->setMatrix4ToActiveProgram("worldMatrix", mesh.worldMatrix);
+            pMeshShaderProgram->setVector3ToActiveProgram("meshColor", mesh.color);
 
             glDrawArrays(GL_LINES, 0, static_cast<int>(mesh.pVao->getVertexCount()));
 
@@ -268,8 +268,8 @@ void DebugDrawer::drawDebugObjects(
 
         for (auto it = vRectsToDraw.begin(); it != vRectsToDraw.end();) {
             auto& rect = *it;
-            rectShaderInfo.pShaderProgram->setVector4ToShader("color", glm::vec4(rect.color, 1.0F));
-            rectShaderInfo.pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            rectShaderInfo.pShaderProgram->setVector4ToActiveProgram("color", glm::vec4(rect.color, 1.0F));
+            rectShaderInfo.pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
             glm::vec2 pos = rect.screenPos;
             glm::vec2 size = rect.screenSize;
@@ -317,7 +317,7 @@ void DebugDrawer::drawDebugObjects(
                 screenX = static_cast<float>(iWindowWidth) * text.optForcePosition->x;
             }
 
-            textShaderInfo.pShaderProgram->setVector4ToShader("textColor", glm::vec4(text.color, 1.0F));
+            textShaderInfo.pShaderProgram->setVector4ToActiveProgram("textColor", glm::vec4(text.color, 1.0F));
 
             const auto fontScale = text.textHeight / fontManager.getFontHeightToLoad();
             const float textHeightInPixels =

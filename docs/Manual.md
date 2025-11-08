@@ -227,7 +227,7 @@ run your program that runs this code and after your program is finished you shou
 
 Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For more information read the documentation for the functions you are using.
 
-## Creating a new world
+## Creating or loading a new world
 
 ### World axes and world units
 
@@ -249,11 +249,34 @@ In the opened node tree you should have only a single node - root node (see top-
 
 Use WASD keys while holding right mouse button to move viewport camera.
 
-### Creating a world using C++
+### Creating or loading a world using C++
 
-You can create node tree using the editor or the code but a world can only be created using the code. Your generated project should already have a call to `createWorld` in `GameInstance::onGameStarted` which creates a world with a single node - root node. In order to load a node tree as a new world you should call `GameInstance::loadNodeTreeAsWorld`.
+You can create node tree using the editor or the code but a world can only be created using the code. Your generated project should already have a call to `createWorld` in `GameInstance::onGameStarted` which creates a world with a single node - root node. In order to load a node tree as a new world you should call `GameInstance::loadNodeTreeAsWorld` this function deserializes and loads the node tree in a non-main thread then spawns it in the main thread and replaces the current world. This means that if you want to have a loading screen just call `loadNodeTreeAsWorld` then show a loading screen, once the `onLoaded` callback (that you specified in `loadNodeTreeAsWorld`) is called this means that the previous world is already destroyed and your loading screen was removed so now you can spawn a new character/camera to start the game on a new level.
 
 After creating the world you would also need a camera to see your world. Default `CameraNode` class does not support input so it will be a static camera (probably located in 0, 0, 0). To understand how to control your camera you can generate a new project, look at the generated character node and see how it uses the camera.
+
+### Level streaming
+
+In case you don't want to replace the whole world but only a part of the node tree you can easily do that by deserializing a node tree (sublevel that you want to load) in a non-main thread and after that attaching it to the main (spawned) node tree where you player is, here's an example:
+
+```Cpp
+void GameInstance::loadSublevel(const std::filesystem::path& pathToNodeTree) {
+    addTaskToThreadPool([this, pathToNodeTree]() {
+        // Deserialize node tree.
+        auto result = Node::deserializeNodeTree(pathToNodeTree);
+        if (std::holds_alternative<Error>(result)) [[unlikely]] {
+            TODO; // handle error
+        }
+        auto pRootNode = std::get<std::unique_ptr<Node>>(std::move(result));
+
+        std::scoped_lock guard(mtxLoadedSublevel.first); // pair<mutex, node>
+        mtxLoadedSublevel.second = std::move(pRootNode);
+
+        TODO; // in the main thread (for example in `onBeforeNewFrame`) check `mtxLoadedSublevel`
+              // and attach it to some spawned node in your main game node tree to spawn
+    });
+}
+```
 
 ## Handling user input
 
@@ -942,12 +965,58 @@ At the time of writing there's no compression or encryption of game files, just 
 Materials can use custom GLSL shaders, here is an example of setting a custom fragment shader to a mesh.
 
 ```Cpp
-pMeshNode->getMaterial().setPathToCustomFragmentShader("game/shaders/myshader.glsl"); // located in the `res/game/...` directory
-
-// then spawn your mesh node
+pMeshNode->getMaterial().setPathToCustomFragmentShader("game/shaders/myshader.glsl"); // located in the `res/game/shaders` directory
 ```
 
-See the directory `res/engine/shaders/node` for reference implementation.
+You can start by modifying the values that the default mesh shader produces. Look at `res/editor/shaders/Gizmo.frag.glsl` to see how it does that. In case you need more control over the shader you can copy-paste the default mesh shader and modify it to your needs.
+
+Note that GLSL `#version` and `precision` keywords are automatically added to the beginning of the specified shader file (file specified in `setPathToCustomFragmentShader`) before compilation.
+
+Passing custom variables to your custom shader is slightly more complicated. If you want to pass some shader-global variables that will be the same for all meshes that use your custom shader then after calling `setPathToCustomFragmentShader` while the mesh is spawned use one of the `set...` functions in the material's shader program like so:
+
+```Cpp
+#include "glad/glad.h"
+#include "render/shader/wrapper/ShaderProgram.h"
+
+const auto pShaderProgram = getMaterial().getShaderProgram();
+if (pShaderProgram == nullptr) [[unlikely]]
+{
+    // Not spawned.
+    TODO;
+}
+
+glm::vec3 somevec(1.0F, 2.0F, 3.0F);
+
+glUseProgram(pShaderProgram->getShaderProgramId()) // <- set active program
+pShaderProgram->setVector3ToActiveProgram("myVec", somevec);
+```
+
+Due to how our `MeshRenderer` is implemented if you need to set per-mesh data then you need to figure out a way that suits you best, for example you can set a global array (using the example from above) and then add a new variable `uint iMyCustomIndex` to `MeshRenderData` and a new variable to `ShaderInfo` (located in the same file) named `int iMyCustomIndexUniform` (this is cached location of the uniform variable) then initialize the uniform location variable in the same place other uniform location variables from this class are initialized but use `tryGetShaderUniformLocation` because not all shaders will have your custom uniform. The only thing that's left is to set the uniform, see where other uniform location variables are used (somewhere in the `drawMeshes` function) and add your new variable like so:
+
+```Cpp
+if (shaderInfo.iMyCustomIndexUniform != -1) {
+    glUniform3fv( // <- use the appropriate OpenGL function, this one is for vec3
+        shaderInfo.iMyCustomIndexUniform,
+        1
+        glm::value_ptr(meshData.iMyCustomIndex));
+}
+
+```
+
+To set your custom index inside of your mesh node:
+
+```Cpp
+const auto pRenderingHandle = getRenderingHandle();
+if (pRenderingHandle == nullptr)
+{
+    // Not spawned or not visible.
+    return;
+}
+
+auto renderDataGuard = getWorldWhileSpawned()->getMeshRenderer().getMeshRenderData(*pRenderingHandle);
+auto& data = renderDataGuard.getData();
+data.iMyCustomIndex = 42;
+```
 
 ## Simulating input for automated tests
 

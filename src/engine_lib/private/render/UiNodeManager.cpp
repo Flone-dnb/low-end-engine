@@ -969,13 +969,13 @@ void UiNodeManager::drawRectNodesDataLocked(
             auto size = pRectNode->getSize();
 
             // Set shader parameters.
-            pShaderProgram->setVector4ToShader("color", pRectNode->getColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pRectNode->getColor());
             if (pRectNode->pTexture != nullptr) {
-                pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", true);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, pRectNode->pTexture->getTextureId());
             } else {
-                pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+                pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
             }
 
             pos = glm::vec2(
@@ -1025,13 +1025,13 @@ void UiNodeManager::drawProgressBarNodesDataLocked(
             auto relativeSize = pProgressBarNode->getSize();
 
             // Set background shader parameters.
-            pShaderProgram->setVector4ToShader("color", pProgressBarNode->getColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pProgressBarNode->getColor());
             if (pProgressBarNode->pTexture != nullptr) {
-                pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", true);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pTexture->getTextureId());
             } else {
-                pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+                pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
             }
 
             // Draw background.
@@ -1048,13 +1048,13 @@ void UiNodeManager::drawProgressBarNodesDataLocked(
                 size);
 
             // Set foreground shader parameters.
-            pShaderProgram->setVector4ToShader("color", pProgressBarNode->getForegroundColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pProgressBarNode->getForegroundColor());
             if (pProgressBarNode->pForegroundTexture != nullptr) {
-                pShaderProgram->setBoolToShader("bIsUsingTexture", true);
+                pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", true);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, pProgressBarNode->pForegroundTexture->getTextureId());
             } else {
-                pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+                pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
             }
 
             // Draw foreground.
@@ -1092,7 +1092,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
     glUseProgram(shaderInfo.pShaderProgram->getShaderProgramId());
 
     glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+    pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
     constexpr float boundsWidthInPix = 2.0F;
     constexpr float backgroundPaddingInPix = 6.0F;
@@ -1116,7 +1116,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
             size.x *= 1.0F / aspectRatio;
 
             // Draw bounds.
-            pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getForegroundColor());
             pos = glm::vec2(
                 pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
             size = glm::vec2(
@@ -1129,7 +1129,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
                 size);
 
             // Draw background.
-            pShaderProgram->setVector4ToShader("color", pCheckboxNode->getBackgroundColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getBackgroundColor());
             pos += boundsWidthInPix;
             size -= boundsWidthInPix * 2.0F;
             drawQuad(
@@ -1140,7 +1140,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
                 size);
 
             if (pCheckboxNode->isChecked()) {
-                pShaderProgram->setVector4ToShader("color", pCheckboxNode->getForegroundColor());
+                pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getForegroundColor());
                 pos += backgroundPaddingInPix;
                 size -= backgroundPaddingInPix * 2.0F;
                 drawQuad(
@@ -1174,7 +1174,7 @@ void UiNodeManager::drawSliderNodesDataLocked(
     glUseProgram(shaderInfo.pShaderProgram->getShaderProgramId());
 
     glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
-    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+    pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
     constexpr float sliderHeightToWidthRatio = 0.5F;
     constexpr float sliderHandleWidth = 0.1F; // in range [0.0; 1.0] relative to slider width
@@ -1192,7 +1192,7 @@ void UiNodeManager::drawSliderNodesDataLocked(
             const auto handlePos = pSliderNode->getHandlePosition();
 
             // Draw slider base.
-            pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pSliderNode->getSliderColor());
             const auto baseHeight = size.y * sliderHeightToWidthRatio;
             drawQuad(
                 shaderInfo.iScreenPosUniform,
@@ -1206,7 +1206,7 @@ void UiNodeManager::drawSliderNodesDataLocked(
                     baseHeight * static_cast<float>(iWindowHeight)));
 
             // Draw slider handle.
-            pShaderProgram->setVector4ToShader("color", pSliderNode->getSliderHandleColor());
+            pShaderProgram->setVector4ToActiveProgram("color", pSliderNode->getSliderHandleColor());
             const auto handleWidth = size.x * sliderHandleWidth;
             const auto handleCenterPos = glm::vec2(pos.x + handlePos * size.x, pos.y);
             drawQuad(
@@ -1344,7 +1344,7 @@ void UiNodeManager::drawTextEditNodesDataLocked(
             }
 
             // Set color.
-            pShaderProgram->setVector4ToShader("textColor", pTextEditNode->getTextColor());
+            pShaderProgram->setVector4ToActiveProgram("textColor", pTextEditNode->getTextColor());
 
             // Switch to the first row of text.
             screenY += textHeightInPixels;
@@ -1561,8 +1561,8 @@ void UiNodeManager::drawTextEditNodesDataLocked(
             // Draw cursors.
 
             // Set shader parameters.
-            pShaderProgram->setVector4ToShader("color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
-            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            pShaderProgram->setVector4ToActiveProgram("color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+            pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
             for (const auto& cursorInfo : vCursorScreenPosToDraw) {
                 const float cursorWidth = 2.0F;
@@ -1583,10 +1583,10 @@ void UiNodeManager::drawTextEditNodesDataLocked(
             // Draw selections.
 
             // Set shader parameters.
-            pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+            pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
             for (auto& selectionInfo : vTextSelectionToDraw) {
-                pShaderProgram->setVector4ToShader("color", selectionInfo.color);
+                pShaderProgram->setVector4ToActiveProgram("color", selectionInfo.color);
 
                 for (auto& [startPos, endPos] : selectionInfo.vLineStartEndScreenPos) {
                     const auto width = endPos.x - startPos.x;
@@ -1680,10 +1680,10 @@ void UiNodeManager::drawScrollBarsDataLocked(
     glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
 
     // Set shader parameters.
-    pShaderProgram->setBoolToShader("bIsUsingTexture", false);
+    pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
     for (auto& scrollBarInfo : vScrollBarsToDraw) {
-        pShaderProgram->setVector4ToShader("color", scrollBarInfo.color);
+        pShaderProgram->setVector4ToActiveProgram("color", scrollBarInfo.color);
 
         const auto width = std::round(scrollBarWidthRelativeScreen * static_cast<float>(iWindowWidth));
         auto height = scrollBarInfo.heightInPixels * scrollBarInfo.verticalSize;

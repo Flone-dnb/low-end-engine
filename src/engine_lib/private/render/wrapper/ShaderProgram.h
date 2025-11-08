@@ -49,7 +49,7 @@ public:
      * @param sUniformBlockName Name of the uniform block from shader code.
      * @param pBuffer Buffer to set.
      */
-    inline void setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer);
+    inline void setUniformBlockToActiveProgram(const std::string& sUniformBlockName, Buffer* pBuffer);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -57,7 +57,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param matrix       Matrix to set.
      */
-    inline void setMatrix4ToShader(const std::string& sUniformName, const glm::mat4x4& matrix);
+    inline void setMatrix4ToActiveProgram(const std::string& sUniformName, const glm::mat4x4& matrix);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -67,7 +67,7 @@ public:
      * @param pArrayStart  Start of the array's data to copy.
      */
     inline void
-    setMatrix4ArrayToShader(const std::string& sUniformName, int iArraySize, const float* pArrayStart);
+    setMatrix4ArrayToActiveProgram(const std::string& sUniformName, int iArraySize, const float* pArrayStart);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -75,7 +75,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param matrix       Matrix to set.
      */
-    inline void setMatrix3ToShader(const std::string& sUniformName, const glm::mat3x3& matrix);
+    inline void setMatrix3ToActiveProgram(const std::string& sUniformName, const glm::mat3x3& matrix);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -83,7 +83,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param vector       Vector to set.
      */
-    inline void setVector2ToShader(const std::string& sUniformName, const glm::vec2& vector);
+    inline void setVector2ToActiveProgram(const std::string& sUniformName, const glm::vec2& vector);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -91,7 +91,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param vector       Vector to set.
      */
-    inline void setUvector2ToShader(const std::string& sUniformName, const glm::uvec2& vector);
+    inline void setUvector2ToActiveProgram(const std::string& sUniformName, const glm::uvec2& vector);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -99,7 +99,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param vector       Vector to set.
      */
-    inline void setVector3ToShader(const std::string& sUniformName, const glm::vec3& vector);
+    inline void setVector3ToActiveProgram(const std::string& sUniformName, const glm::vec3& vector);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -107,7 +107,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param vector       Vector to set.
      */
-    inline void setVector4ToShader(const std::string& sUniformName, const glm::vec4& vector);
+    inline void setVector4ToActiveProgram(const std::string& sUniformName, const glm::vec4& vector);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -115,7 +115,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param value        Value to set.
      */
-    inline void setFloatToShader(const std::string& sUniformName, float value);
+    inline void setFloatToActiveProgram(const std::string& sUniformName, float value);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -123,7 +123,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param iValue       Value to set.
      */
-    inline void setUintToShader(const std::string& sUniformName, unsigned int iValue);
+    inline void setUintToActiveProgram(const std::string& sUniformName, unsigned int iValue);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -131,7 +131,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param iValue       Value to set.
      */
-    inline void setIntToShader(const std::string& sUniformName, int iValue);
+    inline void setIntToActiveProgram(const std::string& sUniformName, int iValue);
 
     /**
      * Sets the specified value to a `uniform` with the specified name in shaders.
@@ -139,7 +139,7 @@ public:
      * @param sUniformName Name of the uniform variable from shader code.
      * @param bValue       Value to set.
      */
-    inline void setBoolToShader(const std::string& sUniformName, bool bValue);
+    inline void setBoolToActiveProgram(const std::string& sUniformName, bool bValue);
 
     /**
      * Returns ID of this shader program.
@@ -260,52 +260,52 @@ inline unsigned int ShaderProgram::getShaderUniformBlockBindingIndex(const std::
     return cachedIt->second;
 }
 
-inline void ShaderProgram::setMatrix4ToShader(const std::string& sUniformName, const glm::mat4x4& matrix) {
+inline void ShaderProgram::setMatrix4ToActiveProgram(const std::string& sUniformName, const glm::mat4x4& matrix) {
     glUniformMatrix4fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-inline void ShaderProgram::setMatrix4ArrayToShader(
+inline void ShaderProgram::setMatrix4ArrayToActiveProgram(
     const std::string& sUniformName, int iArraySize, const float* pArrayStart) {
     glUniformMatrix4fv(getShaderUniformLocation(sUniformName), iArraySize, GL_FALSE, pArrayStart);
 }
 
-inline void ShaderProgram::setMatrix3ToShader(const std::string& sUniformName, const glm::mat3x3& matrix) {
+inline void ShaderProgram::setMatrix3ToActiveProgram(const std::string& sUniformName, const glm::mat3x3& matrix) {
     glUniformMatrix3fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-inline void ShaderProgram::setVector2ToShader(const std::string& sUniformName, const glm::vec2& vector) {
+inline void ShaderProgram::setVector2ToActiveProgram(const std::string& sUniformName, const glm::vec2& vector) {
     glUniform2fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setUvector2ToShader(const std::string& sUniformName, const glm::uvec2& vector) {
+inline void ShaderProgram::setUvector2ToActiveProgram(const std::string& sUniformName, const glm::uvec2& vector) {
     glUniform2uiv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setVector3ToShader(const std::string& sUniformName, const glm::vec3& vector) {
+inline void ShaderProgram::setVector3ToActiveProgram(const std::string& sUniformName, const glm::vec3& vector) {
     glUniform3fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setVector4ToShader(const std::string& sUniformName, const glm::vec4& vector) {
+inline void ShaderProgram::setVector4ToActiveProgram(const std::string& sUniformName, const glm::vec4& vector) {
     glUniform4fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setBoolToShader(const std::string& sUniformName, bool bValue) {
+inline void ShaderProgram::setBoolToActiveProgram(const std::string& sUniformName, bool bValue) {
     glUniform1i(getShaderUniformLocation(sUniformName), static_cast<int>(bValue));
 }
 
-inline void ShaderProgram::setFloatToShader(const std::string& sUniformName, float value) {
+inline void ShaderProgram::setFloatToActiveProgram(const std::string& sUniformName, float value) {
     glUniform1f(getShaderUniformLocation(sUniformName), value);
 }
 
-inline void ShaderProgram::setUintToShader(const std::string& sUniformName, unsigned int iValue) {
+inline void ShaderProgram::setUintToActiveProgram(const std::string& sUniformName, unsigned int iValue) {
     glUniform1ui(getShaderUniformLocation(sUniformName), iValue);
 }
 
-inline void ShaderProgram::setIntToShader(const std::string& sUniformName, int iValue) {
+inline void ShaderProgram::setIntToActiveProgram(const std::string& sUniformName, int iValue) {
     glUniform1i(getShaderUniformLocation(sUniformName), iValue);
 }
 
-inline void ShaderProgram::setUniformBlockToShader(const std::string& sUniformBlockName, Buffer* pBuffer) {
+inline void ShaderProgram::setUniformBlockToActiveProgram(const std::string& sUniformBlockName, Buffer* pBuffer) {
     glBindBufferBase(
         GL_UNIFORM_BUFFER, getShaderUniformBlockBindingIndex(sUniformBlockName), pBuffer->getBufferId());
 }

@@ -131,6 +131,19 @@ public:
      */
     bool isVisible() const { return bIsVisible; }
 
+    /**
+     * Returns rendering handle.
+     *
+     * @warning Do not delete (free) returned pointer.
+     * @warning Rendering data is automatically updated inside of the node, you don't need
+     * to use the handle to update the rendering data. This function is made public
+     * in case you add some custom variables to mesh rendering data, this way you would
+     * have a way to update your custom variables.
+     *
+     * @return `nullptr` if not being rendered.
+     */
+    MeshRenderingHandle* getRenderingHandle() const { return pRenderingHandle.get(); }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
@@ -188,13 +201,6 @@ protected:
 
     /** Makes sure mesh node geometry is empty (used by derived nodes with different type of geometry. */
     void clearMeshNodeGeometry();
-
-    /**
-     * Returns rendering handle.
-     *
-     * @return `nullptr` if not being rendered.
-     */
-    MeshRenderingHandle* getRenderingHandle() const { return pRenderingHandle.get(); }
 
 private:
     /** Creates GPU resources and adds this object to be rendered. */

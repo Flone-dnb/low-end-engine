@@ -60,6 +60,8 @@ GameManager::GameManager(
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::get().registerStatsCommand();
 #endif
+
+    mainThreadId = std::this_thread::get_id();
 }
 
 void GameManager::onBeforeWorldDestroyed(Node* pRootNode) {
@@ -214,6 +216,8 @@ size_t GameManager::getCalledEveryFrameNodeCount() {
 
     return iNodeCount;
 }
+
+bool GameManager::isMainThread() const { return std::this_thread::get_id() == mainThreadId; }
 
 void GameManager::onGameStarted() {
     // Log game start so that it will be slightly easier to read logs.

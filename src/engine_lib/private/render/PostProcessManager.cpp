@@ -68,25 +68,25 @@ void PostProcessManager::drawPostProcessing(
         // Set shader parameters.
         {
             // Distance fog.
-            pShaderProgram->setBoolToShader("bIsDistanceFogEnabled", distanceFogSettings.has_value());
+            pShaderProgram->setBoolToActiveProgram("bIsDistanceFogEnabled", distanceFogSettings.has_value());
             if (distanceFogSettings.has_value()) {
-                pShaderProgram->setVector3ToShader("distanceFogColor", distanceFogSettings->getColor());
-                pShaderProgram->setVector2ToShader("distanceFogRange", distanceFogSettings->getFogRange());
-                pShaderProgram->setFloatToShader("fogHeightOnSky", distanceFogSettings->getFogHeightOnSky());
+                pShaderProgram->setVector3ToActiveProgram("distanceFogColor", distanceFogSettings->getColor());
+                pShaderProgram->setVector2ToActiveProgram("distanceFogRange", distanceFogSettings->getFogRange());
+                pShaderProgram->setFloatToActiveProgram("fogHeightOnSky", distanceFogSettings->getFogHeightOnSky());
             }
 
             // Procedural sky.
-            pShaderProgram->setBoolToShader("bIsSkyEnabled", skySettings.has_value());
+            pShaderProgram->setBoolToActiveProgram("bIsSkyEnabled", skySettings.has_value());
             if (skySettings.has_value()) {
-                pShaderProgram->setVector3ToShader("skyColorAboveHorizon", skySettings->colorAboveHorizon);
-                pShaderProgram->setVector3ToShader("skyColorOnHorizon", skySettings->colorOnHorizon);
-                pShaderProgram->setVector3ToShader("skyColorBelowHorizon", skySettings->colorBelowHorizon);
+                pShaderProgram->setVector3ToActiveProgram("skyColorAboveHorizon", skySettings->colorAboveHorizon);
+                pShaderProgram->setVector3ToActiveProgram("skyColorOnHorizon", skySettings->colorOnHorizon);
+                pShaderProgram->setVector3ToActiveProgram("skyColorBelowHorizon", skySettings->colorBelowHorizon);
             }
 
-            pShaderProgram->setMatrix4ToShader(
+            pShaderProgram->setMatrix4ToActiveProgram(
                 "invProjMatrix", pCameraProperties->getInverseProjectionMatrix());
-            pShaderProgram->setMatrix4ToShader("invViewMatrix", pCameraProperties->getInverseViewMatrix());
-            pShaderProgram->setVector3ToShader("cameraDirection", pCameraProperties->getForwardDirection());
+            pShaderProgram->setMatrix4ToActiveProgram("invViewMatrix", pCameraProperties->getInverseViewMatrix());
+            pShaderProgram->setVector3ToActiveProgram("cameraDirection", pCameraProperties->getForwardDirection());
         }
 
         // Draw.

@@ -115,6 +115,9 @@ std::string Error::getInitialMessage() const { return sMessage; }
 
 void Error::showErrorAndThrowException() const {
     // Log error.
+    {
+        auto guard = Log::setCallback(nullptr); // unbind callback to not trigger any game/editor logic
+    }
     const std::string sErrorMessage = getFullErrorMessage();
     Log::error(sErrorMessage);
 

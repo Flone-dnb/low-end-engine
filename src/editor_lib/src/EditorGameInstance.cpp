@@ -242,7 +242,7 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
             GL_WRITE_ONLY,
             gpuPickingData.pNodeIdTexture->getGlFormat()));
 
-        gpuPickingData.pClearTextureProgram->setUvector2ToShader(
+        gpuPickingData.pClearTextureProgram->setUvector2ToActiveProgram(
             "textureSize", glm::uvec2(iTexWidth, iTexHeight));
 
         // Calculate thread group count.
@@ -417,9 +417,9 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands() {
         static_cast<unsigned int>(optCursorEditor->x * static_cast<float>(iFramebufferWidth)),
         static_cast<unsigned int>((1.0F - optCursorEditor->y) * static_cast<float>(iFramebufferHeight)));
 
-    gpuPickingData.pPickingProgram->setUvector2ToShader(
+    gpuPickingData.pPickingProgram->setUvector2ToActiveProgram(
         "textureSize", glm::uvec2(iFramebufferWidth, iFramebufferHeight));
-    gpuPickingData.pPickingProgram->setUvector2ToShader("cursorPosInPix", cursorPosInPix);
+    gpuPickingData.pPickingProgram->setUvector2ToActiveProgram("cursorPosInPix", cursorPosInPix);
 
     // Calculate thread group count.
     constexpr size_t iThreadGroupSizeOneDim = 16; // same as in shaders
