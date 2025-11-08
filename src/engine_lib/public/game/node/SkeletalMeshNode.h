@@ -142,6 +142,16 @@ protected:
     virtual bool isUsingSkeletalMeshGeometry() override;
 
     /**
+     * Calculates AABB from @ref skeletalMeshGeometry.
+     *
+     * Derived types may override this function to calculate bounding box
+     * from other geometry.
+     *
+     * @return AABB.
+     */
+    virtual AABB calculateBoundingBoxFromGeometry() override;
+
+    /**
      * Called after the rendering handle was received.
      *
      * @param pRenderingHandle New rendering handle.

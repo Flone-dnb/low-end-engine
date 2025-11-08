@@ -22,7 +22,7 @@ void Material::setDiffuseColor(const glm::vec3& color) {
     diffuseColor = glm::vec4(color.x, color.y, color.z, diffuseColor.w);
 
     if (pOwnerNode != nullptr) {
-        pOwnerNode->updateShaderData();
+        pOwnerNode->updateRenderData();
     }
 }
 
@@ -50,7 +50,7 @@ void Material::setOpacity(float opacity) {
     diffuseColor.w = opacity;
 
     if (pOwnerNode != nullptr) {
-        pOwnerNode->updateShaderData();
+        pOwnerNode->updateRenderData();
     }
 }
 
@@ -182,7 +182,7 @@ void Material::setTextureTilingMultiplier(const glm::vec2& mult) {
     textureTilingMultiplier = mult;
 
     if (pOwnerNode != nullptr) {
-        pOwnerNode->updateShaderData();
+        pOwnerNode->updateRenderData();
     }
 }
 

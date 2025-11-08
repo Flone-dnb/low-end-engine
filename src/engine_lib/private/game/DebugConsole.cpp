@@ -7,8 +7,6 @@
 
 // Custom.
 #include "render/Renderer.h"
-#include "game/Window.h"
-#include "game/physics/PhysicsManager.h"
 #include "render/DebugDrawer.h"
 #include "misc/Error.h"
 #include "misc/MemoryUsage.hpp"

@@ -233,16 +233,20 @@ void MeshNode::registerToRendering() {
     onRenderingHandleInitialized(pRenderingHandle.get());
 
     // Initialize shader data.
-    updateShaderData();
+    updateRenderData(true);
 }
 
-void MeshNode::updateShaderData() {
+void MeshNode::updateRenderData(bool bJustRegistered) {
     if (pRenderingHandle == nullptr) {
         return;
     }
 
     auto renderDataGuard = getWorldWhileSpawned()->getMeshRenderer().getMeshRenderData(*pRenderingHandle);
     auto& data = renderDataGuard.getData();
+
+    if (bJustRegistered) {
+        data.aabb = calculateBoundingBoxFromGeometry();
+    }
 
     data.worldMatrix = getWorldMatrix();
     data.normalMatrix = glm::transpose(glm::inverse(data.worldMatrix));
@@ -261,6 +265,36 @@ void MeshNode::updateShaderData() {
     }
     data.iNodeId = static_cast<unsigned int>(iNodeId);
 #endif
+}
+
+AABB MeshNode::calculateBoundingBoxFromGeometry() {
+    auto min = glm::vec3(
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max());
+
+    auto max = glm::vec3(
+        -std::numeric_limits<float>::max(),
+        -std::numeric_limits<float>::max(),
+        -std::numeric_limits<float>::max());
+
+    for (const auto& vertex : meshGeometry.getVertices()) {
+        auto& position = vertex.position;
+
+        min.x = std::min(min.x, position.x);
+        min.y = std::min(min.y, position.y);
+        min.z = std::min(min.z, position.z);
+
+        max.x = std::max(max.x, position.x);
+        max.y = std::max(max.y, position.y);
+        max.z = std::max(max.z, position.z);
+    }
+
+    AABB aabb{};
+    aabb.center = glm::vec3((min.x + max.x) * 0.5F, (min.y + max.y) * 0.5F, (min.z + max.z) * 0.5F);
+    aabb.extents = glm::vec3(max.x - aabb.center.x, max.y - aabb.center.y, max.z - aabb.center.z);
+
+    return aabb;
 }
 
 void MeshNode::unregisterFromRendering() {

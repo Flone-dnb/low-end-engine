@@ -614,7 +614,9 @@ void Node::spawn() {
     // Initialize world.
     pWorldWeSpawnedIn = askParentsAboutWorldPointer();
 
-#if defined(DEBUG)
+#if defined(DEBUG) && !defined(ENGINE_EDITOR)
+    // This is a "just in case" check, generally nothing bad should happen but in case you
+    // need to spawn nodes in a non-main thread remove this check.
     if (!pWorldWeSpawnedIn->getGameManager().isMainThread()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
             "node \"{}\" is being spawned in a non-main thread which might be unsafe, you probably wanted "

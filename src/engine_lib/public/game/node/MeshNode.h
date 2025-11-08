@@ -1,15 +1,12 @@
 #pragma once
 
-// Standard.
-#include <mutex>
-
 // Custom.
 #include "math/GLMath.hpp"
 #include "game/node/SpatialNode.h"
 #include "game/geometry/MeshNodeGeometry.h"
 #include "material/Material.h"
 #include "render/wrapper/VertexArrayObject.h"
-#include "render/ShaderConstantsSetter.hpp"
+#include "game/geometry/shapes/AABB.h"
 
 class MeshRenderingHandle;
 
@@ -193,6 +190,16 @@ protected:
     virtual bool isUsingSkeletalMeshGeometry() { return false; }
 
     /**
+     * Calculates AABB from @ref meshGeometry.
+     *
+     * Derived types may override this function to calculate bounding box
+     * from other geometry.
+     *
+     * @return AABB.
+     */
+    virtual AABB calculateBoundingBoxFromGeometry();
+
+    /**
      * Called after the rendering handle was received.
      *
      * @param pRenderingHandle New rendering handle.
@@ -210,11 +217,14 @@ private:
     void unregisterFromRendering();
 
     /**
-     * Copies up to date data to shaders.
+     * Copies up to date data for rendering.
      *
      * @remark Does nothing if not registered in the rendering.
+     *
+     * @param bJustRegistered Specify `true` if @ref pRenderingHandle was just initialized
+     * and this function is called to initialize the data.
      */
-    void updateShaderData();
+    void updateRenderData(bool bJustRegistered = false);
 
     /** Mesh geometry. */
     MeshNodeGeometry meshGeometry;

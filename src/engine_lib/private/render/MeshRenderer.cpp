@@ -478,7 +478,10 @@ MeshRenderDataGuard MeshRenderer::getMeshRenderData(MeshRenderingHandle& handle)
 }
 
 void MeshRenderer::drawMeshes(
-    Renderer* pRenderer, const glm::mat4& viewProjectionMatrix, LightSourceManager& lightSourceManager) {
+    Renderer* pRenderer,
+    const glm::mat4& viewProjectionMatrix,
+    const Frustum& cameraFrustum,
+    LightSourceManager& lightSourceManager) {
     std::scoped_lock guard(mtxRenderData.first);
     auto& data = mtxRenderData.second;
 
@@ -507,6 +510,7 @@ void MeshRenderer::drawMeshes(
         data.vOpaqueShaders,
         data,
         viewProjectionMatrix,
+        cameraFrustum,
         ambientLightColor,
         mtxPointLightData.second,
         mtxSpotlightData.second,
@@ -520,6 +524,7 @@ void MeshRenderer::drawMeshes(
                 data.vTransparentShaders,
                 data,
                 viewProjectionMatrix,
+                cameraFrustum,
                 ambientLightColor,
                 mtxPointLightData.second,
                 mtxSpotlightData.second,
@@ -533,6 +538,7 @@ void MeshRenderer::drawMeshes(
     const std::vector<RenderData::ShaderInfo>& vShaders,
     const RenderData& data,
     const glm::mat4& viewProjectionMatrix,
+    const Frustum& cameraFrustum,
     const glm::vec3& ambientLightColor,
     LightSourceShaderArray::LightData& pointLightData,
     LightSourceShaderArray::LightData& spotlightData,
@@ -591,6 +597,12 @@ void MeshRenderer::drawMeshes(
              iMeshDataIndex < shaderInfo.iFirstMeshIndex + shaderInfo.iMeshCount;
              iMeshDataIndex++) {
             const auto& meshData = data.vMeshRenderData[iMeshDataIndex];
+
+            // Frustum culling (don't cull skeletal meshes due to animations).
+            if (shaderInfo.iSkinningMatricesUniform == -1 &&
+                !cameraFrustum.isAabbInFrustum(meshData.aabb, meshData.worldMatrix)) {
+                continue;
+            }
 
 #if defined(ENGINE_EDITOR)
             // For GPU picking.

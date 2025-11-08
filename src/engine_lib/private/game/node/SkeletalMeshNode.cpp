@@ -58,6 +58,38 @@ bool SkeletalMeshNode::isUsingSkeletalMeshGeometry() {
     return true;
 }
 
+AABB SkeletalMeshNode::calculateBoundingBoxFromGeometry() {
+    // MeshNode::calculateBoundingBoxFromGeometry() <- to silence our node super call checker
+
+    auto min = glm::vec3(
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max());
+
+    auto max = glm::vec3(
+        -std::numeric_limits<float>::max(),
+        -std::numeric_limits<float>::max(),
+        -std::numeric_limits<float>::max());
+
+    for (const auto& vertex : skeletalMeshGeometry.getVertices()) {
+        auto& position = vertex.position;
+
+        min.x = std::min(min.x, position.x);
+        min.y = std::min(min.y, position.y);
+        min.z = std::min(min.z, position.z);
+
+        max.x = std::max(max.x, position.x);
+        max.y = std::max(max.y, position.y);
+        max.z = std::max(max.z, position.z);
+    }
+
+    AABB aabb{};
+    aabb.center = glm::vec3((min.x + max.x) * 0.5F, (min.y + max.y) * 0.5F, (min.z + max.z) * 0.5F);
+    aabb.extents = glm::vec3(max.x - aabb.center.x, max.y - aabb.center.y, max.z - aabb.center.z);
+
+    return aabb;
+}
+
 std::unique_ptr<VertexArrayObject> SkeletalMeshNode::createVertexArrayObject() {
     // MeshNode::createVertexArrayObject(); // <- commended out to silence our node super call checker
 

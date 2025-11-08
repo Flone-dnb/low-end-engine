@@ -8,8 +8,10 @@
 #include <memory>
 
 // Custom.
+#include "game/geometry/shapes/AABB.h"
 #include "render/shader/LightSourceShaderArray.h"
 #include "render/ShaderConstantsSetter.hpp"
+#include "game/geometry/shapes/Frustum.h"
 #include "math/GLMath.hpp"
 
 class ShaderProgram;
@@ -34,6 +36,7 @@ struct alignas(hardware_constructive_interference_size) MeshRenderData {
     glm::vec2 textureTilingMultiplier;
     unsigned int iDiffuseTextureId = 0; // 0 if not used
 
+    AABB aabb;
     unsigned int iVertexArrayObject = 0;
     int iIndexCount = 0;
 
@@ -204,10 +207,14 @@ public:
      *
      * @param pRenderer            Renderer.
      * @param viewProjectionMatrix Camera's view projection matrix.
+     * @param cameraFrustum        Camera's frustum.
      * @param lightSourceManager   Light source manager.
      */
     void drawMeshes(
-        Renderer* pRenderer, const glm::mat4& viewProjectionMatrix, LightSourceManager& lightSourceManager);
+        Renderer* pRenderer,
+        const glm::mat4& viewProjectionMatrix,
+        const Frustum& cameraFrustum,
+        LightSourceManager& lightSourceManager);
 
     /**
      * Registers a new mesh to be rendered.
@@ -263,6 +270,7 @@ private:
      * @param vShaders             Shaders to draw.
      * @param data                 Render data.
      * @param viewProjectionMatrix Camera's view projection matrix.
+     * @param cameraFrustum        Camera's frustum.
      * @param ambientLightColor    Ambient light color.
      * @param pointLightData       Light array data.
      * @param spotlightData        Light array data.
@@ -272,6 +280,7 @@ private:
         const std::vector<RenderData::ShaderInfo>& vShaders,
         const RenderData& data,
         const glm::mat4& viewProjectionMatrix,
+        const Frustum& cameraFrustum,
         const glm::vec3& ambientLightColor,
         LightSourceShaderArray::LightData& pointLightData,
         LightSourceShaderArray::LightData& spotlightData,

@@ -2,6 +2,7 @@
 
 // Custom.
 #include "game/Window.h"
+#include "game/geometry/shapes/Frustum.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "game/geometry/ScreenQuadGeometry.h"
 #include "game/camera/CameraManager.h"
@@ -319,8 +320,18 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
                 glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
+                // Get camera frustum.
+                const auto& frustum = mtxActiveCamera.second.pCameraNode->getCameraProperties()
+                                          ->getCameraFrustumMaybeOutdated();
+                static_assert(
+                    sizeof(WorldRenderInfo::viewProjectionMatrix) > 1,
+                    "because we requested view and projection matrix the frustum here is up to date");
+
                 pWorld->getMeshRenderer().drawMeshes(
-                    this, mtxActiveCamera.second.viewProjectionMatrix, pWorld->getLightSourceManager());
+                    this,
+                    mtxActiveCamera.second.viewProjectionMatrix,
+                    frustum,
+                    pWorld->getLightSourceManager());
             }
 #if defined(ENGINE_DEBUG_TOOLS)
             DebugConsole::getStats().cpuTimeToSubmitMeshesMs =

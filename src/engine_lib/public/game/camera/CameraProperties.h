@@ -263,11 +263,9 @@ public:
      * frustum is updated but since you would call a different function this might have a small
      * performance penalty.
      *
-     * @remark Do not delete (free) returned pointer.
-     *
      * @return Camera's frustum.
      */
-    inline Frustum* getCameraFrustum() { return &mtxData.second.frustum; }
+    inline const Frustum& getCameraFrustumMaybeOutdated() { return mtxData.second.frustum; }
 
     /**
      * Returns position of the top-left corner of the viewport rectangle in XY and size in ZW
