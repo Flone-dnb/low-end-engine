@@ -4,9 +4,7 @@
 #include "game/Window.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/MeshNode.h"
-#include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/PointLightNode.h"
-#include "game/node/light/SpotlightNode.h"
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
@@ -33,6 +31,7 @@
 #include "render/GpuResourceManager.h"
 #include "render/PostProcessManager.h"
 #include "game/physics/PhysicsManager.h"
+#include "render/LightSourceManager.h"
 #include "EditorResourcePaths.hpp"
 #include "EditorTheme.h"
 #include "EditorConstants.hpp"
@@ -655,7 +654,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pRoot = pRootNode;
 
     const auto pGameWorld = pRootNode->getWorldWhileSpawned();
-    pGameWorld->getCameraManager().getPostProcessManager().setAmbientLightColor(editorAmbientLight);
+    pGameWorld->getLightSourceManager().setAmbientLightColor(editorAmbientLight);
 
     if (editorWorldNodes.pViewportUiPlaceholder == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected editor's viewport UI node to be created at this point");

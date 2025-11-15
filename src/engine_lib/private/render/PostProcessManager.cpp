@@ -22,8 +22,6 @@ void DistanceFogSettings::setColor(const glm::vec3& color) { this->color = color
 
 void DistanceFogSettings::setFogHeightOnSky(float fogHeight) { fogHeightOnSky = std::max(0.0F, fogHeight); }
 
-void PostProcessManager::setAmbientLightColor(const glm::vec3& color) { ambientLightColor = color; }
-
 void PostProcessManager::setDistanceFogSettings(const std::optional<DistanceFogSettings>& settings) {
     distanceFogSettings = settings;
 }
@@ -70,23 +68,30 @@ void PostProcessManager::drawPostProcessing(
             // Distance fog.
             pShaderProgram->setBoolToActiveProgram("bIsDistanceFogEnabled", distanceFogSettings.has_value());
             if (distanceFogSettings.has_value()) {
-                pShaderProgram->setVector3ToActiveProgram("distanceFogColor", distanceFogSettings->getColor());
-                pShaderProgram->setVector2ToActiveProgram("distanceFogRange", distanceFogSettings->getFogRange());
-                pShaderProgram->setFloatToActiveProgram("fogHeightOnSky", distanceFogSettings->getFogHeightOnSky());
+                pShaderProgram->setVector3ToActiveProgram(
+                    "distanceFogColor", distanceFogSettings->getColor());
+                pShaderProgram->setVector2ToActiveProgram(
+                    "distanceFogRange", distanceFogSettings->getFogRange());
+                pShaderProgram->setFloatToActiveProgram(
+                    "fogHeightOnSky", distanceFogSettings->getFogHeightOnSky());
             }
 
             // Procedural sky.
             pShaderProgram->setBoolToActiveProgram("bIsSkyEnabled", skySettings.has_value());
             if (skySettings.has_value()) {
-                pShaderProgram->setVector3ToActiveProgram("skyColorAboveHorizon", skySettings->colorAboveHorizon);
+                pShaderProgram->setVector3ToActiveProgram(
+                    "skyColorAboveHorizon", skySettings->colorAboveHorizon);
                 pShaderProgram->setVector3ToActiveProgram("skyColorOnHorizon", skySettings->colorOnHorizon);
-                pShaderProgram->setVector3ToActiveProgram("skyColorBelowHorizon", skySettings->colorBelowHorizon);
+                pShaderProgram->setVector3ToActiveProgram(
+                    "skyColorBelowHorizon", skySettings->colorBelowHorizon);
             }
 
             pShaderProgram->setMatrix4ToActiveProgram(
                 "invProjMatrix", pCameraProperties->getInverseProjectionMatrix());
-            pShaderProgram->setMatrix4ToActiveProgram("invViewMatrix", pCameraProperties->getInverseViewMatrix());
-            pShaderProgram->setVector3ToActiveProgram("cameraDirection", pCameraProperties->getForwardDirection());
+            pShaderProgram->setMatrix4ToActiveProgram(
+                "invViewMatrix", pCameraProperties->getInverseViewMatrix());
+            pShaderProgram->setVector3ToActiveProgram(
+                "cameraDirection", pCameraProperties->getForwardDirection());
         }
 
         // Draw.

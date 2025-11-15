@@ -99,13 +99,6 @@ public:
     PostProcessManager() = delete;
 
     /**
-     * Sets color of the light that will be added to every rendered object.
-     *
-     * @param color RGB color.
-     */
-    void setAmbientLightColor(const glm::vec3& color);
-
-    /**
      * Sets distance fog settings.
      *
      * @param settings Specify empty to disable distance fog.
@@ -118,13 +111,6 @@ public:
      * @param settings Specify empty to disable procedural sky.
      */
     void setSkySettings(const std::optional<SkySettings>& settings);
-
-    /**
-     * Returns color of the light that will be added to every rendered object.
-     *
-     * @return RGB color.
-     */
-    glm::vec3 getAmbientLightColor() const { return ambientLightColor; }
 
     /**
      * Returns settings for distance fog.
@@ -178,7 +164,4 @@ private:
 
     /** Empty if disabled. */
     std::optional<SkySettings> skySettings;
-
-    /** Constant light that will be added. */
-    glm::vec3 ambientLightColor = glm::vec3(0.1F, 0.1F, 0.1F);
 };

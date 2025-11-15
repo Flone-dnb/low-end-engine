@@ -6,12 +6,10 @@
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
-#include "render/PostProcessManager.h"
 
 LightSourceManager::~LightSourceManager() {}
 
-LightSourceManager::LightSourceManager(PostProcessManager* pPostProcessManager)
-    : pPostProcessManager(pPostProcessManager) {
+LightSourceManager::LightSourceManager() {
     // Create array of directional lights.
     pDirectionalLightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(
         this,
@@ -40,6 +38,4 @@ LightSourceManager::LightSourceManager(PostProcessManager* pPostProcessManager)
         "iPointLightCount"));
 }
 
-glm::vec3 LightSourceManager::getAmbientLightColor() const {
-    return pPostProcessManager->getAmbientLightColor();
-}
+void LightSourceManager::setAmbientLightColor(const glm::vec3& color) { ambientLightColor = color; }

@@ -59,7 +59,7 @@ set(PROJECT_SOURCES
     private/render/wrapper/Texture.h
     public/render/ShaderConstantsSetter.hpp
     private/render/LightSourceManager.cpp
-    private/render/LightSourceManager.h
+    public/render/LightSourceManager.h
     private/render/UiNodeManager.cpp
     private/render/UiNodeManager.h
     private/render/UiRenderData.h

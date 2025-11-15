@@ -4,7 +4,6 @@
 #include "game/node/Node.h"
 #include "io/Log.h"
 #include "misc/Error.h"
-#include "render/Renderer.h"
 #include "render/UiNodeManager.h"
 #include "game/camera/CameraManager.h"
 #include "game/GameManager.h"
@@ -36,8 +35,7 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
 
 #if !defined(ENGINE_UI_ONLY)
     pMeshRenderer = std::unique_ptr<MeshRenderer>(new MeshRenderer());
-    pLightSourceManager =
-        std::unique_ptr<LightSourceManager>(new LightSourceManager(&pCameraManager->getPostProcessManager()));
+    pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager());
 #endif
 
     // Spawn root node.

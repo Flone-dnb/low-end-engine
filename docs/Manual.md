@@ -278,6 +278,10 @@ void GameInstance::loadSublevel(const std::filesystem::path& pathToNodeTree) {
 }
 ```
 
+## Lighting
+
+`PointLightNode`, `SpotlightNode` and `DirectionalLightNode` provide lighting. On top of that you can configure ambient light color using the light source manager: `getWorldWhileSpawned()->getLightSourceManager().setAmbientLightColor(color)`.
+
 ## Handling user input
 
 ### Input events
@@ -490,10 +494,6 @@ After the GLTF import you need to setup your node tree: create a new `SkeletonNo
 `SkeletonNode` is responsible for playing the animations (moving the bones) while `SkeletalMeshNode` is just a skin that is moved by the bones. When skeleton node is selected the editor will allow you to type a path to an animation to preview. You can also play an animation by calling C++ functions of the skeleton node from your game code. Imported animations are located in the "_anim" directory, they have names that you've assigned to them in Blender and have .ozz extension, you just need to provide a relative path to such .ozz file to play.
 
 `SkeletonBoneAttachmentNode` is used as a child node to `SkeletonNode`, it's used to attach to some bone of a skeleton, for example a sword attached to a hand bone.
-
-## Post-processing
-
-You can configure post processing parameters such as sky, ambient light color, distance fog and etc. by using the `PostProcessManager` class, you can access it from the camera manager: `Node::getWorldWhileSpawned()->getCameraManager().getPostProcessManager()`.
 
 ## Loading font
 
