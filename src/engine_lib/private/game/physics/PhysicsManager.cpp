@@ -293,7 +293,7 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     // and do physics interpolation in case the FPS is higher than 60 but because
     // physics interpolation is a pain in the back I go the stupid way:
 
-    constexpr float MIN_UPDATE_TIME = 1.0F / 40.0F;
+    constexpr float MIN_UPDATE_TIME = 1.0F / 25.0F;
 
 #if !defined(ENGINE_EDITOR)
     float deltaTimeLeftToSimulate = std::min(timeSincePrevFrameInSec, 2.0F * MIN_UPDATE_TIME);
