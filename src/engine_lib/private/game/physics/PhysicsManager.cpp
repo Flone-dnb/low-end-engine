@@ -293,6 +293,8 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     // and do physics interpolation in case the FPS is higher than 60 but because
     // physics interpolation is a pain in the back I go the stupid way:
 
+    // If the framerate is too low we will try to make sure bodies don't fall through each other but the
+    // physics will slow down (it might seem like we're in slow motion).
     constexpr float MIN_UPDATE_TIME = 1.0F / 25.0F;
 
 #if !defined(ENGINE_EDITOR)
