@@ -1,6 +1,6 @@
 // Macro values same as in C++ code, IF CHANGING also change in C++ code.
-#define MAX_POINT_LIGHT_COUNT 30
-#define MAX_SPOT_LIGHT_COUNT 30
+#define MAX_POINT_LIGHT_COUNT 16
+#define MAX_SPOT_LIGHT_COUNT 16
 #define MAX_DIRECTIONAL_LIGHT_COUNT 2
 
 uniform vec3 ambientLightColor;

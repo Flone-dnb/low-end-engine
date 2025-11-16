@@ -2,7 +2,6 @@
 
 // Custom.
 #include "render/shader/LightSourceShaderArray.h"
-#include "render/ShaderManager.h"
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
@@ -10,12 +9,15 @@
 LightSourceManager::~LightSourceManager() {}
 
 LightSourceManager::LightSourceManager() {
+    constexpr unsigned int MAX_POINT_LIGHT_COUNT = 16;      // <- same as in shaders
+    constexpr unsigned int MAX_SPOT_LIGHT_COUNT = 16;       // <- same as in shaders
+    constexpr unsigned int MAX_DIRECTIONAL_LIGHT_COUNT = 2; // <- same as in shaders
+
     // Create array of directional lights.
     pDirectionalLightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(
         this,
         sizeof(DirectionalLightNode::ShaderProperties),
-        static_cast<unsigned int>(
-            ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro::MAX_DIRECTIONAL_LIGHT_COUNT)),
+        MAX_DIRECTIONAL_LIGHT_COUNT,
         "DirectionalLights",
         "iDirectionalLightCount"));
 
@@ -23,8 +25,7 @@ LightSourceManager::LightSourceManager() {
     pSpotlightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(
         this,
         sizeof(SpotlightNode::ShaderProperties),
-        static_cast<unsigned int>(
-            ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro::MAX_SPOT_LIGHT_COUNT)),
+        MAX_SPOT_LIGHT_COUNT,
         "Spotlights",
         "iSpotlightCount"));
 
@@ -32,8 +33,7 @@ LightSourceManager::LightSourceManager() {
     pPointLightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(
         this,
         sizeof(PointLightNode::ShaderProperties),
-        static_cast<unsigned int>(
-            ShaderManager::getEnginePredefinedMacroValue(EnginePredefinedMacro::MAX_POINT_LIGHT_COUNT)),
+        MAX_POINT_LIGHT_COUNT,
         "PointLights",
         "iPointLightCount"));
 }

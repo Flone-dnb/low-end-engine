@@ -5,21 +5,11 @@
 #include <unordered_map>
 #include <memory>
 #include <mutex>
-#include <array>
 #include <vector>
 
 class Renderer;
 class Shader;
 class ShaderProgram;
-
-enum class EnginePredefinedMacro : unsigned char {
-    MAX_POINT_LIGHT_COUNT = 0,
-    MAX_SPOT_LIGHT_COUNT,
-    MAX_DIRECTIONAL_LIGHT_COUNT,
-    // ... new macros go here ...
-
-    COUNT, // marks the size of this enum
-};
 
 /** Loads, compiles GLSL code and keeps track of all loaded shaders. */
 class ShaderManager {
@@ -32,15 +22,6 @@ class ShaderManager {
 
 public:
     ~ShaderManager();
-
-    /**
-     * Returns value of engine's predefined shader macro.
-     *
-     * @param macro Shader macro.
-     *
-     * @return Macro's value.
-     */
-    static size_t getEnginePredefinedMacroValue(EnginePredefinedMacro macro);
 
     /**
      * Looks if a shader from the specified path was already requested previously (cached) to return it,
