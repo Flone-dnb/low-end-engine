@@ -16,17 +16,14 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Dynamic light sources
 - [X] GLTF/GLB import
 - [X] Profiler
-- [X] Post-processing effects
 - [X] GUI
 - [X] Audio (using [SFML](https://github.com/SFML/SFML))
 - [X] Simple editor
 - [X] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
 - [X] Skeletal animations (using [ozz-animation](https://github.com/guillaumeblanc/ozz-animation/))
 - [X] Minimal scripting (using [AngelScript](https://github.com/anjo76/angelscript))
-- [ ] Occlusion culling using portals
 - [ ] Dynamic shadows
-- [ ] Instancing
-- [ ] AI and pathfinding
+- [ ] Pathfinding
 - [ ] Particle effects
 
 # Documentation
