@@ -4,9 +4,8 @@
 
 uniform vec4 diffuseColor;
 
-uniform bool bIsUsingDiffuseTexture;
-layout(location = 0) uniform sampler2D diffuseTexture;
-uniform vec2 textureTilingMultiplier;
+uniform sampler2D diffuseTexture;
+uniform vec2 textureTilingMultiplier; // stores -1 if diffuseTexture is not set
 
 #ifdef ENGINE_EDITOR
     // Used for GPU picking.
@@ -30,6 +29,7 @@ void main() {
 
     // Diffuse color.
     vec4 fragmentDiffuseColor = diffuseColor;
+    bool bIsUsingDiffuseTexture = textureTilingMultiplier.x >= 0.0F;
     if (bIsUsingDiffuseTexture) {
         fragmentDiffuseColor *= texture(diffuseTexture, fragmentUv * textureTilingMultiplier);
     }

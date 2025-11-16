@@ -151,7 +151,6 @@ public:
             int iNormalMatrixUniform = 0;
             int iDiffuseColorUniform = 0;
             int iTextureTilingMultiplierUniform = 0;
-            int iIsUsingDiffuseTextureUniform = 0;
 
             int iSkinningMatricesUniform = -1;
 

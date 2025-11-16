@@ -2,7 +2,6 @@
 
 // Custom.
 #include "game/node/MeshNode.h"
-#include "game/camera/CameraProperties.h"
 #include "render/LightSourceManager.h"
 #include "render/shader/LightSourceShaderArray.h"
 #include "render/wrapper/ShaderProgram.h"
@@ -14,7 +13,14 @@
 // External.
 #include "glad/glad.h"
 
-MeshRenderDataGuard::~MeshRenderDataGuard() { pMeshRenderer->mtxRenderData.first.unlock(); }
+MeshRenderDataGuard::~MeshRenderDataGuard() {
+    if (pData->iDiffuseTextureId == 0) {
+        // shaders expect -1 if diffuse texture is not set
+        pData->textureTilingMultiplier = glm::vec2(-1.0F, -1.0F);
+    }
+
+    pMeshRenderer->mtxRenderData.first.unlock();
+}
 
 MeshRenderer::RenderData::ShaderInfo
 MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
@@ -27,7 +33,6 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
 
     info.iWorldMatrixUniform = pShaderProgram->getShaderUniformLocation("worldMatrix");
     info.iNormalMatrixUniform = pShaderProgram->getShaderUniformLocation("normalMatrix");
-    info.iIsUsingDiffuseTextureUniform = pShaderProgram->getShaderUniformLocation("bIsUsingDiffuseTexture");
     info.iDiffuseColorUniform = pShaderProgram->getShaderUniformLocation("diffuseColor");
     info.iTextureTilingMultiplierUniform =
         pShaderProgram->getShaderUniformLocation("textureTilingMultiplier");
@@ -619,14 +624,11 @@ void MeshRenderer::drawMeshes(
                 shaderInfo.iWorldMatrixUniform, 1, GL_FALSE, glm::value_ptr(meshData.worldMatrix));
             glUniformMatrix3fv(
                 shaderInfo.iNormalMatrixUniform, 1, GL_FALSE, glm::value_ptr(meshData.normalMatrix));
-            glUniform1i(
-                shaderInfo.iIsUsingDiffuseTextureUniform, static_cast<int>(meshData.iDiffuseTextureId));
             glUniform4fv(shaderInfo.iDiffuseColorUniform, 1, glm::value_ptr(meshData.diffuseColor));
             glUniform2fv(
                 shaderInfo.iTextureTilingMultiplierUniform,
                 1,
                 glm::value_ptr(meshData.textureTilingMultiplier));
-
             if (shaderInfo.iSkinningMatricesUniform != -1) {
                 glUniformMatrix4fv(
                     shaderInfo.iSkinningMatricesUniform,
