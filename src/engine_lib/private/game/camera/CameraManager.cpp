@@ -6,52 +6,15 @@
 // Custom.
 #include "io/Log.h"
 #include "game/node/CameraNode.h"
-#include "render/PostProcessManager.h"
 #include "game/GameManager.h"
 #include "misc/Error.h"
 #include "render/wrapper/Framebuffer.h"
 #include "render/GpuResourceManager.h"
 #include "game/Window.h"
 
-CameraManager::CameraManager(GameManager* pGameManager) : pWindow(pGameManager->getWindow()) {
-    onWindowSizeChanged(pGameManager->getWindow());
-}
+CameraManager::CameraManager(GameManager* pGameManager) : pWindow(pGameManager->getWindow()) {}
 
 CameraManager::~CameraManager() {}
-
-void CameraManager::onWindowSizeChanged(Window* pWindow) {
-    // UI only apps render directly to window's framebuffer (and UI apps don't have post processing).
-#if !defined(ENGINE_UI_ONLY)
-    const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
-
-    // Main framebuffer.
-    pMainFramebuffer =
-        GpuResourceManager::createFramebuffer(iWindowWidth, iWindowHeight, GL_RGB8, GL_DEPTH_COMPONENT24);
-
-    // Post-process framebuffer.
-    if (pPostProcessManager == nullptr) {
-        pPostProcessManager =
-            std::unique_ptr<PostProcessManager>(new PostProcessManager(pWindow->getGameManager()));
-    } else {
-        pPostProcessManager->onWindowSizeChanged(pWindow);
-    }
-#endif
-}
-
-Framebuffer& CameraManager::getMainFramebuffer() const {
-#if defined(ENGINE_UI_ONLY)
-    Error::showErrorAndThrowException("main framebuffer is not used in UI only apps (UI only apps render "
-                                      "directly to window's framebuffer)");
-#endif
-    return *pMainFramebuffer;
-}
-
-PostProcessManager& CameraManager::getPostProcessManager() const {
-#if defined(ENGINE_UI_ONLY)
-    Error::showErrorAndThrowException("post processing manager is not used in UI only apps");
-#endif
-    return *pPostProcessManager;
-}
 
 void CameraManager::setActiveCamera(CameraNode* pCameraNode, bool bIsSoundListener) {
     if (pCameraNode == nullptr) [[unlikely]] {

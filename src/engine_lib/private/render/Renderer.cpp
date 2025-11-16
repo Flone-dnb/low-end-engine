@@ -2,20 +2,14 @@
 
 // Custom.
 #include "game/Window.h"
-#include "game/geometry/shapes/Frustum.h"
 #include "render/wrapper/ShaderProgram.h"
-#include "game/geometry/ScreenQuadGeometry.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/CameraNode.h"
-#include "game/node/MeshNode.h"
 #include "render/FontManager.h"
 #include "render/UiNodeManager.h"
 #include "render/MeshRenderer.h"
 #include "render/GpuResourceManager.h"
-#include "render/PostProcessManager.h"
-#include "misc/ProjectPaths.h"
 #include "material/TextureManager.h"
-#include "io/ConfigManager.h"
 #include "render/DebugDrawer.h"
 #include "game/DebugConsole.h"
 
@@ -130,11 +124,6 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
                 MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
             }
 
-            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawPostProcess));
-            {
-                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawPostProcess);
-            }
-
             GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
             {
                 MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
@@ -155,7 +144,6 @@ Renderer::~Renderer() {
     if (bIsGpuTimeElapsedExtSupported) {
         for (auto& frameQueries : frameSyncData.vFrameQueries) {
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
-            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawPostProcess));
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
         }
@@ -173,17 +161,7 @@ Renderer::~Renderer() {
 }
 
 void Renderer::recreateFramebuffers() {
-    const auto pGameManager = pWindow->getGameManager();
-
-    // Update framebuffers (main, post-process).
-    if (pGameManager != nullptr) {
-        auto& mtxWorldData = pGameManager->getWorlds();
-        std::scoped_lock guard(mtxWorldData.first);
-        for (const auto& pWorld : mtxWorldData.second.vWorlds) {
-            pWorld->getCameraManager().onWindowSizeChanged(pWindow);
-        }
-    }
-
+    // Don't need to re-create any renderer framebuffers because we use window's framebuffer.
     pFontManager->onWindowSizeChanged();
 }
 
@@ -227,7 +205,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         };
         auto& stats = DebugConsole::getStats();
         stats.gpuTimeDrawMeshesMs = getQueryTimeMs(frameQueries.iGlQueryToDrawMeshes);
-        stats.gpuTimePostProcessingMs = getQueryTimeMs(frameQueries.iGlQueryToDrawPostProcess);
         stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
         stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
     }
@@ -242,6 +219,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     std::scoped_lock guardWorlds(mtxWorlds.first);
 
     if (!mtxWorlds.second.vWorlds.empty()) {
+        // Just render the first world.
         const auto pWorld = mtxWorlds.second.vWorlds[0].get();
 
         // Draw on window's framebuffer.
@@ -301,10 +279,14 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
 
     if (!vActiveCameras.empty()) {
+        // Rendering to window's framebuffer.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(iCurrentGlDepthFunc);
 
-        // Draw meshes from each camera.
+        // Draw meshes.
         {
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
 #if defined(ENGINE_DEBUG_TOOLS)
@@ -313,10 +295,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
                 const auto& viewportSize = mtxActiveCamera.second.viewportSize;
-                const auto& pFramebuffer = pWorld->getCameraManager().pMainFramebuffer;
-
-                GL_CHECK_ERROR(glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->getFramebufferId()));
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
@@ -341,29 +319,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         }
 
         // Notify game instance.
-        {
-            pGameInstance->onFinishedSubmittingMeshDrawCommands();
-        }
+        pGameInstance->onFinishedSubmittingMeshDrawCommands();
 
-        // Draw post processing before UI.
-        {
-            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawPostProcess);
-            for (const auto& mtxActiveCamera : vActiveCameras) {
-                const auto pWorld = mtxActiveCamera.second.pWorld;
-                const auto pCameraProperties = mtxActiveCamera.second.pCameraNode->getCameraProperties();
-                const auto& viewportSize = mtxActiveCamera.second.viewportSize;
-
-                // Use window-size viewport to avoid "applying viewport twice".
-                glViewport(0, 0, iWindowWidth, iWindowHeight);
-                {
-                    pWorld->getCameraManager().getPostProcessManager().drawPostProcessing(
-                        *pFullscreenQuad, *pWorld->getCameraManager().pMainFramebuffer, pCameraProperties);
-                }
-                glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
-            }
-        }
-
-        // Draw UI nodes on post-processing framebuffer.
+        // Draw UI.
         {
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
 #if defined(ENGINE_DEBUG_TOOLS)
@@ -371,28 +329,17 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
-                auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
                 const auto& viewportSize = mtxActiveCamera.second.viewportSize;
 
                 glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
-                pWorld->getUiNodeManager().drawUiOnFramebuffer(
-                    postProcessManager.pFramebuffer->getFramebufferId());
+                pWorld->getUiNodeManager().drawUiOnActiveFramebuffer();
             }
 #if defined(ENGINE_DEBUG_TOOLS)
             DebugConsole::getStats().cpuTimeToSubmitUiMs =
                 static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitUiStartCounter) * 1000.0F /
                 static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
-        }
-
-        // Copy results from different worlds in order (consider viewport size).
-        for (const auto& mtxActiveCamera : vActiveCameras) {
-            const auto pWorld = mtxActiveCamera.second.pWorld;
-            auto& postProcessManager = pWorld->getCameraManager().getPostProcessManager();
-            const auto& viewportSize = mtxActiveCamera.second.viewportSize;
-
-            copyFramebufferToWindowFramebuffer(*postProcessManager.pFramebuffer, viewportSize);
         }
 
 #if defined(ENGINE_DEBUG_TOOLS)
@@ -456,29 +403,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         Error::showErrorAndThrowException(
             std::format("an OpenGL error occurred while submitting a new frame, error code: {}", lastError));
     }
-}
-
-void Renderer::copyFramebufferToWindowFramebuffer(
-    Framebuffer& srcFramebuffer, const glm::ivec4& viewportSize) {
-    // Prepare rect bounds (start/end pos) for blit.
-    glm::ivec4 bounds = viewportSize;
-    bounds.z += bounds.x;
-    bounds.w += bounds.y;
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFramebuffer.getFramebufferId());
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBlitFramebuffer(
-        bounds.x, // src
-        bounds.y,
-        bounds.z,
-        bounds.w,
-        bounds.x, // dst
-        bounds.y,
-        bounds.z,
-        bounds.w,
-        GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
 }
 
 void Renderer::calculateFrameStatistics() {

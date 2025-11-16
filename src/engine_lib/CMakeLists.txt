@@ -71,9 +71,7 @@ set(PROJECT_SOURCES
     public/render/ShaderAlignmentConstants.hpp
     private/render/FontManager.cpp
     public/render/FontManager.h
-    public/render/PostProcessManager.h
     public/render/UiLayer.hpp
-    private/render/PostProcessManager.cpp
     public/render/DebugDrawer.h
     private/render/DebugDrawer.cpp
     private/misc/InitManager.hpp

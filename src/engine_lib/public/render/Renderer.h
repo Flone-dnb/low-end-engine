@@ -104,9 +104,6 @@ private:
             /** GL query ID for measuring GPU time that we spent drawing meshes. */
             unsigned int iGlQueryToDrawMeshes = 0;
 
-            /** GL query ID for measuring GPU time that we spent on post processing. */
-            unsigned int iGlQueryToDrawPostProcess = 0;
-
             /** GL query ID for measuring GPU time that we spent drawing UI. */
             unsigned int iGlQueryToDrawUi = 0;
 
@@ -160,14 +157,6 @@ private:
      * @remark Must be called after a frame was submitted.
      */
     void calculateFrameStatistics();
-
-    /**
-     * Copies the framebuffer with the specified ID to the window's framebuffer (framebuffer 0).
-     *
-     * @param srcFramebuffer ID of the framebuffer to copy.
-     * @param viewportSize   Rectangle to copy from/to.
-     */
-    void copyFramebufferToWindowFramebuffer(Framebuffer& srcFramebuffer, const glm::ivec4& viewportSize);
 
     /** Database of all shaders. */
     std::unique_ptr<ShaderManager> pShaderManager;

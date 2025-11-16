@@ -2,7 +2,6 @@
 
 // Standard.
 #include <mutex>
-#include <memory>
 #include <optional>
 
 // Custom.
@@ -11,7 +10,6 @@
 class CameraNode;
 class Renderer;
 class CameraProperties;
-class PostProcessManager;
 class GameManager;
 class Window;
 class Framebuffer;
@@ -20,9 +18,6 @@ class Framebuffer;
 class CameraManager {
     // Active camera node will notify the manager when it's being despawned.
     friend class CameraNode;
-
-    // Renderer notifies to change framebuffer size.
-    friend class Renderer;
 
 public:
     /** Groups information about the active camera. */
@@ -99,13 +94,6 @@ public:
     std::optional<MouseCursorWorldPosResult> convertViewportPosToWorld(const glm::vec2& viewportPos);
 
     /**
-     * Returns settings for post processing of the rendered image.
-     *
-     * @return Settings.
-     */
-    PostProcessManager& getPostProcessManager() const;
-
-    /**
      * Returns the currently active camera.
      *
      * @warning Don't change pointers to cameras in returned object, only copy pointers or modify
@@ -118,33 +106,13 @@ public:
      */
     std::pair<std::recursive_mutex, ActiveCameraInfo>& getActiveCamera();
 
-    /**
-     * Returns framebuffer to draw meshes.
-     *
-     * @return Framebuffer.
-     */
-    Framebuffer& getMainFramebuffer() const;
-
 private:
-    /**
-     * Should be called after window's size changed.
-     *
-     * @param pWindow Window.
-     */
-    void onWindowSizeChanged(Window* pWindow);
-
     /**
      * Called by an active camera node when it's being despawned.
      *
      * @param pCameraNode Camera node that's being despawned.
      */
     void onCameraNodeDespawning(CameraNode* pCameraNode);
-
-    /** Framebuffer for rendering. */
-    std::unique_ptr<Framebuffer> pMainFramebuffer;
-
-    /** Settings for post processing of the rendered image. */
-    std::unique_ptr<PostProcessManager> pPostProcessManager;
 
     /** Active camera. */
     std::pair<std::recursive_mutex, ActiveCameraInfo> mtxActiveCamera;

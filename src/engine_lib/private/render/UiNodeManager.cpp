@@ -892,10 +892,8 @@ UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRe
     }
 }
 
-void UiNodeManager::drawUiOnFramebuffer(unsigned int iDrawFramebufferId) {
+void UiNodeManager::drawUiOnActiveFramebuffer() {
     PROFILE_FUNC;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, iDrawFramebufferId);
 
     std::scoped_lock guard(mtxData.first);
 

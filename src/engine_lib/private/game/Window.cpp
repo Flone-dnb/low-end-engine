@@ -67,8 +67,10 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderP
         iWindowHeight = static_cast<int>(params.iWindowHeight);
     }
 
-    // We don't need depth buffer for window's framebuffer (we have a depth buffer in our custom framebuffer).
+#if defined(ENGINE_UI_ONLY)
+    // Don't need depth buffer.
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+#endif
 
     // Create SDL window.
     SDL_PropertiesID props{SDL_CreateProperties()};

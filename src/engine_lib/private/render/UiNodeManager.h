@@ -44,12 +44,8 @@ public:
     UiNodeManager() = delete;
     ~UiNodeManager();
 
-    /**
-     * Renders the UI on the specified framebuffer.
-     *
-     * @param iDrawFramebufferId Framebuffer to draw to.
-     */
-    void drawUiOnFramebuffer(unsigned int iDrawFramebufferId);
+    /** Renders the UI on the currently active framebuffer. */
+    void drawUiOnActiveFramebuffer();
 
     /**
      * Registers a new item to be rendered.

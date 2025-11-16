@@ -29,7 +29,6 @@
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
-#include "render/PostProcessManager.h"
 #include "game/physics/PhysicsManager.h"
 #include "render/LightSourceManager.h"
 #include "EditorResourcePaths.hpp"
@@ -333,7 +332,7 @@ void EditorGameInstance::onWindowSizeChanged() {
     if (gameWorldNodes.pViewportCamera == nullptr) {
         return;
     }
-    gpuPickingData.recreateNodeIdTexture(gameWorldNodes.pViewportCamera, false);
+    recreateNodeIdTextureWithNewSize();
     gpuPickingData.bLeftMouseButtonReleased = true;
     if (gameWorldNodes.pGizmoNode != nullptr) {
         gameWorldNodes.pGizmoNode->stopTrackingMouseMovement();
@@ -358,9 +357,6 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands() {
         return;
     }
 
-    auto& framebuffer =
-        gameWorldNodes.pViewportCamera->getWorldWhileSpawned()->getCameraManager().getMainFramebuffer();
-
     gpuPickingData.bMouseClickedThisTick = false;
 
     const auto pEditorWorld = editorWorldNodes.pRoot->getWorldWhileSpawned();
@@ -376,7 +372,8 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands() {
 
     GL_CHECK_ERROR(glUseProgram(gpuPickingData.pPickingProgram->getShaderProgramId()));
 
-    const auto [iFramebufferWidth, iFramebufferHeight] = framebuffer.getSize();
+    // Because we render to window's framebuffer:
+    const auto [iFramebufferWidth, iFramebufferHeight] = getWindow()->getWindowSize();
 
     // Self checks:
     if (gpuPickingData.pNodeIdTexture == nullptr) [[unlikely]] {
@@ -672,7 +669,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pViewportCamera->getCameraProperties()->setViewport(
         glm::vec4(pos.x, pos.y, size.x, size.y));
 
-    gpuPickingData.recreateNodeIdTexture(gameWorldNodes.pViewportCamera, true);
+    recreateNodeIdTextureWithNewSize();
 
     // Stats.
     gameWorldNodes.pStatsText = pRootNode->addChildNode(
@@ -694,12 +691,11 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     });
 }
 
-void EditorGameInstance::GpuPickingData::recreateNodeIdTexture(
-    CameraNode* pViewportCamera, bool bIsCameraRecreated) {
-    const auto [iFramebufferWidth, iFramebufferHeight] =
-        pViewportCamera->getWorldWhileSpawned()->getCameraManager().getMainFramebuffer().getSize();
+void EditorGameInstance::recreateNodeIdTextureWithNewSize() {
+    // Because we render to window's framebuffer.
+    const auto [iFramebufferWidth, iFramebufferHeight] = getWindow()->getWindowSize();
 
-    pNodeIdTexture =
+    gpuPickingData.pNodeIdTexture =
         GpuResourceManager::createStorageTexture(iFramebufferWidth, iFramebufferHeight, GL_R32UI);
 }
 

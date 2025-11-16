@@ -224,14 +224,6 @@ private:
         GpuPickingData() = default;
         ~GpuPickingData();
 
-        /**
-         * Recreates @ref pNodeIdTexture with the size of the main framebuffer.
-         *
-         * @param pViewportCamera Viewport camera.
-         * @param bIsCameraRecreated Specify `true` if the camera node was (re)created just now.
-         */
-        void recreateNodeIdTexture(CameraNode* pViewportCamera, bool bIsCameraRecreated);
-
         /** Compute shader used to check node ID value under the mouse cursor. */
         std::shared_ptr<ShaderProgram> pPickingProgram;
 
@@ -270,6 +262,9 @@ private:
      * @param pRootNode Root node of game's node tree.
      */
     void onAfterGameWorldCreated(Node* pRootNode);
+
+    /** Recreates node ID texture for GPU picking. */
+    void recreateNodeIdTextureWithNewSize();
 
     /**
      * Updates FPS and other stats.

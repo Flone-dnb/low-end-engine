@@ -144,18 +144,15 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
             drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
             drawText(std::format(
                 "CPU time (ms) to submit a frame: {:.1F} | meshes: {:.1F} | ui: {:.1F} | debug drawer: "
-                "{:.1F} | other: {:.1F}",
+                "{:.1F}",
                 stats.cpuTimeToSubmitFrameMs,
                 stats.cpuTimeToSubmitMeshesMs,
                 stats.cpuTimeToSubmitUiMs,
-                stats.cpuTimeToSubmitDebugDrawMs,
-                stats.cpuTimeToSubmitFrameMs - (stats.cpuTimeToSubmitMeshesMs + stats.cpuTimeToSubmitUiMs +
-                                                stats.cpuTimeToSubmitDebugDrawMs)));
+                stats.cpuTimeToSubmitDebugDrawMs));
             if (stats.gpuTimeDrawMeshesMs < 0.0F) {
                 drawText("GPU time metrics are not supported on this GPU");
             } else {
                 drawText(std::format("GPU time (ms) draw meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
-                drawText(std::format("GPU time (ms) post processing: {:.1F}", stats.gpuTimePostProcessingMs));
                 drawText(std::format("GPU time (ms) draw ui: {:.1F}", stats.gpuTimeDrawUiMs));
                 drawText(std::format("GPU time (ms) debug drawer: {:.1F}", stats.gpuTimeDrawDebug));
             }
