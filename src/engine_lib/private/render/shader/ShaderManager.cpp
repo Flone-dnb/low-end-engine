@@ -63,11 +63,6 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 
     // Define some macros.
     std::vector<std::string_view> vDefinedMacros;
-    if (shaderType == GL_VERTEX_SHADER) {
-        vDefinedMacros.push_back("VERTEX_SHADER");
-    } else if (shaderType == GL_FRAGMENT_SHADER) {
-        vDefinedMacros.push_back("FRAGMENT_SHADER");
-    }
 #if defined(ENGINE_EDITOR)
     vDefinedMacros.push_back("ENGINE_EDITOR");
 #endif

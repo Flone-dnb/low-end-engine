@@ -50,6 +50,10 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
     info.iDirectionalLightsUniformBlockBindingIndex =
         pShaderProgram->getShaderUniformBlockBindingIndex("DirectionalLights");
 
+    info.iDistanceFogColorUniform = pShaderProgram->getShaderUniformLocation("distanceFogColor");
+    info.iDistanceFogRangeUniform = pShaderProgram->getShaderUniformLocation("distanceFogRange");
+
+    info.iViewMatrixUniform = pShaderProgram->getShaderUniformLocation("viewMatrix");
     info.iViewProjectionMatrixUniform = pShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
 
 #if defined(ENGINE_EDITOR)
@@ -484,6 +488,7 @@ MeshRenderDataGuard MeshRenderer::getMeshRenderData(MeshRenderingHandle& handle)
 
 void MeshRenderer::drawMeshes(
     Renderer* pRenderer,
+    const glm::mat4& viewMatrix,
     const glm::mat4& viewProjectionMatrix,
     const Frustum& cameraFrustum,
     LightSourceManager& lightSourceManager) {
@@ -512,8 +517,10 @@ void MeshRenderer::drawMeshes(
     glBindTexture(GL_TEXTURE_2D, 0);
 
     drawMeshes(
+        pRenderer,
         data.vOpaqueShaders,
         data,
+        viewMatrix,
         viewProjectionMatrix,
         cameraFrustum,
         ambientLightColor,
@@ -526,8 +533,10 @@ void MeshRenderer::drawMeshes(
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         {
             drawMeshes(
+                pRenderer,
                 data.vTransparentShaders,
                 data,
+                viewMatrix,
                 viewProjectionMatrix,
                 cameraFrustum,
                 ambientLightColor,
@@ -540,8 +549,10 @@ void MeshRenderer::drawMeshes(
 }
 
 void MeshRenderer::drawMeshes(
+    Renderer* pRenderer,
     const std::vector<RenderData::ShaderInfo>& vShaders,
     const RenderData& data,
+    const glm::mat4& viewMatrix,
     const glm::mat4& viewProjectionMatrix,
     const Frustum& cameraFrustum,
     const glm::vec3& ambientLightColor,
@@ -554,6 +565,8 @@ void MeshRenderer::drawMeshes(
     auto& debugStats = DebugConsole::getStats();
 #endif
 
+    const auto& optDistanceFog = pRenderer->getDistanceFogSettings();
+
     for (const auto& shaderInfo : vShaders) {
         PROFILE_SCOPE("render mesh nodes of shader program")
         PROFILE_ADD_SCOPE_TEXT(
@@ -564,6 +577,7 @@ void MeshRenderer::drawMeshes(
         shaderConstantsSetter.setConstantsToShader(shaderInfo.pShaderProgram);
 
         // Set camera uniforms.
+        glUniformMatrix4fv(shaderInfo.iViewMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewMatrix));
         glUniformMatrix4fv(
             shaderInfo.iViewProjectionMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
 
@@ -596,6 +610,15 @@ void MeshRenderer::drawMeshes(
             GL_UNIFORM_BUFFER,
             shaderInfo.iDirectionalLightsUniformBlockBindingIndex,
             directionalLightData.pUniformBufferObject->getBufferId());
+
+        // Distance fog.
+        glm::vec2 distanceFogRange = glm::vec2(-1.0F, -1.0F); // <- means disabled
+        if (optDistanceFog.has_value()) {
+            distanceFogRange = optDistanceFog->getFogRange();
+            glm::vec3 color = optDistanceFog->getColor();
+            glUniform3fv(shaderInfo.iDistanceFogColorUniform, 1, glm::value_ptr(color));
+        }
+        glUniform2fv(shaderInfo.iDistanceFogRangeUniform, 1, glm::value_ptr(distanceFogRange));
 
         // Submit meshes.
         for (unsigned short iMeshDataIndex = shaderInfo.iFirstMeshIndex;

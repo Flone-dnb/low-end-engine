@@ -16,20 +16,15 @@
 std::recursive_mutex GpuResourceManager::mtx{};
 
 std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
-    unsigned int iPositionCount,
     bool bIsVertexDataDynamic,
     const std::vector<glm::vec3>& vVertexPositions,
     const std::vector<unsigned short>& vIndices) {
-    if (iPositionCount == 0) [[unlikely]] {
-        Error::showErrorAndThrowException("invalid position count specified");
+    if (vVertexPositions.empty()) [[unlikely]] {
+        Error::showErrorAndThrowException("you must specify at least 1 position");
     }
     if (vVertexPositions.empty() && !bIsVertexDataDynamic) [[unlikely]] {
         Error::showErrorAndThrowException(
             "initial data must be specified because vertex data is not marked as dynamic");
-    }
-    if (vVertexPositions.size() != iPositionCount) [[unlikely]] {
-        Error::showErrorAndThrowException(
-            "the specified position count does not match the provided vertex position count");
     }
 
     std::scoped_lock guard(mtx);
@@ -77,8 +72,8 @@ std::unique_ptr<VertexArrayObject> GpuResourceManager::createVertexArrayObject(
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    return std::unique_ptr<VertexArrayObject>(
-        new VertexArrayObject(iVao, iVbo, iPositionCount, optionalEbo, optionalIndexCount));
+    return std::unique_ptr<VertexArrayObject>(new VertexArrayObject(
+        iVao, iVbo, static_cast<unsigned int>(vVertexPositions.size()), optionalEbo, optionalIndexCount));
 }
 
 std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createScreenQuad(

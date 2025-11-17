@@ -128,7 +128,7 @@ void DebugDrawer::drawMesh(
     }
 
     auto pMeshVao =
-        GpuResourceManager::createVertexArrayObject(static_cast<unsigned int>(vEdges.size()), false, vEdges);
+        GpuResourceManager::createVertexArrayObject(false, vEdges);
 
     get().vMeshesToDraw.push_back(Mesh{
         .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pMeshVao)});
@@ -144,7 +144,7 @@ void DebugDrawer::drawLines(
     }
 
     auto pLinesVao =
-        GpuResourceManager::createVertexArrayObject(static_cast<unsigned int>(vLines.size()), false, vLines);
+        GpuResourceManager::createVertexArrayObject(false, vLines);
 
     get().vMeshesToDraw.push_back(Mesh{
         .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pLinesVao)});

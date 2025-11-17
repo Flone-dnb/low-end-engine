@@ -162,6 +162,10 @@ public:
             unsigned int iSpotlightsUniformBlockBindingIndex = 0;
             unsigned int iDirectionalLightsUniformBlockBindingIndex = 0;
 
+            int iDistanceFogColorUniform = 0;
+            int iDistanceFogRangeUniform = 0;
+
+            int iViewMatrixUniform = 0;
             int iViewProjectionMatrixUniform = 0;
 
 #if defined(ENGINE_EDITOR)
@@ -205,12 +209,14 @@ public:
      * on the currently set framebuffer.
      *
      * @param pRenderer            Renderer.
+     * @param viewMatrix           Camera's view matrix.
      * @param viewProjectionMatrix Camera's view projection matrix.
      * @param cameraFrustum        Camera's frustum.
      * @param lightSourceManager   Light source manager.
      */
     void drawMeshes(
         Renderer* pRenderer,
+        const glm::mat4& viewMatrix,
         const glm::mat4& viewProjectionMatrix,
         const Frustum& cameraFrustum,
         LightSourceManager& lightSourceManager);
@@ -266,8 +272,10 @@ private:
     /**
      * Queues OpenGL draw commands to draw the specified meshes on the currently set framebuffer.
      *
+     * @param pRenderer            Renderer.
      * @param vShaders             Shaders to draw.
      * @param data                 Render data.
+     * @param viewMatrix           View matrix.
      * @param viewProjectionMatrix Camera's view projection matrix.
      * @param cameraFrustum        Camera's frustum.
      * @param ambientLightColor    Ambient light color.
@@ -276,8 +284,10 @@ private:
      * @param directionalLightData Light array data.
      */
     void drawMeshes(
+        Renderer* pRenderer,
         const std::vector<RenderData::ShaderInfo>& vShaders,
         const RenderData& data,
+        const glm::mat4& viewMatrix,
         const glm::mat4& viewProjectionMatrix,
         const Frustum& cameraFrustum,
         const glm::vec3& ambientLightColor,

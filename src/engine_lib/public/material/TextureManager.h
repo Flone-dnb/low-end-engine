@@ -85,6 +85,8 @@ public:
      * already loaded just returns a new handle).
      *
      * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
+     * If the usage is set to "cubemap" the path should point to a directory that stores textures
+     * with the names "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png".
      * @param usage                     Describes how the texture is going to be used.
      *
      * @return Error if something went wrong, otherwise RAII-style object that tells the manager to not

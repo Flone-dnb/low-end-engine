@@ -26,7 +26,6 @@
 #include "game/DebugConsole.h"
 #include "render/wrapper/Buffer.h"
 #include "render/wrapper/ShaderProgram.h"
-#include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
 #include "game/physics/PhysicsManager.h"

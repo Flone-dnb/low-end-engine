@@ -70,6 +70,11 @@ std::variant<std::unique_ptr<Window>, Error> Window::create(const WindowBuilderP
 #if defined(ENGINE_UI_ONLY)
     // Don't need depth buffer.
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+#else
+    if (!SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24)) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("failed to set depth buffer size, error: {}", SDL_GetError()));
+    }
 #endif
 
     // Create SDL window.

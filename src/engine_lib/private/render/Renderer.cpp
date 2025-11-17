@@ -2,7 +2,6 @@
 
 // Custom.
 #include "game/Window.h"
-#include "render/wrapper/ShaderProgram.h"
 #include "game/camera/CameraManager.h"
 #include "game/node/CameraNode.h"
 #include "render/FontManager.h"
@@ -11,7 +10,11 @@
 #include "render/GpuResourceManager.h"
 #include "material/TextureManager.h"
 #include "render/DebugDrawer.h"
+#include "render/ShaderManager.h"
 #include "game/DebugConsole.h"
+#include "material/TextureHandle.h"
+#include "render/wrapper/ShaderProgram.h"
+#include "render/wrapper/VertexArrayObject.h"
 
 // External.
 #include "glad/glad.h"
@@ -49,6 +52,22 @@ public:
 #else
 #define MEASURE_GPU_TIME_SCOPED(iGlQuery)
 #endif
+
+void DistanceFogSettings::setFogRange(const glm::vec2& range) {
+    fogRange.x = std::max(range.x, 0.0F);
+    fogRange.y = std::max(range.y, fogRange.x);
+}
+
+void DistanceFogSettings::setColor(const glm::vec3& color) { this->color = color; }
+
+void DistanceFogSettings::setFogHeightOnSky(float fogHeight) {
+    fogHeightOnSky = std::clamp(fogHeight, 0.0F, 1.0F);
+}
+
+SkyboxSettings::SkyboxSettings() {}
+SkyboxSettings::~SkyboxSettings() {}
+Renderer::SkyboxData::SkyboxData() {}
+Renderer::SkyboxData::~SkyboxData() {}
 
 std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow) {
     // Create context.
@@ -101,6 +120,27 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 
     pFullscreenQuad = GpuResourceManager::createScreenQuad();
 
+    const std::vector<glm::vec3> vSkyboxVertices = {
+        glm::vec3(-1.0f, 1.0f, -1.0f),  glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, -1.0f, -1.0f),
+        glm::vec3(1.0f, -1.0f, -1.0f),  glm::vec3(1.0f, 1.0f, -1.0f),   glm::vec3(-1.0f, 1.0f, -1.0f),
+
+        glm::vec3(-1.0f, -1.0f, 1.0f),  glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(-1.0f, 1.0f, -1.0f),
+        glm::vec3(-1.0f, 1.0f, -1.0f),  glm::vec3(-1.0f, 1.0f, 1.0f),   glm::vec3(-1.0f, -1.0f, 1.0f),
+
+        glm::vec3(1.0f, -1.0f, -1.0f),  glm::vec3(1.0f, -1.0f, 1.0f),   glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),    glm::vec3(1.0f, 1.0f, -1.0f),   glm::vec3(1.0f, -1.0f, -1.0f),
+
+        glm::vec3(-1.0f, -1.0f, 1.0f),  glm::vec3(-1.0f, 1.0f, 1.0f),   glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),    glm::vec3(1.0f, -1.0f, 1.0f),   glm::vec3(-1.0f, -1.0f, 1.0f),
+
+        glm::vec3(-1.0f, 1.0f, -1.0f),  glm::vec3(1.0f, 1.0f, -1.0f),   glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),    glm::vec3(-1.0f, 1.0f, 1.0f),   glm::vec3(-1.0f, 1.0f, -1.0f),
+
+        glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(-1.0f, -1.0f, 1.0f),  glm::vec3(1.0f, -1.0f, -1.0f),
+        glm::vec3(1.0f, -1.0f, -1.0f),  glm::vec3(-1.0f, -1.0f, 1.0f),  glm::vec3(1.0f, -1.0f, 1.0f),
+    };
+    skyboxData.pCubeVao = GpuResourceManager::createVertexArrayObject(false, vSkyboxVertices);
+
     // Initialize fences.
     for (auto& fence : frameSyncData.vFences) {
         fence = GL_CHECK_ERROR(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
@@ -124,6 +164,11 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
                 MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
             }
 
+            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
+            {
+                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawSkybox);
+            }
+
             GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
             {
                 MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
@@ -144,12 +189,15 @@ Renderer::~Renderer() {
     if (bIsGpuTimeElapsedExtSupported) {
         for (auto& frameQueries : frameSyncData.vFrameQueries) {
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
+            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
             GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
         }
     }
 #endif
 
+    skyboxData.pCubeVao = nullptr;
+    skyboxData.pShaderProgram = nullptr;
     pFullscreenQuad = nullptr;
     pFontManager = nullptr;
 
@@ -205,6 +253,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         };
         auto& stats = DebugConsole::getStats();
         stats.gpuTimeDrawMeshesMs = getQueryTimeMs(frameQueries.iGlQueryToDrawMeshes);
+        stats.gpuTimeDrawSkyboxMs = getQueryTimeMs(frameQueries.iGlQueryToDrawSkybox);
         stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
         stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
     }
@@ -239,6 +288,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         CameraNode* pCameraNode = nullptr;
         glm::ivec4 viewportSize;
         glm::mat4 viewProjectionMatrix;
+        glm::mat4 viewMatrix;
     };
     std::vector<std::pair<std::recursive_mutex*, WorldRenderInfo>> vActiveCameras;
     vActiveCameras.reserve(2);
@@ -273,12 +323,28 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                  .pCameraNode = mtxActiveCamera.second.pNode,
                  .viewportSize = glm::ivec4(iViewportX, iViewportLeftBottom, iViewportWidth, iViewportHeight),
                  .viewProjectionMatrix =
-                     pCameraProperties->getProjectionMatrix() * pCameraProperties->getViewMatrix()}});
+                     pCameraProperties->getProjectionMatrix() * pCameraProperties->getViewMatrix(),
+                 .viewMatrix = pCameraProperties->getViewMatrix()}});
     }
 
     const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
 
     if (!vActiveCameras.empty()) {
+        // Prepare game world info.
+        WorldRenderInfo* pGameWorldRenderInfo = nullptr;
+#if defined(ENGINE_EDITOR)
+        // Find game world. In the editor debug drawing should only be done for game world.
+        for (auto& cameraInfo : vActiveCameras) {
+            if (cameraInfo.second.pWorld->getName() == "game") {
+                pGameWorldRenderInfo = &cameraInfo.second;
+                break;
+            }
+        }
+#else
+        // In the game just use the first camera.
+        pGameWorldRenderInfo = &vActiveCameras[0].second;
+#endif
+
         // Rendering to window's framebuffer.
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -307,6 +373,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
                 pWorld->getMeshRenderer().drawMeshes(
                     this,
+                    mtxActiveCamera.second.viewMatrix,
                     mtxActiveCamera.second.viewProjectionMatrix,
                     frustum,
                     pWorld->getLightSourceManager());
@@ -320,6 +387,50 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Notify game instance.
         pGameInstance->onFinishedSubmittingMeshDrawCommands();
+
+        // Draw skybox.
+        if (skyboxData.optSettings.has_value() && pGameWorldRenderInfo != nullptr) {
+            if (skyboxData.pShaderProgram == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("expected skybox shader program to be valid");
+            }
+
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawSkybox);
+
+            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_FALSE);
+
+            glUseProgram(skyboxData.pShaderProgram->getShaderProgramId());
+            glBindVertexArray(skyboxData.pCubeVao->getVertexArrayObjectId());
+
+            // Cubemap uniform.
+            const auto bIsSkyboxSet = skyboxData.optSettings->pOptSkyboxCubemap != nullptr;
+            if (skyboxData.iIsSkyboxCubemapSetUniform != -1) {
+                glUniform1i(skyboxData.iIsSkyboxCubemapSetUniform, static_cast<int>(bIsSkyboxSet));
+            }
+            if (bIsSkyboxSet) {
+                glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxData.optSettings->pOptSkyboxCubemap->getTextureId());
+            }
+
+            // View projection matrix uniform.
+            glUniformMatrix4fv(
+                skyboxData.iViewProjectionMatrixUniform,
+                1,
+                GL_FALSE,
+                glm::value_ptr(pGameWorldRenderInfo->viewProjectionMatrix));
+
+            // Distance fog uniforms.
+            glUniform1f(skyboxData.iFogHeightOnSkyUniform, -1.0F);
+            if (optDistanceFogSettings.has_value()) {
+                glUniform1f(skyboxData.iFogHeightOnSkyUniform, optDistanceFogSettings->getFogHeightOnSky());
+                const auto color = optDistanceFogSettings->getColor();
+                glUniform3fv(skyboxData.iFogColorUniform, 1, glm::value_ptr(color));
+            }
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            glDepthMask(GL_TRUE);
+            glDepthFunc(iCurrentGlDepthFunc);
+        }
 
         // Draw UI.
         {
@@ -343,26 +454,13 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         }
 
 #if defined(ENGINE_DEBUG_TOOLS)
-        // Draw debug after all worlds.
-        WorldRenderInfo* pDebugWorldRenderInfo = nullptr;
-#if defined(ENGINE_EDITOR)
-        // Find game world. In the editor debug drawing should only be done for game world.
-        for (auto& cameraInfo : vActiveCameras) {
-            if (cameraInfo.second.pWorld->getName() == "game") {
-                pDebugWorldRenderInfo = &cameraInfo.second;
-                break;
-            }
-        }
-#else
-        // In the game just use the first camera.
-        pDebugWorldRenderInfo = &vActiveCameras[0].second;
-#endif
-        if (pDebugWorldRenderInfo != nullptr) {
+        if (pGameWorldRenderInfo != nullptr) {
+            // Draw debug after all worlds.
             const auto cpuSubmitDebugStartCounter = SDL_GetPerformanceCounter();
 
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
             DebugDrawer::get().drawDebugObjects(
-                this, pDebugWorldRenderInfo->viewProjectionMatrix, timeSincePrevCallInSec);
+                this, pGameWorldRenderInfo->viewProjectionMatrix, timeSincePrevCallInSec);
 
             DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs =
                 static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0F /
@@ -493,12 +591,29 @@ void Renderer::setFpsLimit(unsigned int iNewFpsLimit) {
         data.optionalTargetTimeToRenderFrameInNs = {};
         data.iFpsLimit = 0;
     } else {
-        data.optionalTargetTimeToRenderFrameInNs = 1000000000.0 / static_cast<double>(iNewFpsLimit); // NOLINT
+        data.optionalTargetTimeToRenderFrameInNs = 1000000000.0 / static_cast<double>(iNewFpsLimit);
         data.iFpsLimit = iNewFpsLimit;
 
 #if defined(WIN32)
         data.iMinTimeStampsPerSecond = data.iTimeStampsPerSecond / iNewFpsLimit;
 #endif
+    }
+}
+
+void Renderer::setSkybox(std::optional<SkyboxSettings> newSkyboxSettings) {
+    skyboxData.optSettings = std::move(*newSkyboxSettings);
+
+    if (skyboxData.optSettings.has_value()) {
+        skyboxData.pShaderProgram = pShaderManager->getShaderProgram(
+            "engine/shaders/skybox/skybox.vert.glsl", skyboxData.optSettings->sRelativePathToFragmentShader);
+
+        skyboxData.iViewProjectionMatrixUniform =
+            skyboxData.pShaderProgram->getShaderUniformLocation("viewProjectionMatrix");
+        skyboxData.iIsSkyboxCubemapSetUniform =
+            skyboxData.pShaderProgram->tryGetShaderUniformLocation("bIsSkyboxCubemapSet");
+        skyboxData.iFogColorUniform = skyboxData.pShaderProgram->getShaderUniformLocation("fogColor");
+        skyboxData.iFogHeightOnSkyUniform =
+            skyboxData.pShaderProgram->getShaderUniformLocation("fogHeightOnSky");
     }
 }
 

@@ -153,6 +153,7 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
                 drawText("GPU time metrics are not supported on this GPU");
             } else {
                 drawText(std::format("GPU time (ms) draw meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
+                drawText(std::format("GPU time (ms) draw skybox: {:.1F}", stats.gpuTimeDrawSkyboxMs));
                 drawText(std::format("GPU time (ms) draw ui: {:.1F}", stats.gpuTimeDrawUiMs));
                 drawText(std::format("GPU time (ms) debug drawer: {:.1F}", stats.gpuTimeDrawDebug));
             }

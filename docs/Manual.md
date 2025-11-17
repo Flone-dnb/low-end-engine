@@ -282,6 +282,56 @@ void GameInstance::loadSublevel(const std::filesystem::path& pathToNodeTree) {
 
 `PointLightNode`, `SpotlightNode` and `DirectionalLightNode` provide lighting. On top of that you can configure ambient light color using the light source manager: `getWorldWhileSpawned()->getLightSourceManager().setAmbientLightColor(color)`.
 
+## Skybox
+
+In order display a cubemap or draw a procedural sky you must set skybox settings.
+
+If you want to display a skybox then you need to import 6 textures "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png" into a single directory (using the editor) then load them and set the skybox settings:
+
+```Cpp
+#include "render/Renderer.h"
+#include "material/TextureManager.h"
+
+// Load 6 textures from a directory.
+auto result = getRenderer()->getTextureManager().getTexture("game/skybox_textures", TextureUsage::CUBEMAP);
+if (std::holds_alternative<Error>(result)) [[unlikely]] {
+    TODO; // handle error
+}
+
+// Set skybox.
+SkyboxSettings settings;
+settings.pOptSkyboxCubemap = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
+getRenderer()->setSkybox(std::move(settings));
+```
+
+If you want to display a simple procedural skybox then just specify default skybox settings:
+
+```Cpp
+Renderer::SkyboxSettings settings;
+getRenderer()->setSkybox(std::move(settings));
+```
+
+If you want to display a procedural skybox using your custom shader you need to create a new fragment shader (you can copy-paste the default skybox shader from "res/engine/shaders" and use it as a starting point):
+
+```Cpp
+Renderer::SkyboxSettings settings;
+settings.sRelativePathToFragmentShader = "game/shaders/skybox.frag.glsl" // <- relative to the "res" directory
+getRenderer()->setSkybox(std::move(settings));
+```
+
+## Distance fog
+
+Distance fog can be configured using the following code:
+
+```Cpp
+DistanceFogSettings settings;
+// TODO: configure `settings` here if needed
+getRenderer()->setDistanceFogSettings(settings);
+
+// in case you don't want to render things which are fully covered by the fog:
+pCameraNode->getCameraProperties()->setFarClipPlaneDistance(settings.getFogRange().y);
+```
+
 ## Handling user input
 
 ### Input events

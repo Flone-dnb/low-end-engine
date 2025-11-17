@@ -3,9 +3,10 @@
 // Standard.
 #include <memory>
 #include <variant>
+#include <optional>
+#include <array>
 
 // Custom.
-#include "render/ShaderManager.h"
 #include "misc/Error.h"
 #include "render/RenderStatistics.h"
 #include "math/GLMath.hpp"
@@ -21,6 +22,89 @@ class TextureManager;
 class CameraProperties;
 class ScreenQuadGeometry;
 class Framebuffer;
+class ShaderManager;
+class TextureHandle;
+class ShaderProgram;
+class VertexArrayObject;
+
+/** Settings for skybox. */
+struct SkyboxSettings {
+    SkyboxSettings();
+    ~SkyboxSettings();
+
+    SkyboxSettings(SkyboxSettings&&) noexcept = default;
+    SkyboxSettings& operator=(SkyboxSettings&&) noexcept = default;
+
+    /** Path (relative to the `res` directory) to the fragment shader. */
+    std::string sRelativePathToFragmentShader = "engine/shaders/skybox/skybox.frag.glsl";
+
+    /**
+     * If `nullptr` (not specified) then a procedural skybox will be used (from the shader code),
+     * otherwise a cubemap to use as a skybox.
+     */
+    std::unique_ptr<TextureHandle> pOptSkyboxCubemap;
+};
+
+/** Tint color for rendered image based on distance from camera. */
+class DistanceFogSettings {
+public:
+    /**
+     * Sets start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera.
+     *
+     * @param range Start and end positions.
+     */
+    void setFogRange(const glm::vec2& range);
+
+    /**
+     * Sets color of the fog.
+     *
+     * @param color RGB color.
+     */
+    void setColor(const glm::vec3& color);
+
+    /**
+     * When skybox is enabled defines how much of height (including the sky) the fog covers.
+     * Value in range [0.0; 1.0].
+     *
+     * @param fogHeight Fog height.
+     */
+    void setFogHeightOnSky(float fogHeight);
+
+    /**
+     * Returns start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera.
+     *
+     * @return Fog start and end positions.
+     */
+    glm::vec2 getFogRange() const { return fogRange; }
+
+    /**
+     * Returns color of the fog.
+     *
+     * @return RGB color.
+     */
+    glm::vec3 getColor() const { return color; }
+
+    /**
+     * When skybox is enabled defines how much of height (including the sky) the fog covers.
+     * Value in range [0.0; 1.0].
+     *
+     * @return Fog height.
+     */
+    float getFogHeightOnSky() const { return fogHeightOnSky; }
+
+private:
+    /** Color of the fog. */
+    glm::vec3 color = glm::vec3(1.0F, 1.0F, 1.0F);
+
+    /** Start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera. */
+    glm::vec2 fogRange = glm::vec2(0.0F, 50.0F);
+
+    /**
+     * When skybox is enabled defines how much of height (including the sky) the fog covers.
+     * Value in range [0.0; 1.0].
+     */
+    float fogHeightOnSky = 0.25F;
+};
 
 /** OpenGL ES renderer. */
 class Renderer {
@@ -41,6 +125,22 @@ public:
     void setFpsLimit(unsigned int iNewFpsLimit);
 
     /**
+     * Enables or disables the skybox.
+     *
+     * @param newSkyboxSettings Specify empty to disable, otherwise skybox settings.
+     */
+    void setSkybox(std::optional<SkyboxSettings> newSkyboxSettings);
+
+    /**
+     * Sets distance fog settings.
+     *
+     * @param settings Specify empty to disable distance fog.
+     */
+    void setDistanceFogSettings(const std::optional<DistanceFogSettings>& settings) {
+        optDistanceFogSettings = settings;
+    }
+
+    /**
      * Returns the maximum number of FPS that is allowed to be produced in a second.
      *
      * @return 0 if disabled.
@@ -53,6 +153,15 @@ public:
      * @return Depth func.
      */
     unsigned int getCurrentGlDepthFunc() const { return iCurrentGlDepthFunc; }
+
+    /**
+     * Returns settings for distance fog.
+     *
+     * @return Empty if disabled.
+     */
+    const std::optional<DistanceFogSettings>& getDistanceFogSettings() const {
+        return optDistanceFogSettings;
+    }
 
     /**
      * Returns game's window.
@@ -104,6 +213,9 @@ private:
             /** GL query ID for measuring GPU time that we spent drawing meshes. */
             unsigned int iGlQueryToDrawMeshes = 0;
 
+            /** GL query ID for measuring GPU time that we spent drawing skybox. */
+            unsigned int iGlQueryToDrawSkybox = 0;
+
             /** GL query ID for measuring GPU time that we spent drawing UI. */
             unsigned int iGlQueryToDrawUi = 0;
 
@@ -118,6 +230,33 @@ private:
 
         /** Current index into @ref vFences. */
         unsigned int iCurrentFrameIndex = 0;
+    };
+
+    /** Groups data related to skybox. */
+    struct SkyboxData {
+        SkyboxData();
+        ~SkyboxData();
+
+        /** Not empty if skybox is used. */
+        std::optional<SkyboxSettings> optSettings;
+
+        /** Shader program for rendering skybox. */
+        std::shared_ptr<ShaderProgram> pShaderProgram;
+
+        /** VAO for skybox rendering. */
+        std::unique_ptr<VertexArrayObject> pCubeVao;
+
+        /** Location of the uniform variable. */
+        int iViewProjectionMatrixUniform = 0;
+
+        /** Location of the uniform variable. */
+        int iIsSkyboxCubemapSetUniform = -1;
+
+        /** Location of the uniform variable. */
+        int iFogHeightOnSkyUniform = 0;
+
+        /** Location of the uniform variable. */
+        int iFogColorUniform = 0;
     };
 
     /**
@@ -169,6 +308,12 @@ private:
 
     /** Fullscreen quad for rendering. */
     std::unique_ptr<ScreenQuadGeometry> pFullscreenQuad;
+
+    /** Empty if disabled. */
+    std::optional<DistanceFogSettings> optDistanceFogSettings;
+
+    /** Skybox-related data. */
+    SkyboxData skyboxData;
 
     /** Various statistics about rendering. */
     RenderStatistics renderStats;

@@ -1,11 +1,18 @@
 #include "../Light.glsl"
 
-#include "../vertex_format/MeshNodeVertexFormat.glsl"
+in vec3 fragmentPosition;
+in vec3 fragmentNormal;
+in vec2 fragmentUv;
+in vec3 viewSpacePosition;
 
 uniform vec4 diffuseColor;
 
 uniform sampler2D diffuseTexture;
 uniform vec2 textureTilingMultiplier; // stores -1 if diffuseTexture is not set
+
+// Distance fog settings.
+uniform vec3 distanceFogColor;
+uniform vec2 distanceFogRange; // -1 if distance fog disabled
 
 #ifdef ENGINE_EDITOR
     // Used for GPU picking.
@@ -18,7 +25,6 @@ out vec4 color;
 #ifndef DISABLE_EARLY_Z
     layout(early_fragment_tests) in;
 #endif
-
 void main() {
     #ifdef ENGINE_EDITOR
         imageStore(nodeIdTexture, ivec2(gl_FragCoord.xy), uvec4(iNodeId, 0u, 0u, 0u));
@@ -36,6 +42,12 @@ void main() {
 
     // Light.
     vec3 lightColor = calculateColorFromLights(fragmentPosition, fragmentNormalUnit, fragmentDiffuseColor.rgb);
+
+    // Distance fog.
+    if (distanceFogRange.x >= 0.0F) {
+        float fogPortion = smoothstep(distanceFogRange.x, distanceFogRange.y, length(viewSpacePosition));
+        lightColor = mix(lightColor, distanceFogColor, fogPortion);
+    }
 
     // Define this macro before including this file to add custom logic in a simple way:
     #ifdef CUSTOM_CODE

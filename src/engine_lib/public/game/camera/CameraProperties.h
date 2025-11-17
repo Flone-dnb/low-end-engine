@@ -37,13 +37,13 @@ public:
             OrbitalModeData();
 
             /** Radial distance or distance from camera to target point (look target). */
-            float distanceToTarget = 10.0F; // NOLINT: magic number
+            float distanceToTarget = 10.0F;
 
             /** Polar angle (in degrees). */
-            float theta = 0.0F; // NOLINT: magic number
+            float theta = 0.0F;
 
             /** Azimuthal angle (in degrees). */
-            float phi = 0.0F; // NOLINT: magic number
+            float phi = 0.0F;
         };
 
         /** Stores data used for view matrix. */
@@ -95,19 +95,19 @@ public:
             bool bLightGridFrustumsNeedUpdate = true;
 
             /** Distance from camera (view) space origin to camera's near clip plane. */
-            float nearClipPlaneDistance = 0.2F; // NOLINT
+            float nearClipPlaneDistance = 0.2F;
 
             /** Distance to camera's far clip plane. */
-            float farClipPlaneDistance = 300.0F; // NOLINT
+            float farClipPlaneDistance = 250.0F;
 
             /** Vertical field of view. */
-            unsigned int iVerticalFov = 90; // NOLINT
+            unsigned int iVerticalFov = 90;
 
             /** Width of the buffer we are rendering the image to. */
-            unsigned int iRenderTargetWidth = 800; // NOLINT: default value, will be changed at runtime
+            unsigned int iRenderTargetWidth = 800; // default value, will be changed at runtime
 
             /** Height of the buffer we are rendering the image to. */
-            unsigned int iRenderTargetHeight = 600; // NOLINT: default value, will be changed at runtime
+            unsigned int iRenderTargetHeight = 600; // default value, will be changed at runtime
 
             /** Height of camera's near clip plane. */
             float nearClipPlaneHeight = 0.0F;

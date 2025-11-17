@@ -7,12 +7,14 @@ layout (location = 4) in vec4 boneWeights;
 out vec3 fragmentPosition;
 out vec3 fragmentNormal;
 out vec2 fragmentUv;
+out vec3 viewSpacePosition;
 
 // same as in C++ code
 #define MAX_BONE_COUNT_ALLOWED 64
 
 uniform mat4 worldMatrix;
 uniform mat3 normalMatrix;
+uniform mat4 viewMatrix;
 uniform mat4 viewProjectionMatrix;
 uniform mat4 vSkinningMatrices[MAX_BONE_COUNT_ALLOWED];
 
@@ -37,6 +39,8 @@ void main() {
     // Calculate world position.
     vec4 posWorldSpace = worldMatrix * vec4(posModelSpace, 1.0F);
     gl_Position = viewProjectionMatrix * posWorldSpace;
+
+    viewSpacePosition = (viewMatrix * posWorldSpace).xyz;
 
     // Set output parameters.
     fragmentPosition = posWorldSpace.xyz;

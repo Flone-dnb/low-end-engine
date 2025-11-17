@@ -229,93 +229,182 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
 
     std::scoped_lock guard(mtxLoadedTextures.first, GpuResourceManager::mtx);
 
-    // Construct full path to the texture.
-    auto pathToTexture =
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
-
-    // Make sure it's a file.
-    if (!std::filesystem::exists(pathToTexture)) [[unlikely]] {
-        return Error(std::format("expected the path \"{}\" to exist", pathToTexture.string()));
-    }
-    if (std::filesystem::is_directory(pathToTexture)) [[unlikely]] {
-        return Error(std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
-    }
-
-    const auto sPathToTexture = pathToTexture.string();
-    const auto iGlFormat = GL_RGBA;
+    const auto iGlFormat = GL_RGBA; // same as during the import
     const auto iGlInternalFormat = iGlFormat;
 
-    uint32_t iWidth = 0;
-    uint32_t iHeight = 0;
-    uint32_t iChannelCount = 0;
-    std::vector<uint8_t> vPixels;
-    const auto iImageLoadResult =
-        fpng::fpng_decode_file(sPathToTexture.c_str(), vPixels, iWidth, iHeight, iChannelCount, 4);
-    if (iImageLoadResult != fpng::FPNG_DECODE_SUCCESS) [[unlikely]] {
-        if (iImageLoadResult == fpng::FPNG_DECODE_NOT_FPNG) {
+    if (usage != TextureUsage::CUBEMAP) {
+        // Construct full path to the texture.
+        auto pathToTexture =
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
+
+        // Make sure it's a file.
+        if (!std::filesystem::exists(pathToTexture)) [[unlikely]] {
+            return Error(std::format("expected the path \"{}\" to exist", pathToTexture.string()));
+        }
+        if (std::filesystem::is_directory(pathToTexture)) [[unlikely]] {
+            return Error(std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
+        }
+
+        const auto sPathToTexture = pathToTexture.string();
+
+        uint32_t iWidth = 0;
+        uint32_t iHeight = 0;
+        uint32_t iChannelCount = 0;
+        std::vector<uint8_t> vPixels;
+        const auto iImageLoadResult =
+            fpng::fpng_decode_file(sPathToTexture.c_str(), vPixels, iWidth, iHeight, iChannelCount, 4);
+        if (iImageLoadResult != fpng::FPNG_DECODE_SUCCESS) [[unlikely]] {
+            if (iImageLoadResult == fpng::FPNG_DECODE_NOT_FPNG) {
+                return Error(std::format(
+                    "failed to load the image \"{}\" because it was not imported using the engine's texture "
+                    "importer",
+                    sPathToTexture));
+            }
             return Error(std::format(
-                "failed to load the image \"{}\" because it was not imported using the engine's texture "
-                "importer",
-                sPathToTexture));
-        }
-        return Error(std::format(
-            "an error occurred while loading the image \"{}\", error code: {}",
-            sPathToTexture,
-            iImageLoadResult));
-    }
-
-    // Create a new texture object.
-    unsigned int iTextureId = 0;
-    GL_CHECK_ERROR(glGenTextures(1, &iTextureId));
-
-    glBindTexture(GL_TEXTURE_2D, iTextureId);
-    {
-        // Copy pixels to the GPU resource.
-        GL_CHECK_ERROR(glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            iGlInternalFormat,
-            iWidth,
-            iHeight,
-            0,
-            iGlFormat,
-            GL_UNSIGNED_BYTE,
-            vPixels.data()));
-
-        if (usage == TextureUsage::DIFFUSE) {
-            GL_CHECK_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
+                "an error occurred while loading the image \"{}\", error code: {}",
+                sPathToTexture,
+                iImageLoadResult));
         }
 
-        // Set texture wrapping.
-        GL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+        // Create a new texture object.
+        unsigned int iTextureId = 0;
+        GL_CHECK_ERROR(glGenTextures(1, &iTextureId));
+
+        glBindTexture(GL_TEXTURE_2D, iTextureId);
+        {
+            // Copy pixels to the GPU resource.
+            GL_CHECK_ERROR(glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                iGlInternalFormat,
+                iWidth,
+                iHeight,
+                0,
+                iGlFormat,
+                GL_UNSIGNED_BYTE,
+                vPixels.data()));
+
+            if (usage == TextureUsage::DIFFUSE) {
+                GL_CHECK_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
+            }
+
+            // Set texture wrapping.
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+            // Set texture filtering.
+            if (bIsUsingPointFiltering) {
+                if (usage == TextureUsage::DIFFUSE) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+                } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                }
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            } else {
+                if (usage == TextureUsage::DIFFUSE) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                }
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+        }
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Add new resource to be considered.
+        TextureResource resourceInfo;
+        resourceInfo.iActiveTextureHandleCount = 0; // 0 because `createNewTextureHandle` will increment it
+        resourceInfo.iTextureId = iTextureId;
+        resourceInfo.usage = usage;
+        mtxLoadedTextures.second[sPathToTextureRelativeRes] = resourceInfo;
+    } else {
+        // Stores 6 textures.
+        auto pathToTexDir =
+            ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
+
+        if (!std::filesystem::exists(pathToTexDir)) [[unlikely]] {
+            return Error(std::format("expected the path \"{}\" to exist", pathToTexDir.string()));
+        }
+        if (!std::filesystem::is_directory(pathToTexDir)) [[unlikely]] {
+            return Error(std::format(
+                "expected the path \"{}\" to point to a directory that stores 6 textures for the cubemap",
+                pathToTexDir.string()));
+        }
+
+        const std::array<std::string_view, 6> vFilenames = {
+            "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png"};
+
+        unsigned int iCubemapId = 0;
+        glGenTextures(1, &iCubemapId);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, iCubemapId);
+
+        for (size_t i = 0; i < vFilenames.size(); i++) {
+            const auto sFilename = vFilenames[i];
+            const auto pathToTex = pathToTexDir / sFilename;
+            if (!std::filesystem::exists(pathToTex)) [[unlikely]] {
+                return Error(std::format(
+                    "in the directory \"{}\" expected to find 6 textures for the cubemap, texture file with "
+                    "the name \"{}\" is missing",
+                    pathToTexDir.filename().string(),
+                    sFilename));
+            }
+
+            // Load image.
+            uint32_t iWidth = 0;
+            uint32_t iHeight = 0;
+            uint32_t iChannelCount = 0;
+            std::vector<uint8_t> vPixels;
+            const auto iImageLoadResult = fpng::fpng_decode_file(
+                pathToTex.string().c_str(), vPixels, iWidth, iHeight, iChannelCount, 4);
+            if (iImageLoadResult != fpng::FPNG_DECODE_SUCCESS) [[unlikely]] {
+                if (iImageLoadResult == fpng::FPNG_DECODE_NOT_FPNG) {
+                    return Error(std::format(
+                        "failed to load the image \"{}\" because it was not imported using the engine's "
+                        "texture "
+                        "importer",
+                        pathToTex.string()));
+                }
+                return Error(std::format(
+                    "an error occurred while loading the image \"{}\", error code: {}",
+                    pathToTex.string(),
+                    iImageLoadResult));
+            }
+
+            // Copy pixels to the GPU resource.
+            GL_CHECK_ERROR(glTexImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X + static_cast<int>(i),
+                0,
+                iGlInternalFormat,
+                iWidth,
+                iHeight,
+                0,
+                iGlFormat,
+                GL_UNSIGNED_BYTE,
+                vPixels.data()));
+        }
 
         // Set texture filtering.
         if (bIsUsingPointFiltering) {
-            if (usage == TextureUsage::DIFFUSE) {
-                GL_CHECK_ERROR(
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR));
-            } else {
-                GL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-            }
-            GL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         } else {
-            if (usage == TextureUsage::DIFFUSE) {
-                GL_CHECK_ERROR(
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
-            } else {
-                GL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-            }
-            GL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
-    }
-    glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Add new resource to be considered.
-    TextureResource resourceInfo;
-    resourceInfo.iActiveTextureHandleCount = 0; // 0 because `createNewTextureHandle` will increment it
-    resourceInfo.iTextureId = iTextureId;
-    resourceInfo.usage = usage;
-    mtxLoadedTextures.second[sPathToTextureRelativeRes] = resourceInfo;
+        // Set texture wrapping.
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+        // Add new resource to be considered.
+        TextureResource resourceInfo;
+        resourceInfo.iActiveTextureHandleCount = 0; // 0 because `createNewTextureHandle` will increment it
+        resourceInfo.iTextureId = iCubemapId;
+        resourceInfo.usage = usage;
+        mtxLoadedTextures.second[sPathToTextureRelativeRes] = resourceInfo;
+    }
 
     return createNewHandleForLoadedTexture(sPathToTextureRelativeRes, usage);
 }

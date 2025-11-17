@@ -57,6 +57,9 @@ public:
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawMeshesMs = -1.0F;
 
+        /** Time in milliseconds spent on the GPU drawing skybox. */
+        float gpuTimeDrawSkyboxMs = -1.0F;
+
         /** Time in milliseconds spent on the GPU drawing UI. */
         float gpuTimeDrawUiMs = -1.0F;
 
