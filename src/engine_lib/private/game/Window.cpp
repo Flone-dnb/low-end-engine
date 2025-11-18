@@ -8,6 +8,10 @@
 #include <Windows.h>
 #endif
 
+#if defined(__aarch64__) || defined(__ARM64__)
+#define IS_ARM64
+#endif
+
 WindowBuilder& WindowBuilder::size(unsigned int iWidth, unsigned int iHeight) {
     params.iWindowWidth = iWidth;
     params.iWindowHeight = iHeight;
@@ -307,10 +311,23 @@ unsigned int Window::getScreenRefreshRate() {
 
 void Window::onKeyboardInput(
     KeyboardButton key, KeyboardModifiers modifiers, bool bIsPressedDown, bool bIsRepeat) const {
+#if defined(IS_ARM64)
+    if (pConnectedGamepad != nullptr) {
+        // In some cases while using retro-handhelds (they have built in gamepad) gamepad buttons trigger
+        // keyboard input before the actual gamepad button input.
+        return;
+    }
+#endif
     pGameManager->onKeyboardInput(key, modifiers, bIsPressedDown, bIsRepeat);
 }
 
 void Window::onKeyboardInputTextCharacter(const std::string& sTextCharacter) {
+#if defined(IS_ARM64)
+    if (pConnectedGamepad != nullptr) {
+        // Same reason as in onKeyboardInput.
+        return;
+    }
+#endif
     pGameManager->onKeyboardInputTextCharacter(sTextCharacter);
 }
 
