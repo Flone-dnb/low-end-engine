@@ -36,7 +36,7 @@ struct alignas(hardware_constructive_interference_size) MeshRenderData {
     glm::vec2 textureTilingMultiplier;
     unsigned int iDiffuseTextureId = 0; // 0 if not used
 
-    AABB aabb;
+    AABB aabbWorld;
     unsigned int iVertexArrayObject = 0;
     int iIndexCount = 0;
 

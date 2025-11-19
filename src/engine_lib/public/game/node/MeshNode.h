@@ -229,6 +229,9 @@ private:
     /** Mesh geometry. */
     MeshNodeGeometry meshGeometry;
 
+    /** AABB in model space. */
+    AABB aabbLocal;
+
     /** Material. */
     Material material;
 

@@ -245,7 +245,8 @@ void MeshNode::updateRenderData(bool bJustRegistered) {
     auto& data = renderDataGuard.getData();
 
     if (bJustRegistered) {
-        data.aabb = calculateBoundingBoxFromGeometry();
+        aabbLocal = calculateBoundingBoxFromGeometry();
+        data.aabbWorld = aabbLocal.convertToWorldSpace(getWorldMatrix());
     }
 
     data.worldMatrix = getWorldMatrix();
@@ -341,4 +342,5 @@ void MeshNode::onWorldLocationRotationScaleChanged() {
 
     data.worldMatrix = getWorldMatrix();
     data.normalMatrix = glm::transpose(glm::inverse(data.worldMatrix));
+    data.aabbWorld = aabbLocal.convertToWorldSpace(getWorldMatrix());
 }

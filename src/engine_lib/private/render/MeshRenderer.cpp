@@ -628,7 +628,7 @@ void MeshRenderer::drawMeshes(
 
             // Frustum culling (don't cull skeletal meshes due to animations).
             if (shaderInfo.iSkinningMatricesUniform == -1 &&
-                !cameraFrustum.isAabbInFrustum(meshData.aabb, meshData.worldMatrix)) {
+                !cameraFrustum.isAabbInFrustum(meshData.aabbWorld)) {
                 continue;
             }
 
