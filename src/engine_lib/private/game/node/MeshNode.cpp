@@ -22,7 +22,7 @@ std::string MeshNode::getTypeGuid() const { return sTypeGuid.data(); }
 TypeReflectionInfo MeshNode::getReflectionInfo() {
     ReflectedVariables variables;
 
-    variables.bools["isVisible"] = ReflectedVariableInfo<bool>{
+    variables.bools[NAMEOF_MEMBER(&MeshNode::bIsVisible).data()] = ReflectedVariableInfo<bool>{
         .setter = [](Serializable* pThis,
                      const bool& bNewValue) { reinterpret_cast<MeshNode*>(pThis)->setIsVisible(bNewValue); },
         .getter = [](Serializable* pThis) -> bool {

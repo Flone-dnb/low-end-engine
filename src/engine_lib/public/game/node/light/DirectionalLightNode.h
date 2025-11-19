@@ -58,9 +58,9 @@ public:
     /**
      * Sets whether this light source will be included in the rendering or not.
      *
-     * @param bIsVisible New visibility.
+     * @param bNewVisible New visibility.
      */
-    void setIsVisible(bool bIsVisible);
+    void setIsVisible(bool bNewVisible);
 
     /**
      * Sets light's color.
@@ -81,21 +81,21 @@ public:
      *
      * @return Color in RGB format in range [0.0; 1.0].
      */
-    glm::vec3 getLightColor();
+    glm::vec3 getLightColor() const { return shaderProperties.colorAndIntensity; }
 
     /**
      * Returns intensity of this light source.
      *
      * @return Intensity in range [0.0; 1.0].
      */
-    float getLightIntensity();
+    float getLightIntensity() const { return shaderProperties.colorAndIntensity.w; }
 
     /**
      * `true` if this light source is included in the rendering, `false` otherwise.
      *
      * @return Visibility.
      */
-    bool isVisible();
+    bool isVisible() const { return bIsVisible; }
 
 protected:
     /**
@@ -136,20 +136,18 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
-    /** Mutex-guarded data. */
-    struct Properties {
-        Properties();
+    /** If possible creates rendering resources. */
+    void addToRendering();
 
-        /** Data to copy to shaders. */
-        ShaderProperties shaderProperties;
+    /** If possible removes rendering resources. */
+    void removeFromRendering();
 
-        /** Not `nullptr` if being rendered. */
-        std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
+    /** Data to copy to shaders. */
+    ShaderProperties shaderProperties;
 
-        /** Enabled for rendering or not. */
-        bool bIsVisible = true;
-    };
+    /** Not `nullptr` if being rendered. */
+    std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
 
-    /** Light properties. */
-    std::pair<std::mutex, Properties> mtxProperties;
+    /** Enabled for rendering or not. */
+    bool bIsVisible = true;
 };

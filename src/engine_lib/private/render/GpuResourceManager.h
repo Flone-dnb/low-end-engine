@@ -77,7 +77,7 @@ public:
      *
      * @param iWidth         Width of the textures.
      * @param iHeight        Height of the textures.
-     * @param iColorGlFormat GL format of the color texture in the framebuffer.
+     * @param iColorGlFormat Specify 0 to create a framebuffer without color. GL format of the color texture in the framebuffer.
      * @param iDepthGlFormat Specify 0 to create a framebuffer without depth. Otherwise GL format of the
      * depth/stencil buffer in the framebuffer.
      *

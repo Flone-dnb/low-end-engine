@@ -8,6 +8,6 @@ sNodeName = "Torus"
 relativeRotation = [0.0, 0.0, 0.0]
 materialOpacity = 1.0
 relativeScale = [1.0, 1.0, 1.0]
-isVisible = true
+bIsVisible = true
 materialTransparencyEnabled = false
 

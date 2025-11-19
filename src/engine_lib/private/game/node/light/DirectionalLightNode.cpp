@@ -37,6 +37,15 @@ TypeReflectionInfo DirectionalLightNode::getReflectionInfo() {
             return reinterpret_cast<DirectionalLightNode*>(pThis)->getLightIntensity();
         }};
 
+    variables.bools[NAMEOF_MEMBER(&DirectionalLightNode::bIsVisible).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<DirectionalLightNode*>(pThis)->setIsVisible(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<DirectionalLightNode*>(pThis)->isVisible();
+        }};
+
     return TypeReflectionInfo(
         SpatialNode::getTypeGuidStatic(),
         NAMEOF_SHORT_TYPE(DirectionalLightNode).data(),
@@ -45,112 +54,84 @@ TypeReflectionInfo DirectionalLightNode::getReflectionInfo() {
 }
 
 DirectionalLightNode::DirectionalLightNode() : DirectionalLightNode("Directional Light Node") {}
-
 DirectionalLightNode::DirectionalLightNode(const std::string& sNodeName) : SpatialNode(sNodeName) {}
+
+void DirectionalLightNode::addToRendering() {
+    if (!isSpawned()) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("expected the node \"{}\" to be spawned", getNodeName()));
+    }
+
+    if (!bIsVisible) {
+        return;
+    }
+
+    auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
+
+    pActiveLightHandle =
+        lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(this, &shaderProperties);
+}
+
+void DirectionalLightNode::removeFromRendering() { pActiveLightHandle = nullptr; }
 
 void DirectionalLightNode::onSpawning() {
     SpatialNode::onSpawning();
 
-    std::scoped_lock guard(mtxProperties.first);
-
     // Set up to date parameters.
-    mtxProperties.second.shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
 
-    if (mtxProperties.second.bIsVisible) {
-        // Add to rendering.
-        auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
-        mtxProperties.second.pActiveLightHandle =
-            lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(
-                this, &mtxProperties.second.shaderProperties);
-    }
+    addToRendering();
 }
 
 void DirectionalLightNode::onDespawning() {
     SpatialNode::onDespawning();
 
-    std::scoped_lock guard(mtxProperties.first);
-
-    if (mtxProperties.second.bIsVisible) {
-        // Remove from rendering.
-        mtxProperties.second.pActiveLightHandle = nullptr;
-    }
+    removeFromRendering();
 }
 
-void DirectionalLightNode::setIsVisible(bool bIsVisible) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    if (mtxProperties.second.bIsVisible == bIsVisible) {
+void DirectionalLightNode::setIsVisible(bool bNewVisible) {
+    if (bIsVisible == bNewVisible) {
         return;
     }
-    mtxProperties.second.bIsVisible = bIsVisible;
+    bIsVisible = bNewVisible;
 
     if (isSpawned()) {
-        if (mtxProperties.second.bIsVisible) {
-            // Add to rendering.
-            auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
-            mtxProperties.second.pActiveLightHandle =
-                lightSourceManager.getDirectionalLightsArray().addLightSourceToRendering(
-                    this, &mtxProperties.second.shaderProperties);
+        if (bIsVisible) {
+            addToRendering();
         } else {
-            // Remove from rendering.
-            mtxProperties.second.pActiveLightHandle = nullptr;
+            removeFromRendering();
         }
     }
 }
 
-glm::vec3 DirectionalLightNode::getLightColor() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.shaderProperties.colorAndIntensity;
-}
-
-float DirectionalLightNode::getLightIntensity() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.shaderProperties.colorAndIntensity.w;
-}
-
-bool DirectionalLightNode::isVisible() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.bIsVisible;
-}
-
 void DirectionalLightNode::setLightIntensity(float intensity) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    mtxProperties.second.shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
+    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
 void DirectionalLightNode::setLightColor(const glm::vec3& color) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    mtxProperties.second.shaderProperties.colorAndIntensity =
-        glm::vec4(color, mtxProperties.second.shaderProperties.colorAndIntensity.w);
+    shaderProperties.colorAndIntensity = glm::vec4(color, shaderProperties.colorAndIntensity.w);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
 void DirectionalLightNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-    std::scoped_lock guard(mtxProperties.first);
-
     // Update direction for shaders.
-    mtxProperties.second.shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
-// `default` constructor in .cpp file - this is a fix for a gcc bug:
-// error: default member initializer for required before the end of its enclosing class
 DirectionalLightNode::ShaderProperties::ShaderProperties() = default;
-DirectionalLightNode::Properties::Properties() = default;

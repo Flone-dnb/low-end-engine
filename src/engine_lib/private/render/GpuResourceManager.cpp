@@ -284,19 +284,23 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
 
     // Create a framebuffer and textures.
     glGenFramebuffers(1, &iFramebufferId);
-    glGenTextures(1, &iColorTextureId);
+    if (iColorGlFormat != 0) {
+        glGenTextures(1, &iColorTextureId);
+    }
     if (iDepthGlFormat != 0) {
         glGenTextures(1, &iDepthStencilBufferId);
     }
 
     // Bind them to the target to update them.
     glBindFramebuffer(GL_FRAMEBUFFER, iFramebufferId);
-    glBindTexture(GL_TEXTURE_2D, iColorTextureId);
     {
-        // Configure and attach color texture to the framebuffer.
-        GL_CHECK_ERROR(glTexStorage2D(GL_TEXTURE_2D, 1, iColorGlFormat, iWidth, iHeight));
-        GL_CHECK_ERROR(glFramebufferTexture2D(
-            GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, iColorTextureId, 0));
+        if (iColorGlFormat != 0) {
+            glBindTexture(GL_TEXTURE_2D, iColorTextureId);
+
+            GL_CHECK_ERROR(glTexStorage2D(GL_TEXTURE_2D, 1, iColorGlFormat, iWidth, iHeight));
+            GL_CHECK_ERROR(glFramebufferTexture2D(
+                GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, iColorTextureId, 0));
+        }
 
         if (iDepthGlFormat != 0) {
             glBindTexture(GL_TEXTURE_2D, iDepthStencilBufferId);
@@ -335,11 +339,16 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
                 glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, iDepthStencilBufferId, 0));
         }
 
-        // Specify color texture to draw into.
-        const std::array<GLenum, 1> vAttachments = {GL_COLOR_ATTACHMENT0};
-        GL_CHECK_ERROR(glDrawBuffers(static_cast<int>(vAttachments.size()), vAttachments.data()));
+        if (iColorGlFormat != 0) {
+            // Specify color texture to draw to.
+            const std::array<GLenum, 1> vAttachments = {GL_COLOR_ATTACHMENT0};
+            GL_CHECK_ERROR(glDrawBuffers(static_cast<int>(vAttachments.size()), vAttachments.data()));
+        } else {
+            GL_CHECK_ERROR(glDrawBuffers(GL_NONE, nullptr));
+            GL_CHECK_ERROR(glReadBuffer(GL_NONE));
+        }
 
-        // Make sure framebuffer is complete.
+        // Make sure the framebuffer is complete.
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) [[unlikely]] {
             Error::showErrorAndThrowException("render framebuffer is not complete");
         }
