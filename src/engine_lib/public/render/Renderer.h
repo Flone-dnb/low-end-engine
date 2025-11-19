@@ -32,7 +32,9 @@ struct SkyboxSettings {
     SkyboxSettings();
     ~SkyboxSettings();
 
+    /** Copy constructor. */
     SkyboxSettings(SkyboxSettings&&) noexcept = default;
+    /** Copy assignment. @return this. */
     SkyboxSettings& operator=(SkyboxSettings&&) noexcept = default;
 
     /** Path (relative to the `res` directory) to the fragment shader. */
