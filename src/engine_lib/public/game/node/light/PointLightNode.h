@@ -21,7 +21,10 @@ public:
             glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
         /** Lit distance. */
-        alignas(ShaderAlignmentConstants::iScalar) float distance = 15.0F; // NOLINT: good default value
+        alignas(ShaderAlignmentConstants::iScalar) float distance = 15.0F;
+
+        /** Padding to 16 bytes. */
+        float pad[3];
     };
 
     PointLightNode();
@@ -61,9 +64,9 @@ public:
     /**
      * Sets whether this light source will be included in the rendering or not.
      *
-     * @param bIsVisible New visibility.
+     * @param bNewVisible New visibility.
      */
-    void setIsVisible(bool bIsVisible);
+    void setIsVisible(bool bNewVisible);
 
     /**
      * Sets light's color.
@@ -91,28 +94,28 @@ public:
      *
      * @return Color in RGB format in range [0.0; 1.0].
      */
-    glm::vec3 getLightColor();
+    glm::vec3 getLightColor() const { return shaderProperties.colorAndIntensity; }
 
     /**
      * Returns intensity of this light source.
      *
      * @return Intensity in range [0.0; 1.0].
      */
-    float getLightIntensity();
+    float getLightIntensity() const { return shaderProperties.colorAndIntensity.w; }
 
     /**
      * Returns lit distance.
      *
      * @return Distance.
      */
-    float getLightDistance();
+    float getLightDistance() const { return shaderProperties.distance; }
 
     /**
      * `true` if this light source is included in the rendering, `false` otherwise.
      *
      * @return Visibility.
      */
-    bool isVisible();
+    bool isVisible() const { return bIsVisible; }
 
 protected:
     /**
@@ -152,20 +155,12 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
-    /** Mutex-guarded data. */
-    struct Properties {
-        Properties();
+    /** Data to copy to shaders. */
+    ShaderProperties shaderProperties;
 
-        /** Data to copy to shaders. */
-        ShaderProperties shaderProperties;
+    /** Not `nullptr` if being rendered. */
+    std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
 
-        /** Not `nullptr` if being rendered. */
-        std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
-
-        /** Enabled for rendering or not. */
-        bool bIsVisible = true;
-    };
-
-    /** Light properties. */
-    std::pair<std::mutex, Properties> mtxProperties;
+    /** Enabled for rendering or not. */
+    bool bIsVisible = true;
 };

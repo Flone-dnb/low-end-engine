@@ -24,7 +24,7 @@ public:
             glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
         /** Lit distance. */
-        alignas(ShaderAlignmentConstants::iScalar) float distance = 10.0F; // NOLINT: good default value
+        alignas(ShaderAlignmentConstants::iScalar) float distance = 10.0F;
 
         /**
          * Cosine of the spotlight's inner cone angle (cutoff).
@@ -41,6 +41,9 @@ public:
          * (not both sides), i.e. this is a cosine of value [0-90] degrees.
          */
         alignas(ShaderAlignmentConstants::iScalar) float cosOuterConeAngle = 0.0F;
+
+        /** Padding to 16 bytes. */
+        float pad;
     };
 
     SpotlightNode();
@@ -82,14 +85,14 @@ public:
      *
      * @return Maximum cone angle (in degrees).
      */
-    static constexpr float getMaxLightConeAngle() { return Properties::maxConeAngle; }
+    static constexpr float getMaxLightConeAngle() { return maxConeAngle; }
 
     /**
      * Sets whether this light source will be included in the rendering or not.
      *
-     * @param bIsVisible New visibility.
+     * @param bNewVisible New visibility.
      */
-    void setIsVisible(bool bIsVisible);
+    void setIsVisible(bool bNewVisible);
 
     /**
      * Sets light's color.
@@ -116,61 +119,61 @@ public:
      * Sets angle of spotlight's inner cone (cone that will have hard light edges),
      * see @ref setLightOuterConeAngle for configuring soft light edges.
      *
-     * @param innerConeAngle Angle in degrees in range [0.0; @ref getMaxLightConeAngle] (will be clamped
+     * @param inInnerConeAngle Angle in degrees in range [0.0; @ref getMaxLightConeAngle] (will be clamped
      * if outside of the range).
      */
-    void setLightInnerConeAngle(float innerConeAngle);
+    void setLightInnerConeAngle(float inInnerConeAngle);
 
     /**
      * Sets angle of spotlight's inner cone (cone that will have hard light edges),
      * see @ref setLightOuterConeAngle for configuring soft light edges.
      *
-     * @param outerConeAngle Angle in degrees in range [@ref getLightInnerConeAngle; @ref
+     * @param inOuterConeAngle Angle in degrees in range [@ref getLightInnerConeAngle; @ref
      * getMaxLightConeAngle] (will be clamped if outside of the range).
      */
-    void setLightOuterConeAngle(float outerConeAngle);
+    void setLightOuterConeAngle(float inOuterConeAngle);
 
     /**
      * Returns color of this light source.
      *
      * @return Color in RGB format in range [0.0; 1.0].
      */
-    glm::vec3 getLightColor();
+    glm::vec3 getLightColor() const { return shaderProperties.colorAndIntensity; }
 
     /**
      * Returns intensity of this light source.
      *
      * @return Intensity in range [0.0; 1.0].
      */
-    float getLightIntensity();
+    float getLightIntensity() const { return shaderProperties.colorAndIntensity.w; }
 
     /**
      * Returns lit distance.
      *
      * @return Distance.
      */
-    float getLightDistance();
+    float getLightDistance() const { return shaderProperties.distance; }
 
     /**
      * Returns light cutoff angle of the inner cone (hard light edge).
      *
      * @return Angle in degrees in range [0.0; @ref getMaxLightConeAngle].
      */
-    float getLightInnerConeAngle();
+    float getLightInnerConeAngle() const { return innerConeAngle; }
 
     /**
      * Returns light cutoff angle of the outer cone (soft light edge).
      *
      * @return Angle in degrees in range [@ref getLightInnerConeAngle; @ref getMaxLightConeAngle].
      */
-    float getLightOuterConeAngle();
+    float getLightOuterConeAngle() const { return outerConeAngle; }
 
     /**
      * `true` if this light source is included in the rendering, `false` otherwise.
      *
      * @return Visibility.
      */
-    bool isVisible();
+    bool isVisible() const { return bIsVisible; }
 
 protected:
     /**
@@ -210,35 +213,27 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
-    /** Mutex-guarded data. */
-    struct Properties {
-        Properties();
+    /** Data to copy to shaders. */
+    ShaderProperties shaderProperties;
 
-        /** Data to copy to shaders. */
-        ShaderProperties shaderProperties;
+    /** Not `nullptr` if being rendered. */
+    std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
 
-        /** Not `nullptr` if being rendered. */
-        std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
+    /**
+     * Light cutoff angle (in degrees) of the inner cone (hard light edge).
+     * Valid values range is [0.0F, @ref maxConeAngle].
+     */
+    float innerConeAngle = 25.0F;
 
-        /**
-         * Light cutoff angle (in degrees) of the inner cone (hard light edge).
-         * Valid values range is [0.0F, @ref maxConeAngle].
-         */
-        float innerConeAngle = 25.0F;
+    /**
+     * Light cutoff angle (in degrees) of the outer cone (soft light edge).
+     * Valid values range is [@ref innerConeAngle, @ref maxConeAngle].
+     */
+    float outerConeAngle = 45.0F;
 
-        /**
-         * Light cutoff angle (in degrees) of the outer cone (soft light edge).
-         * Valid values range is [@ref innerConeAngle, @ref maxConeAngle].
-         */
-        float outerConeAngle = 45.0F;
+    /** Enabled for rendering or not. */
+    bool bIsVisible = true;
 
-        /** Enabled for rendering or not. */
-        bool bIsVisible = true;
-
-        /** Maximum value for @ref innerConeAngle and @ref outerConeAngle. */
-        static constexpr float maxConeAngle = 80.0F; // NOLINT: max angle that won't cause any visual issues
-    };
-
-    /** Light properties. */
-    std::pair<std::mutex, Properties> mtxProperties;
+    /** Maximum value for @ref innerConeAngle and @ref outerConeAngle. */
+    static constexpr float maxConeAngle = 80.0F; // max angle that won't cause any visual issues
 };

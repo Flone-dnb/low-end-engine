@@ -46,25 +46,32 @@ TypeReflectionInfo SpotlightNode::getReflectionInfo() {
             return reinterpret_cast<SpotlightNode*>(pThis)->getLightDistance();
         }};
 
-    variables.floats[NAMEOF_MEMBER(&SpotlightNode::Properties::innerConeAngle).data()] =
-        ReflectedVariableInfo<float>{
-            .setter =
-                [](Serializable* pThis, const float& newValue) {
-                    reinterpret_cast<SpotlightNode*>(pThis)->setLightInnerConeAngle(newValue);
-                },
-            .getter = [](Serializable* pThis) -> float {
-                return reinterpret_cast<SpotlightNode*>(pThis)->getLightInnerConeAngle();
-            }};
+    variables.floats[NAMEOF_MEMBER(&SpotlightNode::innerConeAngle).data()] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setLightInnerConeAngle(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<SpotlightNode*>(pThis)->getLightInnerConeAngle();
+        }};
 
-    variables.floats[NAMEOF_MEMBER(&SpotlightNode::Properties::outerConeAngle).data()] =
-        ReflectedVariableInfo<float>{
-            .setter =
-                [](Serializable* pThis, const float& newValue) {
-                    reinterpret_cast<SpotlightNode*>(pThis)->setLightOuterConeAngle(newValue);
-                },
-            .getter = [](Serializable* pThis) -> float {
-                return reinterpret_cast<SpotlightNode*>(pThis)->getLightOuterConeAngle();
-            }};
+    variables.floats[NAMEOF_MEMBER(&SpotlightNode::outerConeAngle).data()] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setLightOuterConeAngle(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<SpotlightNode*>(pThis)->getLightOuterConeAngle();
+        }};
+
+    variables.bools[NAMEOF_MEMBER(&SpotlightNode::bIsVisible).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setIsVisible(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<SpotlightNode*>(pThis)->isVisible();
+        }};
 
     return TypeReflectionInfo(
         SpatialNode::getTypeGuidStatic(),
@@ -80,174 +87,111 @@ SpotlightNode::SpotlightNode(const std::string& sNodeName) : SpatialNode(sNodeNa
 void SpotlightNode::onSpawning() {
     SpatialNode::onSpawning();
 
-    std::scoped_lock guard(mtxProperties.first);
+    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.cosInnerConeAngle = glm::cos(glm::radians(innerConeAngle));
+    shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(outerConeAngle));
 
-    // Set up to date parameters.
-    mtxProperties.second.shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
-    mtxProperties.second.shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
-    mtxProperties.second.shaderProperties.cosInnerConeAngle =
-        glm::cos(glm::radians(mtxProperties.second.innerConeAngle));
-    mtxProperties.second.shaderProperties.cosOuterConeAngle =
-        glm::cos(glm::radians(mtxProperties.second.outerConeAngle));
-
-    if (mtxProperties.second.bIsVisible) {
+    if (bIsVisible) {
         // Add to rendering.
         auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
-        mtxProperties.second.pActiveLightHandle =
-            lightSourceManager.getSpotlightsArray().addLightSourceToRendering(
-                this, &mtxProperties.second.shaderProperties);
+        pActiveLightHandle =
+            lightSourceManager.getSpotlightsArray().addLightSourceToRendering(this, &shaderProperties);
     }
 }
 
 void SpotlightNode::onDespawning() {
     SpatialNode::onDespawning();
 
-    std::scoped_lock guard(mtxProperties.first);
-
-    if (mtxProperties.second.bIsVisible) {
-        // Remove from rendering.
-        mtxProperties.second.pActiveLightHandle = nullptr;
-    }
+    // Remove from rendering.
+    pActiveLightHandle = nullptr;
 }
 
-void SpotlightNode::setIsVisible(bool bIsVisible) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    if (mtxProperties.second.bIsVisible == bIsVisible) {
+void SpotlightNode::setIsVisible(bool bNewVisible) {
+    if (bIsVisible == bNewVisible) {
         return;
     }
-    mtxProperties.second.bIsVisible = bIsVisible;
+    bIsVisible = bNewVisible;
 
     if (isSpawned()) {
-        if (mtxProperties.second.bIsVisible) {
+        if (bIsVisible) {
             // Add to rendering.
             auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
-            mtxProperties.second.pActiveLightHandle =
-                lightSourceManager.getSpotlightsArray().addLightSourceToRendering(
-                    this, &mtxProperties.second.shaderProperties);
+            pActiveLightHandle =
+                lightSourceManager.getSpotlightsArray().addLightSourceToRendering(this, &shaderProperties);
         } else {
             // Remove from rendering.
-            mtxProperties.second.pActiveLightHandle = nullptr;
+            pActiveLightHandle = nullptr;
         }
     }
 }
 
 void SpotlightNode::setLightColor(const glm::vec3& color) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    mtxProperties.second.shaderProperties.colorAndIntensity =
-        glm::vec4(color, mtxProperties.second.shaderProperties.colorAndIntensity.w);
+    shaderProperties.colorAndIntensity = glm::vec4(color, shaderProperties.colorAndIntensity.w);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
 void SpotlightNode::setLightIntensity(float intensity) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    mtxProperties.second.shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
+    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
 void SpotlightNode::setLightDistance(float distance) {
-    std::scoped_lock guard(mtxProperties.first);
-
-    // Save new parameter.
-    mtxProperties.second.shaderProperties.distance = glm::max(distance, 0.0F);
+    shaderProperties.distance = glm::max(distance, 0.0F);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
-void SpotlightNode::setLightInnerConeAngle(float innerConeAngle) {
-    std::scoped_lock guard(mtxProperties.first);
-    auto& props = mtxProperties.second;
-
+void SpotlightNode::setLightInnerConeAngle(float inInnerConeAngle) {
     // Save new parameter.
-    props.innerConeAngle = std::clamp(innerConeAngle, 0.0F, Properties::maxConeAngle);
+    innerConeAngle = std::clamp(inInnerConeAngle, 0.0F, maxConeAngle);
 
     // Make sure outer cone is equal or bigger than inner cone.
-    props.outerConeAngle = std::clamp(props.outerConeAngle, props.innerConeAngle, Properties::maxConeAngle);
+    outerConeAngle = std::clamp(outerConeAngle, innerConeAngle, maxConeAngle);
 
     // Calculate cosine for shaders.
-    props.shaderProperties.cosInnerConeAngle = glm::cos(glm::radians(props.innerConeAngle));
-    props.shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(props.outerConeAngle));
+    shaderProperties.cosInnerConeAngle = glm::cos(glm::radians(innerConeAngle));
+    shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(outerConeAngle));
 
     // Update shader data.
-    if (props.pActiveLightHandle != nullptr) {
-        props.pActiveLightHandle->copyNewProperties(&props.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
-void SpotlightNode::setLightOuterConeAngle(float outerConeAngle) {
-    std::scoped_lock guard(mtxProperties.first);
-    auto& props = mtxProperties.second;
-
-    // Save new parameter.
-    props.outerConeAngle = std::clamp(outerConeAngle, props.innerConeAngle, Properties::maxConeAngle);
+void SpotlightNode::setLightOuterConeAngle(float inOuterConeAngle) {
+    outerConeAngle = std::clamp(inOuterConeAngle, innerConeAngle, maxConeAngle);
 
     // Calculate cosine for shaders.
-    props.shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(props.outerConeAngle));
+    shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(outerConeAngle));
 
     // Update shader data.
-    if (props.pActiveLightHandle != nullptr) {
-        props.pActiveLightHandle->copyNewProperties(&props.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
-}
-
-glm::vec3 SpotlightNode::getLightColor() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.shaderProperties.colorAndIntensity;
-}
-
-float SpotlightNode::getLightIntensity() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.shaderProperties.colorAndIntensity.w;
-}
-
-float SpotlightNode::getLightDistance() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.shaderProperties.distance;
 }
 
 void SpotlightNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-    std::scoped_lock guard(mtxProperties.first);
-
-    // Update direction for shaders.
-    mtxProperties.second.shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
-    mtxProperties.second.shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
 
     // Update shader data.
-    if (mtxProperties.second.pActiveLightHandle != nullptr) {
-        mtxProperties.second.pActiveLightHandle->copyNewProperties(&mtxProperties.second.shaderProperties);
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
-float SpotlightNode::getLightInnerConeAngle() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.innerConeAngle;
-}
-float SpotlightNode::getLightOuterConeAngle() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.outerConeAngle;
-}
-
-bool SpotlightNode::isVisible() {
-    std::scoped_lock guard(mtxProperties.first);
-    return mtxProperties.second.bIsVisible;
-}
-
-// `default` constructor in .cpp file - this is a fix for a gcc bug:
-// error: default member initializer for required before the end of its enclosing class
 SpotlightNode::ShaderProperties::ShaderProperties() = default;
-SpotlightNode::Properties::Properties() = default;

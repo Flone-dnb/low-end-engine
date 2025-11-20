@@ -1,6 +1,6 @@
 // Macro values same as in C++ code, IF CHANGING also change in C++ code.
-#define MAX_POINT_LIGHT_COUNT 16
-#define MAX_SPOT_LIGHT_COUNT 16
+#define MAX_POINT_LIGHT_COUNT 12
+#define MAX_SPOT_LIGHT_COUNT 12
 #define MAX_DIRECTIONAL_LIGHT_COUNT 2
 
 uniform vec3 ambientLightColor;
@@ -56,6 +56,8 @@ struct Spotlight {
      * (not both sides), i.e. this is a cosine of value [0-90] degrees.
      */
     float cosOuterConeAngle;
+
+    float pad;
 };
 
 /** Actual number of visible spotlights. */
@@ -79,6 +81,8 @@ struct PointLight {
 
     /** Lit distance. */
     float distance;
+
+    float pad[3];
 };
 
 /** Actual number of visible point lights. */
