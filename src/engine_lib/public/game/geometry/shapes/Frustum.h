@@ -10,6 +10,28 @@
 /** Frustum represented by 6 planes. */
 struct Frustum {
     /**
+     * Creates a new frustum.
+     *
+     * @param cameraPosition        Position of the frustum origin.
+     * @param forwardDirection      Unit vector in the forward direction of the frustum.
+     * @param upDirection           Unit vector in the up direction of the frustum.
+     * @param nearClipPlaneDistance Distance from camera (view) space origin to camera's near clip plane.
+     * @param fapClipPlaneDistance  Distance to camera's far clip plane.
+     * @param verticalFovInRadians  Vertices field of view (in radians).
+     * @param aspectRatio           Aspect ratio (width/height).
+     *
+     * @return Created frustum.
+     */
+    static Frustum create(
+        const glm::vec3& cameraPosition,
+        const glm::vec3& forwardDirection,
+        const glm::vec3& upDirection,
+        float nearClipPlaneDistance,
+        float fapClipPlaneDistance,
+        float verticalFovInRadians,
+        float aspectRatio);
+
+    /**
      * Tests if the specified axis-aligned bounding box is inside of the frustum or intersects it.
      *
      * @param aabb AABB.

@@ -10,6 +10,7 @@
 
 // Custom.
 #include "game/node/NodeTickGroup.hpp"
+#include "render/Renderer.h"
 
 class Node;
 class GameManager;
@@ -72,6 +73,15 @@ class World {
     friend class GameManager;
 
 public:
+    /** GL GPU time queries. */
+    struct FrameQueries {
+        /** GL query ID for measuring GPU time that we spent drawing shadow pass. */
+        unsigned int iGlQueryToDrawShadowPass = 0;
+
+        /** GL query ID for measuring GPU time that we spent drawing meshes. */
+        unsigned int iGlQueryToDrawMeshes = 0;
+    };
+
     ~World();
 
     World(const World&) = delete;
@@ -184,6 +194,13 @@ public:
      */
     std::string_view getName() const { return sName; }
 
+    /**
+     * Returns GPU time queries.
+     *
+     * @return Time queries.
+     */
+    std::array<FrameQueries, iFramesInFlight>& getFrameQueries()  { return vFrameQueries; }
+
 private:
     /** Represents arrays of nodes that are marked as "should be called every frame". */
     struct TickableNodes {
@@ -205,6 +222,9 @@ private:
         /** Nodes of the second tick group. */
         std::unordered_set<Node*> secondTickGroup;
     };
+
+    /** GL queries. */
+    std::array<FrameQueries, iFramesInFlight> vFrameQueries;
 
     /**
      * Called before a new frame is rendered.

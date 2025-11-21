@@ -223,76 +223,24 @@ void CameraProperties::makeSureProjectionMatrixAndClipPlanesAreUpToDate() {
 void CameraProperties::recalculateFrustum() {
     std::scoped_lock guard(mtxData.first);
 
-    // Prepare some variables.
     auto& viewData = mtxData.second.viewData;
     auto& projectionData = mtxData.second.projectionData;
     auto& frustum = mtxData.second.frustum;
     const auto verticalFovInRadians = glm::radians(static_cast<float>(projectionData.iVerticalFov));
-
-    // Precalculate `tan(fov/2)` because we will need it multiple times.
-    // By using the following rule: tan(X) = opposite side / adjacent side
-    // this value gives us: far clip plane half height / z far
-    //                  /|
-    //                 / |
-    //                /  |  <- camera frustum from side view (not top view)
-    //               /   |
-    // camera:   fov ----- zFar
-    //               \   |
-    //                \  |  <- frustum half height
-    //                 \ |
-    //                  \|
-    const auto tanHalfFov = std::tan(0.5F * verticalFovInRadians);
-    const auto farClipPlaneHalfHeight = projectionData.farClipPlaneDistance * tanHalfFov;
-    const auto farClipPlaneHalfWidth =
-        farClipPlaneHalfHeight * (static_cast<float>(projectionData.iRenderTargetWidth) /
-                                  static_cast<float>(projectionData.iRenderTargetHeight));
-
-    // Prepare some camera directions in world space to recalculate frustum.
     const auto cameraWorldForward = glm::normalize(
         mtxData.second.viewData.targetPointWorldLocation - mtxData.second.viewData.worldLocation);
-    const auto cameraWorldRight =
-        glm::normalize(glm::cross(cameraWorldForward, mtxData.second.viewData.worldUpDirection));
-    const auto toFarPlaneRelativeCameraLocation = projectionData.farClipPlaneDistance * cameraWorldForward;
 
-    // Update frustum near face.
-    frustum.nearFace = Plane(
+    frustum = Frustum::create(
+        mtxData.second.viewData.worldLocation,
         cameraWorldForward,
-        viewData.worldLocation + projectionData.nearClipPlaneDistance * cameraWorldForward);
-
-    // Update frustum far face.
-    frustum.farFace = Plane(-cameraWorldForward, viewData.worldLocation + toFarPlaneRelativeCameraLocation);
-
-    // Update frustum right face.
-    frustum.rightFace = Plane(
-        glm::normalize(glm::cross(
-            viewData.worldUpDirection,
-            toFarPlaneRelativeCameraLocation + cameraWorldRight * farClipPlaneHalfWidth)),
-        viewData.worldLocation);
-
-    // Update frustum left face.
-    frustum.leftFace = Plane(
-        glm::normalize(glm::cross(
-            toFarPlaneRelativeCameraLocation - cameraWorldRight * farClipPlaneHalfWidth,
-            viewData.worldUpDirection)),
-        viewData.worldLocation);
-
-    // Update frustum top face.
-    frustum.topFace = Plane(
-        glm::normalize(glm::cross(
-            toFarPlaneRelativeCameraLocation + viewData.worldUpDirection * farClipPlaneHalfHeight,
-            cameraWorldRight)),
-        viewData.worldLocation);
-
-    // Update frustum bottom face.
-    frustum.bottomFace = Plane(
-        glm::normalize(glm::cross(
-            cameraWorldRight,
-            toFarPlaneRelativeCameraLocation - viewData.worldUpDirection * farClipPlaneHalfHeight)),
-        viewData.worldLocation);
+        viewData.worldUpDirection,
+        projectionData.nearClipPlaneDistance,
+        projectionData.farClipPlaneDistance,
+        verticalFovInRadians,
+        static_cast<float>(projectionData.iRenderTargetWidth) /
+            static_cast<float>(projectionData.iRenderTargetHeight));
 }
 
-// `default` constructor in .cpp file - this is a fix for a gcc bug:
-// error: default member initializer for required before the end of its enclosing class
 CameraProperties::Data::Data() = default;
 CameraProperties::Data::OrbitalModeData::OrbitalModeData() = default;
 CameraProperties::Data::ViewData::ViewData() = default;

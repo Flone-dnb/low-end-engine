@@ -7,7 +7,9 @@
 #include "math/GLMath.hpp"
 
 class LightSourceShaderArray;
+class ShaderArrayIndexManager;
 class Node;
+class Texture;
 
 /** Manages active (spawned and visible) light nodes that will be rendered. */
 class LightSourceManager {
@@ -57,6 +59,20 @@ public:
      */
     LightSourceShaderArray& getDirectionalLightsArray() { return *pDirectionalLightsArray; }
 
+    /**
+     * Returns index manager for spotlight shadow maps.
+     *
+     * @return Index manager.
+     */
+    ShaderArrayIndexManager& getSpotShadowArrayIndexManager() { return *pSpotShadowArrayIndexManager; }
+
+    /**
+     * Returns texture array of spotlight shadow maps.
+     *
+     * @return Texture array.
+     */
+    Texture& getSpotlightShadowMapArray() const { return *pSpotlightShadowMapArray; }
+
 private:
     LightSourceManager();
 
@@ -68,6 +84,12 @@ private:
 
     /** Properties of all active point lights. */
     std::unique_ptr<LightSourceShaderArray> pPointLightsArray;
+
+    /** Index manager for spotlight shadow maps. */
+    std::unique_ptr<ShaderArrayIndexManager> pSpotShadowArrayIndexManager;
+
+    /** Array of shadow map textures for spotlights. */
+    std::unique_ptr<Texture> pSpotlightShadowMapArray;
 
     /** Constant light that will be added. */
     glm::vec3 ambientLightColor = glm::vec3(0.1F, 0.1F, 0.1F);

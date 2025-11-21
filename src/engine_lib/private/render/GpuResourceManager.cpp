@@ -350,7 +350,7 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
 
         // Make sure the framebuffer is complete.
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) [[unlikely]] {
-            Error::showErrorAndThrowException("render framebuffer is not complete");
+            Error::showErrorAndThrowException("framebuffer is not complete");
         }
     }
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -358,6 +358,58 @@ std::unique_ptr<Framebuffer> GpuResourceManager::createFramebuffer(
 
     return std::unique_ptr<Framebuffer>(
         new Framebuffer(iFramebufferId, iColorTextureId, iDepthStencilBufferId, iWidth, iHeight));
+}
+
+std::unique_ptr<Framebuffer>
+GpuResourceManager::createShadowMapFramebuffer(Texture& shadowMapArray, unsigned int iTextureIndex) {
+    unsigned int iFramebufferId = 0;
+    glGenFramebuffers(1, &iFramebufferId);
+    glBindFramebuffer(GL_FRAMEBUFFER, iFramebufferId);
+    {
+        GL_CHECK_ERROR(glFramebufferTextureLayer(
+            GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowMapArray.getTextureId(), 0, iTextureIndex));
+
+        GL_CHECK_ERROR(glDrawBuffers(GL_NONE, nullptr));
+        GL_CHECK_ERROR(glReadBuffer(GL_NONE));
+
+        // Make sure the framebuffer is complete.
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) [[unlikely]] {
+            Error::showErrorAndThrowException("framebuffer is not complete");
+        }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return std::unique_ptr<Framebuffer>(new Framebuffer(
+        iFramebufferId,
+        0,
+        shadowMapArray.getTextureId(),
+        shadowMapArray.getSize().first,
+        shadowMapArray.getSize().second));
+}
+
+std::unique_ptr<Texture> GpuResourceManager::createTextureArray(
+    unsigned int iWidth, unsigned int iHeight, int iGlFormat, unsigned int iArraySize, bool bIsShadowMaps) {
+    unsigned int iTexArrayId = 0;
+    glGenTextures(1, &iTexArrayId);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, iTexArrayId);
+
+    GL_CHECK_ERROR(glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iGlFormat, iWidth, iHeight, iArraySize));
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    if (bIsShadowMaps) {
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        // for hardware PCF (does 4 samples):
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
+    return std::unique_ptr<Texture>(new Texture(iTexArrayId, iWidth, iHeight, iGlFormat));
 }
 
 std::unique_ptr<Buffer> GpuResourceManager::createUniformBuffer(unsigned int iSizeInBytes, bool bIsDynamic) {

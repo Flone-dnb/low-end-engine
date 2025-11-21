@@ -29,6 +29,9 @@ layout (std140) uniform DirectionalLights {
 
 /** Spotlight description. */
 struct Spotlight {
+    /** Matrix used for shadow mapping. */
+    mat4 viewProjectionMatrix;
+
     /** Light position in world space. 4th component is not used. */
     vec4 position;
 
@@ -57,7 +60,8 @@ struct Spotlight {
      */
     float cosOuterConeAngle;
 
-    float pad;
+    /** -1 if shadow casting is disabled. */
+    int iShadowMapIndex;
 };
 
 /** Actual number of visible spotlights. */
@@ -69,6 +73,9 @@ layout (std140) uniform Spotlights {
     Spotlight spotlights[MAX_SPOT_LIGHT_COUNT];
 };
 
+uniform sampler2DArrayShadow spotShadowMaps;
+uniform int isSpotlightCulled[MAX_SPOT_LIGHT_COUNT];
+
 // ------------------------------------------------------------------------------------------------
 
 /** Point light description. */
@@ -79,7 +86,7 @@ struct PointLight {
     /** Light color and 4th component stores intensity in range [0.0; 1.0]. */
     vec4 colorAndIntensity;
 
-    /** Lit distance. */
+    /** Lit distance. Radius of the sphere. */
     float distance;
 
     float pad[3];
@@ -94,7 +101,27 @@ layout (std140) uniform PointLights {
     PointLight pointLights[MAX_POINT_LIGHT_COUNT];
 };
 
+uniform int isPointLightCulled[MAX_SPOT_LIGHT_COUNT];
+
 // ------------------------------------------------------------------------------------------------
+
+/**
+ * Transforms position from world space to shadow map space.
+ *
+ * @param worldPosition Position in world space to transform.
+ * @param viewProjectionMatrix Matrix that transforms positions from world space to projection space.
+ *
+ * @return Position in shadow map (texture) space.
+ */
+vec3 convertWorldPosToShadowMapSpace(vec3 worldPosition, mat4 viewProjectionMatrix) {
+    vec4 posShadowMapSpace = viewProjectionMatrix * vec4(worldPosition, 1.0F);
+    posShadowMapSpace = posShadowMapSpace / posShadowMapSpace.w;
+
+    // Convert from NDC [-1..1] to [0..1] texture space.
+    posShadowMapSpace = posShadowMapSpace * 0.5F + 0.5F;
+
+    return posShadowMapSpace.xyz;
+}
 
 /**
  * Calculates attenuation factor for a point/spot light sources.
@@ -140,6 +167,10 @@ vec3 calculateColorFromLights(vec3 fragmentPosition, vec3 fragmentNormalUnit, ve
 
     // Apply spotlights.
     for (uint i = 0u; i < iSpotlightCount; i++) {
+        if (isSpotlightCulled[i] == 1) {
+            continue;
+        }
+
         // Calculate light attenuation.
         float fragmentDistanceToLight = length(spotlights[i].position.xyz - fragmentPosition);
         vec3 attenuatedLightColor
@@ -160,12 +191,24 @@ vec3 calculateColorFromLights(vec3 fragmentPosition, vec3 fragmentNormalUnit, ve
         float cosFragmentToLight = max(dot(fragmentNormalUnit, fragmentToLightDirectionUnit), 0.0F);
         attenuatedLightColor *= cosFragmentToLight;
 
-        // Done.
-        lightColor += fragmentDiffuseColor * attenuatedLightColor;
+        // Combine with shadow.
+        vec3 light = fragmentDiffuseColor * attenuatedLightColor;
+        float lightFactor = 1.0F;
+        if (spotlights[i].iShadowMapIndex >= 0) {
+            vec3 adjustedPos = fragmentPosition + fragmentNormalUnit * 0.025F; // <- normal bias
+            vec3 fragmentShadowCoords = convertWorldPosToShadowMapSpace(
+                adjustedPos, spotlights[i].viewProjectionMatrix);
+            lightFactor = texture(spotShadowMaps, vec4(fragmentShadowCoords.xy, spotlights[i].iShadowMapIndex, fragmentShadowCoords.z));
+        }
+        lightColor += light * lightFactor;
     }
 
     // Apply point lights.
     for (uint i = 0u; i < iPointLightCount; i++) {
+        if (isPointLightCulled[i] == 1) {
+            continue;
+        }
+
         // Calculate light attenuation.
         float fragmentDistanceToLight = length(pointLights[i].position.xyz - fragmentPosition);
         vec3 attenuatedLightColor

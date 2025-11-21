@@ -27,6 +27,12 @@ class TextureHandle;
 class ShaderProgram;
 class VertexArrayObject;
 
+/**
+ * How much frames the CPU can submit without waiting for the GPU.
+ * 2 frames in-flight seems optimal, more can affect input latency.
+ */
+static constexpr size_t iFramesInFlight = 2;
+
 /** Settings for skybox. */
 struct SkyboxSettings {
     SkyboxSettings();
@@ -207,13 +213,9 @@ public:
 private:
     /** Groups stuff used to synchronize GPU and CPU. */
     struct FrameSyncData {
-        /** 2 frames in-flight seems optimal, more can affect input latency. */
-        static constexpr size_t iFramesInFlight = 2;
-
         /** GL GPU time queries. */
         struct FrameQueries {
-            /** GL query ID for measuring GPU time that we spent drawing meshes. */
-            unsigned int iGlQueryToDrawMeshes = 0;
+            // Some queries are location in the World object.
 
             /** GL query ID for measuring GPU time that we spent drawing skybox. */
             unsigned int iGlQueryToDrawSkybox = 0;

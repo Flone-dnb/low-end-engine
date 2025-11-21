@@ -15,6 +15,7 @@
 #include "material/TextureHandle.h"
 #include "render/wrapper/ShaderProgram.h"
 #include "render/wrapper/VertexArrayObject.h"
+#include "render/GpuTimeQuery.hpp"
 
 // External.
 #include "glad/glad.h"
@@ -25,32 +26,6 @@
 #elif __linux__
 #include <unistd.h>
 #include <time.h>
-#endif
-
-#if defined(ENGINE_DEBUG_TOOLS)
-
-static bool bIsGpuTimeElapsedExtSupported = false;
-
-class ScopedGpuTimeQuery {
-public:
-    ScopedGpuTimeQuery() = delete;
-    ScopedGpuTimeQuery(unsigned int& iGlQuery) {
-        if (bIsGpuTimeElapsedExtSupported) {
-            glBeginQueryEXT(GL_TIME_ELAPSED_EXT, iGlQuery);
-        }
-    }
-
-    ~ScopedGpuTimeQuery() {
-        if (bIsGpuTimeElapsedExtSupported) {
-            glEndQueryEXT(GL_TIME_ELAPSED_EXT);
-        }
-    }
-};
-
-//                                              variable name NOT UNIQUE because queries should not intersect
-#define MEASURE_GPU_TIME_SCOPED(iGlQuery) ScopedGpuTimeQuery gpuQuery(iGlQuery);
-#else
-#define MEASURE_GPU_TIME_SCOPED(iGlQuery)
 #endif
 
 void DistanceFogSettings::setFogRange(const glm::vec2& range) {
@@ -82,7 +57,10 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
     }
 
 #if defined(ENGINE_DEBUG_TOOLS)
-    bIsGpuTimeElapsedExtSupported = GLAD_GL_EXT_disjoint_timer_query == 1;
+    if (GLAD_GL_EXT_disjoint_timer_query != 1) {
+        Error::showErrorAndThrowException("the GPU does not support OpenGL extension "
+                                          "GL_EXT_disjoint_timer_query which is required for debug tools");
+    }
 #endif
 
     // Enable back face culling.
@@ -156,28 +134,21 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
         setFpsLimit(static_cast<unsigned int>(iNewLimit));
     });
 
-    if (bIsGpuTimeElapsedExtSupported) {
-        // Initialize queries.
-        for (auto& frameQueries : frameSyncData.vFrameQueries) {
-            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
-            {
-                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
-            }
+    // Initialize queries.
+    for (auto& frameQueries : frameSyncData.vFrameQueries) {
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawSkybox);
+        }
 
-            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
-            {
-                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawSkybox);
-            }
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
+        }
 
-            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
-            {
-                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawUi);
-            }
-
-            GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
-            {
-                MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
-            }
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
         }
     }
 #endif
@@ -186,13 +157,10 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 Renderer::~Renderer() {
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugDrawer::get().destroy(); // clear render resources
-    if (bIsGpuTimeElapsedExtSupported) {
-        for (auto& frameQueries : frameSyncData.vFrameQueries) {
-            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
-            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
-            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
-            GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
-        }
+    for (auto& frameQueries : frameSyncData.vFrameQueries) {
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
     }
 #endif
 
@@ -234,28 +202,35 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     glDeleteSync(frameSyncData.vFences[frameSyncData.iCurrentFrameIndex]);
     auto& frameQueries = frameSyncData.vFrameQueries[frameSyncData.iCurrentFrameIndex];
 
+    auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
+    std::scoped_lock guardWorlds(mtxWorlds.first);
+
 #if defined(ENGINE_DEBUG_TOOLS)
-    if (bIsGpuTimeElapsedExtSupported) {
-        // Prepare a lambda to query time.
-        const auto getQueryTimeMs = [](unsigned int iQuery) -> float {
-            GLuint iAvailable = 0;
-            GLuint64 iTimeElapsed = 0;
+    // Prepare a lambda to query time.
+    const auto getQueryTimeMs = [](unsigned int iQuery) -> float {
+        GLuint iAvailable = 0;
+        GLuint64 iTimeElapsed = 0;
 
-            glGetQueryObjectuivEXT(iQuery, GL_QUERY_RESULT_AVAILABLE_EXT, &iAvailable);
-            if (iAvailable == GL_FALSE) {
-                // We waited for a GPU fence and all previous operations should be finished at this point
-                // but this situation still may rarely happen.
-                return -1.0F;
-            }
+        glGetQueryObjectuivEXT(iQuery, GL_QUERY_RESULT_AVAILABLE_EXT, &iAvailable);
+        if (iAvailable == GL_FALSE) {
+            // We waited for a GPU fence and all previous operations should be finished at this point
+            // but this situation still may rarely happen.
+            return -1.0F;
+        }
 
-            glGetQueryObjectui64vEXT(iQuery, GL_QUERY_RESULT_EXT, &iTimeElapsed);
-            return static_cast<float>(iTimeElapsed) / 1000000.0F; // nanoseconds to milliseconds
-        };
-        auto& stats = DebugConsole::getStats();
-        stats.gpuTimeDrawMeshesMs = getQueryTimeMs(frameQueries.iGlQueryToDrawMeshes);
-        stats.gpuTimeDrawSkyboxMs = getQueryTimeMs(frameQueries.iGlQueryToDrawSkybox);
-        stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
-        stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
+        glGetQueryObjectui64vEXT(iQuery, GL_QUERY_RESULT_EXT, &iTimeElapsed);
+        return static_cast<float>(iTimeElapsed) / 1000000.0F; // nanoseconds to milliseconds
+    };
+    auto& stats = DebugConsole::getStats();
+    stats.gpuTimeDrawSkyboxMs = getQueryTimeMs(frameQueries.iGlQueryToDrawSkybox);
+    stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
+    stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
+    stats.gpuTimeDrawShadowPassMs = 0.0F;
+    stats.gpuTimeDrawMeshesMs = 0.0F;
+    for (const auto& pWorld : mtxWorlds.second.vWorlds) {
+        const auto& worldQueries = pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex];
+        stats.gpuTimeDrawShadowPassMs += getQueryTimeMs(worldQueries.iGlQueryToDrawShadowPass);
+        stats.gpuTimeDrawMeshesMs += getQueryTimeMs(worldQueries.iGlQueryToDrawMeshes);
     }
 
     const auto cpuFrameSubmitStartCounter = SDL_GetPerformanceCounter();
@@ -264,9 +239,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
 
 #if defined(ENGINE_UI_ONLY)
-    auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
-    std::scoped_lock guardWorlds(mtxWorlds.first);
-
     if (!mtxWorlds.second.vWorlds.empty()) {
         // Just render the first world.
         const auto pWorld = mtxWorlds.second.vWorlds[0].get();
@@ -279,16 +251,14 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         pWorld->getUiNodeManager().drawUiOnFramebuffer(0);
     }
 #else
-    // Get active cameras from all worlds.
-    auto& mtxWorlds = pWindow->getGameManager()->getWorlds();
-    std::scoped_lock guardWorlds(mtxWorlds.first);
-
     struct WorldRenderInfo {
         World* pWorld = nullptr;
         CameraNode* pCameraNode = nullptr;
         glm::ivec4 viewportSize;
         glm::mat4 viewProjectionMatrix;
         glm::mat4 viewMatrix;
+        unsigned int iGlQueryToDrawShadowPass = 0;
+        unsigned int iGlQueryToDrawMeshes = 0;
     };
     std::vector<std::pair<std::recursive_mutex*, WorldRenderInfo>> vActiveCameras;
     vActiveCameras.reserve(2);
@@ -324,7 +294,11 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                  .viewportSize = glm::ivec4(iViewportX, iViewportLeftBottom, iViewportWidth, iViewportHeight),
                  .viewProjectionMatrix =
                      pCameraProperties->getProjectionMatrix() * pCameraProperties->getViewMatrix(),
-                 .viewMatrix = pCameraProperties->getViewMatrix()}});
+                 .viewMatrix = pCameraProperties->getViewMatrix(),
+                 .iGlQueryToDrawShadowPass =
+                     pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex].iGlQueryToDrawShadowPass,
+                 .iGlQueryToDrawMeshes =
+                     pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex].iGlQueryToDrawMeshes}});
     }
 
     const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
@@ -354,15 +328,12 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Draw meshes.
         {
-            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
 #if defined(ENGINE_DEBUG_TOOLS)
             const auto cpuSubmitMeshesStartCounter = SDL_GetPerformanceCounter();
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 const auto pWorld = mtxActiveCamera.second.pWorld;
                 const auto& viewportSize = mtxActiveCamera.second.viewportSize;
-
-                glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
                 // Get camera frustum.
                 const auto& frustum = mtxActiveCamera.second.pCameraNode->getCameraProperties()
@@ -373,10 +344,13 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
                 pWorld->getMeshRenderer().drawMeshes(
                     this,
+                    viewportSize,
                     mtxActiveCamera.second.viewMatrix,
                     mtxActiveCamera.second.viewProjectionMatrix,
                     frustum,
-                    pWorld->getLightSourceManager());
+                    pWorld->getLightSourceManager(),
+                    mtxActiveCamera.second.iGlQueryToDrawShadowPass,
+                    mtxActiveCamera.second.iGlQueryToDrawMeshes);
             }
 #if defined(ENGINE_DEBUG_TOOLS)
             DebugConsole::getStats().cpuTimeToSubmitMeshesMs =

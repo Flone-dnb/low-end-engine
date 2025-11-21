@@ -12,6 +12,7 @@
 #include "render/shader/LightSourceShaderArray.h"
 #include "render/ShaderConstantsSetter.hpp"
 #include "game/geometry/shapes/Frustum.h"
+#include "render/LightSourceLimits.hpp"
 #include "math/GLMath.hpp"
 
 class ShaderProgram;
@@ -19,6 +20,7 @@ class MeshRenderingHandle;
 class CameraProperties;
 class Renderer;
 class LightSourceManager;
+class Texture;
 
 /// @cond UNDOCUMENTED
 
@@ -151,6 +153,7 @@ public:
             int iNormalMatrixUniform = 0;
             int iDiffuseColorUniform = 0;
             int iTextureTilingMultiplierUniform = 0;
+            int iDiffuseTextureUniform = 0;
 
             int iSkinningMatricesUniform = -1;
 
@@ -161,6 +164,9 @@ public:
             unsigned int iPointLightsUniformBlockBindingIndex = 0;
             unsigned int iSpotlightsUniformBlockBindingIndex = 0;
             unsigned int iDirectionalLightsUniformBlockBindingIndex = 0;
+            int iSpotShadowMapsUniform = 0;
+            int iIsSpotlightCulledUniform = 0;
+            int iIsPointLightCulledUniform = 0;
 
             int iDistanceFogColorUniform = 0;
             int iDistanceFogRangeUniform = 0;
@@ -209,17 +215,23 @@ public:
      * on the currently set framebuffer.
      *
      * @param pRenderer            Renderer.
+     * @param viewportSize         Viewport size.
      * @param viewMatrix           Camera's view matrix.
      * @param viewProjectionMatrix Camera's view projection matrix.
      * @param cameraFrustum        Camera's frustum.
      * @param lightSourceManager   Light source manager.
+     * @param iGlDrawShadowPassQuery Query ID.
+     * @param iGlDrawMeshesQuery   Query ID.
      */
     void drawMeshes(
         Renderer* pRenderer,
+        const glm::ivec4& viewportSize,
         const glm::mat4& viewMatrix,
         const glm::mat4& viewProjectionMatrix,
         const Frustum& cameraFrustum,
-        LightSourceManager& lightSourceManager);
+        LightSourceManager& lightSourceManager,
+        unsigned int iGlDrawShadowPassQuery,
+        unsigned int iGlDrawMeshesQuery);
 
     /**
      * Registers a new mesh to be rendered.
@@ -251,6 +263,15 @@ public:
     ShaderConstantsSetter& getGlobalShaderConstantsSetter() { return shaderConstantsSetter; }
 
 private:
+    /** Groups info about culled light sources (ready to copy to shaders). */
+    struct LightCullingInfo {
+        /** 1 if culled, 0 if not. */
+        std::array<int, MAX_SPOT_LIGHT_COUNT> vIsSpotlightCulled;
+
+        /** 1 if culled, 0 if not. */
+        std::array<int, MAX_POINT_LIGHT_COUNT> vIsPointLightCulled;
+    };
+
     MeshRenderer() = default;
 
     /**
@@ -270,6 +291,24 @@ private:
 #endif
 
     /**
+     * Queues OpenGL draw commands to update shadow maps.
+     *
+     * @param data                 Render data.
+     * @param cameraFrustum        Camera's frustum.
+     * @param pointLightData       Light array data.
+     * @param spotlightData        Light array data.
+     * @param iGlDrawShadowPassQuery GPU time query.
+     *
+     * @return Is light source culled (0 if culled).
+     */
+    [[nodiscard]] LightCullingInfo drawShadowPass(
+        const RenderData& data,
+        const Frustum& cameraFrustum,
+        LightSourceShaderArray::LightData& pointLightData,
+        LightSourceShaderArray::LightData& spotlightData,
+        unsigned int iGlDrawShadowPassQuery);
+
+    /**
      * Queues OpenGL draw commands to draw the specified meshes on the currently set framebuffer.
      *
      * @param pRenderer            Renderer.
@@ -282,6 +321,8 @@ private:
      * @param pointLightData       Light array data.
      * @param spotlightData        Light array data.
      * @param directionalLightData Light array data.
+     * @param spotShadowMapArray   Texture array of spotlight shadow maps.
+     * @param lightCullingInfo     Light culling info.
      */
     void drawMeshes(
         Renderer* pRenderer,
@@ -293,7 +334,9 @@ private:
         const glm::vec3& ambientLightColor,
         LightSourceShaderArray::LightData& pointLightData,
         LightSourceShaderArray::LightData& spotlightData,
-        LightSourceShaderArray::LightData& directionalLightData);
+        LightSourceShaderArray::LightData& directionalLightData,
+        Texture& spotShadowMapArray,
+        const LightCullingInfo& lightCullingInfo);
 
     /** Will be called for every shader program used for rendering to set custom global parameters. */
     ShaderConstantsSetter shaderConstantsSetter;

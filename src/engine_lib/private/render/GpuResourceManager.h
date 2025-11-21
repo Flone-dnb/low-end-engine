@@ -11,6 +11,7 @@
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/wrapper/Framebuffer.h"
 #include "render/wrapper/Buffer.h"
+#include "render/wrapper/Texture.h"
 #include "game/geometry/ScreenQuadGeometry.h"
 
 class Texture;
@@ -77,7 +78,8 @@ public:
      *
      * @param iWidth         Width of the textures.
      * @param iHeight        Height of the textures.
-     * @param iColorGlFormat Specify 0 to create a framebuffer without color. GL format of the color texture in the framebuffer.
+     * @param iColorGlFormat Specify 0 to create a framebuffer without color. GL format of the color texture
+     * in the framebuffer.
      * @param iDepthGlFormat Specify 0 to create a framebuffer without depth. Otherwise GL format of the
      * depth/stencil buffer in the framebuffer.
      *
@@ -85,6 +87,35 @@ public:
      */
     static std::unique_ptr<Framebuffer>
     createFramebuffer(unsigned int iWidth, unsigned int iHeight, int iColorGlFormat, int iDepthGlFormat);
+
+    /**
+     * Creates a new framebuffer for shadow pass.
+     *
+     * @param shadowMapArray Texture array of shadow maps.
+     * @param iTextureIndex  Index of the texture (in the array) to attach to framebuffer.
+     *
+     * @return Created framebuffer.
+     */
+    static std::unique_ptr<Framebuffer>
+    createShadowMapFramebuffer(Texture& shadowMapArray, unsigned int iTextureIndex);
+
+    /**
+     * Creates texture array object.
+     *
+     * @param iWidth     Width of the textures.
+     * @param iHeight    Height of the textures.
+     * @param iGlFormat  GL format of the textures.
+     * @param iArraySize Size of the array.
+     * @param bIsShadowMaps `true` to enable hardware anti-aliasing of shadow maps.
+     *
+     * @return Created texture array.
+     */
+    static std::unique_ptr<Texture> createTextureArray(
+        unsigned int iWidth,
+        unsigned int iHeight,
+        int iGlFormat,
+        unsigned int iArraySize,
+        bool bIsShadowMaps);
 
     /**
      * Creates a new uniform buffer.

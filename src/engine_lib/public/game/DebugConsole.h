@@ -33,17 +33,23 @@ public:
         /** Total number of currently active simulated character bodies. */
         size_t iActiveCharacterBodyCount = 0;
 
-        /** Total number of light sources considered in the renderer. */
-        size_t iRenderedLightSourceCount = 0;
-
         /** Total number of meshes rendered last frame. */
         size_t iRenderedMeshCount = 0;
+
+        /** Total number of active light sources queued for rendering last frame. */
+        size_t iActiveLightSourceCount = 0;
+
+        /** Total number of active light sources culled from rendering last frame. */
+        size_t iCulledLightSourceCount = 0;
 
         /** Time in milliseconds that the CPU spent doing the last tick. */
         float cpuTickTimeMs = 0.0F;
 
         /** Time in milliseconds that the CPU spent submitting the last frame. */
         float cpuTimeToSubmitFrameMs = 0.0F;
+
+        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit shadow pass. */
+        float cpuTimeToSubmitShadowPassMs = 0.0F;
 
         /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit meshes. */
         float cpuTimeToSubmitMeshesMs = 0.0F;
@@ -53,6 +59,9 @@ public:
 
         /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit debug drawer things. */
         float cpuTimeToSubmitDebugDrawMs = 0.0F;
+
+        /** Time in milliseconds spent on the GPU drawing meshes. */
+        float gpuTimeDrawShadowPassMs = -1.0F;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawMeshesMs = -1.0F;

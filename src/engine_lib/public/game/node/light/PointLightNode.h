@@ -5,6 +5,7 @@
 #include "math/GLMath.hpp"
 #include "render/ShaderAlignmentConstants.hpp"
 #include "render/shader/LightSourceShaderArray.h"
+#include "game/geometry/shapes/Sphere.h"
 
 /** Sphere-shaped light source. */
 class PointLightNode : public SpatialNode {
@@ -20,7 +21,7 @@ public:
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 colorAndIntensity =
             glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
 
-        /** Lit distance. */
+        /** Lit distance. Radius of the sphere. */
         alignas(ShaderAlignmentConstants::iScalar) float distance = 15.0F;
 
         /** Padding to 16 bytes. */
@@ -117,6 +118,20 @@ public:
      */
     bool isVisible() const { return bIsVisible; }
 
+    /**
+     * Returns internal light source handle.
+     *
+     * @return `nullptr` if the light is not registered for rendering.
+     */
+    ActiveLightSourceHandle* getInternalLightSourceHandle() const { return pActiveLightHandle.get(); }
+
+    /**
+     * Returns shape of the light source in world space.
+     *
+     * @return Shape.
+     */
+    const Sphere& getSphereShapeWorld() const { return sphereShapeWorld; }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
@@ -160,6 +175,9 @@ private:
 
     /** Not `nullptr` if being rendered. */
     std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
+
+    /** Shape of the light source in world space. */
+    Sphere sphereShapeWorld;
 
     /** Enabled for rendering or not. */
     bool bIsVisible = true;

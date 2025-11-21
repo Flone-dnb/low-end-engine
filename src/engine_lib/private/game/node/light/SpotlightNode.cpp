@@ -4,13 +4,21 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "render/LightSourceManager.h"
+#include "render/shader/ShaderArrayIndexManager.h"
+#include "render/wrapper/Framebuffer.h"
+#include "render/GpuResourceManager.h"
 #include "game/World.h"
 
 // External.
+#include "glad/glad.h"
 #include "nameof.hpp"
 
 namespace {
     constexpr std::string_view sTypeGuid = "003ba11d-bc89-4e1b-becf-b35f9e9c5d12";
+
+    constexpr float minLightDistance = 0.15F;
+    constexpr float shadowNearClipPlane = 0.1F;
+    static_assert(minLightDistance > shadowNearClipPlane);
 }
 
 std::string SpotlightNode::getTypeGuidStatic() { return sTypeGuid.data(); }
@@ -64,6 +72,15 @@ TypeReflectionInfo SpotlightNode::getReflectionInfo() {
             return reinterpret_cast<SpotlightNode*>(pThis)->getLightOuterConeAngle();
         }};
 
+    variables.bools[NAMEOF_MEMBER(&SpotlightNode::bCastShadows).data()] = ReflectedVariableInfo<bool>{
+        .setter =
+            [](Serializable* pThis, const bool& bNewValue) {
+                reinterpret_cast<SpotlightNode*>(pThis)->setCastShadows(bNewValue);
+            },
+        .getter = [](Serializable* pThis) -> bool {
+            return reinterpret_cast<SpotlightNode*>(pThis)->isCastingShadows();
+        }};
+
     variables.bools[NAMEOF_MEMBER(&SpotlightNode::bIsVisible).data()] = ReflectedVariableInfo<bool>{
         .setter =
             [](Serializable* pThis, const bool& bNewValue) {
@@ -97,6 +114,10 @@ void SpotlightNode::onSpawning() {
         auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
         pActiveLightHandle =
             lightSourceManager.getSpotlightsArray().addLightSourceToRendering(this, &shaderProperties);
+
+        if (bCastShadows) {
+            createShadowMapData();
+        }
     }
 }
 
@@ -105,6 +126,29 @@ void SpotlightNode::onDespawning() {
 
     // Remove from rendering.
     pActiveLightHandle = nullptr;
+    pShadowMapData = nullptr;
+}
+
+void SpotlightNode::setCastShadows(bool bEnable) {
+    if (bCastShadows == bEnable) {
+        return;
+    }
+
+    bCastShadows = bEnable;
+
+    if (isSpawned() && bIsVisible) {
+        if (bCastShadows) {
+            createShadowMapData();
+        } else {
+            pShadowMapData = nullptr;
+
+            // Update shader data.
+            shaderProperties.iShadowMapIndex = -1;
+            if (pActiveLightHandle != nullptr) {
+                pActiveLightHandle->copyNewProperties(&shaderProperties);
+            }
+        }
+    }
 }
 
 void SpotlightNode::setIsVisible(bool bNewVisible) {
@@ -119,10 +163,40 @@ void SpotlightNode::setIsVisible(bool bNewVisible) {
             auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
             pActiveLightHandle =
                 lightSourceManager.getSpotlightsArray().addLightSourceToRendering(this, &shaderProperties);
+
+            if (bCastShadows) {
+                createShadowMapData();
+            }
         } else {
             // Remove from rendering.
             pActiveLightHandle = nullptr;
+            pShadowMapData = nullptr;
         }
+    }
+}
+
+void SpotlightNode::createShadowMapData() {
+    if (pShadowMapData != nullptr) [[unlikely]] {
+        Error::showErrorAndThrowException(
+            std::format("node \"{}\" expected shadow map data to be not used yet", getNodeName()));
+    }
+
+    auto& lightSourceManager = getWorldWhileSpawned()->getLightSourceManager();
+
+    pShadowMapData = std::make_unique<ShadowMapData>();
+    pShadowMapData->pIndex = lightSourceManager.getSpotShadowArrayIndexManager().reserveIndex();
+    pShadowMapData->pFramebuffer = GpuResourceManager::createShadowMapFramebuffer(
+        lightSourceManager.getSpotlightShadowMapArray(), pShadowMapData->pIndex->getActualIndex());
+
+    const auto worldLocation = getWorldLocation();
+
+    shaderProperties.iShadowMapIndex = static_cast<int>(pShadowMapData->pIndex->getActualIndex());
+    pShadowMapData->viewMatrix =
+        glm::lookAt(worldLocation, worldLocation + getWorldForwardDirection(), getWorldUpDirection());
+    recalculateShadowProjMatrix();
+
+    if (pActiveLightHandle != nullptr) {
+        pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
 }
 
@@ -146,6 +220,9 @@ void SpotlightNode::setLightIntensity(float intensity) {
 
 void SpotlightNode::setLightDistance(float distance) {
     shaderProperties.distance = glm::max(distance, 0.0F);
+    if (pShadowMapData != nullptr) {
+        recalculateShadowProjMatrix();
+    }
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -163,6 +240,9 @@ void SpotlightNode::setLightInnerConeAngle(float inInnerConeAngle) {
     // Calculate cosine for shaders.
     shaderProperties.cosInnerConeAngle = glm::cos(glm::radians(innerConeAngle));
     shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(outerConeAngle));
+    if (pShadowMapData != nullptr) {
+        recalculateShadowProjMatrix();
+    }
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -175,6 +255,9 @@ void SpotlightNode::setLightOuterConeAngle(float inOuterConeAngle) {
 
     // Calculate cosine for shaders.
     shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(outerConeAngle));
+    if (pShadowMapData != nullptr) {
+        recalculateShadowProjMatrix();
+    }
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -185,13 +268,54 @@ void SpotlightNode::setLightOuterConeAngle(float inOuterConeAngle) {
 void SpotlightNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
+    const auto worldLocation = getWorldLocation();
+
+    shaderProperties.position = glm::vec4(worldLocation, 1.0F);
     shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+
+    if (pShadowMapData != nullptr) {
+        pShadowMapData->viewMatrix =
+            glm::lookAt(worldLocation, worldLocation + getWorldForwardDirection(), getWorldUpDirection());
+        recalculateShadowProjMatrix();
+    }
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+}
+
+void SpotlightNode::recalculateShadowProjMatrix() {
+    const auto farClipPlane = shaderProperties.distance;
+
+    static_assert(maxConeAngle <= 90.0F, "change FOV for shadow map capture");
+    const auto fovYRadians =
+        glm::radians(outerConeAngle * 2.0F); // x2 to convert [0..90] degree to [0..180] FOV
+    const auto coneBottomRadius =
+        glm::tan(glm::radians(outerConeAngle)) * shaderProperties.distance *
+        1.3F; // TODO: to avoid a rare light culling issue when viewing exactly in the
+              // direction of the spotlight (light outer cone bounds are slightly culled)
+
+    const float aspectRatio = 1.0F;
+
+    shaderProperties.viewProjectionMatrix =
+        glm::perspective(fovYRadians, aspectRatio, shadowNearClipPlane, farClipPlane) *
+        pShadowMapData->viewMatrix;
+
+    const auto worldLocation = getWorldLocation();
+    const auto worldDirection = getWorldForwardDirection();
+
+    pShadowMapData->frustumWorld = Frustum::create(
+        worldLocation,
+        worldDirection,
+        getWorldUpDirection(),
+        shadowNearClipPlane,
+        farClipPlane,
+        fovYRadians,
+        aspectRatio);
+
+    pShadowMapData->coneWorld =
+        Cone(worldLocation, shaderProperties.distance, worldDirection, coneBottomRadius);
 }
 
 SpotlightNode::ShaderProperties::ShaderProperties() = default;

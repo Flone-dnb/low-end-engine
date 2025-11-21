@@ -5,14 +5,17 @@
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
+#include "render/shader/ShaderArrayIndexManager.h"
+#include "render/LightSourceLimits.hpp"
+#include "render/wrapper/Texture.h"
+#include "render/GpuResourceManager.h"
+
+// External.
+#include "glad/glad.h"
 
 LightSourceManager::~LightSourceManager() {}
 
 LightSourceManager::LightSourceManager() {
-    constexpr unsigned int MAX_POINT_LIGHT_COUNT = 12;      // <- same as in shaders
-    constexpr unsigned int MAX_SPOT_LIGHT_COUNT = 12;       // <- same as in shaders
-    constexpr unsigned int MAX_DIRECTIONAL_LIGHT_COUNT = 2; // <- same as in shaders
-
     // Create array of directional lights.
     pDirectionalLightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(
         this,
@@ -28,6 +31,10 @@ LightSourceManager::LightSourceManager() {
         MAX_SPOT_LIGHT_COUNT,
         "Spotlights",
         "iSpotlightCount"));
+    pSpotShadowArrayIndexManager = std::unique_ptr<ShaderArrayIndexManager>(
+        new ShaderArrayIndexManager("spotlight shadow maps", MAX_SPOT_LIGHT_COUNT));
+    pSpotlightShadowMapArray =
+        GpuResourceManager::createTextureArray(512, 512, GL_DEPTH_COMPONENT16, MAX_SPOT_LIGHT_COUNT, true);
 
     // Create array of spotlights.
     pPointLightsArray = std::unique_ptr<LightSourceShaderArray>(new LightSourceShaderArray(

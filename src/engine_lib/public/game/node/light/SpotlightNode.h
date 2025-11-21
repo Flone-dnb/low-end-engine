@@ -5,6 +5,11 @@
 #include "math/GLMath.hpp"
 #include "render/ShaderAlignmentConstants.hpp"
 #include "render/shader/LightSourceShaderArray.h"
+#include "game/geometry/shapes/Frustum.h"
+#include "game/geometry/shapes/Cone.h"
+
+class ShaderArrayIndex;
+class Framebuffer;
 
 /** Cone-shaped light source */
 class SpotlightNode : public SpatialNode {
@@ -12,6 +17,9 @@ public:
     /** Data that will be directly copied to shaders. */
     struct ShaderProperties {
         ShaderProperties();
+
+        /** Matrix used for shadow mapping. */
+        alignas(ShaderAlignmentConstants::iMat4) glm::mat4 viewProjectionMatrix;
 
         /** Light position in world space. 4th component is not used. */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
@@ -42,8 +50,26 @@ public:
          */
         alignas(ShaderAlignmentConstants::iScalar) float cosOuterConeAngle = 0.0F;
 
-        /** Padding to 16 bytes. */
-        float pad;
+        /** -1 if shadow casting is disabled. */
+        alignas(ShaderAlignmentConstants::iScalar) int iShadowMapIndex = -1;
+    };
+
+    /** Groups data for shadow pass. */
+    struct ShadowMapData {
+        /** Framebuffer with shadow map. */
+        std::unique_ptr<Framebuffer> pFramebuffer;
+
+        /** Index into the shader array of shadow maps. */
+        std::unique_ptr<ShaderArrayIndex> pIndex;
+
+        /** View matrix for shadow pass. */
+        glm::mat4 viewMatrix;
+
+        /** Light's frustum in world space. */
+        Frustum frustumWorld;
+
+        /** Light's cone shape in world space. */
+        Cone coneWorld;
     };
 
     SpotlightNode();
@@ -134,6 +160,13 @@ public:
     void setLightOuterConeAngle(float inOuterConeAngle);
 
     /**
+     * Enables/disables casted shadows.
+     *
+     * @param bEnable `true` to enable shadows.
+     */
+    void setCastShadows(bool bEnable);
+
+    /**
      * Returns color of this light source.
      *
      * @return Color in RGB format in range [0.0; 1.0].
@@ -175,6 +208,34 @@ public:
      */
     bool isVisible() const { return bIsVisible; }
 
+    /**
+     * Tells if this light source casts shadows.
+     *
+     * @return `true` if enabled.
+     */
+    bool isCastingShadows() const { return bCastShadows; }
+
+    /**
+     * Returns `nullptr` if shadow data not created yet.
+     *
+     * @return Internal shadow data used for shadow pass.
+     */
+    ShadowMapData* getInternalShadowMapData() const { return pShadowMapData.get(); }
+
+    /**
+     * Returns view projection matrix that transforms to light's space.
+     *
+     * @return Matrix.
+     */
+    const glm::mat4& getLightViewProjectionMatrix() const { return shaderProperties.viewProjectionMatrix; }
+
+    /**
+     * Returns internal light source handle.
+     *
+     * @return `nullptr` if the light is not registered for rendering.
+     */
+    ActiveLightSourceHandle* getInternalLightSourceHandle() const { return pActiveLightHandle.get(); }
+
 protected:
     /**
      * Called when this node was not spawned previously and it was either attached to a parent node
@@ -213,8 +274,17 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
+    /** Initializes @ref pShadowMapData. */
+    void createShadowMapData();
+
+    /** Recalculates projection matrix for shadow mapping. */
+    void recalculateShadowProjMatrix();
+
     /** Data to copy to shaders. */
     ShaderProperties shaderProperties;
+
+    /** Not `nullptr` if @ref bCastShadows is enabled. */
+    std::unique_ptr<ShadowMapData> pShadowMapData;
 
     /** Not `nullptr` if being rendered. */
     std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
@@ -233,6 +303,9 @@ private:
 
     /** Enabled for rendering or not. */
     bool bIsVisible = true;
+
+    /** `true` to enable shadows. */
+    bool bCastShadows = false;
 
     /** Maximum value for @ref innerConeAngle and @ref outerConeAngle. */
     static constexpr float maxConeAngle = 80.0F; // max angle that won't cause any visual issues

@@ -9,8 +9,14 @@
 #include "render/Renderer.h"
 #include "misc/Profiler.hpp"
 #include "render/RenderingHandle.h"
+#include "render/wrapper/Framebuffer.h"
+#include "render/wrapper/Texture.h"
+#include "game/node/light/SpotlightNode.h"
+#include "game/node/light/PointLightNode.h"
+#include "render/GpuTimeQuery.hpp"
 
 // External.
+#include "SDL3/SDL.h"
 #include "glad/glad.h"
 
 MeshRenderDataGuard::~MeshRenderDataGuard() {
@@ -36,8 +42,12 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
     info.iDiffuseColorUniform = pShaderProgram->getShaderUniformLocation("diffuseColor");
     info.iTextureTilingMultiplierUniform =
         pShaderProgram->getShaderUniformLocation("textureTilingMultiplier");
+    info.iDiffuseTextureUniform = pShaderProgram->getShaderUniformLocation("diffuseTexture");
 
     info.iSkinningMatricesUniform = pShaderProgram->tryGetShaderUniformLocation("vSkinningMatrices[0]");
+    info.iSpotShadowMapsUniform = pShaderProgram->getShaderUniformLocation("spotShadowMaps");
+    info.iIsSpotlightCulledUniform = pShaderProgram->getShaderUniformLocation("isSpotlightCulled[0]");
+    info.iIsPointLightCulledUniform = pShaderProgram->getShaderUniformLocation("isPointLightCulled[0]");
 
     info.iAmbientLightColorUniform = pShaderProgram->getShaderUniformLocation("ambientLightColor");
     info.iPointLightCountUniform = pShaderProgram->getShaderUniformLocation("iPointLightCount");
@@ -486,12 +496,144 @@ MeshRenderDataGuard MeshRenderer::getMeshRenderData(MeshRenderingHandle& handle)
     return MeshRenderDataGuard(this, &data.vMeshRenderData[handle.iMeshRenderDataIndex]);
 }
 
+MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
+    const RenderData& data,
+    const Frustum& cameraFrustum,
+    LightSourceShaderArray::LightData& pointLightData,
+    LightSourceShaderArray::LightData& spotlightData,
+    unsigned int iGlDrawShadowPassQuery) {
+    PROFILE_FUNC
+    MEASURE_GPU_TIME_SCOPED(iGlDrawShadowPassQuery);
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    const auto cpuSubmitStartCounter = SDL_GetPerformanceCounter();
+#endif
+
+    int iOriginalFramebufferId = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &iOriginalFramebufferId);
+
+    LightCullingInfo lightCullingInfo{};
+    std::memset(&lightCullingInfo, 0, sizeof(lightCullingInfo));
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    auto& debugStats = DebugConsole::getStats();
+    debugStats.iCulledLightSourceCount = 0;
+#endif
+
+    // Process point lights.
+    for (const auto& pNode : pointLightData.visibleLightNodes) {
+        const auto pPointLightNode = reinterpret_cast<PointLightNode*>(pNode);
+
+        if (!cameraFrustum.isSphereInFrustum(pPointLightNode->getSphereShapeWorld())) {
+            // No light in camera's frustum.
+            lightCullingInfo
+                .vIsSpotlightCulled[pPointLightNode->getInternalLightSourceHandle()->getActualIndex()] = 1;
+#if defined(ENGINE_DEBUG_TOOLS)
+            debugStats.iCulledLightSourceCount += 1;
+#endif
+            continue;
+        }
+    }
+
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(0.9F, 0.0F); // <- slope bias for shadow mapping
+
+    // Process spotlights.
+    for (const auto& pNode : spotlightData.visibleLightNodes) {
+        const auto pSpotlightNode = reinterpret_cast<SpotlightNode*>(pNode);
+        const auto pShadowData = pSpotlightNode->getInternalShadowMapData();
+        if (pShadowData == nullptr) {
+            // Shadow casting not enabled.
+            continue;
+        }
+
+        if (!cameraFrustum.isConeInFrustum(pShadowData->coneWorld)) {
+            // No shadows in camera's frustum.
+            lightCullingInfo
+                .vIsSpotlightCulled[pSpotlightNode->getInternalLightSourceHandle()->getActualIndex()] = 1;
+#if defined(ENGINE_DEBUG_TOOLS)
+            debugStats.iCulledLightSourceCount += 1;
+#endif
+            continue;
+        }
+
+        const auto [iFramebufferWidth, iFramebufferHeight] = pShadowData->pFramebuffer->getSize();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, pShadowData->pFramebuffer->getFramebufferId());
+        glViewport(0, 0, iFramebufferWidth, iFramebufferHeight);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        // Render opaque meshes.
+        for (const auto& shaderInfo : data.vOpaqueShaders) {
+            glUseProgram(shaderInfo.pShaderProgram->getShaderProgramId());
+
+            glUniformMatrix4fv(
+                shaderInfo.iViewMatrixUniform, 1, GL_FALSE, glm::value_ptr(pShadowData->viewMatrix));
+            glUniformMatrix4fv(
+                shaderInfo.iViewProjectionMatrixUniform,
+                1,
+                GL_FALSE,
+                glm::value_ptr(pSpotlightNode->getLightViewProjectionMatrix()));
+
+            for (unsigned short iMeshDataIndex = shaderInfo.iFirstMeshIndex;
+                 iMeshDataIndex < shaderInfo.iFirstMeshIndex + shaderInfo.iMeshCount;
+                 iMeshDataIndex++) {
+                const auto& meshData = data.vMeshRenderData[iMeshDataIndex];
+
+                // Frustum culling (don't cull skeletal meshes due to animations).
+                if (shaderInfo.iSkinningMatricesUniform == -1 &&
+                    !pShadowData->frustumWorld.isAabbInFrustum(meshData.aabbWorld)) {
+                    continue;
+                }
+
+                glBindVertexArray(meshData.iVertexArrayObject);
+
+                glUniformMatrix4fv(
+                    shaderInfo.iWorldMatrixUniform, 1, GL_FALSE, glm::value_ptr(meshData.worldMatrix));
+                glUniformMatrix3fv(
+                    shaderInfo.iNormalMatrixUniform, 1, GL_FALSE, glm::value_ptr(meshData.normalMatrix));
+                if (shaderInfo.iSkinningMatricesUniform != -1) {
+                    glUniformMatrix4fv(
+                        shaderInfo.iSkinningMatricesUniform,
+                        meshData.iSkinningMatrixCount,
+                        GL_FALSE,
+                        meshData.pSkinningMatrices);
+                }
+
+                glDrawElements(GL_TRIANGLES, meshData.iIndexCount, GL_UNSIGNED_SHORT, nullptr);
+            }
+        }
+
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    }
+
+    // Restore state.
+    glPolygonOffset(0.0F, 0.0F);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glBindFramebuffer(GL_FRAMEBUFFER, iOriginalFramebufferId);
+
+    // Insert a barrier before reading shadow maps.
+    glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    DebugConsole::getStats().cpuTimeToSubmitShadowPassMs =
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceFrequency());
+#endif
+
+    return lightCullingInfo;
+}
+
 void MeshRenderer::drawMeshes(
     Renderer* pRenderer,
+    const glm::ivec4& viewportSize,
     const glm::mat4& viewMatrix,
     const glm::mat4& viewProjectionMatrix,
     const Frustum& cameraFrustum,
-    LightSourceManager& lightSourceManager) {
+    LightSourceManager& lightSourceManager,
+    unsigned int iGlDrawShadowPassQuery,
+    unsigned int iGlDrawMeshesQuery) {
     std::scoped_lock guard(mtxRenderData.first);
     auto& data = mtxRenderData.second;
 
@@ -507,44 +649,53 @@ void MeshRenderer::drawMeshes(
 
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::getStats().iRenderedMeshCount = 0;
-    DebugConsole::getStats().iRenderedLightSourceCount =
+    DebugConsole::getStats().iActiveLightSourceCount =
         mtxPointLightData.second.visibleLightNodes.size() + mtxSpotlightData.second.visibleLightNodes.size() +
         mtxDirectionalLightData.second.visibleLightNodes.size();
 #endif
 
-    // Prepare slot for diffuse texture.
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    const auto lightCullingInfo = drawShadowPass(
+        data, cameraFrustum, mtxPointLightData.second, mtxSpotlightData.second, iGlDrawShadowPassQuery);
 
-    drawMeshes(
-        pRenderer,
-        data.vOpaqueShaders,
-        data,
-        viewMatrix,
-        viewProjectionMatrix,
-        cameraFrustum,
-        ambientLightColor,
-        mtxPointLightData.second,
-        mtxSpotlightData.second,
-        mtxDirectionalLightData.second);
+    glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
-    if (!data.vTransparentShaders.empty()) {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        {
-            drawMeshes(
-                pRenderer,
-                data.vTransparentShaders,
-                data,
-                viewMatrix,
-                viewProjectionMatrix,
-                cameraFrustum,
-                ambientLightColor,
-                mtxPointLightData.second,
-                mtxSpotlightData.second,
-                mtxDirectionalLightData.second);
+    {
+        MEASURE_GPU_TIME_SCOPED(iGlDrawMeshesQuery);
+
+        drawMeshes(
+            pRenderer,
+            data.vOpaqueShaders,
+            data,
+            viewMatrix,
+            viewProjectionMatrix,
+            cameraFrustum,
+            ambientLightColor,
+            mtxPointLightData.second,
+            mtxSpotlightData.second,
+            mtxDirectionalLightData.second,
+            lightSourceManager.getSpotlightShadowMapArray(),
+            lightCullingInfo);
+
+        if (!data.vTransparentShaders.empty()) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            {
+                drawMeshes(
+                    pRenderer,
+                    data.vTransparentShaders,
+                    data,
+                    viewMatrix,
+                    viewProjectionMatrix,
+                    cameraFrustum,
+                    ambientLightColor,
+                    mtxPointLightData.second,
+                    mtxSpotlightData.second,
+                    mtxDirectionalLightData.second,
+                    lightSourceManager.getSpotlightShadowMapArray(),
+                    lightCullingInfo);
+            }
+            glDisable(GL_BLEND);
         }
-        glDisable(GL_BLEND);
     }
 }
 
@@ -558,7 +709,9 @@ void MeshRenderer::drawMeshes(
     const glm::vec3& ambientLightColor,
     LightSourceShaderArray::LightData& pointLightData,
     LightSourceShaderArray::LightData& spotlightData,
-    LightSourceShaderArray::LightData& directionalLightData) {
+    LightSourceShaderArray::LightData& directionalLightData,
+    Texture& spotShadowMapArray,
+    const LightCullingInfo& lightCullingInfo) {
     PROFILE_FUNC
 
 #if defined(ENGINE_DEBUG_TOOLS)
@@ -611,6 +764,22 @@ void MeshRenderer::drawMeshes(
             shaderInfo.iDirectionalLightsUniformBlockBindingIndex,
             directionalLightData.pUniformBufferObject->getBufferId());
 
+        // Bind shadow maps.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, spotShadowMapArray.getTextureId());
+        glUniform1i(shaderInfo.iSpotShadowMapsUniform,
+                    0); // <- assign texture unit
+
+        // Light culling info.
+        glUniform1iv(
+            shaderInfo.iIsSpotlightCulledUniform,
+            static_cast<int>(lightCullingInfo.vIsSpotlightCulled.size()),
+            lightCullingInfo.vIsSpotlightCulled.data());
+        glUniform1iv(
+            shaderInfo.iIsPointLightCulledUniform,
+            static_cast<int>(lightCullingInfo.vIsPointLightCulled.size()),
+            lightCullingInfo.vIsPointLightCulled.data());
+
         // Distance fog.
         glm::vec2 distanceFogRange = glm::vec2(-1.0F, -1.0F); // <- means disabled
         if (optDistanceFog.has_value()) {
@@ -619,6 +788,11 @@ void MeshRenderer::drawMeshes(
             glUniform3fv(shaderInfo.iDistanceFogColorUniform, 1, glm::value_ptr(color));
         }
         glUniform2fv(shaderInfo.iDistanceFogRangeUniform, 1, glm::value_ptr(distanceFogRange));
+
+        // Prepare slot for diffuse texture.
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);                   // <- empty for now
+        glUniform1i(shaderInfo.iDiffuseTextureUniform, 1); // <- assign texture unit
 
         // Submit meshes.
         for (unsigned short iMeshDataIndex = shaderInfo.iFirstMeshIndex;

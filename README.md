@@ -9,20 +9,18 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 # Roadmap
 
 - [X] Node system (Godot-like ECS alternative)
-- [X] Handling user input events
 - [X] Config management (progress, settings, etc.)
 - [X] Type reflection
 - [X] Forward renderer using OpenGL ES 3.1
-- [X] Dynamic light sources
 - [X] GLTF/GLB import
 - [X] Profiler
 - [X] GUI
-- [X] Audio (using [SFML](https://github.com/SFML/SFML))
+- [X] Audio
 - [X] Simple editor
-- [X] Physics engine (using [Jolt](https://github.com/jrouwe/JoltPhysics))
-- [X] Skeletal animations (using [ozz-animation](https://github.com/guillaumeblanc/ozz-animation/))
-- [X] Minimal scripting (using [AngelScript](https://github.com/anjo76/angelscript))
-- [ ] Dynamic shadows
+- [X] Physics engine
+- [X] Skeletal animations
+- [X] Minimal scripting
+- [X] Shadow mapping 
 - [ ] Pathfinding
 - [ ] Particle effects
 

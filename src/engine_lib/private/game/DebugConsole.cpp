@@ -15,7 +15,7 @@ namespace {
     constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0F, 0.96F);
     constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0F, 1.0F - consoleScreenPos.y);
 
-    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.48F);
+    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.375F);
 
     constexpr float textPadding = consoleScreenSize.y * 0.1F;
     constexpr float textHeight = 0.025F;
@@ -139,24 +139,24 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
             drawText(std::format("active moving bodies: {}", stats.iActiveMovingBodyCount));
             drawText(std::format("active simulated bodies: {}", stats.iActiveSimulatedBodyCount));
             drawText(std::format("active character bodies: {}", stats.iActiveCharacterBodyCount));
-            drawText(std::format("rendered light sources: {}", stats.iRenderedLightSourceCount));
             drawText(std::format("rendered meshes: {}", stats.iRenderedMeshCount));
+            drawText(std::format(
+                "rendered lights: {}/{}",
+                stats.iActiveLightSourceCount - stats.iCulledLightSourceCount,
+                stats.iActiveLightSourceCount));
             drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
             drawText(std::format(
-                "CPU time (ms) to submit a frame: {:.1F} | meshes: {:.1F} | ui: {:.1F} | debug drawer: "
-                "{:.1F}",
-                stats.cpuTimeToSubmitFrameMs,
-                stats.cpuTimeToSubmitMeshesMs,
-                stats.cpuTimeToSubmitUiMs,
-                stats.cpuTimeToSubmitDebugDrawMs));
-            if (stats.gpuTimeDrawMeshesMs < 0.0F) {
-                drawText("GPU time metrics are not supported on this GPU");
-            } else {
-                drawText(std::format("GPU time (ms) draw meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
-                drawText(std::format("GPU time (ms) draw skybox: {:.1F}", stats.gpuTimeDrawSkyboxMs));
-                drawText(std::format("GPU time (ms) draw ui: {:.1F}", stats.gpuTimeDrawUiMs));
-                drawText(std::format("GPU time (ms) debug drawer: {:.1F}", stats.gpuTimeDrawDebug));
-            }
+                "CPU time (ms) to submit a frame: {:.1F}, this includes:", stats.cpuTimeToSubmitFrameMs));
+            drawText(std::format("- submit shadow pass: {:.1F}", stats.cpuTimeToSubmitShadowPassMs));
+            drawText(std::format("- submit meshes: {:.1F}", stats.cpuTimeToSubmitMeshesMs));
+            drawText(std::format("- submit ui: {:.1F}", stats.cpuTimeToSubmitUiMs));
+            drawText(std::format("- submit debug draw: {:.1F}", stats.cpuTimeToSubmitDebugDrawMs));
+            drawText("GPU time to draw (ms):");
+            drawText(std::format("- shadow pass: {:.1F}", stats.gpuTimeDrawShadowPassMs));
+            drawText(std::format("- meshes: {:.1F}", stats.gpuTimeDrawMeshesMs));
+            drawText(std::format("- skybox: {:.1F}", stats.gpuTimeDrawSkyboxMs));
+            drawText(std::format("- ui: {:.1F}", stats.gpuTimeDrawUiMs));
+            drawText(std::format("- debug drawer: {:.1F}", stats.gpuTimeDrawDebug));
         }
     }
 }

@@ -59,7 +59,8 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
         0,
         "#version 310 es\n"
         "precision highp float;\n"
-        "precision highp int;\n");
+        "precision highp int;\n"
+        "precision highp sampler2DArrayShadow;\n");
 
     // Define some macros.
     std::vector<std::string_view> vDefinedMacros;
@@ -95,7 +96,7 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 
     // See if there were any warnings/errors.
     int iSuccess = 0;
-    std::array<char, 1024> infoLog = {0};
+    std::array<char, 8192> infoLog = {0};
     glGetShaderiv(iShaderId, GL_COMPILE_STATUS, &iSuccess);
     if (iSuccess == 0) [[unlikely]] {
         glGetShaderInfoLog(iShaderId, static_cast<int>(infoLog.size()), nullptr, infoLog.data());

@@ -78,6 +78,8 @@ void PointLightNode::onSpawning() {
         pActiveLightHandle =
             lightSourceManager.getPointLightsArray().addLightSourceToRendering(this, &shaderProperties);
     }
+
+    sphereShapeWorld = Sphere(getWorldLocation(), shaderProperties.distance);
 }
 
 void PointLightNode::onDespawning() {
@@ -131,6 +133,8 @@ void PointLightNode::setLightDistance(float distance) {
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+
+    sphereShapeWorld = Sphere(getWorldLocation(), shaderProperties.distance);
 }
 
 void PointLightNode::onWorldLocationRotationScaleChanged() {
@@ -142,6 +146,8 @@ void PointLightNode::onWorldLocationRotationScaleChanged() {
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+
+    sphereShapeWorld = Sphere(getWorldLocation(), shaderProperties.distance);
 }
 
 PointLightNode::ShaderProperties::ShaderProperties() = default;

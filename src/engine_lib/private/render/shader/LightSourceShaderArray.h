@@ -37,6 +37,13 @@ public:
      */
     void copyNewProperties(const void* pData);
 
+    /**
+     * Returns an actual index into the shader array.
+     *
+     * @return Index into the shader array.
+     */
+    unsigned int getActualIndex() const { return pArrayIndex->getActualIndex(); }
+
 private:
     /**
      * Constructs a new handle.

@@ -9,6 +9,7 @@
 #include "game/GameManager.h"
 #include "render/MeshRenderer.h"
 #include "render/LightSourceManager.h"
+#include "render/GpuTimeQuery.hpp"
 #if !defined(ENGINE_UI_ONLY)
 #include "game/physics/PhysicsManager.h"
 #endif
@@ -19,6 +20,13 @@ World::~World() {
     if (mtxRootNode.second != nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected world to be destroyed at this point");
     }
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    for (auto& frameQueries : vFrameQueries) {
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawShadowPass));
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
+    }
+#endif
 }
 
 World::World(GameManager* pGameManager, const std::string& sName, std::unique_ptr<Node> pRootNodeToUse)
@@ -36,6 +44,21 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
 #if !defined(ENGINE_UI_ONLY)
     pMeshRenderer = std::unique_ptr<MeshRenderer>(new MeshRenderer());
     pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager());
+#endif
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    // Initialize queries.
+    for (auto& frameQueries : vFrameQueries) {
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawShadowPass));
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawShadowPass);
+        }
+
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawMeshes);
+        }
+    }
 #endif
 
     // Spawn root node.
@@ -259,8 +282,8 @@ void World::onNodeSpawned(Node* pNode) {
 
         if (mtxIsIteratingOverNodes.second) {
             // Add to our arrays as "deferred" task because we are currently iterating over an array of
-            // tickable nodes, without this "deferred" task we will modify array that we are iterating over
-            // which will cause bad things to happen.
+            // tickable nodes, without this "deferred" task we will modify array that we are iterating
+            // over which will cause bad things to happen.
             mtxTasksToExecuteAfterNodeTick.second.push(executeOperation);
         } else {
             executeOperation();
@@ -303,12 +326,11 @@ void World::onNodeDespawned(Node* pNodeToBeDeleted) {
 
         const auto executeOperation =
             [this, pDeletedNode = pNodeToBeDeleted, tickGroup = pNodeToBeDeleted->getTickGroup()]() {
-                // Force iterate over all ticking nodes and remove this node if it's marked as ticking in our
-                // arrays.
-                // We don't check `Node::isCalledEveryFrame` here simply because the node can disable it
-                // and despawn right after disabling it. If we check `Node::isCalledEveryFrame` we
-                // might not remove the node from our arrays and it will continue ticking (error).
-                // We even have a test for this bug.
+                // Force iterate over all ticking nodes and remove this node if it's marked as ticking in
+                // our arrays. We don't check `Node::isCalledEveryFrame` here simply because the node can
+                // disable it and despawn right after disabling it. If we check `Node::isCalledEveryFrame`
+                // we might not remove the node from our arrays and it will continue ticking (error). We
+                // even have a test for this bug.
                 removeTickableNode(pDeletedNode, tickGroup);
 
                 // Not checking for `Node::isReceivingInput` for the same reason as above.
@@ -345,7 +367,8 @@ void World::onSpawnedNodeChangedIsCalledEveryFrame(Node* pNode) {
             // Make sure this node is still spawned.
             const auto bIsSpawned = isNodeSpawned(iNodeId);
             if (!bIsSpawned) {
-                // If it had "is called every frame" enabled it was removed from our arrays during despawn.
+                // If it had "is called every frame" enabled it was removed from our arrays during
+                // despawn.
                 return;
             }
 
