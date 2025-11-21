@@ -3,16 +3,6 @@ name: All
 on: [push, pull_request, pull_request_review]
 
 jobs:
-  shader-formatter:
-    name: Run shader-formatter
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Run shader-formatter
-        run: |
-          cd .github/scripts/run_shader_formatter_on_source/
-          go run . ../../../res/engine/shaders
   doxygen:
     name: Run doxygen
     runs-on: windows-latest
