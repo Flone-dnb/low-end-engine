@@ -498,6 +498,14 @@ if (NOT IS_RELEASE_BUILD)
     add_dependencies(${ENGINE_LIB_DEPS_TARGET} TracyClient)
 
     add_compile_definitions(ENGINE_PROFILER_ENABLED)
+
+    # Add cpptrace.
+    message(STATUS "${PROJECT_NAME}: adding external dependency \"cpptrace\"...")
+    set(CPPTRACE_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${RELATIVE_EXT_PATH}/cpptrace ${DEPENDENCY_BUILD_DIR_NAME}/cpptrace SYSTEM)
+    target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE cpptrace::cpptrace)
+    set_target_properties(cpptrace-lib PROPERTIES FOLDER ${EXTERNAL_FOLDER})
+    add_dependencies(${ENGINE_LIB_DEPS_TARGET} cpptrace-lib)
 endif()
 
 # Link engine library to dependencies.

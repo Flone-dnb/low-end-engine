@@ -52,3 +52,6 @@
 [submodule "ext/angelscript"]
 	path = ext/angelscript
 	url = https://github.com/anjo76/angelscript.git
+[submodule "ext/cpptrace"]
+	path = ext/cpptrace
+	url = https://github.com/jeremy-rifkin/cpptrace.git

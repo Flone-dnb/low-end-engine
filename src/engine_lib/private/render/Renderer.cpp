@@ -28,6 +28,20 @@
 #include <time.h>
 #endif
 
+#if defined(DEBUG)
+void GLAPIENTRY debugMessageCallback(
+    GLenum source,
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    const GLchar* message,
+    const void* userParam) {
+    // We have only error messages enabled in this callback.
+    Error::showErrorAndThrowException(std::format("GL debug message: {}", message));
+}
+#endif
+
 void DistanceFogSettings::setFogRange(const glm::vec2& range) {
     fogRange.x = std::max(range.x, 0.0F);
     fogRange.y = std::max(range.y, fogRange.x);
@@ -61,6 +75,19 @@ std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow)
         Error::showErrorAndThrowException("the GPU does not support OpenGL extension "
                                           "GL_EXT_disjoint_timer_query which is required for debug tools");
     }
+#endif
+
+#if defined(DEBUG)
+    if (GLAD_GL_KHR_debug != 1) {
+        Error::showErrorAndThrowException(
+            "the GPU does not support GL_KHR_DEBUG extension which is required for debug builds");
+    }
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(debugMessageCallback, nullptr);
+
+    // Enable all error messages
+    glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 #endif
 
     // Enable back face culling.

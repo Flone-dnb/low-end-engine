@@ -14,6 +14,9 @@
 #if defined(WIN32)
 #include <Windows.h>
 #endif
+#if defined(DEBUG)
+#include "cpptrace/cpptrace.hpp"
+#endif
 
 void checkLastGlError(const std::source_location location) {
     const auto lastError = glGetError();
@@ -118,7 +121,23 @@ void Error::showErrorAndThrowException() const {
     {
         auto guard = Log::setCallback(nullptr); // unbind callback to not trigger any game/editor logic
     }
-    const std::string sErrorMessage = getFullErrorMessage();
+    std::string sErrorMessage = getFullErrorMessage();
+
+#if defined(DEBUG)
+    sErrorMessage += "\nstacktrace:\n";
+    auto stacktrace = cpptrace::generate_trace();
+    for (const auto& frame : stacktrace.frames) {
+        if (frame.line.has_value()) {
+            sErrorMessage += std::format(
+                "- {}, line: {}\n",
+                std::filesystem::path(frame.filename).filename().string(),
+                frame.line.value());
+        } else {
+            sErrorMessage += std::format("- {}\n", frame.filename);
+        }
+    }
+#endif
+
     Log::error(sErrorMessage);
 
     // Show message box.
