@@ -541,19 +541,21 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
     // Process spotlights.
     for (const auto& pNode : spotlightData.visibleLightNodes) {
         const auto pSpotlightNode = reinterpret_cast<SpotlightNode*>(pNode);
-        const auto pShadowData = pSpotlightNode->getInternalShadowMapData();
-        if (pShadowData == nullptr) {
-            // Shadow casting not enabled.
-            continue;
-        }
 
-        if (!cameraFrustum.isConeInFrustum(pShadowData->coneWorld)) {
+        if (!cameraFrustum.isConeInFrustum(pSpotlightNode->getConeShapeWorld())) {
             // No shadows in camera's frustum.
             lightCullingInfo
                 .vIsSpotlightCulled[pSpotlightNode->getInternalLightSourceHandle()->getActualIndex()] = 1;
 #if defined(ENGINE_DEBUG_TOOLS)
             debugStats.iCulledLightSourceCount += 1;
 #endif
+            continue;
+        }
+
+        const auto pShadowData = pSpotlightNode->getInternalShadowMapData();
+        if (pShadowData == nullptr) {
+            // Shadow casting not enabled.
+
             continue;
         }
 

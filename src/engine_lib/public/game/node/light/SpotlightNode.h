@@ -67,9 +67,6 @@ public:
 
         /** Light's frustum in world space. */
         Frustum frustumWorld;
-
-        /** Light's cone shape in world space. */
-        Cone coneWorld;
     };
 
     SpotlightNode();
@@ -216,6 +213,13 @@ public:
     bool isCastingShadows() const { return bCastShadows; }
 
     /**
+     * Returns shape of the light source in world space.
+     *
+     * @return Shape.
+     */
+    const Cone& getConeShapeWorld() const { return coneWorld; }
+
+    /**
      * Returns `nullptr` if shadow data not created yet.
      *
      * @return Internal shadow data used for shadow pass.
@@ -280,6 +284,9 @@ private:
     /** Recalculates projection matrix for shadow mapping. */
     void recalculateShadowProjMatrix();
 
+    /** Recalculates @ref coneWorld. */
+    void recalculateConeShape();
+
     /** Data to copy to shaders. */
     ShaderProperties shaderProperties;
 
@@ -288,6 +295,9 @@ private:
 
     /** Not `nullptr` if being rendered. */
     std::unique_ptr<ActiveLightSourceHandle> pActiveLightHandle;
+
+    /** Light's cone shape in world space. */
+    Cone coneWorld;
 
     /**
      * Light cutoff angle (in degrees) of the inner cone (hard light edge).

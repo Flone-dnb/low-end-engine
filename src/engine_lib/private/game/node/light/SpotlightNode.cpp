@@ -119,6 +119,8 @@ void SpotlightNode::onSpawning() {
             createShadowMapData();
         }
     }
+
+    recalculateConeShape();
 }
 
 void SpotlightNode::onDespawning() {
@@ -228,6 +230,8 @@ void SpotlightNode::setLightDistance(float distance) {
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+
+    recalculateConeShape();
 }
 
 void SpotlightNode::setLightInnerConeAngle(float inInnerConeAngle) {
@@ -248,6 +252,8 @@ void SpotlightNode::setLightInnerConeAngle(float inInnerConeAngle) {
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+
+    recalculateConeShape();
 }
 
 void SpotlightNode::setLightOuterConeAngle(float inOuterConeAngle) {
@@ -263,6 +269,8 @@ void SpotlightNode::setLightOuterConeAngle(float inOuterConeAngle) {
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+
+    recalculateConeShape();
 }
 
 void SpotlightNode::onWorldLocationRotationScaleChanged() {
@@ -283,6 +291,15 @@ void SpotlightNode::onWorldLocationRotationScaleChanged() {
     if (pActiveLightHandle != nullptr) {
         pActiveLightHandle->copyNewProperties(&shaderProperties);
     }
+
+    recalculateConeShape();
+}
+
+void SpotlightNode::recalculateConeShape() {
+    const auto coneBottomRadius = glm::tan(glm::radians(outerConeAngle)) * shaderProperties.distance;
+
+    coneWorld =
+        Cone(getWorldLocation(), shaderProperties.distance, getWorldForwardDirection(), coneBottomRadius);
 }
 
 void SpotlightNode::recalculateShadowProjMatrix() {
@@ -291,10 +308,6 @@ void SpotlightNode::recalculateShadowProjMatrix() {
     static_assert(maxConeAngle <= 90.0F, "change FOV for shadow map capture");
     const auto fovYRadians =
         glm::radians(outerConeAngle * 2.0F); // x2 to convert [0..90] degree to [0..180] FOV
-    const auto coneBottomRadius =
-        glm::tan(glm::radians(outerConeAngle)) * shaderProperties.distance *
-        1.3F; // TODO: to avoid a rare light culling issue when viewing exactly in the
-              // direction of the spotlight (light outer cone bounds are slightly culled)
 
     const float aspectRatio = 1.0F;
 
@@ -313,9 +326,6 @@ void SpotlightNode::recalculateShadowProjMatrix() {
         farClipPlane,
         fovYRadians,
         aspectRatio);
-
-    pShadowMapData->coneWorld =
-        Cone(worldLocation, shaderProperties.distance, worldDirection, coneBottomRadius);
 }
 
 SpotlightNode::ShaderProperties::ShaderProperties() = default;
