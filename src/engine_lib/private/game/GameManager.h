@@ -498,16 +498,10 @@ private:
 template <typename MyGameInstance>
     requires std::derived_from<MyGameInstance, GameInstance>
 inline std::variant<std::unique_ptr<GameManager>, Error> GameManager::create(Window* pWindow) {
-    // Create renderer.
-    auto result = Renderer::create(pWindow);
-    if (std::holds_alternative<Error>(result)) [[unlikely]] {
-        auto error = std::get<Error>(std::move(result));
-        error.addCurrentLocationToErrorStack();
-        return error;
-    }
-    auto pRenderer = std::get<std::unique_ptr<Renderer>>(std::move(result));
+    // first renderer
+    auto pRenderer = Renderer::create(pWindow);
 
-    // Create game instance.
+    // then create game instance
     auto pGameInstance = std::make_unique<MyGameInstance>(pWindow);
 
     return std::unique_ptr<GameManager>(

@@ -270,7 +270,7 @@ private:
      *
      * @return Error if something went wrong, otherwise created renderer.
      */
-    static std::variant<std::unique_ptr<Renderer>, Error> create(Window* pWindow);
+    static std::unique_ptr<Renderer> create(Window* pWindow);
 
     /**
      * Initializes the renderer.

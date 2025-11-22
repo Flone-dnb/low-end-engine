@@ -58,16 +58,16 @@ SkyboxSettings::~SkyboxSettings() {}
 Renderer::SkyboxData::SkyboxData() {}
 Renderer::SkyboxData::~SkyboxData() {}
 
-std::variant<std::unique_ptr<Renderer>, Error> Renderer::create(Window* pWindow) {
+std::unique_ptr<Renderer> Renderer::create(Window* pWindow) {
     // Create context.
     const auto pContext = SDL_GL_CreateContext(pWindow->getSdlWindow());
     if (pContext == nullptr) [[unlikely]] {
-        return Error(SDL_GetError());
+        Error::showErrorAndThrowException(SDL_GetError());
     }
 
     // After creating the context - initialize GLAD.
     if (gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) == 0) [[unlikely]] {
-        return Error("failed to load OpenGL ES");
+        Error::showErrorAndThrowException("failed to load OpenGL ES");
     }
 
 #if defined(ENGINE_DEBUG_TOOLS)
