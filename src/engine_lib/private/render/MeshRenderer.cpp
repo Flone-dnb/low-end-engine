@@ -654,8 +654,18 @@ void MeshRenderer::drawMeshes(
         mtxDirectionalLightData.second.visibleLightNodes.size();
 #endif
 
-    const auto lightCullingInfo = drawShadowPass(
-        data, cameraFrustum, mtxPointLightData.second, mtxSpotlightData.second, iGlDrawShadowPassQuery);
+    // TODO: fix this, the first frame rendered after the shadow map array was created (after world was
+    // created) causes INVALID_OPERATION in glDrawElements in drawShadowPass (OpenGL does not give any details
+    // just this error) all CPU handles are valid and are the same as on next frames but for some reason we
+    // get this error on some Intel and AMD GPUs. This fix is not needed on NVIDIA GPUs it works perfectly
+    // fine without it.
+    LightCullingInfo lightCullingInfo;
+    if (lightSourceManager.bIsFirstFrameAfterCreated) {
+        lightSourceManager.bIsFirstFrameAfterCreated = false;
+    } else {
+        lightCullingInfo = drawShadowPass(
+            data, cameraFrustum, mtxPointLightData.second, mtxSpotlightData.second, iGlDrawShadowPassQuery);
+    }
 
     glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
