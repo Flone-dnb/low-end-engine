@@ -24,6 +24,7 @@ World::~World() {
 #if defined(ENGINE_DEBUG_TOOLS)
     for (auto& frameQueries : vFrameQueries) {
         GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawShadowPass));
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDepthPrepass));
         GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));
     }
 #endif
@@ -52,6 +53,11 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
         GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawShadowPass));
         {
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawShadowPass);
+        }
+
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawDepthPrepass));
+        {
+            MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDepthPrepass);
         }
 
         GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawMeshes));

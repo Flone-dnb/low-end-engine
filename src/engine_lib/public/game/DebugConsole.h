@@ -48,20 +48,26 @@ public:
         /** Time in milliseconds that the CPU spent submitting the last frame. */
         float cpuTimeToSubmitFrameMs = 0.0F;
 
-        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit shadow pass. */
+        /** Time in milliseconds to submit shadow pass. */
         float cpuTimeToSubmitShadowPassMs = 0.0F;
 
-        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit meshes. */
+        /** Time in milliseconds to submit shadow pass. */
+        float cpuTimeToSubmitDepthPrepassMs = 0.0F;
+
+        /** Time in milliseconds to submit meshes. */
         float cpuTimeToSubmitMeshesMs = 0.0F;
 
-        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit UI. */
+        /** Time in milliseconds to submit UI. */
         float cpuTimeToSubmitUiMs = 0.0F;
 
-        /** Time in milliseconds (part of the @ref cpuTimeToSubmitFrameMs) to submit debug drawer things. */
+        /** Time in milliseconds to submit debug drawer things. */
         float cpuTimeToSubmitDebugDrawMs = 0.0F;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawShadowPassMs = -1.0F;
+
+        /** Time in milliseconds spent on the GPU drawing meshes. */
+        float gpuTimeDrawDepthPrepassMs = -1.0F;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawMeshesMs = -1.0F;

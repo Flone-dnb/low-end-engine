@@ -523,6 +523,7 @@ void MeshRenderer::drawMeshes(
     const Frustum& cameraFrustum,
     LightSourceManager& lightSourceManager,
     unsigned int iGlDrawShadowPassQuery,
+    unsigned int iGlDrawDepthPrepassQuery,
     unsigned int iGlDrawMeshesQuery) {
     std::scoped_lock guard(mtxRenderData.first);
     auto& data = mtxRenderData.second;
@@ -546,11 +547,17 @@ void MeshRenderer::drawMeshes(
 
     auto lightCullingInfo = drawShadowPass(
         data, cameraFrustum, mtxPointLightData.second, mtxSpotlightData.second, iGlDrawShadowPassQuery);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // <- restore framebuffer from shadow pass
 
     glViewport(viewportSize.x, viewportSize.y, viewportSize.z, viewportSize.w);
 
+    drawDepthPrepass(
+        pRenderer, data, cameraFrustum, viewMatrix, viewProjectionMatrix, iGlDrawDepthPrepassQuery);
+
     {
         MEASURE_GPU_TIME_SCOPED(iGlDrawMeshesQuery);
+
+        glDepthMask(GL_FALSE); // disable depth write (after z prepass depth is already filled)
 
         drawMeshes(
             pRenderer,
@@ -586,6 +593,8 @@ void MeshRenderer::drawMeshes(
             }
             glDisable(GL_BLEND);
         }
+
+        glDepthMask(GL_TRUE);
     }
 }
 
@@ -650,9 +659,6 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
 #if defined(ENGINE_DEBUG_TOOLS)
     const auto cpuSubmitStartCounter = SDL_GetPerformanceCounter();
 #endif
-
-    int iOriginalFramebufferId = 0;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &iOriginalFramebufferId);
 
     LightCullingInfo lightCullingInfo{};
     std::memset(&lightCullingInfo, 0, sizeof(lightCullingInfo));
@@ -721,7 +727,6 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
     // Restore state.
     glPolygonOffset(0.0F, 0.0F);
     glDisable(GL_POLYGON_OFFSET_FILL);
-    glBindFramebuffer(GL_FRAMEBUFFER, iOriginalFramebufferId);
 
     // Insert a barrier before reading shadow maps.
     glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
@@ -733,6 +738,41 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
 #endif
 
     return lightCullingInfo;
+}
+
+void MeshRenderer::drawDepthPrepass(
+    Renderer* pRenderer,
+    const RenderData& data,
+    const Frustum& cameraFrustum,
+    const glm::mat4& viewMatrix,
+    const glm::mat4& viewProjectionMatrix,
+    unsigned int iGlDrawDepthPrepassQuery) {
+    PROFILE_FUNC
+    MEASURE_GPU_TIME_SCOPED(iGlDrawDepthPrepassQuery);
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    const auto cpuSubmitStartCounter = SDL_GetPerformanceCounter();
+#endif
+
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glDepthFunc(GL_LESS);
+
+    drawMeshesVertexShaderOnly(data, data.vOpaqueShaders, viewMatrix, viewProjectionMatrix, cameraFrustum);
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glDepthFunc(pRenderer->getCurrentGlDepthFunc());
+#if defined(DEBUG)
+    // Self check:
+    if (pRenderer->getCurrentGlDepthFunc() != GL_LEQUAL) [[unlikely]] {
+        Error::showErrorAndThrowException("expected LEQUAL depth func");
+    }
+#endif
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    DebugConsole::getStats().cpuTimeToSubmitDepthPrepassMs =
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceFrequency());
+#endif
 }
 
 void MeshRenderer::drawMeshes(

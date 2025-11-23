@@ -78,6 +78,9 @@ public:
         /** GL query ID for measuring GPU time that we spent drawing shadow pass. */
         unsigned int iGlQueryToDrawShadowPass = 0;
 
+        /** GL query ID for measuring GPU time that we spent drawing depth prepass. */
+        unsigned int iGlQueryToDrawDepthPrepass = 0;
+
         /** GL query ID for measuring GPU time that we spent drawing meshes. */
         unsigned int iGlQueryToDrawMeshes = 0;
     };
@@ -199,7 +202,7 @@ public:
      *
      * @return Time queries.
      */
-    std::array<FrameQueries, iFramesInFlight>& getFrameQueries()  { return vFrameQueries; }
+    std::array<FrameQueries, iFramesInFlight>& getFrameQueries() { return vFrameQueries; }
 
 private:
     /** Represents arrays of nodes that are marked as "should be called every frame". */

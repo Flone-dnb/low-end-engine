@@ -230,6 +230,7 @@ public:
      * @param cameraFrustum        Camera's frustum.
      * @param lightSourceManager   Light source manager.
      * @param iGlDrawShadowPassQuery Query ID.
+     * @param iGlDrawDepthPrepassQuery Query ID.
      * @param iGlDrawMeshesQuery   Query ID.
      */
     void drawMeshes(
@@ -240,6 +241,7 @@ public:
         const Frustum& cameraFrustum,
         LightSourceManager& lightSourceManager,
         unsigned int iGlDrawShadowPassQuery,
+        unsigned int iGlDrawDepthPrepassQuery,
         unsigned int iGlDrawMeshesQuery);
 
     /**
@@ -314,6 +316,24 @@ private:
         const glm::mat4& viewMatrix,
         const glm::mat4& viewProjectionMatrix,
         const Frustum& cameraFrustum);
+
+    /**
+     * Submits depth prepass commands.
+     *
+     * @param pRenderer                Renderer.
+     * @param data                     Render data.
+     * @param cameraFrustum            Camera's frustum.
+     * @param viewMatrix               View matrix.
+     * @param viewProjectionMatrix     Camera's view projection matrix.
+     * @param iGlDrawDepthPrepassQuery GPU time query.
+     */
+    void drawDepthPrepass(
+        Renderer* pRenderer,
+        const RenderData& data,
+        const Frustum& cameraFrustum,
+        const glm::mat4& viewMatrix,
+        const glm::mat4& viewProjectionMatrix,
+        unsigned int iGlDrawDepthPrepassQuery);
 
     /**
      * Submits OpenGL draw commands to update shadow maps.

@@ -116,7 +116,7 @@ std::unique_ptr<Renderer> Renderer::create(Window* pWindow) {
 Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWindow) {
     this->pContext = pCreatedContext;
 
-    iCurrentGlDepthFunc = GL_LESS;
+    iCurrentGlDepthFunc = GL_LEQUAL; // less/equal is also needed for main pass (after z prepass)
     glDepthFunc(iCurrentGlDepthFunc);
 
     pShaderManager = std::unique_ptr<ShaderManager>(new ShaderManager(this));
@@ -253,10 +253,12 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
     stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
     stats.gpuTimeDrawShadowPassMs = 0.0F;
+    stats.gpuTimeDrawDepthPrepassMs = 0.0F;
     stats.gpuTimeDrawMeshesMs = 0.0F;
     for (const auto& pWorld : mtxWorlds.second.vWorlds) {
         const auto& worldQueries = pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex];
         stats.gpuTimeDrawShadowPassMs += getQueryTimeMs(worldQueries.iGlQueryToDrawShadowPass);
+        stats.gpuTimeDrawDepthPrepassMs += getQueryTimeMs(worldQueries.iGlQueryToDrawDepthPrepass);
         stats.gpuTimeDrawMeshesMs += getQueryTimeMs(worldQueries.iGlQueryToDrawMeshes);
     }
 
@@ -285,6 +287,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         glm::mat4 viewProjectionMatrix;
         glm::mat4 viewMatrix;
         unsigned int iGlQueryToDrawShadowPass = 0;
+        unsigned int iGlQueryToDrawDepthPrepass = 0;
         unsigned int iGlQueryToDrawMeshes = 0;
     };
     std::vector<std::pair<std::recursive_mutex*, WorldRenderInfo>> vActiveCameras;
@@ -312,6 +315,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             static_cast<float>(iWindowHeight) * (1.0F - std::min(1.0F, viewportRect.y + viewportRect.w)));
 
         pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
+        const auto& vWorldQueries = pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex];
 
         vActiveCameras.push_back(
             {&mtxActiveCamera.first,
@@ -322,10 +326,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                  .viewProjectionMatrix =
                      pCameraProperties->getProjectionMatrix() * pCameraProperties->getViewMatrix(),
                  .viewMatrix = pCameraProperties->getViewMatrix(),
-                 .iGlQueryToDrawShadowPass =
-                     pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex].iGlQueryToDrawShadowPass,
-                 .iGlQueryToDrawMeshes =
-                     pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex].iGlQueryToDrawMeshes}});
+                 .iGlQueryToDrawShadowPass = vWorldQueries.iGlQueryToDrawShadowPass,
+                 .iGlQueryToDrawDepthPrepass = vWorldQueries.iGlQueryToDrawDepthPrepass,
+                 .iGlQueryToDrawMeshes = vWorldQueries.iGlQueryToDrawMeshes}});
     }
 
     const auto pGameInstance = getWindow()->getGameManager()->getGameInstance();
@@ -377,6 +380,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                     frustum,
                     pWorld->getLightSourceManager(),
                     mtxActiveCamera.second.iGlQueryToDrawShadowPass,
+                    mtxActiveCamera.second.iGlQueryToDrawDepthPrepass,
                     mtxActiveCamera.second.iGlQueryToDrawMeshes);
             }
 #if defined(ENGINE_DEBUG_TOOLS)
