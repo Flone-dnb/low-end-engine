@@ -10,15 +10,17 @@ ShaderProgram::~ShaderProgram() {
     pShaderManager->onShaderProgramBeingDestroyed(sShaderProgramName);
 
     GL_CHECK_ERROR(glDeleteProgram(iShaderProgramId));
+    GL_CHECK_ERROR(glDeleteProgram(iVertexOnlyShaderProgramId));
 }
 
 ShaderProgram::ShaderProgram(
     ShaderManager* pShaderManager,
     const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
     unsigned int iShaderProgramId,
-    const std::string& sShaderProgramName)
-    : pShaderManager(pShaderManager), iShaderProgramId(iShaderProgramId), vLinkedShaders(vLinkedShaders),
-      sShaderProgramName(sShaderProgramName) {
+    const std::string& sShaderProgramName,
+    unsigned int iVertexOnlyShaderProgramId)
+    : vLinkedShaders(vLinkedShaders), sShaderProgramName(sShaderProgramName), pShaderManager(pShaderManager),
+      iShaderProgramId(iShaderProgramId), iVertexOnlyShaderProgramId(iVertexOnlyShaderProgramId) {
     // Get total uniform count.
     int iUniformCount = 0;
     GL_CHECK_ERROR(glGetProgramiv(iShaderProgramId, GL_ACTIVE_UNIFORMS, &iUniformCount));

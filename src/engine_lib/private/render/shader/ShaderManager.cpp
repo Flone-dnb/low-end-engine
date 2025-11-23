@@ -127,20 +127,13 @@ std::shared_ptr<Shader> ShaderManager::compileShader(const std::string& sPathToS
 }
 
 std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
-    const std::string& sProgramName, const std::vector<std::shared_ptr<Shader>>& vLinkedShaders) {
-    const auto iShaderProgramId = GL_CHECK_ERROR(glCreateProgram());
-
-    // Link shaders.
-    for (const auto& pShader : vLinkedShaders) {
-        GL_CHECK_ERROR(glAttachShader(iShaderProgramId, pShader->getShaderId()));
-    }
-    GL_CHECK_ERROR(glLinkProgram(iShaderProgramId));
-    // See if there were any linking errors.
-    int iSuccess = 0;
-    glGetProgramiv(iShaderProgramId, GL_LINK_STATUS, &iSuccess);
-    if (iSuccess == 0) {
+    const std::string& sProgramName,
+    const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
+    const std::shared_ptr<Shader>& pVertexShader) {
+    const auto showCompilationError = [](unsigned int iShaderProgramId,
+                                         const std::vector<std::shared_ptr<Shader>>& vShaders) {
         std::string sShaderNames;
-        for (const auto& pShader : vLinkedShaders) {
+        for (const auto& pShader : vShaders) {
             sShaderNames += pShader->getPathToShaderRelativeRes() + ", ";
         }
         sShaderNames.pop_back();
@@ -155,13 +148,42 @@ std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
 
         Error::showErrorAndThrowException(
             std::format("failed to link shader(s) {} together, error: {}", sShaderNames, vInfoLog.data()));
+    };
+
+    const auto iShaderProgramId = GL_CHECK_ERROR(glCreateProgram());
+
+    // Link shaders.
+    for (const auto& pShader : vLinkedShaders) {
+        GL_CHECK_ERROR(glAttachShader(iShaderProgramId, pShader->getShaderId()));
+    }
+    GL_CHECK_ERROR(glLinkProgram(iShaderProgramId));
+    // See if there were any linking errors.
+    int iSuccess = 0;
+    glGetProgramiv(iShaderProgramId, GL_LINK_STATUS, &iSuccess);
+    if (iSuccess == 0) {
+        showCompilationError(iShaderProgramId, vLinkedShaders);
+    }
+
+    unsigned int iVertexOnlyShaderProgramId = 0;
+    if (pVertexShader != nullptr) {
+        iVertexOnlyShaderProgramId = GL_CHECK_ERROR(glCreateProgram());
+        GL_CHECK_ERROR(glAttachShader(iVertexOnlyShaderProgramId, pVertexShader->getShaderId()));
+        GL_CHECK_ERROR(glAttachShader(iVertexOnlyShaderProgramId, pEmptyFragmentShader->getShaderId()));
+        GL_CHECK_ERROR(glLinkProgram(iVertexOnlyShaderProgramId));
+        iSuccess = 0;
+        glGetProgramiv(iVertexOnlyShaderProgramId, GL_LINK_STATUS, &iSuccess);
+        if (iSuccess == 0) {
+            showCompilationError(iVertexOnlyShaderProgramId, {pVertexShader});
+        }
     }
 
     return std::shared_ptr<ShaderProgram>(
-        new ShaderProgram(this, vLinkedShaders, iShaderProgramId, sProgramName));
+        new ShaderProgram(this, vLinkedShaders, iShaderProgramId, sProgramName, iVertexOnlyShaderProgramId));
 }
 
 ShaderManager::~ShaderManager() {
+    pEmptyFragmentShader = nullptr;
+
     std::scoped_lock guard(mtxPathsToShaders.first);
 
     const auto iShaderCount = mtxPathsToShaders.second.size();
@@ -188,7 +210,8 @@ std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
     const auto it = mtxDatabase.second.find(sCombinedName);
     if (it == mtxDatabase.second.end()) {
         // Load and compile.
-        const auto pShaderProgram = compileShaderProgram(sCombinedName, {pVertexShader, pFragmentShader});
+        const auto pShaderProgram =
+            compileShaderProgram(sCombinedName, {pVertexShader, pFragmentShader}, pVertexShader);
         auto& [pWeak, pRaw] = mtxDatabase.second[sCombinedName];
         pWeak = pShaderProgram;
         pRaw = pShaderProgram.get();
@@ -213,7 +236,7 @@ ShaderManager::getShaderProgram(const std::string& sPathToComputeShaderRelativeR
     const auto it = mtxDatabase.second.find(sName);
     if (it == mtxDatabase.second.end()) {
         // Load and compile.
-        const auto pShaderProgram = compileShaderProgram(sName, {pComputeShader});
+        const auto pShaderProgram = compileShaderProgram(sName, {pComputeShader}, nullptr);
         auto& [pWeak, pRaw] = mtxDatabase.second[sName];
         pWeak = pShaderProgram;
         pRaw = pShaderProgram.get();
@@ -224,7 +247,9 @@ ShaderManager::getShaderProgram(const std::string& sPathToComputeShaderRelativeR
     return it->second.first.lock();
 }
 
-ShaderManager::ShaderManager(Renderer* pRenderer) : pRenderer(pRenderer) {}
+ShaderManager::ShaderManager(Renderer* pRenderer) : pRenderer(pRenderer) {
+    pEmptyFragmentShader = getShader("engine/shaders/Empty.frag.glsl");
+}
 
 std::shared_ptr<Shader> ShaderManager::getShader(const std::string& sPathToShaderRelativeRes) {
     std::scoped_lock guard(mtxPathsToShaders.first);

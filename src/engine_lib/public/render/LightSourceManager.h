@@ -16,9 +16,6 @@ class LightSourceManager {
     // Only world is expected to create objects of this type.
     friend class World;
 
-    // TODO: rework this.
-    friend class MeshRenderer;
-
 public:
     ~LightSourceManager();
 
@@ -96,7 +93,4 @@ private:
 
     /** Constant light that will be added. */
     glm::vec3 ambientLightColor = glm::vec3(0.1F, 0.1F, 0.1F);
-
-    /** TODO: rework this. */
-    bool bIsFirstFrameAfterCreated = true;
 };

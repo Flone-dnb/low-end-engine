@@ -142,13 +142,6 @@ public:
     inline void setBoolToActiveProgram(const std::string& sUniformName, bool bValue);
 
     /**
-     * Returns ID of this shader program.
-     *
-     * @return ID.
-     */
-    unsigned int getShaderProgramId() const { return iShaderProgramId; }
-
-    /**
      * Returns location of a shader uniform with the specified name or -1 if not found.
      *
      * @warning Shows an error if not found.
@@ -197,6 +190,21 @@ public:
      */
     std::string_view getName() const { return sShaderProgramName; }
 
+    /**
+     * Returns ID of this shader program.
+     *
+     * @return ID.
+     */
+    unsigned int getShaderProgramId() const { return iShaderProgramId; }
+
+    /**
+     * Returns ID of the shader program that only has vertex shader linked
+     * (if the original shader program had vertex shader linked).
+     *
+     * @return ID (may be invalid if there was not vertex shader linked).
+     */
+    unsigned int getVertexOnlyShaderProgramId() const { return iVertexOnlyShaderProgramId; }
+
 private:
     /**
      * Creates a new shader program.
@@ -205,12 +213,14 @@ private:
      * @param vLinkedShaders     Linked shaders.
      * @param iShaderProgramId   ID of the compiled shader program.
      * @param sShaderProgramName Unique identifier of this shader program.
+     * @param iVertexOnlyShaderProgramId ID of the shader program which has only vertex shader linked.
      */
     ShaderProgram(
         ShaderManager* pShaderManager,
         const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
         unsigned int iShaderProgramId,
-        const std::string& sShaderProgramName);
+        const std::string& sShaderProgramName,
+        unsigned int iVertexOnlyShaderProgramId);
 
     /** Locations of all uniform variables. */
     std::unordered_map<std::string, int> cachedUniformLocations;
@@ -218,17 +228,20 @@ private:
     /** Binding indices of all uniform blocks. */
     std::unordered_map<std::string, unsigned int> cachedUniformBlockBindingIndices;
 
+    /** Shaders linked to the shader program, can be 1 or more shaders. */
+    const std::vector<std::shared_ptr<Shader>> vLinkedShaders;
+
+    /** Unique identifier of this shader program. */
+    const std::string sShaderProgramName;
+
     /** Manager that created this program. */
     ShaderManager* const pShaderManager = nullptr;
 
     /** ID of the created shader program. */
     const unsigned int iShaderProgramId = 0;
 
-    /** Shaders linked to the shader program, can be 1 or more shaders. */
-    const std::vector<std::shared_ptr<Shader>> vLinkedShaders;
-
-    /** Unique identifier of this shader program. */
-    const std::string sShaderProgramName;
+    /** ID of the shader program which has only vertex shader linked. */
+    const unsigned int iVertexOnlyShaderProgramId = 0;
 };
 
 inline int ShaderProgram::getShaderUniformLocation(const std::string& sUniformName) {
@@ -260,7 +273,8 @@ inline unsigned int ShaderProgram::getShaderUniformBlockBindingIndex(const std::
     return cachedIt->second;
 }
 
-inline void ShaderProgram::setMatrix4ToActiveProgram(const std::string& sUniformName, const glm::mat4x4& matrix) {
+inline void
+ShaderProgram::setMatrix4ToActiveProgram(const std::string& sUniformName, const glm::mat4x4& matrix) {
     glUniformMatrix4fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
@@ -269,23 +283,28 @@ inline void ShaderProgram::setMatrix4ArrayToActiveProgram(
     glUniformMatrix4fv(getShaderUniformLocation(sUniformName), iArraySize, GL_FALSE, pArrayStart);
 }
 
-inline void ShaderProgram::setMatrix3ToActiveProgram(const std::string& sUniformName, const glm::mat3x3& matrix) {
+inline void
+ShaderProgram::setMatrix3ToActiveProgram(const std::string& sUniformName, const glm::mat3x3& matrix) {
     glUniformMatrix3fv(getShaderUniformLocation(sUniformName), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-inline void ShaderProgram::setVector2ToActiveProgram(const std::string& sUniformName, const glm::vec2& vector) {
+inline void
+ShaderProgram::setVector2ToActiveProgram(const std::string& sUniformName, const glm::vec2& vector) {
     glUniform2fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setUvector2ToActiveProgram(const std::string& sUniformName, const glm::uvec2& vector) {
+inline void
+ShaderProgram::setUvector2ToActiveProgram(const std::string& sUniformName, const glm::uvec2& vector) {
     glUniform2uiv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setVector3ToActiveProgram(const std::string& sUniformName, const glm::vec3& vector) {
+inline void
+ShaderProgram::setVector3ToActiveProgram(const std::string& sUniformName, const glm::vec3& vector) {
     glUniform3fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
-inline void ShaderProgram::setVector4ToActiveProgram(const std::string& sUniformName, const glm::vec4& vector) {
+inline void
+ShaderProgram::setVector4ToActiveProgram(const std::string& sUniformName, const glm::vec4& vector) {
     glUniform4fv(getShaderUniformLocation(sUniformName), 1, glm::value_ptr(vector));
 }
 
@@ -305,7 +324,8 @@ inline void ShaderProgram::setIntToActiveProgram(const std::string& sUniformName
     glUniform1i(getShaderUniformLocation(sUniformName), iValue);
 }
 
-inline void ShaderProgram::setUniformBlockToActiveProgram(const std::string& sUniformBlockName, Buffer* pBuffer) {
+inline void
+ShaderProgram::setUniformBlockToActiveProgram(const std::string& sUniformBlockName, Buffer* pBuffer) {
     glBindBufferBase(
         GL_UNIFORM_BUFFER, getShaderUniformBlockBindingIndex(sUniformBlockName), pBuffer->getBufferId());
 }

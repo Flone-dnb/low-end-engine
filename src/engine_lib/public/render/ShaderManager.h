@@ -89,11 +89,15 @@ private:
      *
      * @param sProgramName   Unique name of the shader program.
      * @param vLinkedShaders Shaders to link to this program.
+     * @param pVertexShader  Specify vertex shader program if linked shaders has a vertex shader, otherwise
+     * `nullptr`.
      *
      * @return Compiled shader program.
      */
     std::shared_ptr<ShaderProgram> compileShaderProgram(
-        const std::string& sProgramName, const std::vector<std::shared_ptr<Shader>>& vLinkedShaders);
+        const std::string& sProgramName,
+        const std::vector<std::shared_ptr<Shader>>& vLinkedShaders,
+        const std::shared_ptr<Shader>& pVertexShader);
 
     /**
      * Looks if a shader from the specified path was already requested previously (cached) to return it,
@@ -140,6 +144,9 @@ private:
         std::mutex,
         std::unordered_map<std::string, std::pair<std::weak_ptr<ShaderProgram>, ShaderProgram*>>>
         mtxDatabase;
+
+    /** Always valid empty fragment shader used for depth only passes. */
+    std::shared_ptr<Shader> pEmptyFragmentShader;
 
     /** Do not delete/free. Renderer that created this manager. */
     Renderer* const pRenderer = nullptr;

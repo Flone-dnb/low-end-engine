@@ -149,6 +149,15 @@ public:
             /// @cond UNDOCUMENTED
             // uniform locations below:
 
+            // Uniforms from a shader program that has only vertex shader linked:
+            int iVertexOnlyWorldMatrixUniform = 0;
+            int iVertexOnlyNormalMatrixUniform = 0;
+            int iVertexOnlySkinningMatricesUniform = -1;
+            int iVertexOnlyViewMatrixUniform = 0;
+            int iVertexOnlyViewProjectionMatrixUniform = 0;
+
+            // Uniforms for the original shader program (with both vertex and fragment shaders):
+
             int iWorldMatrixUniform = 0;
             int iNormalMatrixUniform = 0;
             int iDiffuseColorUniform = 0;
@@ -291,7 +300,23 @@ private:
 #endif
 
     /**
-     * Queues OpenGL draw commands to update shadow maps.
+     * Submits OpenGL draw commands to draw meshes using a shader program that only has vertex shader linked.
+     *
+     * @param data                 Render data.
+     * @param vShaders             Group of shaders to draw.
+     * @param viewMatrix           View matrix.
+     * @param viewProjectionMatrix Camera's view projection matrix.
+     * @param cameraFrustum        Camera's frustum.
+     */
+    void drawMeshesVertexShaderOnly(
+        const RenderData& data,
+        const std::vector<RenderData::ShaderInfo>& vShaders,
+        const glm::mat4& viewMatrix,
+        const glm::mat4& viewProjectionMatrix,
+        const Frustum& cameraFrustum);
+
+    /**
+     * Submits OpenGL draw commands to update shadow maps.
      *
      * @param data                 Render data.
      * @param cameraFrustum        Camera's frustum.
@@ -309,7 +334,7 @@ private:
         unsigned int iGlDrawShadowPassQuery);
 
     /**
-     * Queues OpenGL draw commands to draw the specified meshes on the currently set framebuffer.
+     * Submits OpenGL draw commands to draw the specified meshes on the currently set framebuffer.
      *
      * @param pRenderer            Renderer.
      * @param vShaders             Shaders to draw.
