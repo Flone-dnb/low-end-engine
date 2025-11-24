@@ -37,8 +37,9 @@ void GLAPIENTRY debugMessageCallback(
     GLsizei length,
     const GLchar* message,
     const void* userParam) {
-    // We have only error messages enabled in this callback.
-    Error::showErrorAndThrowException(std::format("GL debug message: {}", message));
+    if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
+        Error::showErrorAndThrowException(std::format("GL debug message: {}", message));
+    }
 }
 #endif
 
@@ -195,6 +196,8 @@ Renderer::~Renderer() {
     skyboxData.pShaderProgram = nullptr;
     pFullscreenQuad = nullptr;
     pFontManager = nullptr;
+    pTextureManager = nullptr;
+    pShaderManager = nullptr; // delete shaders before context
 
     for (auto& fence : frameSyncData.vFences) {
         glDeleteSync(fence);
@@ -261,8 +264,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         stats.gpuTimeDrawDepthPrepassMs += getQueryTimeMs(worldQueries.iGlQueryToDrawDepthPrepass);
         stats.gpuTimeDrawMeshesMs += getQueryTimeMs(worldQueries.iGlQueryToDrawMeshes);
     }
-
-    const auto cpuFrameSubmitStartCounter = SDL_GetPerformanceCounter();
 #endif
 
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
@@ -274,10 +275,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         // Draw on window's framebuffer.
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
         glViewport(0, 0, iWindowWidth, iWindowHeight);
 
-        pWorld->getUiNodeManager().drawUiOnFramebuffer(0);
+        pWorld->getUiNodeManager().drawUiOnActiveFramebuffer();
     }
 #else
     struct WorldRenderInfo {
@@ -478,12 +479,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     for (auto& mtxActiveCamera : vActiveCameras) {
         mtxActiveCamera.first->unlock();
     }
-#endif
-
-#if defined(ENGINE_DEBUG_TOOLS)
-    DebugConsole::getStats().cpuTimeToSubmitFrameMs =
-        static_cast<float>(SDL_GetPerformanceCounter() - cpuFrameSubmitStartCounter) * 1000.0F /
-        static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 
     // Swap.

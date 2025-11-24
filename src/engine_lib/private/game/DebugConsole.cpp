@@ -145,13 +145,12 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
                 stats.iActiveLightSourceCount - stats.iCulledLightSourceCount,
                 stats.iActiveLightSourceCount));
             drawText(std::format("CPU time (ms) for game tick: {:.1F}", stats.cpuTickTimeMs));
-            drawText(std::format(
-                "CPU time (ms) to submit a frame: {:.1F}, this includes:", stats.cpuTimeToSubmitFrameMs));
-            drawText(std::format("- submit shadow pass: {:.1F}", stats.cpuTimeToSubmitShadowPassMs));
-            drawText(std::format("- submit depth prepass: {:.1F}", stats.cpuTimeToSubmitDepthPrepassMs));
-            drawText(std::format("- submit meshes: {:.1F}", stats.cpuTimeToSubmitMeshesMs));
-            drawText(std::format("- submit ui: {:.1F}", stats.cpuTimeToSubmitUiMs));
-            drawText(std::format("- submit debug draw: {:.1F}", stats.cpuTimeToSubmitDebugDrawMs));
+            drawText("CPU time to submit (ms):");
+            drawText(std::format("- shadow pass: {:.1F}", stats.cpuTimeToSubmitShadowPassMs));
+            drawText(std::format("- depth prepass: {:.1F}", stats.cpuTimeToSubmitDepthPrepassMs));
+            drawText(std::format("- meshes: {:.1F}", stats.cpuTimeToSubmitMeshesMs));
+            drawText(std::format("- ui: {:.1F}", stats.cpuTimeToSubmitUiMs));
+            drawText(std::format("- debug draw: {:.1F}", stats.cpuTimeToSubmitDebugDrawMs));
             drawText("GPU time to draw (ms):");
             drawText(std::format("- shadow pass: {:.1F}", stats.gpuTimeDrawShadowPassMs));
             drawText(std::format("- depth prepass: {:.1F}", stats.gpuTimeDrawDepthPrepassMs));

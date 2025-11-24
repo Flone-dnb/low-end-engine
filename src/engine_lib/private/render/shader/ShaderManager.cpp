@@ -181,18 +181,6 @@ std::shared_ptr<ShaderProgram> ShaderManager::compileShaderProgram(
         new ShaderProgram(this, vLinkedShaders, iShaderProgramId, sProgramName, iVertexOnlyShaderProgramId));
 }
 
-ShaderManager::~ShaderManager() {
-    pEmptyFragmentShader = nullptr;
-
-    std::scoped_lock guard(mtxPathsToShaders.first);
-
-    const auto iShaderCount = mtxPathsToShaders.second.size();
-    if (iShaderCount != 0) [[unlikely]] {
-        Error::showErrorAndThrowException(std::format(
-            "shader manager is being destroyed but there are still {} shader(s) not deleted", iShaderCount));
-    }
-}
-
 std::shared_ptr<ShaderProgram> ShaderManager::getShaderProgram(
     const std::string& sPathToVertexShaderRelativeRes, const std::string& sPathToFragmentShaderRelativeRes) {
     PROFILE_FUNC
@@ -249,6 +237,18 @@ ShaderManager::getShaderProgram(const std::string& sPathToComputeShaderRelativeR
 
 ShaderManager::ShaderManager(Renderer* pRenderer) : pRenderer(pRenderer) {
     pEmptyFragmentShader = getShader("engine/shaders/Empty.frag.glsl");
+}
+
+ShaderManager::~ShaderManager() {
+    pEmptyFragmentShader = nullptr;
+
+    std::scoped_lock guard(mtxPathsToShaders.first);
+
+    const auto iShaderCount = mtxPathsToShaders.second.size();
+    if (iShaderCount != 0) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "shader manager is being destroyed but there are still {} shader(s) not deleted", iShaderCount));
+    }
 }
 
 std::shared_ptr<Shader> ShaderManager::getShader(const std::string& sPathToShaderRelativeRes) {
