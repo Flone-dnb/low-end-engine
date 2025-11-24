@@ -26,6 +26,7 @@
 #include "render/GpuResourceManager.h"
 #include "game/camera/CameraManager.h"
 #include "render/wrapper/Texture.h"
+#include "render/GpuDebugMarker.hpp"
 
 // External.
 #include "glad/glad.h"
@@ -949,6 +950,8 @@ void UiNodeManager::drawRectNodesDataLocked(
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
+    GPU_MARKER_SCOPED("rect nodes");
+
     // Set shader program.
     auto& shaderInfo = mtxData.second.rectShaderInfo;
     const auto& pShaderProgram = shaderInfo.pShaderProgram;
@@ -1004,6 +1007,8 @@ void UiNodeManager::drawProgressBarNodesDataLocked(
     }
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    GPU_MARKER_SCOPED("progress bar nodes");
 
     // Set shader program.
     auto& shaderInfo = mtxData.second.rectShaderInfo;
@@ -1081,6 +1086,8 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
     }
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    GPU_MARKER_SCOPED("checkbox nodes");
 
     const auto aspectRatio = static_cast<float>(iWindowWidth) / static_cast<float>(iWindowHeight);
 
@@ -1166,6 +1173,8 @@ void UiNodeManager::drawSliderNodesDataLocked(
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
 
+    GPU_MARKER_SCOPED("slider nodes");
+
     // Set shader program.
     auto& shaderInfo = mtxData.second.rectShaderInfo;
     const auto& pShaderProgram = shaderInfo.pShaderProgram;
@@ -1233,6 +1242,8 @@ void UiNodeManager::drawTextNodesDataLocked(
         return;
     }
 
+    GPU_MARKER_SCOPED("text nodes");
+
     const auto windowSize = glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
 
     // Set shader program.
@@ -1276,6 +1287,8 @@ void UiNodeManager::drawTextEditNodesDataLocked(
     }
     auto& vInputNodesRendered =
         mtxData.second.vSpawnedVisibleNodes[iLayer].receivingInputUiNodesRenderedLastFrame;
+
+    GPU_MARKER_SCOPED("text edit nodes");
 
     // Set shader program.
     auto& shaderInfo = mtxData.second.textShaderInfo;
@@ -1617,6 +1630,8 @@ void UiNodeManager::drawLayoutScrollBarsDataLocked(
         return;
     }
     auto& renderedNodes = layerNodes.receivingInputUiNodesRenderedLastFrame;
+
+    GPU_MARKER_SCOPED("layout scroll bars");
 
     std::vector<ScrollBarDrawInfo> vScrollBarsToDraw;
     vScrollBarsToDraw.reserve(layerNodes.layoutNodesWithScrollBars.size());

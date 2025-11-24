@@ -16,6 +16,7 @@
 #include "render/wrapper/ShaderProgram.h"
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/GpuTimeQuery.hpp"
+#include "render/GpuDebugMarker.hpp"
 
 // External.
 #include "glad/glad.h"
@@ -363,6 +364,8 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             const auto cpuSubmitMeshesStartCounter = SDL_GetPerformanceCounter();
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
+                GPU_MARKER_SCOPED("draw meshes of a world");
+
                 const auto pWorld = mtxActiveCamera.second.pWorld;
                 const auto& viewportSize = mtxActiveCamera.second.viewportSize;
 
@@ -400,6 +403,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                 Error::showErrorAndThrowException("expected skybox shader program to be valid");
             }
 
+            GPU_MARKER_SCOPED("draw skybox");
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawSkybox);
 
             glDepthFunc(GL_LEQUAL);
@@ -445,6 +449,8 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             const auto cpuSubmitUiStartCounter = SDL_GetPerformanceCounter();
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
+                GPU_MARKER_SCOPED("draw ui of a world");
+
                 const auto pWorld = mtxActiveCamera.second.pWorld;
                 const auto& viewportSize = mtxActiveCamera.second.viewportSize;
 
@@ -464,7 +470,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             // Draw debug after all worlds.
             const auto cpuSubmitDebugStartCounter = SDL_GetPerformanceCounter();
 
+            GPU_MARKER_SCOPED("draw debug objects");
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawDebug);
+
             DebugDrawer::get().drawDebugObjects(
                 this, pGameWorldRenderInfo->viewProjectionMatrix, timeSincePrevCallInSec);
 

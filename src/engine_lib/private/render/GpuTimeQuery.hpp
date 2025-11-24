@@ -1,9 +1,8 @@
 #pragma once
 
-// External.
-#include "glad/glad.h"
-
 #if defined(ENGINE_DEBUG_TOOLS)
+
+#include "glad/glad.h"
 
 /** RAII-style object for creating a GPU time query section. */
 class ScopedGpuTimeQuery {
@@ -15,13 +14,9 @@ public:
      *
      * @param iGlQuery OpenGL ID of the query.
      */
-    ScopedGpuTimeQuery(unsigned int& iGlQuery) {
-        glBeginQueryEXT(GL_TIME_ELAPSED_EXT, iGlQuery);
-    }
+    ScopedGpuTimeQuery(unsigned int& iGlQuery) { glBeginQueryEXT(GL_TIME_ELAPSED_EXT, iGlQuery); }
 
-    ~ScopedGpuTimeQuery() {
-        glEndQueryEXT(GL_TIME_ELAPSED_EXT);
-    }
+    ~ScopedGpuTimeQuery() { glEndQueryEXT(GL_TIME_ELAPSED_EXT); }
 };
 
 //                                              variable name NOT UNIQUE because queries should not intersect

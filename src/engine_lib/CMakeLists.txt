@@ -66,6 +66,7 @@ set(PROJECT_SOURCES
     private/render/UiRenderData.cpp
     private/render/LightSourceLimits.hpp
     private/render/GpuTimeQuery.hpp
+    private/render/GpuDebugMarker.hpp
     private/render/MeshRenderer.h
     private/render/MeshRenderer.cpp
     private/render/RenderingHandle.h

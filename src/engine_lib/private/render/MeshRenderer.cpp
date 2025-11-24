@@ -14,6 +14,7 @@
 #include "game/node/light/SpotlightNode.h"
 #include "game/node/light/PointLightNode.h"
 #include "render/GpuTimeQuery.hpp"
+#include "render/GpuDebugMarker.hpp"
 
 // External.
 #include "SDL3/SDL.h"
@@ -559,21 +560,25 @@ void MeshRenderer::drawMeshes(
 
         glDepthMask(GL_FALSE); // disable depth write (after z prepass depth is already filled)
 
-        drawMeshes(
-            pRenderer,
-            data.vOpaqueShaders,
-            data,
-            viewMatrix,
-            viewProjectionMatrix,
-            cameraFrustum,
-            ambientLightColor,
-            mtxPointLightData.second,
-            mtxSpotlightData.second,
-            mtxDirectionalLightData.second,
-            lightSourceManager.getSpotlightShadowMapArray(),
-            lightCullingInfo);
+        {
+            GPU_MARKER_SCOPED("main pass opaque meshes");
+            drawMeshes(
+                pRenderer,
+                data.vOpaqueShaders,
+                data,
+                viewMatrix,
+                viewProjectionMatrix,
+                cameraFrustum,
+                ambientLightColor,
+                mtxPointLightData.second,
+                mtxSpotlightData.second,
+                mtxDirectionalLightData.second,
+                lightSourceManager.getSpotlightShadowMapArray(),
+                lightCullingInfo);
+        }
 
         if (!data.vTransparentShaders.empty()) {
+            GPU_MARKER_SCOPED("main pass transparent meshes");
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             {
@@ -654,6 +659,7 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
     LightSourceShaderArray::LightData& spotlightData,
     unsigned int iGlDrawShadowPassQuery) {
     PROFILE_FUNC
+    GPU_MARKER_SCOPED("shadow pass");
     MEASURE_GPU_TIME_SCOPED(iGlDrawShadowPassQuery);
 
 #if defined(ENGINE_DEBUG_TOOLS)
@@ -748,6 +754,7 @@ void MeshRenderer::drawDepthPrepass(
     const glm::mat4& viewProjectionMatrix,
     unsigned int iGlDrawDepthPrepassQuery) {
     PROFILE_FUNC
+    GPU_MARKER_SCOPED("depth prepass");
     MEASURE_GPU_TIME_SCOPED(iGlDrawDepthPrepassQuery);
 
 #if defined(ENGINE_DEBUG_TOOLS)
