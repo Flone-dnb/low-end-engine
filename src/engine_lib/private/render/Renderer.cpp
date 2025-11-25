@@ -361,7 +361,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         // Draw meshes.
         {
 #if defined(ENGINE_DEBUG_TOOLS)
-            const auto cpuSubmitMeshesStartCounter = SDL_GetPerformanceCounter();
+            auto& debugStats = DebugConsole::getStats();
+            debugStats.cpuTimeToSubmitShadowPassMs = 0.0F;
+            debugStats.cpuTimeToSubmitDepthPrepassMs = 0.0F;
+            debugStats.cpuTimeToSubmitMeshesMs = 0.0F;
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 GPU_MARKER_SCOPED("draw meshes of a world");
@@ -387,11 +390,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                     mtxActiveCamera.second.iGlQueryToDrawDepthPrepass,
                     mtxActiveCamera.second.iGlQueryToDrawMeshes);
             }
-#if defined(ENGINE_DEBUG_TOOLS)
-            DebugConsole::getStats().cpuTimeToSubmitMeshesMs =
-                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitMeshesStartCounter) * 1000.0F /
-                static_cast<float>(SDL_GetPerformanceFrequency());
-#endif
         }
 
         // Notify game instance.

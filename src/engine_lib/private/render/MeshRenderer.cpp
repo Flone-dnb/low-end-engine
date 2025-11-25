@@ -557,6 +557,9 @@ void MeshRenderer::drawMeshes(
 
     {
         MEASURE_GPU_TIME_SCOPED(iGlDrawMeshesQuery);
+#if defined(ENGINE_DEBUG_TOOLS)
+        const auto cpuSubmitStartCounter = SDL_GetPerformanceCounter();
+#endif
 
         glDepthMask(GL_FALSE); // disable depth write (after z prepass depth is already filled)
 
@@ -600,6 +603,13 @@ void MeshRenderer::drawMeshes(
         }
 
         glDepthMask(GL_TRUE);
+
+#if defined(ENGINE_DEBUG_TOOLS)
+        // ADD not overwrite because there might be multiple worlds that use this function
+        DebugConsole::getStats().cpuTimeToSubmitMeshesMs +=
+            static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
+            static_cast<float>(SDL_GetPerformanceFrequency());
+#endif
     }
 }
 
@@ -709,7 +719,6 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
         const auto pShadowData = pSpotlightNode->getInternalShadowMapData();
         if (pShadowData == nullptr) {
             // Shadow casting not enabled.
-
             continue;
         }
 
@@ -738,7 +747,8 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
     glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 
 #if defined(ENGINE_DEBUG_TOOLS)
-    DebugConsole::getStats().cpuTimeToSubmitShadowPassMs =
+    // ADD not overwrite because there might be multiple worlds that use this function
+    DebugConsole::getStats().cpuTimeToSubmitShadowPassMs +=
         static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
         static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
@@ -776,7 +786,8 @@ void MeshRenderer::drawDepthPrepass(
 #endif
 
 #if defined(ENGINE_DEBUG_TOOLS)
-    DebugConsole::getStats().cpuTimeToSubmitDepthPrepassMs =
+    // ADD not overwrite because there might be multiple worlds that use this function
+    DebugConsole::getStats().cpuTimeToSubmitDepthPrepassMs +=
         static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
         static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
