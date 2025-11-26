@@ -7,7 +7,6 @@
 #include "misc/Error.h"
 
 // External.
-#include "fpng.h"
 #define SDL_MAIN_HANDLED
 #include "SDL3/SDL.h"
 #include "glad/glad.h"
@@ -35,7 +34,5 @@ private:
                 std::format("failed to enable debug context: {}", SDL_GetError()));
         }
 #endif
-
-        fpng::fpng_init();
     }
 };

@@ -13,84 +13,8 @@
 // External.
 #include "nameof.hpp"
 #include "glad/glad.h"
-#include "fpng.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
-
-std::optional<Error> TextureManager::importTextureFromFile(
-    const std::filesystem::path& pathToImport, const std::string& sPathToDirToImportRelativeRes) {
-    // Make sure the source exists.
-    if (!std::filesystem::exists(pathToImport)) [[unlikely]] {
-        return Error(std::format("expected the path \"{}\" to exist", pathToImport.string()));
-    }
-    if (std::filesystem::is_directory(pathToImport)) [[unlikely]] {
-        return Error(std::format("expected the path \"{}\" to be a file", pathToImport.string()));
-    }
-
-    // Make sure the resulting directory exists.
-    const auto pathToResultingDir =
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToDirToImportRelativeRes;
-    if (!std::filesystem::exists(pathToResultingDir)) [[unlikely]] {
-        return Error(
-            std::format("expected the resulting directory \"{}\" to exist", pathToResultingDir.string()));
-    }
-    if (!std::filesystem::is_directory(pathToResultingDir)) [[unlikely]] {
-        return Error(
-            std::format("expected the resulting path \"{}\" to be a directory", pathToResultingDir.string()));
-    }
-
-    const auto pathToResultingImage = pathToResultingDir / (pathToImport.stem().string() + ".png");
-
-    // Load image pixels.
-    int iWidth = 0;
-    int iHeight = 0;
-    int iChannels = 0;
-    unsigned char* pPixels = stbi_load(pathToImport.string().c_str(), &iWidth, &iHeight, &iChannels, 0);
-    if (pPixels == nullptr) [[unlikely]] {
-        return Error(std::format("failed to load image from path \"{}\"", pathToImport.string()));
-    }
-
-    // Convert.
-    if (!fpng::fpng_encode_image_to_file(
-            pathToResultingImage.string().c_str(),
-            pPixels,
-            static_cast<unsigned int>(iWidth),
-            static_cast<unsigned int>(iHeight),
-            static_cast<unsigned int>(iChannels))) [[unlikely]] {
-        stbi_image_free(pPixels);
-        return Error(std::format("failed to import the image \"{}\"", pathToImport.string()));
-    }
-
-    stbi_image_free(pPixels);
-
-    return {};
-}
-
-std::optional<Error> TextureManager::importTextureFromMemory(
-    const std::string& sPathToResultRelativeRes,
-    const std::vector<unsigned char>& vImageData,
-    unsigned int iWidth,
-    unsigned int iHeight,
-    unsigned int iChannelCount) {
-    // Make sure the resulting path does not exist.
-    const auto pathToResult =
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToResultRelativeRes;
-    if (std::filesystem::exists(pathToResult)) [[unlikely]] {
-        return Error(std::format("expected the resulting path \"{}\" to not exist", pathToResult.string()));
-    }
-    if (!std::filesystem::exists(pathToResult.parent_path())) [[unlikely]] {
-        return Error(
-            std::format("expected the directory \"{}\" to exist", pathToResult.parent_path().string()));
-    }
-
-    // Convert.
-    if (!fpng::fpng_encode_image_to_file(
-            pathToResult.string().c_str(), vImageData.data(), iWidth, iHeight, iChannelCount)) [[unlikely]] {
-        return Error(std::format("failed to import the image to \"{}\"", pathToResult.string()));
-    }
-
-    return {};
-}
 
 TextureManager::~TextureManager() {
     std::scoped_lock guard(mtxLoadedTextures.first);
@@ -229,9 +153,6 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
 
     std::scoped_lock guard(mtxLoadedTextures.first, GpuResourceManager::mtx);
 
-    const auto iGlFormat = GL_RGBA; // same as during the import
-    const auto iGlInternalFormat = iGlFormat;
-
     if (usage != TextureUsage::CUBEMAP) {
         // Construct full path to the texture.
         auto pathToTexture =
@@ -245,26 +166,18 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
             return Error(std::format("expected the path \"{}\" to point to a file", pathToTexture.string()));
         }
 
+        // Load pixel data.
         const auto sPathToTexture = pathToTexture.string();
-
-        uint32_t iWidth = 0;
-        uint32_t iHeight = 0;
-        uint32_t iChannelCount = 0;
-        std::vector<uint8_t> vPixels;
-        const auto iImageLoadResult =
-            fpng::fpng_decode_file(sPathToTexture.c_str(), vPixels, iWidth, iHeight, iChannelCount, 4);
-        if (iImageLoadResult != fpng::FPNG_DECODE_SUCCESS) [[unlikely]] {
-            if (iImageLoadResult == fpng::FPNG_DECODE_NOT_FPNG) {
-                return Error(std::format(
-                    "failed to load the image \"{}\" because it was not imported using the engine's texture "
-                    "importer",
-                    sPathToTexture));
-            }
-            return Error(std::format(
-                "an error occurred while loading the image \"{}\", error code: {}",
-                sPathToTexture,
-                iImageLoadResult));
+        int iWidth = 0;
+        int iHeight = 0;
+        int iChannelCount = 0;
+        const auto pImageData = stbi_load(sPathToTexture.c_str(), &iWidth, &iHeight, &iChannelCount, 0);
+        if (pImageData == nullptr) [[unlikely]] {
+            return Error(std::format("failed to load texture \"{}\"", sPathToTexture));
         }
+
+        const auto iGlFormat = iChannelCount == 4 ? GL_RGBA : GL_RGB;
+        const auto iGlInternalFormat = iGlFormat;
 
         // Create a new texture object.
         unsigned int iTextureId = 0;
@@ -282,7 +195,7 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
                 0,
                 iGlFormat,
                 GL_UNSIGNED_BYTE,
-                vPixels.data()));
+                pImageData));
 
             if (usage == TextureUsage::DIFFUSE) {
                 GL_CHECK_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
@@ -309,6 +222,8 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
             }
         }
         glBindTexture(GL_TEXTURE_2D, 0);
+
+        stbi_image_free(pImageData);
 
         // Add new resource to be considered.
         TextureResource resourceInfo;
@@ -348,26 +263,18 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
                     sFilename));
             }
 
-            // Load image.
-            uint32_t iWidth = 0;
-            uint32_t iHeight = 0;
-            uint32_t iChannelCount = 0;
-            std::vector<uint8_t> vPixels;
-            const auto iImageLoadResult = fpng::fpng_decode_file(
-                pathToTex.string().c_str(), vPixels, iWidth, iHeight, iChannelCount, 4);
-            if (iImageLoadResult != fpng::FPNG_DECODE_SUCCESS) [[unlikely]] {
-                if (iImageLoadResult == fpng::FPNG_DECODE_NOT_FPNG) {
-                    return Error(std::format(
-                        "failed to load the image \"{}\" because it was not imported using the engine's "
-                        "texture "
-                        "importer",
-                        pathToTex.string()));
-                }
-                return Error(std::format(
-                    "an error occurred while loading the image \"{}\", error code: {}",
-                    pathToTex.string(),
-                    iImageLoadResult));
+            // Load pixel data.
+            const auto sPathToTexture = pathToTex.string();
+            int iWidth = 0;
+            int iHeight = 0;
+            int iChannelCount = 0;
+            const auto pImageData = stbi_load(sPathToTexture.c_str(), &iWidth, &iHeight, &iChannelCount, 0);
+            if (pImageData == nullptr) [[unlikely]] {
+                return Error(std::format("failed to load texture \"{}\"", sPathToTexture));
             }
+
+            const auto iGlFormat = iChannelCount == 4 ? GL_RGBA : GL_RGB;
+            const auto iGlInternalFormat = iGlFormat;
 
             // Copy pixels to the GPU resource.
             GL_CHECK_ERROR(glTexImage2D(
@@ -379,7 +286,9 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
                 0,
                 iGlFormat,
                 GL_UNSIGNED_BYTE,
-                vPixels.data()));
+                pImageData));
+
+            stbi_image_free(pImageData);
         }
 
         // Set texture filtering.

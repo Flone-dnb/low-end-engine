@@ -228,30 +228,6 @@ void ContentBrowser::showDirectoryContextMenu(const std::filesystem::path& pathT
                      }));
              }});
         vOptions.push_back(
-            {u"Import texture", [this, pathToDirectory]() {
-                 getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
-                     ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),
-                     std::vector<std::string>{".png", ".jpg", ".jpeg"},
-                     [this, pathToDirectory](const std::filesystem::path& selectedPath) {
-                         const auto sRelativeOutputPath =
-                             std::filesystem::relative(
-                                 pathToDirectory,
-                                 ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT))
-                                 .string();
-
-                         const auto optionalError =
-                             TextureManager::importTextureFromFile(selectedPath, sRelativeOutputPath);
-                         if (optionalError.has_value()) [[unlikely]] {
-                             Log::error(std::format(
-                                 "failed to import texture, error: {}", optionalError->getInitialMessage()));
-                         } else {
-                             Log::info(std::format(
-                                 "texture \"{}\" was successfully imported", selectedPath.stem().string()));
-                             rebuildFileTree();
-                         }
-                     }));
-             }});
-        vOptions.push_back(
             {u"Import collision shape", [this, pathToDirectory]() {
                  getWorldRootNodeWhileSpawned()->addChildNode(std::make_unique<FileDialogMenu>(
                      ProjectPaths::getPathToResDirectory(ResourceDirectory::GAME),

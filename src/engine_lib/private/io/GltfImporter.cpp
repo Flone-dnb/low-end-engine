@@ -15,6 +15,7 @@
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
+#include "stb/stb_image.h"
 #include "subprocess.h/subprocess.h"
 #include "ozz/base/io/stream.h"
 #include "ozz/base/io/archive.h"
@@ -22,29 +23,73 @@
 
 namespace {
     constexpr std::string_view sTexturesDirNameSuffix = "_tex";
-    constexpr std::string_view sImportedImageExtension = "png";
     constexpr std::string_view sDiffuseTextureName = "diffuse";
 }
 
-inline bool writeGltfTextureToDisk(const tinygltf::Image& image, const std::string& sPathRelativeResToImage) {
-    auto optionalError = TextureManager::importTextureFromMemory(
-        sPathRelativeResToImage,
-        image.image,
-        static_cast<unsigned int>(image.width),
-        static_cast<unsigned int>(image.height),
-        static_cast<unsigned int>(image.component));
-    if (optionalError.has_value()) [[unlikely]] {
-        Log::error(optionalError->getFullErrorMessage());
-        return false;
+inline std::string writeGltfTextureToDisk(
+    const std::filesystem::path& pathToImportFile,
+    const tinygltf::Image& image,
+    const std::filesystem::path& pathToTexturesDir,
+    size_t iPrimitive) {
+    if (!image.uri.empty()) {
+        if (image.uri.find('/') != std::string::npos || image.uri.find('\\') != std::string::npos) {
+            Log::error(std::format("found path in image uri \"{}\"", image.uri));
+            return "";
+        }
+
+        const auto pathToSrcImage = pathToImportFile.parent_path() / image.uri;
+        const auto pathToDstImage = pathToTexturesDir / image.uri;
+
+        if (std::filesystem::exists(pathToSrcImage)) {
+            if (std::filesystem::exists(pathToDstImage)) {
+                return image.uri; // multiple primitives using the same texture
+            }
+            std::filesystem::copy_file(pathToSrcImage, pathToDstImage);
+            return image.uri;
+        }
     }
 
-    return true;
+    std::string sTextureName = std::string(sDiffuseTextureName) + "_" + std::to_string(iPrimitive);
+
+    if (image.mimeType == "image/jpeg") {
+        sTextureName += ".jpg";
+        const auto sPathToDstImage = (pathToTexturesDir / sTextureName).string();
+        if (stbi_write_jpg(
+                sPathToDstImage.c_str(),
+                image.width,
+                image.height,
+                image.component,
+                image.image.data(),
+                100) != 1) {
+            Log::error("failed to import texture");
+            return "";
+        }
+    } else if (image.mimeType == "image/png") {
+        sTextureName += ".png";
+        const auto sPathToDstImage = (pathToTexturesDir / sTextureName).string();
+        if (stbi_write_png(
+                sPathToDstImage.c_str(),
+                image.width,
+                image.height,
+                image.component,
+                image.image.data(),
+                image.width * image.component) != 1) {
+            Log::error("failed to import texture");
+            return "";
+        }
+    } else {
+        Log::error("unknown texture format");
+        return "";
+    }
+
+    return sTextureName;
 }
 
 inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMesh(
     const tinygltf::Model& model,
     const tinygltf::Node& node,
     const tinygltf::Mesh& mesh,
+    const std::filesystem::path& pathToImportFile,
     const std::filesystem::path& pathToOutputFile,
     const std::string& sPathToOutputDirRelativeRes,
     const std::function<void(std::string_view)>& onProgress,
@@ -58,9 +103,6 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
     const std::filesystem::path pathToTexturesDir =
         ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToOutputDirRelativeRes /
         (sFilename + std::string(sTexturesDirNameSuffix));
-    if (std::filesystem::exists(pathToTexturesDir)) {
-        std::filesystem::remove_all(pathToTexturesDir);
-    }
 
     // Go through each mesh in this node.
     for (size_t iPrimitive = 0; iPrimitive < mesh.primitives.size(); iPrimitive++) {
@@ -450,27 +492,20 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
                         std::filesystem::create_directory(pathToTexturesDir);
                     }
 
-                    // Construct path to imported texture directory.
-                    const auto pathDiffuseTextureRelativeRes =
-                        pathToTexturesDir / std::format(
-                                                "{}_{}.{}",
-                                                sDiffuseTextureName,
-                                                std::to_string(iPrimitive),
-                                                sImportedImageExtension);
+                    // Write image to disk.
+                    const auto sTextureName =
+                        writeGltfTextureToDisk(pathToImportFile, diffuseImage, pathToTexturesDir, iPrimitive);
+                    if (sTextureName.empty()) [[unlikely]] {
+                        return Error("failed to import GLTF image");
+                    }
 
+                    // Specify texture path.
+                    const auto pathDiffuseTextureRelativeRes = pathToTexturesDir / sTextureName;
                     const auto sTexturePathRelativeRes =
                         std::filesystem::relative(
                             pathDiffuseTextureRelativeRes,
                             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT))
                             .string();
-
-                    // Write image to disk.
-                    if (!writeGltfTextureToDisk(diffuseImage, sTexturePathRelativeRes)) [[unlikely]] {
-                        return Error(std::format(
-                            "failed to write GLTF image to path \"{}\"", sTexturePathRelativeRes));
-                    }
-
-                    // Specify texture path.
                     meshMaterial.setPathToDiffuseTexture(sTexturePathRelativeRes);
                 }
             }
@@ -486,6 +521,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
 inline std::optional<Error> processGltfNode(
     const tinygltf::Node& node,
     const tinygltf::Model& model,
+    const std::filesystem::path& pathToImportFile,
     const std::filesystem::path& pathToOutputFile,
     const std::string& sPathToOutputDirRelativeRes,
     Node* pParentNode,
@@ -502,6 +538,7 @@ inline std::optional<Error> processGltfNode(
             model,
             node,
             model.meshes[static_cast<size_t>(node.mesh)],
+            pathToImportFile,
             pathToOutputFile,
             sPathToOutputDirRelativeRes,
             onProgress,
@@ -534,6 +571,7 @@ inline std::optional<Error> processGltfNode(
         auto optionalError = processGltfNode(
             model.nodes[static_cast<size_t>(iNode)],
             model,
+            pathToImportFile,
             pathToOutputFile,
             sPathToOutputDirRelativeRes,
             pThisNode,
@@ -682,6 +720,7 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
         auto optionalError = processGltfNode(
             model.nodes[static_cast<size_t>(iNode)],
             model,
+            pathToFile,
             pathToOutputFile,
             std::format("{}/{}", sPathToOutputDirRelativeRes, sOutputDirectoryName),
             pSceneRootNode.get(),
@@ -877,15 +916,12 @@ std::optional<Error> GltfImporter::importFileAsNodeTree(
                     pSkeleton->num_joints(),
                     SkeletonNode::getMaxBoneCountAllowed()));
             }
-            onProgress(std::format("imported skeleton has {} bones:", pSkeleton->num_joints()));
+            onProgress(std::format("imported skeleton has {} bones", pSkeleton->num_joints()));
             bool bArmatureAsBoneFound = false;
-            size_t iBoneNumber = 1;
             for (const auto pName : pSkeleton->joint_names()) {
                 if (std::string_view(pName) == "Armature") [[unlikely]] {
                     bArmatureAsBoneFound = true;
                 }
-                onProgress(std::format("{}. {}", iBoneNumber, pName));
-                iBoneNumber += 1;
             }
             onProgress(std::format(
                 "for future reference note that allowed bone limit is {}",
@@ -1019,9 +1055,8 @@ std::optional<Error> GltfImporter::importFileAsConvexShapeGeometry(
         // Get primitive.
         if (mesh.primitives.size() > 1) {
             return Error(std::format(
-                "expected to find a single mesh primitive instead found {} primitives in the mesh \"{}\"",
-                mesh.primitives.size(),
-                mesh.name));
+                "expected to find a single mesh primitive instead found {} primitives",
+                mesh.primitives.size()));
         }
         const auto& primitive = mesh.primitives[0];
 

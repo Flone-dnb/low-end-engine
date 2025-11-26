@@ -83,9 +83,6 @@ void FontManager::loadFont(const std::filesystem::path& pathToFont, float fontHe
     }
 
     updateSizeForNextGlyphs();
-
-    // Cache ASCII glyphs.
-    cacheGlyphs({32, 126});
 }
 
 void FontManager::cacheGlyphs(const std::pair<unsigned long, unsigned long>& characterCodeRange) {
@@ -172,6 +169,9 @@ void FontManager::updateSizeForNextGlyphs() {
     const auto iFontHeightInPixels = static_cast<unsigned int>(
         static_cast<float>(pRenderer->getWindow()->getWindowSize().second) * fontHeightToLoad);
     FT_Set_Pixel_Sizes(pFtFace, 0, iFontHeightInPixels); // 0 for width to automatically determine it
+
+    // Cache ASCII glyphs.
+    cacheGlyphs({32, 126});
 }
 
 void FontManager::onWindowSizeChanged() {

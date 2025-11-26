@@ -510,20 +510,18 @@ Vertical or horizontal layouts are implemented as the `LayoutUiNode` so this nod
 
 ## Texture import and texture filtering
 
-In order to import a texture you can use the editor: right click on a directory in the content browser (left-bottom corner) and select "Import texture" in the opened context menu. Select a texture and a converted version of the texture will appear in that directory.
+There's no texture import, just copy your image to the `res` directory.
 
-You can also import a texture using the code, just use the `TextureManager::importTextureFromFile` function.
-
-In order to use the imported texture (for example on a mesh) you need to assign it like so:
+In order to use the imported texture (for example on a mesh) you need to assign it using the editor or using the code like so:
 
 ```Cpp
 auto pCube = std::make_unique<MeshNode>();
 pCube->getMaterial().setPathToDiffuseTexture("game/textures/cube.png"); // located at `res/game/...`
 ```
 
-Of course when you import a GLTF file meshes and textures will be automatically imported (copied) in the `res` directory and meshes that use texture will have a path to a texture saved in the TOML file.
+Of course when you import a GLTF file meshes and textures will be automatically imported (copied) to the `res` directory and meshes that use textures will have paths to textures saved in the TOML file.
 
-By default the engine uses point filtering for all textures if you want to use linear filtering use the following:
+By default the engine uses point filtering for all textures if you want to use linear filtering use the following code:
 
 ```Cpp
 #include "material/TextureManager.h"

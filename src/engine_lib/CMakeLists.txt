@@ -357,27 +357,6 @@ target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE tinygltf)
 set_target_properties(tinygltf PROPERTIES FOLDER ${EXTERNAL_FOLDER})
 add_dependencies(${ENGINE_LIB_DEPS_TARGET} tinygltf)
 
-# Add fpng.
-message(STATUS "${PROJECT_NAME}: adding external dependency \"fpng\"...")
-add_library(fpng
-    ${RELATIVE_EXT_PATH}/fpng/src/fpng.cpp
-    ${RELATIVE_EXT_PATH}/fpng/src/lodepng.cpp
-    ${RELATIVE_EXT_PATH}/fpng/src/pvpngreader.cpp
-    ${RELATIVE_EXT_PATH}/fpng/src/fpng.h
-)
-if (NOT MSVC)
-    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-        target_compile_definitions(fpng PRIVATE FPNG_NO_SSE=1)
-    else()
-        target_compile_options(fpng PRIVATE -msse4.1 -mpclmul)
-        target_compile_definitions(fpng PRIVATE FPNG_NO_SSE=0)
-    endif()
-endif()
-target_include_directories(${ENGINE_LIB_DEPS_TARGET} INTERFACE ${RELATIVE_EXT_PATH}/fpng/src/)
-target_link_libraries(${ENGINE_LIB_DEPS_TARGET} INTERFACE fpng)
-set_target_properties(fpng PROPERTIES FOLDER ${EXTERNAL_FOLDER})
-add_dependencies(${ENGINE_LIB_DEPS_TARGET} fpng)
-
 # Add SFML.
 message(STATUS "${PROJECT_NAME}: adding external dependency \"SFML\"...")
 set(SFML_BUILD_WINDOW OFF CACHE BOOL "" FORCE)
