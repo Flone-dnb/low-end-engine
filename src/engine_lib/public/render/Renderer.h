@@ -217,6 +217,12 @@ private:
         struct FrameQueries {
             // Some queries are location in the World object.
 
+            /** GL query ID for measuring GPU time that we spent drawing a frame. */
+            unsigned int iGlQueryStartFrameTimestamp = 0;
+
+            /** GL query ID for measuring GPU time that we spent drawing a frame. */
+            unsigned int iGlQueryEndFrameTimestamp = 0;
+
             /** GL query ID for measuring GPU time that we spent drawing skybox. */
             unsigned int iGlQueryToDrawSkybox = 0;
 

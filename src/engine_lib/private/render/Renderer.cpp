@@ -165,6 +165,12 @@ Renderer::Renderer(Window* pWindow, SDL_GLContext pCreatedContext) : pWindow(pWi
 
     // Initialize queries.
     for (auto& frameQueries : frameSyncData.vFrameQueries) {
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryStartFrameTimestamp));
+        GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryEndFrameTimestamp));
+
+        glQueryCounterEXT(frameQueries.iGlQueryStartFrameTimestamp, GL_TIMESTAMP_EXT);
+        glQueryCounterEXT(frameQueries.iGlQueryEndFrameTimestamp, GL_TIMESTAMP_EXT);
+
         GL_CHECK_ERROR(glGenQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
         {
             MEASURE_GPU_TIME_SCOPED(frameQueries.iGlQueryToDrawSkybox);
@@ -187,6 +193,8 @@ Renderer::~Renderer() {
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugDrawer::get().destroy(); // clear render resources
     for (auto& frameQueries : frameSyncData.vFrameQueries) {
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryStartFrameTimestamp));
+        GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryEndFrameTimestamp));
         GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawSkybox));
         GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawUi));
         GL_CHECK_ERROR(glDeleteQueriesEXT(1, &frameQueries.iGlQueryToDrawDebug));
@@ -253,6 +261,14 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         return static_cast<float>(iTimeElapsed) / 1000000.0F; // nanoseconds to milliseconds
     };
     auto& stats = DebugConsole::getStats();
+    {
+        GLint64 iStartTime = 0;
+        GLint64 iEndTime = 0;
+        glGetQueryObjecti64vEXT(frameQueries.iGlQueryStartFrameTimestamp, GL_QUERY_RESULT, &iStartTime);
+        glGetQueryObjecti64vEXT(frameQueries.iGlQueryEndFrameTimestamp, GL_QUERY_RESULT, &iEndTime);
+        stats.gpuTimeDrawFrameMs =
+            static_cast<float>(iEndTime - iStartTime) / 1000000.0F; // nanoseconds to milliseconds
+    }
     stats.gpuTimeDrawSkyboxMs = getQueryTimeMs(frameQueries.iGlQueryToDrawSkybox);
     stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
     stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
@@ -265,6 +281,10 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         stats.gpuTimeDrawDepthPrepassMs += getQueryTimeMs(worldQueries.iGlQueryToDrawDepthPrepass);
         stats.gpuTimeDrawMeshesMs += getQueryTimeMs(worldQueries.iGlQueryToDrawMeshes);
     }
+
+    const auto cpuFrameStartCounter = SDL_GetPerformanceCounter();
+
+    glQueryCounterEXT(frameQueries.iGlQueryStartFrameTimestamp, GL_TIMESTAMP_EXT);
 #endif
 
     const auto [iWindowWidth, iWindowHeight] = pWindow->getWindowSize();
@@ -487,8 +507,23 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
     }
 #endif
 
-    // Swap.
+#if defined(ENGINE_DEBUG_TOOLS)
+    // Get CPU time before swap as it might block the thread until the GPU is finished.
+    DebugConsole::getStats().cpuSubmitFrameTimeMs =
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuFrameStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceFrequency());
+    glQueryCounterEXT(frameQueries.iGlQueryEndFrameTimestamp, GL_TIMESTAMP_EXT);
+
+    const auto cpuSwapStartCounter = SDL_GetPerformanceCounter();
+#endif
+
     SDL_GL_SwapWindow(pWindow->getSdlWindow());
+
+#if defined(ENGINE_DEBUG_TOOLS)
+    DebugConsole::getStats().cpuTimeFlipSwapchainMs =
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuSwapStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceFrequency());
+#endif
 
     // Insert a fence.
     frameSyncData.vFences[frameSyncData.iCurrentFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);

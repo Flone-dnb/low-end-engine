@@ -45,6 +45,12 @@ public:
         /** Time in milliseconds that the CPU spent doing the last tick. */
         float cpuTickTimeMs = 0.0F;
 
+        /** Time in milliseconds that the CPU spent submitting the last frame. */
+        float cpuSubmitFrameTimeMs = 0.0F;
+
+        /** Time in milliseconds that the CPU spent in the swap window function. */
+        float cpuTimeFlipSwapchainMs = 0.0F;
+
         /** Time in milliseconds to submit shadow pass. */
         float cpuTimeToSubmitShadowPassMs = 0.0F;
 
@@ -59,6 +65,9 @@ public:
 
         /** Time in milliseconds to submit debug drawer things. */
         float cpuTimeToSubmitDebugDrawMs = 0.0F;
+
+        /** Time in milliseconds spent on the GPU drawing the last frame. */
+        float gpuTimeDrawFrameMs = -1.0F;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
         float gpuTimeDrawShadowPassMs = -1.0F;
