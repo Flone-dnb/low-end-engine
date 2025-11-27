@@ -50,7 +50,8 @@ public:
 
     /**
      * Sets path to an audio file to play. If the node is not spawned yet this file will be played when
-     * spawned, otherwise if the node is already spawned it will start playing the sound right away.
+     * spawned, otherwise if the node is already spawned and if @ref getAutoplayWhenSpawned is `true` then it
+     * will start playing the sound right away.
      *
      * @param sPathToFile Path relative to the `res` directory.
      */
@@ -226,6 +227,9 @@ protected:
     virtual void onWorldLocationRotationScaleChanged() override;
 
 private:
+    /** Loads the sound from @ref sPathToFileToPlay and plays it. */
+    void loadAndPlay();
+
     /** Thing that plays sound. */
     sf::Music sfmlMusic;
 

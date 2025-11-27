@@ -115,6 +115,8 @@ void Sound2dNode::setPathToPlayRelativeRes(std::string sPathToFile) {
     if (sPathToFileToPlay.empty()) {
         return;
     }
+
+    loadAndPlay();
 }
 
 void Sound2dNode::setSoundChannel(SoundChannel channel) {
@@ -245,6 +247,14 @@ void Sound2dNode::onSpawning() {
         return;
     }
 
+    // Notify manager.
+    auto& soundManager = getGameInstanceWhileSpawned()->getWindow()->getGameManager()->getSoundManager();
+    soundManager.onSoundNodeSpawned(this);
+
+    loadAndPlay();
+}
+
+void Sound2dNode::loadAndPlay() {
     if (!sfmlMusic.openFromFile(
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToFileToPlay)) [[unlikely]] {
         Error::showErrorAndThrowException(std::format(
@@ -254,12 +264,8 @@ void Sound2dNode::onSpawning() {
     }
     bFileOpened = true;
 
-    // Notify manager.
-    auto& soundManager = getGameInstanceWhileSpawned()->getWindow()->getGameManager()->getSoundManager();
-    soundManager.onSoundNodeSpawned(this);
-
     sfmlMusic.setLooping(bIsLooping);
-    sfmlMusic.setVolume(volume * 100.0F); // NOLINT: SFML uses 0-100 volume
+    sfmlMusic.setVolume(volume * 100.0F); // SFML uses 0-100 volume
     sfmlMusic.setPitch(pitch);
     sfmlMusic.setPan(pan);
 

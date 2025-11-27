@@ -202,6 +202,9 @@ protected:
     virtual void onDespawning() override;
 
 private:
+    /** Loads the sound from @ref sPathToFileToPlay and plays it. */
+    void loadAndPlay();
+
     /** Thing that plays sound. */
     sf::Music sfmlMusic;
 
