@@ -94,13 +94,13 @@ void DebugDrawer::destroy() {
 }
 
 void DebugDrawer::drawCube(
-    float size, const glm::vec3& worldPosition, float timeInSec, const glm::vec3& color) {
+    float size, const glm::vec3& worldPosition, float timeInSec, const glm::vec4& color) {
     drawMesh(
         get().vCubePositions, glm::translate(worldPosition) * glm::scale(glm::vec3(size)), timeInSec, color);
 }
 
 void DebugDrawer::drawSphere(
-    float radius, const glm::vec3& worldPosition, float timeInSec, const glm::vec3& color) {
+    float radius, const glm::vec3& worldPosition, float timeInSec, const glm::vec4& color) {
     drawMesh(get().vIcospherePositions, glm::translate(worldPosition), timeInSec, color);
 }
 
@@ -108,46 +108,58 @@ void DebugDrawer::drawMesh(
     const std::vector<glm::vec3>& vTrianglePositions,
     const glm::mat4x4& worldMatrix,
     float timeInSec,
-    const glm::vec3& color) {
+    const glm::vec4& color,
+    bool bDrawAsWireframe) {
     if (vTrianglePositions.size() % 3 != 0) [[unlikely]] {
         Error::showErrorAndThrowException("triangle positions array must store 3 positions per triangle");
     }
 
     // Prepare vertex buffer.
-    std::vector<glm::vec3> vEdges;
-    vEdges.reserve(vTrianglePositions.size() * 2); // 2 vertices to draw an edge of a triangle
-    for (size_t i = 0; i < vTrianglePositions.size(); i += 3) {
-        vEdges.push_back(vTrianglePositions[i]);
-        vEdges.push_back(vTrianglePositions[i + 1]);
+    std::unique_ptr<VertexArrayObject> pMeshVao;
+    if (bDrawAsWireframe) {
+        std::vector<glm::vec3> vEdges;
+        vEdges.reserve(vTrianglePositions.size() * 2); // 2 vertices to draw an edge of a triangle
+        for (size_t i = 0; i < vTrianglePositions.size(); i += 3) {
+            vEdges.push_back(vTrianglePositions[i]);
+            vEdges.push_back(vTrianglePositions[i + 1]);
 
-        vEdges.push_back(vTrianglePositions[i + 1]);
-        vEdges.push_back(vTrianglePositions[i + 2]);
+            vEdges.push_back(vTrianglePositions[i + 1]);
+            vEdges.push_back(vTrianglePositions[i + 2]);
 
-        vEdges.push_back(vTrianglePositions[i + 2]);
-        vEdges.push_back(vTrianglePositions[i]);
+            vEdges.push_back(vTrianglePositions[i + 2]);
+            vEdges.push_back(vTrianglePositions[i]);
+        }
+
+        pMeshVao = GpuResourceManager::createVertexArrayObject(false, vEdges);
+    } else {
+        pMeshVao = GpuResourceManager::createVertexArrayObject(false, vTrianglePositions);
     }
 
-    auto pMeshVao =
-        GpuResourceManager::createVertexArrayObject(false, vEdges);
-
     get().vMeshesToDraw.push_back(Mesh{
-        .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pMeshVao)});
+        .worldMatrix = worldMatrix,
+        .color = color,
+        .pVao = std::move(pMeshVao),
+        .timeLeftSec = timeInSec,
+        .bDrawAsWireframe = bDrawAsWireframe});
 }
 
 void DebugDrawer::drawLines(
     const std::vector<glm::vec3>& vLines,
     const glm::mat4x4& worldMatrix,
     float timeInSec,
-    const glm::vec3& color) {
+    const glm::vec4& color) {
     if (vLines.size() % 2 != 0) [[unlikely]] {
         Error::showErrorAndThrowException("line positions array must store 2 positions per line");
     }
 
-    auto pLinesVao =
-        GpuResourceManager::createVertexArrayObject(false, vLines);
+    auto pLinesVao = GpuResourceManager::createVertexArrayObject(false, vLines);
 
     get().vMeshesToDraw.push_back(Mesh{
-        .color = color, .worldMatrix = worldMatrix, .timeLeftSec = timeInSec, .pVao = std::move(pLinesVao)});
+        .worldMatrix = worldMatrix,
+        .color = color,
+        .pVao = std::move(pLinesVao),
+        .timeLeftSec = timeInSec,
+        .bDrawAsWireframe = true});
 }
 
 void DebugDrawer::drawText(
@@ -237,7 +249,6 @@ void DebugDrawer::drawDebugObjects(
     glDisable(GL_DEPTH_TEST);
     {
         // Prepare for drawing meshes.
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(pMeshShaderProgram->getShaderProgramId());
         glUniformMatrix4fv(
             iMeshProgramViewProjectionMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
@@ -245,10 +256,16 @@ void DebugDrawer::drawDebugObjects(
         for (auto it = vMeshesToDraw.begin(); it != vMeshesToDraw.end();) {
             auto& mesh = *it;
 
+            if (!mesh.bDrawAsWireframe) {
+                // Draw later.
+                it++;
+                continue;
+            }
+
             glBindVertexArray(mesh.pVao->getVertexArrayObjectId());
 
             pMeshShaderProgram->setMatrix4ToActiveProgram("worldMatrix", mesh.worldMatrix);
-            pMeshShaderProgram->setVector3ToActiveProgram("meshColor", mesh.color);
+            pMeshShaderProgram->setVector4ToActiveProgram("meshColor", mesh.color);
 
             glDrawArrays(GL_LINES, 0, static_cast<int>(mesh.pVao->getVertexCount()));
 
@@ -317,7 +334,8 @@ void DebugDrawer::drawDebugObjects(
                 screenX = static_cast<float>(iWindowWidth) * text.optForcePosition->x;
             }
 
-            textShaderInfo.pShaderProgram->setVector4ToActiveProgram("textColor", glm::vec4(text.color, 1.0F));
+            textShaderInfo.pShaderProgram->setVector4ToActiveProgram(
+                "textColor", glm::vec4(text.color, 1.0F));
 
             const auto fontScale = text.textHeight / fontManager.getFontHeightToLoad();
             const float textHeightInPixels =
@@ -377,9 +395,38 @@ void DebugDrawer::drawDebugObjects(
             }
             it++;
         }
-        glDisable(GL_BLEND);
     }
     glEnable(GL_DEPTH_TEST);
+
+    // Draw non-wireframe meshes.
+    glUseProgram(pMeshShaderProgram->getShaderProgramId());
+    glUniformMatrix4fv(
+        iMeshProgramViewProjectionMatrixUniform, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
+    for (auto it = vMeshesToDraw.begin(); it != vMeshesToDraw.end();) {
+        auto& mesh = *it;
+
+        if (mesh.bDrawAsWireframe) {
+            it++;
+            continue;
+        }
+
+        glBindVertexArray(mesh.pVao->getVertexArrayObjectId());
+
+        pMeshShaderProgram->setMatrix4ToActiveProgram("worldMatrix", mesh.worldMatrix);
+        pMeshShaderProgram->setVector4ToActiveProgram("meshColor", mesh.color);
+
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh.pVao->getVertexCount()));
+
+        // Update state.
+        mesh.timeLeftSec -= timeSincePrevFrameInSec;
+        if (mesh.timeLeftSec < 0.0f) {
+            it = vMeshesToDraw.erase(it);
+            continue;
+        }
+        it++;
+    }
+
+    glDisable(GL_BLEND);
 }
 
 #endif

@@ -17,6 +17,20 @@ public:
     virtual ~PhysicsDebugDrawer() override {}
 
     /**
+     * Changes debug rendering method.
+     *
+     * @param bWireframe `true` to draw as wireframe, `false` to draw as filled meshes.
+     */
+    void setDrawAsWireframe(bool bWireframe) { bDrawAsWireframe = bWireframe; }
+
+    /**
+     * Returns the current state of draw mode.
+     *
+     * @return Draw mode.
+     */
+    bool getDrawAsWireframe() const { return bDrawAsWireframe; }
+
+    /**
      * Draws a line.
      *
      * @param from From.
@@ -41,16 +55,20 @@ public:
      */
     virtual void DrawTriangle(
         JPH::Vec3 v1, JPH::Vec3 v2, JPH::Vec3 v3, JPH::ColorArg color, ECastShadow castShadow) override {
-        vLinesToDraw.reserve(vLinesToDraw.size() + 6);
+        if (bDrawAsWireframe) {
+            vLinesToDraw.push_back(convertPosDirFromJolt(v1));
+            vLinesToDraw.push_back(convertPosDirFromJolt(v2));
 
-        vLinesToDraw.push_back(convertPosDirFromJolt(v1));
-        vLinesToDraw.push_back(convertPosDirFromJolt(v2));
+            vLinesToDraw.push_back(convertPosDirFromJolt(v2));
+            vLinesToDraw.push_back(convertPosDirFromJolt(v3));
 
-        vLinesToDraw.push_back(convertPosDirFromJolt(v2));
-        vLinesToDraw.push_back(convertPosDirFromJolt(v3));
-
-        vLinesToDraw.push_back(convertPosDirFromJolt(v3));
-        vLinesToDraw.push_back(convertPosDirFromJolt(v1));
+            vLinesToDraw.push_back(convertPosDirFromJolt(v3));
+            vLinesToDraw.push_back(convertPosDirFromJolt(v1));
+        } else {
+            vTrianglesToDraw.push_back(convertPosDirFromJolt(v1));
+            vTrianglesToDraw.push_back(convertPosDirFromJolt(v2));
+            vTrianglesToDraw.push_back(convertPosDirFromJolt(v3));
+        }
     }
 
     /**
@@ -71,18 +89,40 @@ public:
 
     /** Submits prepared render data for drawing. */
     void submitDrawData() {
-        if (vLinesToDraw.empty()) {
+        if (vLinesToDraw.empty() && vTrianglesToDraw.empty()) {
             return;
         }
 
-        DebugDrawer::drawLines(vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0F, glm::vec3(1.0F));
+        if (!vLinesToDraw.empty()) {
+            DebugDrawer::drawLines(
+                vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0F, glm::vec4(collisionColor, 1.0F));
+        }
+
+        if (!vTrianglesToDraw.empty()) {
+            DebugDrawer::drawMesh(
+                vTrianglesToDraw,
+                glm::identity<glm::mat4x4>(),
+                0.0F,
+                glm::vec4(collisionColor, 0.25F),
+                false);
+        }
 
         vLinesToDraw.clear(); // clear but don't shrink
+        vTrianglesToDraw.clear();
     }
 
 private:
     /** 2 positions per line to draw. */
     std::vector<glm::vec3> vLinesToDraw;
+
+    /** 3 positions per triangle to draw. */
+    std::vector<glm::vec3> vTrianglesToDraw;
+
+    /** `true` to draw all as wireframe. */
+    bool bDrawAsWireframe = false;
+
+    /** Color of collision geometry. */
+    const glm::vec3 collisionColor = glm::vec3(1.0F, 0.0F, 1.0F);
 };
 
 #endif

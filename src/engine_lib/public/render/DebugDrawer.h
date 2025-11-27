@@ -24,17 +24,20 @@ class DebugDrawer {
 public:
     /** Data used to draw a mesh. */
     struct Mesh {
-        /** Color of the mesh. */
-        glm::vec3 color = glm::vec3(1.0F, 0.0F, 0.0F);
-
         /** World matrix to transform @ref vTrianglePositions. */
         glm::mat4x4 worldMatrix = glm::identity<glm::mat4x4>();
+
+        /** Color of the mesh. */
+        glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+
+        /** VAO used for drawing the mesh. */
+        std::unique_ptr<VertexArrayObject> pVao;
 
         /** Time after which the mesh should no longer be rendered. */
         float timeLeftSec = 0.0F;
 
-        /** VAO used for drawing the mesh. */
-        std::unique_ptr<VertexArrayObject> pVao;
+        /** `true` to draw as wireframe. */
+        bool bDrawAsWireframe = true;
     };
 
     /** Data used to draw text. */
@@ -92,7 +95,7 @@ public:
         float size,
         const glm::vec3& worldPosition,
         float timeInSec,
-        const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
+        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
 
     /**
      * Draws a sphere.
@@ -107,7 +110,7 @@ public:
         float radius,
         const glm::vec3& worldPosition,
         float timeInSec,
-        const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
+        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
 
     /**
      * Draws a triangle mesh.
@@ -117,12 +120,14 @@ public:
      * @param timeInSec          Time (in seconds) during which the mesh will be rendered
      * then it will be removed from rendering. Specify 0.0 to draw for a single frame.
      * @param color              Color of the mesh.
+     * @param bDrawAsWireframe   `true` to draw mesh wireframe, `false` to draw as a filled mesh.
      */
     static void drawMesh(
         const std::vector<glm::vec3>& vTrianglePositions,
         const glm::mat4x4& worldMatrix,
         float timeInSec,
-        const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
+        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F),
+        bool bDrawAsWireframe = true);
 
     /**
      * Draws a lines.
@@ -137,7 +142,7 @@ public:
         const std::vector<glm::vec3>& vLines,
         const glm::mat4x4& worldMatrix,
         float timeInSec,
-        const glm::vec3& color = glm::vec3(1.0F, 0.0F, 0.0F));
+        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
 
     /**
      * Draws text on the screen.

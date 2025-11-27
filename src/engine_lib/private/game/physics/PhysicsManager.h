@@ -335,6 +335,15 @@ public:
      */
     JPH::TempAllocator& getTempAllocator();
 
+#if defined(ENGINE_DEBUG_TOOLS)
+    /**
+     * Returns physics debug drawer.
+     *
+     * @return Debug drawer.
+     */
+    PhysicsDebugDrawer& getPhysicsDebugDrawer() { return *pPhysicsDebugDrawer; }
+#endif
+
 private:
     /** Groups information about a collision contact. */
     struct ContactInfo {

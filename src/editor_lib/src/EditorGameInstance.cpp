@@ -5,6 +5,7 @@
 #include "game/camera/CameraManager.h"
 #include "game/node/MeshNode.h"
 #include "game/node/light/PointLightNode.h"
+#include "game/node/ui/ButtonUiNode.h"
 #include "game/node/ui/TextUiNode.h"
 #include "game/node/ui/LayoutUiNode.h"
 #include "game/node/ui/RectUiNode.h"
@@ -28,6 +29,7 @@
 #include "render/wrapper/ShaderProgram.h"
 #include "render/wrapper/Texture.h"
 #include "render/GpuResourceManager.h"
+#include "render/PhysicsDebugDrawer.hpp"
 #include "game/physics/PhysicsManager.h"
 #include "render/LightSourceManager.h"
 #include "EditorResourcePaths.hpp"
@@ -679,6 +681,36 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
 
     editorWorldNodes.pNodeTreeInspector->onGameNodeTreeLoaded(gameWorldNodes.pRoot);
+
+    // Collision draw mode.
+    {
+        const auto pCollisionDrawModeText = pRootNode->addChildNode(std::make_unique<TextUiNode>());
+        pCollisionDrawModeText->setTextHeight(0.025F);
+        pCollisionDrawModeText->setPosition(glm::vec2(0.79F, 0.005F));
+        pCollisionDrawModeText->setSize(glm::vec2(0.2F, 0.05F));
+        pCollisionDrawModeText->setText(u"draw collision as wireframe: ");
+
+        auto& debugDrawer =
+            pRootNode->getWorldWhileSpawned()->getGameManager().getPhysicsManager().getPhysicsDebugDrawer();
+
+        const auto pCollisionDrawModeButton = pRootNode->addChildNode(std::make_unique<ButtonUiNode>());
+        pCollisionDrawModeButton->setPosition(glm::vec2(0.96F, 0.0075F));
+        pCollisionDrawModeButton->setSize(glm::vec2(0.03F, 0.03F));
+        pCollisionDrawModeButton->setPadding(0.05F);
+
+        const auto pButtonText = pCollisionDrawModeButton->addChildNode(std::make_unique<TextUiNode>());
+        pButtonText->setTextHeight(0.02F);
+        pButtonText->setText(debugDrawer.getDrawAsWireframe() ? u"ON" : u"OFF");
+
+        pCollisionDrawModeButton->setOnClicked([pButtonText, pRootNode]() {
+            auto& debugDrawer = pRootNode->getWorldWhileSpawned()
+                                    ->getGameManager()
+                                    .getPhysicsManager()
+                                    .getPhysicsDebugDrawer();
+            debugDrawer.setDrawAsWireframe(!debugDrawer.getDrawAsWireframe());
+            pButtonText->setText(debugDrawer.getDrawAsWireframe() ? u"ON" : u"OFF");
+        });
+    }
 
     // Bind node ID texture for GPU picking.
     pGameWorld->getMeshRenderer().getGlobalShaderConstantsSetter().addSetterFunction([this](ShaderProgram*

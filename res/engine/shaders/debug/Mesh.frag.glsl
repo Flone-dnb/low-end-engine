@@ -1,8 +1,7 @@
-uniform vec3 meshColor;
+uniform vec4 meshColor;
 
 out vec4 outColor;
 
-/// Entry point.
 void main() {
-    outColor = vec4(meshColor, 1.0F);
+    outColor = meshColor;
 } 

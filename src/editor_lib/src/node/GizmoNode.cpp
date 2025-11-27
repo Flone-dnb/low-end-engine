@@ -102,7 +102,7 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
         const auto pUsageHintText = addChildNode(std::make_unique<TextUiNode>());
         pUsageHintText->setSerialize(false);
 
-        pUsageHintText->setPosition(glm::vec2(0.6F, 0.01F));
+        pUsageHintText->setPosition(glm::vec2(0.65F, 0.06F));
         pUsageHintText->setTextHeight(0.025F);
         pUsageHintText->setSize(
             glm::vec2(1.0F - pUsageHintText->getPosition().x, pUsageHintText->getTextHeight() * 1.25F));
