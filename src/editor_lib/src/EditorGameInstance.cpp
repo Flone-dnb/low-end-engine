@@ -446,27 +446,27 @@ void EditorGameInstance::registerEditorInputEvents() {
     // Register action events.
     {
         // Capture mouse.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+        showErrorIfNotEmpty(getInputManager().addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::CAPTURE_MOUSE_CURSOR),
             {MouseButton::RIGHT}));
 
         // Toggle stats.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+        showErrorIfNotEmpty(getInputManager().addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::GAMEPAD_TOGGLE_STATS),
             {GamepadButton::BACK}));
 
         // Close editor.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+        showErrorIfNotEmpty(getInputManager().addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::GAMEPAD_CLOSE_EDITOR),
             {GamepadButton::START}));
 
         // Increase camera movement speed.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+        showErrorIfNotEmpty(getInputManager().addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::INCREASE_CAMERA_MOVEMENT_SPEED),
             {KeyboardButton::LEFT_SHIFT}));
 
         // Decrease camera movement speed.
-        showErrorIfNotEmpty(getInputManager()->addActionEvent(
+        showErrorIfNotEmpty(getInputManager().addActionEvent(
             static_cast<unsigned int>(EditorInputEventIds::Action::DECREASE_CAMERA_MOVEMENT_SPEED),
             {KeyboardButton::LEFT_CONTROL}));
     }
@@ -518,13 +518,13 @@ void EditorGameInstance::registerEditorInputEvents() {
     // Register axis events.
     {
         // Move forward.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_FORWARD),
             {{KeyboardButton::W, KeyboardButton::S}},
             {}));
 
         // Move right.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_RIGHT),
             {{KeyboardButton::D, KeyboardButton::A}},
             {}));
@@ -533,41 +533,41 @@ void EditorGameInstance::registerEditorInputEvents() {
         // (it's not required to separate them).
 
         // Gamepad move forward.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_FORWARD),
             {},
             {GamepadAxis::LEFT_STICK_Y}));
 
         // Gamepad move right.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_RIGHT),
             {},
             {GamepadAxis::LEFT_STICK_X}));
 
         // Gamepad move up/down.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_UP),
             {},
             {GamepadAxis::RIGHT_TRIGGER}));
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_MOVE_CAMERA_DOWN),
             {},
             {GamepadAxis::LEFT_TRIGGER}));
 
         // Move up.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::MOVE_CAMERA_UP),
             {{KeyboardButton::E, KeyboardButton::Q}},
             {}));
 
         // Gamepad look right.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_RIGHT),
             {},
             {GamepadAxis::RIGHT_STICK_X}));
 
         // Gamepad look up.
-        showErrorIfNotEmpty(getInputManager()->addAxisEvent(
+        showErrorIfNotEmpty(getInputManager().addAxisEvent(
             static_cast<unsigned int>(EditorInputEventIds::Axis::GAMEPAD_LOOK_UP),
             {},
             {GamepadAxis::RIGHT_STICK_Y}));

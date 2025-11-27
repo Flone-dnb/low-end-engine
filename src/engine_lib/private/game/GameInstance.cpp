@@ -70,7 +70,7 @@ Window* GameInstance::getWindow() const { return pWindow; }
 
 Renderer* GameInstance::getRenderer() const { return pWindow->getGameManager()->getRenderer(); }
 
-InputManager* GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }
+InputManager& GameInstance::getInputManager() const { return pWindow->getGameManager()->getInputManager(); }
 
 ScriptManager& GameInstance::getScriptManager() const {
     return pWindow->getGameManager()->getScriptManager();

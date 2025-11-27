@@ -914,7 +914,7 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
 
 Window* GameManager::getWindow() const { return pWindow; }
 
-InputManager* GameManager::getInputManager() { return &inputManager; }
+InputManager& GameManager::getInputManager() { return inputManager; }
 
 Renderer* GameManager::getRenderer() const { return pRenderer.get(); }
 

@@ -336,7 +336,7 @@ pCameraNode->getCameraProperties()->setFarClipPlaneDistance(settings.getFogRange
 
 ### Input events
 
-The usual way to handle user input is by binding to action/axis events and doing your processing once these events are triggered.
+In order to handle user input events you need to bind to action/axis events and do your processing once these events are triggered.
 
 Action event allows binding buttons that have only 2 states (pressed/not pressed) to an ID. When one of the specified buttons is pressed you will receive an input action event with the specified ID. This way, for example, you can have an action "jump" bound to a "space bar" button.
 
@@ -381,7 +381,7 @@ Register your game's input events in your game instance like so:
 
 ```Cpp
 // Register action events.
-auto optionalError = getInputManager()->addActionEvent(
+auto optionalError = getInputManager().addActionEvent(
     GameInputEventIds::Action::JUMP,
     {KeyboardButton::SPACE});
 if (optionalError.has_value()) [[unlikely]] {
@@ -389,7 +389,7 @@ if (optionalError.has_value()) [[unlikely]] {
 }
 
 // Register axis events.
-optionalError = getInputManager()->addAxisEvent(
+optionalError = getInputManager().addAxisEvent(
     GameInputEventIds::Axis::MOVE_FORWARD,
     {{KeyboardButton::W, KeyboardButton::S}},
     {GamepadAxis::LEFT_STICK_Y});
@@ -397,7 +397,7 @@ if (optionalError.has_value()) [[unlikely]] {
     Error::showErrorAndThrowException("failed to register input event");
 }
 
-optionalError = getInputManager()->addAxisEvent(
+optionalError = getInputManager().addAxisEvent(
     GameInputEventIds::Axis::MOVE_RIGHT,
     {{KeyboardButton::D, KeyboardButton::A}},
     {GamepadAxis::LEFT_STICK_X});
@@ -431,6 +431,10 @@ Note
 > Although you can bind to registered input events in `GameInstance` it's not really recommended because input events should generally be processed in nodes such as in your character node.
 
 The code from above allows you to create "node-local" input event bindings. Other nodes can also bind to JUMP, MOVE_FORWARD and MOVE_RIGHT events but have different logic.
+
+### InputConfigurationUiNode
+
+`InputConfigurationUiNode` is a simple way to add input configuration UI menu to your game. You pass it a bunch of input event IDs to handle and select if you want only keyboard+mouse or gamepad buttons to be modified. The node will notify you if some input was changed so you can save the current state of the input manager. For more information refer to the header file of the node.
 
 ## Physics
 
@@ -860,7 +864,7 @@ void MyGameInstance::onGameStarted(){
         std::make_pair<KeyboardKey, KeyboardKey>(KeyboardKey::KEY_UP, KeyboardKey::KEY_DOWN)
     };
 
-    auto optionalError = getInputManager()->addAxisEvent(
+    auto optionalError = getInputManager().addAxisEvent(
         static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_FORWARD),
         vMoveForwardKeys);
     if (optionalError.has_value()){
@@ -876,7 +880,7 @@ void MyGameInstance::onGameStarted(){
         = ConfigManager::getCategoryDirectory(ConfigCategory::SETTINGS) / pInputFilename
             + ConfigManager::getConfigFormatExtension();
     if (std::filesystem::exists(pathToFile)){
-        optionalError = getInputManager()->loadFromFile(pInputFilename);
+        optionalError = getInputManager().loadFromFile(pInputFilename);
         if (optionalError.has_value()){
             // ... handle error ...
         }
@@ -886,7 +890,7 @@ void MyGameInstance::onGameStarted(){
 }
 
 // Later, the user modifies some keys:
-optionalError = getInputManager()->modifyAxisEventKey(
+optionalError = getInputManager().modifyAxisEventKey(
     static_cast<unsigned int>(GameInputEventIds::Axis::MOVE_FORWARD),
     oldKey,
     newKey);
@@ -898,7 +902,7 @@ if (optionalError.has_value()){
 // be the same (non-modified), in order to fix this:
 
 // After a key is modified we save the modified inputs to the disk to load modified inputs on the next game start.
-optionalError = getInputManager()->saveToFile(pInputFilename);
+optionalError = getInputManager().saveToFile(pInputFilename);
 if (optionalError.has_value()){
     // ... handle error ...
 }

@@ -425,7 +425,7 @@ TEST_CASE("input event callbacks in Node are triggered") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register events.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -433,7 +433,7 @@ TEST_CASE("input event callbacks in Node are triggered") {
                     REQUIRE(false);
                 }
                 optionalError =
-                    getInputManager()->addAxisEvent(0, {{KeyboardButton::A, KeyboardButton::B}}, {});
+                    getInputManager().addAxisEvent(0, {{KeyboardButton::A, KeyboardButton::B}}, {});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -560,7 +560,7 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register events.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -568,7 +568,7 @@ TEST_CASE("input event callbacks and tick in Node is not triggered after despawn
                     REQUIRE(false);
                 }
                 optionalError =
-                    getInputManager()->addAxisEvent(0, {{KeyboardButton::A, KeyboardButton::B}}, {});
+                    getInputManager().addAxisEvent(0, {{KeyboardButton::A, KeyboardButton::B}}, {});
                 if (optionalError.has_value()) {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -991,7 +991,7 @@ TEST_CASE("disable receiving input while processing input") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1071,7 +1071,7 @@ TEST_CASE("disable receiving input and despawn") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1144,7 +1144,7 @@ TEST_CASE("enable receiving input and despawn") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1217,7 +1217,7 @@ TEST_CASE("enable receiving input while spawned") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1291,7 +1291,7 @@ TEST_CASE("quickly enable receiving input and disable while spawned") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1366,7 +1366,7 @@ TEST_CASE("quickly disable receiving input and enable while spawned") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register event.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1440,7 +1440,7 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
                 pRootNode->addChildNode(std::move(pMyNodeU));
 
                 // Register events.
-                auto optionalError = getInputManager()->addActionEvent(0, {KeyboardButton::W});
+                auto optionalError = getInputManager().addActionEvent(0, {KeyboardButton::W});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();
@@ -1448,7 +1448,7 @@ TEST_CASE("input event callbacks are only triggered when input changed") {
                     REQUIRE(false);
                 }
                 optionalError =
-                    getInputManager()->addAxisEvent(0, {{KeyboardButton::A, KeyboardButton::D}}, {});
+                    getInputManager().addAxisEvent(0, {{KeyboardButton::A, KeyboardButton::D}}, {});
                 if (optionalError.has_value()) [[unlikely]] {
                     auto error = optionalError.value();
                     error.addCurrentLocationToErrorStack();

@@ -163,11 +163,9 @@ public:
      * Input manager allows binding IDs with multiple input keys that
      * you can receive in @ref onInputActionEvent.
      *
-     * @warning Do not delete (free) returned pointer.
-     *
-     * @return Always valid pointer.
+     * @return Input manager.
      */
-    InputManager* getInputManager() const;
+    InputManager& getInputManager() const;
 
     /**
      * Returns script manager.

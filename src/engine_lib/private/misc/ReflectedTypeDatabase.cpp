@@ -26,6 +26,7 @@
 #include "game/node/ui/SliderUiNode.h"
 #include "game/node/ui/CheckboxUiNode.h"
 #include "game/node/ui/ProgressBarUiNode.h"
+#include "game/node/ui/InputConfigurationUiNode.h"
 #include "game/geometry/shapes/CollisionShape.h"
 #include "game/node/physics/CollisionNode.h"
 #include "game/node/physics/CompoundCollisionNode.h"
@@ -69,6 +70,8 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(SliderUiNode::getTypeGuidStatic(), SliderUiNode::getReflectionInfo());
     registerType(CheckboxUiNode::getTypeGuidStatic(), CheckboxUiNode::getReflectionInfo());
     registerType(ProgressBarUiNode::getTypeGuidStatic(), ProgressBarUiNode::getReflectionInfo());
+    registerType(
+        InputConfigurationUiNode::getTypeGuidStatic(), InputConfigurationUiNode::getReflectionInfo());
 
     // Physics.
     registerType(CollisionShape::getTypeGuidStatic(), CollisionShape::getReflectionInfo());

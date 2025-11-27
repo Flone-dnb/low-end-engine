@@ -67,8 +67,9 @@ TypeReflectionInfo ButtonUiNode::getReflectionInfo() {
 
 ButtonUiNode::ButtonUiNode() : ButtonUiNode("Button UI Node") {}
 ButtonUiNode::ButtonUiNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
-    setSize(glm::vec2(0.15F, 0.075F)); // NOLINT
+    setSize(glm::vec2(0.15F, 0.075F));
     setIsReceivingInput(true);
+    setColor(glm::vec4(glm::vec3(0.3F), 1.0F));
 }
 
 void ButtonUiNode::setColorWhileHovered(const glm::vec4& color) {

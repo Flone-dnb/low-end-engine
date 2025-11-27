@@ -215,11 +215,9 @@ public:
     /**
      * Returns game's input manager, manages input events of game instance and nodes.
      *
-     * @warning Do not delete (free) returned pointer.
-     *
-     * @return Always valid pointer.
+     * @return Input manager.
      */
-    InputManager* getInputManager();
+    InputManager& getInputManager();
 
     /**
      * Returns game's renderer.
