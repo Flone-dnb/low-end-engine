@@ -186,9 +186,36 @@ public:
     /**
      * Sets node that will have focus to receive keyboard/gamepad input.
      *
-     * @param pFocusedNode Node.
+     * @param pFocusedNode `nullptr` to remove focus, otherwise valid node.
      */
     void setFocusedNode(UiNode* pFocusedNode);
+
+    /**
+     * Makes the first found button focused.
+     *
+     * @return `true` if found such node and made it focused.
+     */
+    bool makeSomeButtonFocused();
+
+    /**
+     * Looks for a node that can be made focused using a gamepad.
+     *
+     * @param pInitialNode Node to start searching from.
+     * @param bIsVertical  `true` if looking for a node located above or below the initial one, `false` if
+     * horizontal.
+     * @param bPositive    If vertical then `true` means up, `false` means down, if horizontal then
+     * right/left.
+     */
+    void makeNextFocusedNode(UiNode* pInitialNode, bool bIsVertical, bool bPositive);
+
+    /**
+     * Looks for a button node in the specified node tree and makes the first one focused.
+     *
+     * @param pNode Node to search.
+     *
+     * @return `true` if found and made focused.
+     */
+    bool findButtonAndMakeFocused(UiNode* pNode);
 
     /**
      * Called by UI nodes to notify about a UI node that receives input being spawned/despawned
@@ -561,6 +588,9 @@ private:
      * @return `true` if there's a modal parent node.
      */
     bool hasModalParent(UiNode* pNode) const;
+
+    /** Called by world after a new world was spawned. */
+    void onNewWorldLoaded();
 
     /** UI-related data. */
     std::pair<std::recursive_mutex, Data> mtxData{};

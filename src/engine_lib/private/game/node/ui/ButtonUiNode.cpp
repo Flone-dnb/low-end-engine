@@ -4,6 +4,8 @@
 #include "game/GameInstance.h"
 #include "render/Renderer.h"
 #include "material/TextureManager.h"
+#include "game/World.h"
+#include "render/UiNodeManager.h"
 
 // External.
 #include "nameof.hpp"
@@ -185,6 +187,30 @@ bool ButtonUiNode::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardMod
     return true;
 }
 
+void ButtonUiNode::onGamepadButtonPressedWhileFocused(GamepadButton button) {
+    RectUiNode::onGamepadButtonPressedWhileFocused(button);
+
+    // Simulate left mouse click.
+    onMouseButtonPressedOnUiNode(MouseButton::LEFT, KeyboardModifiers(0));
+}
+
+void ButtonUiNode::onGamepadButtonReleasedWhileFocused(GamepadButton button) {
+    RectUiNode::onGamepadButtonReleasedWhileFocused(button);
+
+    // Simulate left mouse click.
+    onMouseButtonReleasedOnUiNode(MouseButton::LEFT, KeyboardModifiers(0));
+
+    if (button == GamepadButton::DPAD_LEFT) {
+        getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, false, false);
+    } else if (button == GamepadButton::DPAD_RIGHT) {
+        getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, false, true);
+    } else if (button == GamepadButton::DPAD_UP) {
+        getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, true, true);
+    } else if (button == GamepadButton::DPAD_DOWN) {
+        getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, true, false);
+    }
+}
+
 void ButtonUiNode::onMouseEntered() {
     RectUiNode::onMouseEntered();
 
@@ -261,6 +287,28 @@ void ButtonUiNode::onVisibilityChanged() {
     if (!isVisible()) {
         bIsCurrentlyHovered = false;
 
+        setButtonTexture(sTempPathToDefaultTexture);
+        setButtonColor(tempDefaultColor);
+    }
+}
+
+void ButtonUiNode::onGainedFocus() {
+    RectUiNode::onGainedFocus();
+
+    if (getGameInstanceWhileSpawned()->isGamepadConnected()) {
+        // Enter hovered state.
+        bIsCurrentlyHovered = true;
+        setButtonTexture(sPathToTextureWhileHovered);
+        setButtonColor(colorWhileHovered);
+    }
+}
+
+void ButtonUiNode::onLostFocus() {
+    RectUiNode::onLostFocus();
+
+    if (getGameInstanceWhileSpawned()->isGamepadConnected() && bIsCurrentlyHovered) {
+        // Exit hovered state.
+        bIsCurrentlyHovered = false;
         setButtonTexture(sTempPathToDefaultTexture);
         setButtonColor(tempDefaultColor);
     }

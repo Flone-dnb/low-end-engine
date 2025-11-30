@@ -76,6 +76,8 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
     mtxRootNode.second->pWorldWeSpawnedIn = this;
     mtxRootNode.second->spawn();
 
+    pUiNodeManager->onNewWorldLoaded();
+
 #if !defined(ENGINE_UI_ONLY)
     // After we spawned all nodes (maybe from a big node tree) all physics bodies should've been created.
     getGameManager().getPhysicsManager().optimizeBroadPhase();

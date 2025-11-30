@@ -103,7 +103,7 @@ public:
     /**
      * If @ref setIsScrollBarEnabled changes the current scroll offset.
      * Specify 0 to scroll to the top.
-     * 
+     *
      * @param iOffset New offset.
      */
     void setScrollBarOffset(size_t iOffset);

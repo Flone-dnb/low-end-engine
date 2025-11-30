@@ -56,14 +56,6 @@ public:
     void setOnInputChanged(const std::function<void()>& onChanged);
 
     /**
-     * `true` if only keyboard input is displayed/changed (gamepad input is not affected).
-     * `false` if only gamepad input is displayed/changed (keyboard input is not affected).
-     *
-     * @param bIsKeyboard New state.
-     */
-    void setIsManagingKeyboardInput(bool bIsKeyboard);
-
-    /**
      * Sets action events to allow configuring.
      *
      * @param actionEvents Pairs of "managed action event ID" - "displayed name".
@@ -83,14 +75,6 @@ public:
      * @return Size.
      */
     float getTextHeight() const { return textHeight; }
-
-    /**
-     * `true` if only keyboard input is displayed/changed (gamepad input is not affected).
-     * `false` if only gamepad input is displayed/changed (keyboard input is not affected).
-     *
-     * @return Input management state.
-     */
-    bool isManagingKeyboardInput() const { return bIsManagingKeyboardInput; }
 
 protected:
     /**
@@ -128,10 +112,4 @@ private:
 
     /** Size of the text. */
     float textHeight = 0.03F;
-
-    /**
-     * `true` if only keyboard input is displayed/changed (gamepad input is not affected).
-     * `false` if only gamepad input is displayed/changed (keyboard input is not affected).
-     */
-    bool bIsManagingKeyboardInput = true;
 };

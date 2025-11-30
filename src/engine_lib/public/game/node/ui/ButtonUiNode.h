@@ -166,6 +166,24 @@ protected:
     virtual bool onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardModifiers modifiers) override;
 
     /**
+     * Called when the window received gamepad input.
+     *
+     * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
+     * @remark This function will only be called while this node is spawned.
+     * @remark This function will only be called if this UI node has focus.
+     *
+     * @param button Gamepad button.
+     */
+    virtual void onGamepadButtonPressedWhileFocused(GamepadButton button) override;
+
+    /**
+     * Same as @ref onGamepadButtonPressedWhileFocused but called when button is released.
+     *
+     * @param button Gamepad button.
+     */
+    virtual void onGamepadButtonReleasedWhileFocused(GamepadButton button) override;
+
+    /**
      * Called when the mouse cursor started floating over this UI node.
      *
      * @remark This function will not be called if @ref setIsReceivingInput was not enabled.
@@ -189,6 +207,12 @@ protected:
 
     /** Called after node's visibility was changed. */
     virtual void onVisibilityChanged() override;
+
+    /** Called after the node gained keyboard/gamepad focus. */
+    virtual void onGainedFocus() override;
+
+    /** Called after the node lost keyboard/gamepad focus. */
+    virtual void onLostFocus() override;
 
 private:
     /**

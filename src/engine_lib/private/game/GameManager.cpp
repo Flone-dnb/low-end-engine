@@ -220,6 +220,11 @@ size_t GameManager::getCalledEveryFrameNodeCount() {
 bool GameManager::isMainThread() const { return std::this_thread::get_id() == mainThreadId; }
 
 void GameManager::onGameStarted() {
+    if (pWindow->isGamepadConnected()) {
+        bReceivedGamepadInputThisFrame = true;
+        bReceivedGamepadInputLastFrame = true;
+    }
+
     // Log game start so that it will be slightly easier to read logs.
     Log::info("\n\n\n------------------------------ game started ------------------------------\n\n");
     Log::flushToDisk();
@@ -378,6 +383,10 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
             if (bInputDeviceChanged) {
                 PROFILE_SCOPE("Node::onLastInputSourceChanged")
                 for (auto& pWorld : vWorlds) {
+                    if (!bReceivedGamepadInputThisFrame) {
+                        pWorld->getUiNodeManager().setFocusedNode(nullptr);
+                    }
+
                     // Call on nodes that receive input.
                     const auto nodesGuard = pWorld->getReceivingInputNodes();
                     const auto pNodes = nodesGuard.getNodes();
@@ -609,7 +618,12 @@ void GameManager::onGamepadConnected(std::string_view sGamepadName) {
     pGameInstance->onGamepadConnected(sGamepadName);
 
     std::scoped_lock guard(mtxWorldData.first);
+    bool bMadeFocusedNode = false;
     for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        if (!bMadeFocusedNode) {
+            bMadeFocusedNode = pWorld->getUiNodeManager().makeSomeButtonFocused();
+        }
+
         // Call on nodes that receive input.
         const auto nodesGuard = pWorld->getReceivingInputNodes();
         const auto pNodes = nodesGuard.getNodes();
@@ -626,6 +640,8 @@ void GameManager::onGamepadDisconnected() {
 
     std::scoped_lock guard(mtxWorldData.first);
     for (auto& pWorld : mtxWorldData.second.vWorlds) {
+        pWorld->getUiNodeManager().setFocusedNode(nullptr);
+
         // Call on nodes that receive input.
         const auto nodesGuard = pWorld->getReceivingInputNodes();
         const auto pNodes = nodesGuard.getNodes();

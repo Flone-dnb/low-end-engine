@@ -434,7 +434,7 @@ The code from above allows you to create "node-local" input event bindings. Othe
 
 ### InputConfigurationUiNode
 
-`InputConfigurationUiNode` is a simple way to add input configuration UI menu to your game. You pass it a bunch of input event IDs to handle and select if you want only keyboard+mouse or gamepad buttons to be modified. The node will notify you if some input was changed so you can save the current state of the input manager. For more information refer to the header file of the node.
+`InputConfigurationUiNode` is a simple way to add input configuration UI menu to your game. The node will notify you if some input was changed so you can save the current state of the input manager. For more information refer to the header file of the node.
 
 ## Physics
 

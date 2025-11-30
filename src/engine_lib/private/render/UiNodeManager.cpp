@@ -8,6 +8,7 @@
 // Custom.
 #include "game/geometry/ScreenQuadGeometry.h"
 #include "game/node/ui/TextUiNode.h"
+#include "game/node/ui/ButtonUiNode.h"
 #include "game/node/ui/TextEditUiNode.h"
 #include "game/node/ui/RectUiNode.h"
 #include "game/node/ui/SliderUiNode.h"
@@ -467,6 +468,112 @@ void UiNodeManager::setModalNode(UiNode* pNewModalNode) {
     changeFocusedNode(nullptr); // refresh focus
 
     // mouse hover will be updated on next frame
+}
+
+void UiNodeManager::onNewWorldLoaded() {
+    if (!pRenderer->getWindow()->isGamepadConnected()) {
+        return;
+    }
+
+    // Find a button and make it focused.
+    makeSomeButtonFocused();
+}
+
+bool UiNodeManager::makeSomeButtonFocused() {
+    std::scoped_lock guard(mtxData.first);
+
+    if (!mtxData.second.modalInputReceivingNodes.empty()) {
+        for (const auto& pNode : mtxData.second.modalInputReceivingNodes) {
+            if (dynamic_cast<ButtonUiNode*>(pNode) != nullptr) {
+                setFocusedNode(pNode);
+                return true;
+            }
+        }
+    } else {
+        for (const auto& nodes : mtxData.second.vSpawnedVisibleNodes) {
+            for (const auto& pNode : nodes.receivingInputUiNodes) {
+                if (dynamic_cast<ButtonUiNode*>(pNode) != nullptr) {
+                    setFocusedNode(pNode);
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool UiNodeManager::findButtonAndMakeFocused(UiNode* pNode) {
+    if (auto pButton = dynamic_cast<ButtonUiNode*>(pNode)) {
+        pButton->setFocused();
+        return true;
+    }
+
+    const auto mtxChildNodes = pNode->getChildNodes();
+    std::scoped_lock guard(*mtxChildNodes.first);
+    for (const auto& pNode : mtxChildNodes.second) {
+        if (findButtonAndMakeFocused(dynamic_cast<UiNode*>(pNode))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void UiNodeManager::makeNextFocusedNode(UiNode* pInitialNode, bool bIsVertical, bool bPositive) {
+    auto mtxParentNode = pInitialNode->getParentNode();
+    std::scoped_lock nodeGuard(*mtxParentNode.first);
+
+    const auto pUiParent = dynamic_cast<UiNode*>(mtxParentNode.second);
+    if (pUiParent == nullptr) {
+        return;
+    }
+
+    bool bFound = false;
+
+    if (const auto pLayout = dynamic_cast<LayoutUiNode*>(pUiParent)) {
+        size_t iTargetNodeIndex = 0;
+        auto mtxLayoutNodes = pLayout->getChildNodes();
+        std::scoped_lock layoutNodesGuard(*mtxLayoutNodes.first);
+
+        for (size_t i = 0; i < mtxLayoutNodes.second.size(); i++) {
+            if (mtxLayoutNodes.second[i] != pInitialNode) {
+                continue;
+            }
+            iTargetNodeIndex = i;
+            break;
+        }
+
+        if (pLayout->getIsHorizontal() && !bIsVertical) {
+            for (size_t i = iTargetNodeIndex; i < mtxLayoutNodes.second.size(); i++) {
+                if (bPositive && i + 1 < mtxLayoutNodes.second.size()) {
+                    bFound = findButtonAndMakeFocused(dynamic_cast<UiNode*>(mtxLayoutNodes.second[i + 1]));
+                } else if (!bPositive && i > 0) {
+                    bFound = findButtonAndMakeFocused(dynamic_cast<UiNode*>(mtxLayoutNodes.second[i - 1]));
+                }
+
+                if (bFound) {
+                    break;
+                }
+            }
+        } else if (!pLayout->getIsHorizontal() && bIsVertical) {
+            for (size_t i = iTargetNodeIndex; i < mtxLayoutNodes.second.size(); i++) {
+                if (!bPositive && i + 1 < mtxLayoutNodes.second.size()) {
+                    bFound = findButtonAndMakeFocused(dynamic_cast<UiNode*>(mtxLayoutNodes.second[i + 1]));
+                } else if (bPositive && i > 0) {
+                    bFound = findButtonAndMakeFocused(dynamic_cast<UiNode*>(mtxLayoutNodes.second[i - 1]));
+                }
+
+                if (bFound) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!bFound) {
+        makeNextFocusedNode(pUiParent, bIsVertical, bPositive);
+    }
 }
 
 void UiNodeManager::setFocusedNode(UiNode* pFocusedNode) {
@@ -1719,6 +1826,10 @@ void UiNodeManager::drawScrollBarsDataLocked(
 
 void UiNodeManager::changeFocusedNode(UiNode* pNode) {
     std::scoped_lock guard(mtxData.first);
+
+    if (mtxData.second.pFocusedNode == pNode) {
+        return;
+    }
 
     // Make sure the node was not despawned.
     bool bValidNode = false;
