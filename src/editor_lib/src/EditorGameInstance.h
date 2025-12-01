@@ -179,9 +179,6 @@ protected:
      */
     virtual void onWindowClose() override;
 
-    /** Called after the renderer finished submitting draw commands to render meshes. */
-    virtual void onFinishedSubmittingMeshDrawCommands() override;
-
 private:
     /** Groups pointers to nodes from game's level. */
     struct GameWorldNodes {
@@ -245,6 +242,9 @@ private:
         /** `true` if @ref pPickingProgram was started and we expect a result soon. */
         bool bIsWaitingForGpuResult = false;
     };
+
+    /** If possible dispatches the compute shader to process drawn mesh node IDs. */
+    void dispatchGpuPicking();
 
     /** Registers action and axis input events in the input manager. */
     void registerEditorInputEvents();

@@ -320,9 +320,6 @@ protected:
      */
     virtual void onWindowClose() {}
 
-    /** Called after the renderer finished submitting draw commands to render meshes. */
-    virtual void onFinishedSubmittingMeshDrawCommands() {}
-
     /**
      * Returns map of action events that this GameInstance is bound to.
      * Bound callbacks will be automatically called when an action event is triggered.

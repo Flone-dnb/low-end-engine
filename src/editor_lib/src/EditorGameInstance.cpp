@@ -226,6 +226,7 @@ void EditorGameInstance::onBeforeNewFrame(float timeSincePrevCallInSec) {
     if (gpuPickingData.bIsWaitingForGpuResult) {
         processGpuPickingResult();
     }
+    dispatchGpuPicking();
 
     // Run compute shader to clear node ID texture.
     if (gpuPickingData.pNodeIdTexture != nullptr) {
@@ -347,7 +348,7 @@ void EditorGameInstance::onWindowClose() {
     gpuPickingData.pNodeIdTexture = nullptr;
 }
 
-void EditorGameInstance::onFinishedSubmittingMeshDrawCommands() {
+void EditorGameInstance::dispatchGpuPicking() {
     PROFILE_FUNC
 
     if (!gpuPickingData.bMouseClickedThisTick) {

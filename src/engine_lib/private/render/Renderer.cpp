@@ -413,9 +413,6 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             }
         }
 
-        // Notify game instance.
-        pGameInstance->onFinishedSubmittingMeshDrawCommands();
-
         // Draw skybox.
         if (skyboxData.optSettings.has_value() && pGameWorldRenderInfo != nullptr) {
             if (skyboxData.pShaderProgram == nullptr) [[unlikely]] {
