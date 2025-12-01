@@ -16,8 +16,8 @@
 namespace {
     constexpr std::string_view sTypeGuid = "003ba11d-bc89-4e1b-becf-b35f9e9c5d12";
 
-    constexpr float minLightDistance = 0.15F;
-    constexpr float shadowNearClipPlane = 0.1F;
+    constexpr float minLightDistance = 0.15f;
+    constexpr float shadowNearClipPlane = 0.1f;
     static_assert(minLightDistance > shadowNearClipPlane);
 }
 
@@ -104,8 +104,8 @@ SpotlightNode::SpotlightNode(const std::string& sNodeName) : SpatialNode(sNodeNa
 void SpotlightNode::onSpawning() {
     SpatialNode::onSpawning();
 
-    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
-    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0f);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0f);
     shaderProperties.cosInnerConeAngle = glm::cos(glm::radians(innerConeAngle));
     shaderProperties.cosOuterConeAngle = glm::cos(glm::radians(outerConeAngle));
 
@@ -212,7 +212,7 @@ void SpotlightNode::setLightColor(const glm::vec3& color) {
 }
 
 void SpotlightNode::setLightIntensity(float intensity) {
-    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
+    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0f, 1.0f);
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -221,7 +221,7 @@ void SpotlightNode::setLightIntensity(float intensity) {
 }
 
 void SpotlightNode::setLightDistance(float distance) {
-    shaderProperties.distance = glm::max(distance, 0.0F);
+    shaderProperties.distance = glm::max(distance, 0.0f);
     if (pShadowMapData != nullptr) {
         recalculateShadowProjMatrix();
     }
@@ -236,7 +236,7 @@ void SpotlightNode::setLightDistance(float distance) {
 
 void SpotlightNode::setLightInnerConeAngle(float inInnerConeAngle) {
     // Save new parameter.
-    innerConeAngle = std::clamp(inInnerConeAngle, 0.0F, maxConeAngle);
+    innerConeAngle = std::clamp(inInnerConeAngle, 0.0f, maxConeAngle);
 
     // Make sure outer cone is equal or bigger than inner cone.
     outerConeAngle = std::clamp(outerConeAngle, innerConeAngle, maxConeAngle);
@@ -278,8 +278,8 @@ void SpotlightNode::onWorldLocationRotationScaleChanged() {
 
     const auto worldLocation = getWorldLocation();
 
-    shaderProperties.position = glm::vec4(worldLocation, 1.0F);
-    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.position = glm::vec4(worldLocation, 1.0f);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0f);
 
     if (pShadowMapData != nullptr) {
         pShadowMapData->viewMatrix =
@@ -305,11 +305,11 @@ void SpotlightNode::recalculateConeShape() {
 void SpotlightNode::recalculateShadowProjMatrix() {
     const auto farClipPlane = shaderProperties.distance;
 
-    static_assert(maxConeAngle <= 90.0F, "change FOV for shadow map capture");
+    static_assert(maxConeAngle <= 90.0f, "change FOV for shadow map capture");
     const auto fovYRadians =
-        glm::radians(outerConeAngle * 2.0F); // x2 to convert [0..90] degree to [0..180] FOV
+        glm::radians(outerConeAngle * 2.0f); // x2 to convert [0..90] degree to [0..180] FOV
 
-    const float aspectRatio = 1.0F;
+    const float aspectRatio = 1.0f;
 
     shaderProperties.viewProjectionMatrix =
         glm::perspective(fovYRadians, aspectRatio, shadowNearClipPlane, farClipPlane) *

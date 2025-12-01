@@ -45,14 +45,14 @@ void GLAPIENTRY debugMessageCallback(
 #endif
 
 void DistanceFogSettings::setFogRange(const glm::vec2& range) {
-    fogRange.x = std::max(range.x, 0.0F);
+    fogRange.x = std::max(range.x, 0.0f);
     fogRange.y = std::max(range.y, fogRange.x);
 }
 
 void DistanceFogSettings::setColor(const glm::vec3& color) { this->color = color; }
 
 void DistanceFogSettings::setFogHeightOnSky(float fogHeight) {
-    fogHeightOnSky = std::clamp(fogHeight, 0.0F, 1.0F);
+    fogHeightOnSky = std::clamp(fogHeight, 0.0f, 1.0f);
 }
 
 SkyboxSettings::SkyboxSettings() {}
@@ -97,8 +97,8 @@ std::unique_ptr<Renderer> Renderer::create(Window* pWindow) {
     glCullFace(GL_BACK);
 
     // Setup clear values.
-    glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
-    glClearDepthf(1.0F);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearDepthf(1.0f);
 
     // Disable VSync.
     if (!SDL_GL_SetSwapInterval(0)) [[unlikely]] {
@@ -254,11 +254,11 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         if (iAvailable == GL_FALSE) {
             // We waited for a GPU fence and all previous operations should be finished at this point
             // but this situation still may rarely happen.
-            return -1.0F;
+            return -1.0f;
         }
 
         glGetQueryObjectui64vEXT(iQuery, GL_QUERY_RESULT_EXT, &iTimeElapsed);
-        return static_cast<float>(iTimeElapsed) / 1000000.0F; // nanoseconds to milliseconds
+        return static_cast<float>(iTimeElapsed) / 1000000.0f; // nanoseconds to milliseconds
     };
     auto& stats = DebugConsole::getStats();
     {
@@ -267,14 +267,14 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         glGetQueryObjecti64vEXT(frameQueries.iGlQueryStartFrameTimestamp, GL_QUERY_RESULT, &iStartTime);
         glGetQueryObjecti64vEXT(frameQueries.iGlQueryEndFrameTimestamp, GL_QUERY_RESULT, &iEndTime);
         stats.gpuTimeDrawFrameMs =
-            static_cast<float>(iEndTime - iStartTime) / 1000000.0F; // nanoseconds to milliseconds
+            static_cast<float>(iEndTime - iStartTime) / 1000000.0f; // nanoseconds to milliseconds
     }
     stats.gpuTimeDrawSkyboxMs = getQueryTimeMs(frameQueries.iGlQueryToDrawSkybox);
     stats.gpuTimeDrawUiMs = getQueryTimeMs(frameQueries.iGlQueryToDrawUi);
     stats.gpuTimeDrawDebug = getQueryTimeMs(frameQueries.iGlQueryToDrawDebug);
-    stats.gpuTimeDrawShadowPassMs = 0.0F;
-    stats.gpuTimeDrawDepthPrepassMs = 0.0F;
-    stats.gpuTimeDrawMeshesMs = 0.0F;
+    stats.gpuTimeDrawShadowPassMs = 0.0f;
+    stats.gpuTimeDrawDepthPrepassMs = 0.0f;
+    stats.gpuTimeDrawMeshesMs = 0.0f;
     for (const auto& pWorld : mtxWorlds.second.vWorlds) {
         const auto& worldQueries = pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex];
         stats.gpuTimeDrawShadowPassMs += getQueryTimeMs(worldQueries.iGlQueryToDrawShadowPass);
@@ -334,7 +334,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
         const auto iViewportX = static_cast<int>(static_cast<float>(iWindowWidth) * viewportRect.x);
         const auto iViewportLeftBottom = static_cast<int>(
-            static_cast<float>(iWindowHeight) * (1.0F - std::min(1.0F, viewportRect.y + viewportRect.w)));
+            static_cast<float>(iWindowHeight) * (1.0f - std::min(1.0f, viewportRect.y + viewportRect.w)));
 
         pCameraProperties->setRenderTargetProportions(iViewportWidth, iViewportHeight);
         const auto& vWorldQueries = pWorld->getFrameQueries()[frameSyncData.iCurrentFrameIndex];
@@ -383,9 +383,9 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         {
 #if defined(ENGINE_DEBUG_TOOLS)
             auto& debugStats = DebugConsole::getStats();
-            debugStats.cpuTimeToSubmitShadowPassMs = 0.0F;
-            debugStats.cpuTimeToSubmitDepthPrepassMs = 0.0F;
-            debugStats.cpuTimeToSubmitMeshesMs = 0.0F;
+            debugStats.cpuTimeToSubmitShadowPassMs = 0.0f;
+            debugStats.cpuTimeToSubmitDepthPrepassMs = 0.0f;
+            debugStats.cpuTimeToSubmitMeshesMs = 0.0f;
 #endif
             for (const auto& mtxActiveCamera : vActiveCameras) {
                 GPU_MARKER_SCOPED("draw meshes of a world");
@@ -448,7 +448,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                 glm::value_ptr(pGameWorldRenderInfo->viewProjectionMatrix));
 
             // Distance fog uniforms.
-            glUniform1f(skyboxData.iFogHeightOnSkyUniform, -1.0F);
+            glUniform1f(skyboxData.iFogHeightOnSkyUniform, -1.0f);
             if (optDistanceFogSettings.has_value()) {
                 glUniform1f(skyboxData.iFogHeightOnSkyUniform, optDistanceFogSettings->getFogHeightOnSky());
                 const auto color = optDistanceFogSettings->getColor();
@@ -479,7 +479,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
             }
 #if defined(ENGINE_DEBUG_TOOLS)
             DebugConsole::getStats().cpuTimeToSubmitUiMs =
-                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitUiStartCounter) * 1000.0F /
+                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitUiStartCounter) * 1000.0f /
                 static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
         }
@@ -496,7 +496,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                 this, pGameWorldRenderInfo->viewProjectionMatrix, timeSincePrevCallInSec);
 
             DebugConsole::getStats().cpuTimeToSubmitDebugDrawMs =
-                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0F /
+                static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitDebugStartCounter) * 1000.0f /
                 static_cast<float>(SDL_GetPerformanceFrequency());
         }
 #endif
@@ -511,7 +511,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 #if defined(ENGINE_DEBUG_TOOLS)
     // Get CPU time before swap as it might block the thread until the GPU is finished.
     DebugConsole::getStats().cpuSubmitFrameTimeMs =
-        static_cast<float>(SDL_GetPerformanceCounter() - cpuFrameStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuFrameStartCounter) * 1000.0f /
         static_cast<float>(SDL_GetPerformanceFrequency());
     glQueryCounterEXT(frameQueries.iGlQueryEndFrameTimestamp, GL_TIMESTAMP_EXT);
 
@@ -522,7 +522,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
 
 #if defined(ENGINE_DEBUG_TOOLS)
     DebugConsole::getStats().cpuTimeFlipSwapchainMs =
-        static_cast<float>(SDL_GetPerformanceCounter() - cpuSwapStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuSwapStartCounter) * 1000.0f /
         static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 

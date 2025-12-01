@@ -26,8 +26,8 @@ struct Plane {
     bool isPointBehindPlane(const glm::vec3& point) const;
 
     /** Plane's normal. */
-    glm::vec3 normal = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 normal = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Distance from the origin to the nearest point on the plane. */
-    float distanceFromOrigin = 0.0F;
+    float distanceFromOrigin = 0.0f;
 };

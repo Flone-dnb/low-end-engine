@@ -22,17 +22,17 @@ public:
         alignas(ShaderAlignmentConstants::iMat4) glm::mat4 viewProjectionMatrix;
 
         /** Light position in world space. 4th component is not used. */
-        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
         /** Forward unit vector in the direction of the light source. 4th component is not used. */
-        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 direction = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
+        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 direction = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
         /** Light color and 4th component stores intensity in range [0.0; 1.0]. */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 colorAndIntensity =
-            glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+            glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
         /** Lit distance. */
-        alignas(ShaderAlignmentConstants::iScalar) float distance = 10.0F;
+        alignas(ShaderAlignmentConstants::iScalar) float distance = 10.0f;
 
         /**
          * Cosine of the spotlight's inner cone angle (cutoff).
@@ -40,7 +40,7 @@ public:
          * @remark Represents cosine of the cutoff angle on one side from the light direction
          * (not both sides), i.e. this is a cosine of value [0-90] degrees.
          */
-        alignas(ShaderAlignmentConstants::iScalar) float cosInnerConeAngle = 0.0F;
+        alignas(ShaderAlignmentConstants::iScalar) float cosInnerConeAngle = 0.0f;
 
         /**
          * Cosine of the spotlight's outer cone angle (cutoff).
@@ -48,7 +48,7 @@ public:
          * @remark Represents cosine of the cutoff angle on one side from the light direction
          * (not both sides), i.e. this is a cosine of value [0-90] degrees.
          */
-        alignas(ShaderAlignmentConstants::iScalar) float cosOuterConeAngle = 0.0F;
+        alignas(ShaderAlignmentConstants::iScalar) float cosOuterConeAngle = 0.0f;
 
         /** -1 if shadow casting is disabled. */
         alignas(ShaderAlignmentConstants::iScalar) int iShadowMapIndex = -1;
@@ -301,15 +301,15 @@ private:
 
     /**
      * Light cutoff angle (in degrees) of the inner cone (hard light edge).
-     * Valid values range is [0.0F, @ref maxConeAngle].
+     * Valid values range is [0.0f, @ref maxConeAngle].
      */
-    float innerConeAngle = 25.0F;
+    float innerConeAngle = 25.0f;
 
     /**
      * Light cutoff angle (in degrees) of the outer cone (soft light edge).
      * Valid values range is [@ref innerConeAngle, @ref maxConeAngle].
      */
-    float outerConeAngle = 45.0F;
+    float outerConeAngle = 45.0f;
 
     /** Enabled for rendering or not. */
     bool bIsVisible = true;
@@ -318,5 +318,5 @@ private:
     bool bCastShadows = false;
 
     /** Maximum value for @ref innerConeAngle and @ref outerConeAngle. */
-    static constexpr float maxConeAngle = 80.0F; // max angle that won't cause any visual issues
+    static constexpr float maxConeAngle = 80.0f; // max angle that won't cause any visual issues
 };

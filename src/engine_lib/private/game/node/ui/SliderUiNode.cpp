@@ -23,7 +23,7 @@ SliderUiNode::SliderUiNode() : SliderUiNode("Slider UI Node") {}
 SliderUiNode::SliderUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     setIsReceivingInput(true);
 
-    setSize(glm::vec2(0.1F, 0.04F)); // NOLINT: sliders are generally small.
+    setSize(glm::vec2(0.1f, 0.04f)); // NOLINT: sliders are generally small.
 }
 
 TypeReflectionInfo SliderUiNode::getReflectionInfo() {
@@ -78,7 +78,7 @@ void SliderUiNode::setSliderColor(const glm::vec4& color) { sliderColor = color;
 void SliderUiNode::setSliderHandleColor(const glm::vec4& color) { sliderHandleColor = color; }
 
 void SliderUiNode::setHandlePosition(float position, bool bTriggerOnChangedCallback) {
-    handlePosition = std::clamp(position, 0.0F, 1.0F);
+    handlePosition = std::clamp(position, 0.0f, 1.0f);
     if (bTriggerOnChangedCallback && onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
@@ -114,10 +114,10 @@ float SliderUiNode::snapToNearest(float value, float step) { return std::round(v
 void SliderUiNode::setSliderStep(float stepSize) {
     sliderStep = stepSize;
 
-    if (sliderStep > 0.0F) {
+    if (sliderStep > 0.0f) {
         handlePosition = snapToNearest(handlePosition, sliderStep);
     }
-    handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
+    handlePosition = std::clamp(handlePosition, 0.0f, 1.0f); // just in case
     if (onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
@@ -140,10 +140,10 @@ bool SliderUiNode::onMouseButtonPressedOnUiNode(MouseButton button, KeyboardModi
     const auto cursorPos = *optCursorPos;
 
     handlePosition = (cursorPos.x - getPosition().x) / getSize().x;
-    if (sliderStep > 0.0F) {
+    if (sliderStep > 0.0f) {
         handlePosition = snapToNearest(handlePosition, sliderStep);
     }
-    handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
+    handlePosition = std::clamp(handlePosition, 0.0f, 1.0f); // just in case
     if (onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
@@ -180,10 +180,10 @@ void SliderUiNode::onMouseMove(double xOffset, double yOffset) {
     const auto cursorPos = *optCursorPos;
 
     handlePosition = (cursorPos.x - getPosition().x) / getSize().x;
-    if (sliderStep > 0.0F) {
+    if (sliderStep > 0.0f) {
         handlePosition = snapToNearest(handlePosition, sliderStep);
     }
-    handlePosition = std::clamp(handlePosition, 0.0F, 1.0F); // just in case
+    handlePosition = std::clamp(handlePosition, 0.0f, 1.0f); // just in case
     if (handlePosition != posBefore && onHandlePositionChanged) {
         onHandlePositionChanged(handlePosition);
     }
@@ -198,12 +198,12 @@ void SliderUiNode::onMouseLeft() {
 void SliderUiNode::onGamepadButtonPressedWhileFocused(GamepadButton button) {
     UiNode::onGamepadButtonPressedWhileFocused(button);
 
-    float step = std::max(sliderStep, 0.05F);
+    float step = std::max(sliderStep, 0.05f);
     if (button == GamepadButton::DPAD_LEFT) {
         step = -step;
     }
 
-    handlePosition = std::clamp(snapToNearest(handlePosition + step, step), 0.0F, 1.0F);
+    handlePosition = std::clamp(snapToNearest(handlePosition + step, step), 0.0f, 1.0f);
 }
 
 void SliderUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {

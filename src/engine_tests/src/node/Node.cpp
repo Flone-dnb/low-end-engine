@@ -1514,7 +1514,7 @@ TEST_CASE("serialize and deserialize node tree") {
                 const auto pChildNode =
                     pRootNode->addChildNode(std::make_unique<SpatialNode>("My spatial node"));
 
-                pChildNode->setRelativeLocation(glm::vec3(1.0F, 2.0F, 3.0F));
+                pChildNode->setRelativeLocation(glm::vec3(1.0f, 2.0f, 3.0f));
 
                 // Serialize.
                 const auto pathToFile = ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) /
@@ -1545,7 +1545,7 @@ TEST_CASE("serialize and deserialize node tree") {
                 REQUIRE(pDeserializedSpatialNode != nullptr);
                 REQUIRE(pDeserializedSpatialNode->getNodeName() == "My spatial node");
                 REQUIRE(glm::all(glm::epsilonEqual(
-                    pDeserializedSpatialNode->getRelativeLocation(), glm::vec3(1.0F, 2.0F, 3.0F), 0.00001F)));
+                    pDeserializedSpatialNode->getRelativeLocation(), glm::vec3(1.0f, 2.0f, 3.0f), 0.00001f)));
 
                 getWindow()->close();
             });

@@ -290,5 +290,5 @@ private:
     GpuPickingData gpuPickingData;
 
     /** Ambient light to use for worlds in the editor. */
-    glm::vec3 editorAmbientLight = glm::vec3(0.25F, 0.25F, 0.25F);
+    glm::vec3 editorAmbientLight = glm::vec3(0.25f, 0.25f, 0.25f);
 };

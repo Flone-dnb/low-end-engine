@@ -69,17 +69,17 @@ TypeReflectionInfo ButtonUiNode::getReflectionInfo() {
 
 ButtonUiNode::ButtonUiNode() : ButtonUiNode("Button UI Node") {}
 ButtonUiNode::ButtonUiNode(const std::string& sNodeName) : RectUiNode(sNodeName) {
-    setSize(glm::vec2(0.15F, 0.075F));
+    setSize(glm::vec2(0.15f, 0.075f));
     setIsReceivingInput(true);
-    setColor(glm::vec4(glm::vec3(0.3F), 1.0F));
+    setColor(glm::vec4(glm::vec3(0.3f), 1.0f));
 }
 
 void ButtonUiNode::setColorWhileHovered(const glm::vec4& color) {
-    colorWhileHovered = glm::clamp(color, 0.0F, 1.0F);
+    colorWhileHovered = glm::clamp(color, 0.0f, 1.0f);
 }
 
 void ButtonUiNode::setColorWhilePressed(const glm::vec4& color) {
-    colorWhilePressed = glm::clamp(color, 0.0F, 1.0F);
+    colorWhilePressed = glm::clamp(color, 0.0f, 1.0f);
 }
 
 void ButtonUiNode::setPathToTextureWhileHovered(std::string sPathToTextureRelativeRes) {

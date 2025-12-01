@@ -24,7 +24,7 @@ BoolInspector::BoolInspector(
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
     setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-    setSize(glm::vec2(getSize().x, 0.05F));
+    setSize(glm::vec2(getSize().x, 0.05f));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
         pTitle->setTextHeight(EditorTheme::getTextHeight());

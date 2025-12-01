@@ -91,7 +91,7 @@ LayoutUiNode::LayoutUiNode() : LayoutUiNode("Layout UI Node") {}
 LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     mtxLayoutParent.second = nullptr;
     setIsReceivingInput(bIsScrollBarEnabled);
-    setSize(glm::vec2(getSize().x, 0.1F)); // set small size so that it will be expanded if needed later
+    setSize(glm::vec2(getSize().x, 0.1f)); // set small size so that it will be expanded if needed later
 }
 
 void LayoutUiNode::onAfterPositionChanged() {
@@ -139,7 +139,7 @@ void LayoutUiNode::setIsHorizontal(bool bIsHorizontal) {
 }
 
 void LayoutUiNode::setChildNodeSpacing(float spacing) {
-    childNodeSpacing = std::clamp(spacing, 0.0F, 1.0F);
+    childNodeSpacing = std::clamp(spacing, 0.0f, 1.0f);
 
     recalculatePosAndSizeForDirectChildNodes();
 }
@@ -151,7 +151,7 @@ void LayoutUiNode::setChildNodeExpandRule(ChildNodeExpandRule expandRule) {
 }
 
 void LayoutUiNode::setPadding(float padding) {
-    this->padding = std::clamp(padding, 0.0F, 0.5F); // NOLINT
+    this->padding = std::clamp(padding, 0.0f, 0.5f); // NOLINT
 
     recalculatePosAndSizeForDirectChildNodes();
 }
@@ -207,7 +207,7 @@ void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
     if (bIsScrollBarEnabled && bAutoScrollToBottom) {
         // Scroll to bottom.
         iCurrentScrollOffset = static_cast<unsigned int>(
-            std::max(0.0F, totalScrollHeight - getSize().y * 3.25F) / // TODO: rework magic numbers
+            std::max(0.0f, totalScrollHeight - getSize().y * 3.25f) / // TODO: rework magic numbers
             scrollBarStepLocal);
     }
 
@@ -248,7 +248,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
     bIsCurrentlyUpdatingChildNodes = true;
     {
         // First collect expand portions.
-        float expandPortionSum = 0.0F;
+        float expandPortionSum = 0.0f;
         bool bAtLeastOneChildVisible = false;
         for (const auto& pChildNode : mtxChildNodes.second) {
             // Cast type.
@@ -285,8 +285,8 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         // Consider padding.
         const auto screenPadding = std::min(layoutSize.x, layoutSize.y) * padding;
         currentChildPos += screenPadding;
-        const auto sizeForChildNodes = glm::vec2(layoutSize - 2.0F * screenPadding);
-        float sizeOnMainAxisToDisplayAllChildNodes = 2.0F * screenPadding;
+        const auto sizeForChildNodes = glm::vec2(layoutSize - 2.0f * screenPadding);
+        float sizeOnMainAxisToDisplayAllChildNodes = 2.0f * screenPadding;
 
         // Check scroll bar.
         if (bIsScrollBarEnabled && bIsHorizontal) [[unlikely]] {
@@ -299,12 +299,12 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                 "scroll bar with child expand rule is only allowed when expand rule is set to \"secondary "
                 "axis\"");
         }
-        float yOffsetForScrollToSkip = 0.0F;
+        float yOffsetForScrollToSkip = 0.0f;
         if (bIsScrollBarEnabled) {
             yOffsetForScrollToSkip -=
                 (scrollBarStepLocal * layoutSize.y) * static_cast<float>(iCurrentScrollOffset);
         }
-        totalScrollHeight = 0.0F;
+        totalScrollHeight = 0.0f;
 
         // Add spacers to total portion sum.
         const auto spacerPortion = expandPortionSum * childNodeSpacing;
@@ -372,7 +372,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
                 }
             }
 
-            float lastChildSize = 0.0F;
+            float lastChildSize = 0.0f;
             if (bIsHorizontal) {
                 lastChildSize = childNewSize.x + spacerSizeOnMainAxis;
             } else {
@@ -383,7 +383,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             totalScrollHeight += lastChildSize;
 
             if (bIsScrollBarEnabled) {
-                if (yOffsetForScrollToSkip + lastChildSize < 0.0F ||
+                if (yOffsetForScrollToSkip + lastChildSize < 0.0f ||
                     currentChildPos.y + childNewSize.y > layoutPos.y + layoutSize.y) {
                     //  Partially outside of the visible area - don't render (TODO: for now).
                     yOffsetForScrollToSkip += lastChildSize;

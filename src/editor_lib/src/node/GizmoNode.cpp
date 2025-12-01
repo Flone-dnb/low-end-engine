@@ -61,11 +61,11 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
 
     auto pYAxisMeshU = std::make_unique<MeshNode>("Gizmo Y");
     pYAxisMeshU->setMeshGeometryBeforeSpawned(gizmoGeometry);
-    pYAxisMeshU->setRelativeRotation(glm::vec3(0.0F, 0.0F, 90.0F));
+    pYAxisMeshU->setRelativeRotation(glm::vec3(0.0f, 0.0f, 90.0f));
 
     auto pZAxisMeshU = std::make_unique<MeshNode>("Gizmo Z");
     pZAxisMeshU->setMeshGeometryBeforeSpawned(std::move(gizmoGeometry));
-    pZAxisMeshU->setRelativeRotation(glm::vec3(0.0F, -90.0F, 0.0F));
+    pZAxisMeshU->setRelativeRotation(glm::vec3(0.0f, -90.0f, 0.0f));
 
     // Set custom shader.
     const std::string sFragmentShader = "editor/shaders/Gizmo.frag.glsl";
@@ -74,9 +74,9 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pZAxisMeshU->getMaterial().setPathToCustomFragmentShader(sFragmentShader);
 
     // Set color.
-    pXAxisMesh->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.0F, 0.0F));
-    pYAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 1.0F, 0.0F));
-    pZAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0F, 0.0F, 1.0F));
+    pXAxisMesh->getMaterial().setDiffuseColor(glm::vec3(1.0f, 0.0f, 0.0f));
+    pYAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0f, 1.0f, 0.0f));
+    pZAxisMeshU->getMaterial().setDiffuseColor(glm::vec3(0.0f, 0.0f, 1.0f));
 
     // Save pointers.
     pXAxisGizmoNode = pXAxisMesh;
@@ -88,7 +88,7 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
     pYAxisGizmoNode->setSerialize(false);
     pZAxisGizmoNode->setSerialize(false);
 
-    // Draw gizmo as transparent with 1.0F alpha to draw gizmo on top of most meshes.
+    // Draw gizmo as transparent with 1.0f alpha to draw gizmo on top of most meshes.
     pXAxisMesh->getMaterial().setEnableTransparency(true);
     pYAxisMeshU->getMaterial().setEnableTransparency(true);
     pZAxisMeshU->getMaterial().setEnableTransparency(true);
@@ -102,10 +102,10 @@ GizmoNode::GizmoNode(GizmoMode mode, SpatialNode* pControlledNode)
         const auto pUsageHintText = addChildNode(std::make_unique<TextUiNode>());
         pUsageHintText->setSerialize(false);
 
-        pUsageHintText->setPosition(glm::vec2(0.65F, 0.06F));
-        pUsageHintText->setTextHeight(0.025F);
+        pUsageHintText->setPosition(glm::vec2(0.65f, 0.06f));
+        pUsageHintText->setTextHeight(0.025f);
         pUsageHintText->setSize(
-            glm::vec2(1.0F - pUsageHintText->getPosition().x, pUsageHintText->getTextHeight() * 1.25F));
+            glm::vec2(1.0f - pUsageHintText->getPosition().x, pUsageHintText->getTextHeight() * 1.25f));
         pUsageHintText->setText(u"gizmo usage (keyboard): W - move, E - rotate, R - scale");
     }
 }
@@ -144,20 +144,20 @@ GizmoNode::calculateOffsetFromGizmoToCursorRay(const glm::vec3& gizmoOriginalLoc
         return {};
     }
 
-    glm::vec3 normalForPlaneAlongAxis = glm::vec3(0.0F);
+    glm::vec3 normalForPlaneAlongAxis = glm::vec3(0.0f);
 
     if (mode == GizmoMode::ROTATE) {
         switch (axis) {
         case (GizmoAxis::X): {
-            normalForPlaneAlongAxis = glm::vec3(1.0F, 0.0F, 0.0F);
+            normalForPlaneAlongAxis = glm::vec3(1.0f, 0.0f, 0.0f);
             break;
         }
         case (GizmoAxis::Y): {
-            normalForPlaneAlongAxis = glm::vec3(0.0F, 1.0F, 0.0F);
+            normalForPlaneAlongAxis = glm::vec3(0.0f, 1.0f, 0.0f);
             break;
         }
         case (GizmoAxis::Z): {
-            normalForPlaneAlongAxis = glm::vec3(0.0F, 0.0F, 1.0F);
+            normalForPlaneAlongAxis = glm::vec3(0.0f, 0.0f, 1.0f);
             break;
         }
         default: {
@@ -168,15 +168,15 @@ GizmoNode::calculateOffsetFromGizmoToCursorRay(const glm::vec3& gizmoOriginalLoc
     } else {
         switch (axis) {
         case (GizmoAxis::X): {
-            normalForPlaneAlongAxis = glm::vec3(0.0F, 1.0F, 0.0F);
+            normalForPlaneAlongAxis = glm::vec3(0.0f, 1.0f, 0.0f);
             break;
         }
         case (GizmoAxis::Y): {
-            normalForPlaneAlongAxis = glm::vec3(-1.0F, 0.0F, 0.0F);
+            normalForPlaneAlongAxis = glm::vec3(-1.0f, 0.0f, 0.0f);
             break;
         }
         case (GizmoAxis::Z): {
-            normalForPlaneAlongAxis = glm::vec3(1.0F, 0.0F, 0.0F);
+            normalForPlaneAlongAxis = glm::vec3(1.0f, 0.0f, 0.0f);
             break;
         }
         default: {
@@ -189,7 +189,7 @@ GizmoNode::calculateOffsetFromGizmoToCursorRay(const glm::vec3& gizmoOriginalLoc
     Plane planeAlongAxis(normalForPlaneAlongAxis, gizmoOriginalLocation);
     const float rayLength = MathHelpers::calculateRayPlaneIntersection(
         optCursorWorldInfo->worldLocation, optCursorWorldInfo->worldDirection, planeAlongAxis);
-    if (rayLength < 0.0F) {
+    if (rayLength < 0.0f) {
         return {};
     }
     const glm::vec3 toHitOnGizmo =
@@ -313,7 +313,7 @@ void GizmoNode::onMouseMove(double xOffset, double yOffset) {
     }
 
     // Calculate mouse movement diff.
-    glm::vec3 offsetDiff = glm::vec3(0.0F);
+    glm::vec3 offsetDiff = glm::vec3(0.0f);
     switch (optTrackingInfo->axis) {
     case (GizmoAxis::X): {
         offsetDiff.x = *optNewOffsetToGizmoPivot - optTrackingInfo->offsetToGizmoPivot;
@@ -341,13 +341,13 @@ void GizmoNode::onMouseMove(double xOffset, double yOffset) {
     }
     case (GizmoMode::ROTATE): {
         pControlledNode->setRelativeRotation(
-            optTrackingInfo->originalRelativeTransform + offsetDiff * 10.0F); // make rotation more sensitive
+            optTrackingInfo->originalRelativeTransform + offsetDiff * 10.0f); // make rotation more sensitive
         setWorldRotation(pControlledNode->getWorldRotation());
         break;
     }
     case (GizmoMode::SCALE): {
         auto newScale = optTrackingInfo->originalRelativeTransform + offsetDiff;
-        newScale = glm::max(newScale, glm::vec3(0.01F, 0.01F, 0.01F)); // avoid negative scale
+        newScale = glm::max(newScale, glm::vec3(0.01f, 0.01f, 0.01f)); // avoid negative scale
         pControlledNode->setRelativeScale(newScale);
         break;
     }

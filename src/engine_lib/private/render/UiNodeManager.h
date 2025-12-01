@@ -417,19 +417,19 @@ private:
     /** Groups data used to draw a scroll bar. */
     struct ScrollBarDrawInfo {
         /** Position in pixels. */
-        glm::vec2 posInPixels = glm::vec2(0.0F, 0.0F);
+        glm::vec2 posInPixels = glm::vec2(0.0f, 0.0f);
 
         /** Height in pixels. */
-        float heightInPixels = 0.0F;
+        float heightInPixels = 0.0f;
 
         /** Start offset (from the top) of scroll bar in range [0.0; 1.0] relative to @ref heightInPixels. */
-        float verticalPos = 0.0F;
+        float verticalPos = 0.0f;
 
         /** Size of the scroll bar in range [0.0; 1.0] relative to @ref heightInPixels. */
-        float verticalSize = 0.0F;
+        float verticalSize = 0.0f;
 
         /** Color of the scroll bar. */
-        glm::vec4 color = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F); // NOLINT
+        glm::vec4 color = glm::vec4(0.5f, 0.5f, 0.5f, 0.5f); // NOLINT
     };
 
     /**
@@ -569,7 +569,7 @@ private:
         int iClipRectUniform,
         const glm::vec2& screenPos,
         const glm::vec2& screenSize,
-        const glm::vec4& clipRect = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F)) const;
+        const glm::vec4& clipRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)) const;
 
     /**
      * Collects all visible child nodes (recursively) that receive input and returns them.
@@ -605,5 +605,5 @@ private:
     World* const pWorld = nullptr;
 
     /** Width of the scroll bar relative to the width of the screen. */
-    static constexpr float scrollBarWidthRelativeScreen = 0.003F;
+    static constexpr float scrollBarWidthRelativeScreen = 0.003f;
 };

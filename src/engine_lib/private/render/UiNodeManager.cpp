@@ -966,10 +966,10 @@ UiNodeManager::UiNodeManager(Renderer* pRenderer, World* pWorld) : pRenderer(pRe
 
     // Prepare screen quad in [0.0; 1.0].
     std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0f, 0.0f), .uv = glm::vec2(0.0f, 0.0f)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0f, 1.0f), .uv = glm::vec2(0.0f, 1.0f)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0f, 1.0f), .uv = glm::vec2(1.0f, 1.0f)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0f, 0.0f), .uv = glm::vec2(1.0f, 0.0f)},
     };
     std::array<unsigned short, ScreenQuadGeometry::iIndexCount> vIndices = {0, 1, 2, 0, 2, 3};
     data.pScreenQuadGeometry = GpuResourceManager::createScreenQuad(vVertices, vIndices);
@@ -1168,7 +1168,7 @@ void UiNodeManager::drawProgressBarNodesDataLocked(
             }
 
             // Draw foreground.
-            const auto clipRect = glm::vec4(0.0F, 0.0F, pProgressBarNode->getProgressFactor(), 1.0F);
+            const auto clipRect = glm::vec4(0.0f, 0.0f, pProgressBarNode->getProgressFactor(), 1.0f);
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
@@ -1206,8 +1206,8 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
     glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
     pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
-    constexpr float boundsWidthInPix = 2.0F;
-    constexpr float backgroundPaddingInPix = 6.0F;
+    constexpr float boundsWidthInPix = 2.0f;
+    constexpr float backgroundPaddingInPix = 6.0f;
 
     for (const auto& [iDepth, nodes] : vNodesByDepth) {
         for (const auto& pCheckboxNode : nodes) {
@@ -1225,7 +1225,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
             // TODO: this creates inconsistency between UI logic (which operates on `getPos` and
             // `getSize`) and rendered image (which is adjusted `getSize`) this means that things like
             // clicks and hovering will work slightly outside of the rendered checkbox.
-            size.x *= 1.0F / aspectRatio;
+            size.x *= 1.0f / aspectRatio;
 
             // Draw bounds.
             pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getForegroundColor());
@@ -1243,7 +1243,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
             // Draw background.
             pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getBackgroundColor());
             pos += boundsWidthInPix;
-            size -= boundsWidthInPix * 2.0F;
+            size -= boundsWidthInPix * 2.0f;
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
@@ -1254,7 +1254,7 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
             if (pCheckboxNode->isChecked()) {
                 pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getForegroundColor());
                 pos += backgroundPaddingInPix;
-                size -= backgroundPaddingInPix * 2.0F;
+                size -= backgroundPaddingInPix * 2.0f;
                 drawQuad(
                     shaderInfo.iScreenPosUniform,
                     shaderInfo.iScreenSizeUniform,
@@ -1290,8 +1290,8 @@ void UiNodeManager::drawSliderNodesDataLocked(
     glBindVertexArray(mtxData.second.pScreenQuadGeometry->getVao().getVertexArrayObjectId());
     pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
-    constexpr float sliderHeightToWidthRatio = 0.5F;
-    constexpr float sliderHandleWidth = 0.1F; // in range [0.0; 1.0] relative to slider width
+    constexpr float sliderHeightToWidthRatio = 0.5f;
+    constexpr float sliderHandleWidth = 0.1f; // in range [0.0; 1.0] relative to slider width
 
     for (const auto& [iDepth, nodes] : vNodesByDepth) {
         for (const auto& pSliderNode : nodes) {
@@ -1314,7 +1314,7 @@ void UiNodeManager::drawSliderNodesDataLocked(
                 shaderInfo.iClipRectUniform,
                 glm::vec2(
                     pos.x * static_cast<float>(iWindowWidth),
-                    (pos.y + size.y / 2.0F - baseHeight / 2.0F) * static_cast<float>(iWindowHeight)),
+                    (pos.y + size.y / 2.0f - baseHeight / 2.0f) * static_cast<float>(iWindowHeight)),
                 glm::vec2(
                     size.x * static_cast<float>(iWindowWidth),
                     baseHeight * static_cast<float>(iWindowHeight)));
@@ -1328,7 +1328,7 @@ void UiNodeManager::drawSliderNodesDataLocked(
                 shaderInfo.iScreenSizeUniform,
                 shaderInfo.iClipRectUniform,
                 glm::vec2(
-                    (handleCenterPos.x - handleWidth / 2.0F) * static_cast<float>(iWindowWidth),
+                    (handleCenterPos.x - handleWidth / 2.0f) * static_cast<float>(iWindowWidth),
                     handleCenterPos.y * static_cast<float>(iWindowHeight)),
                 glm::vec2(
                     handleWidth * static_cast<float>(iWindowWidth),
@@ -1407,8 +1407,8 @@ void UiNodeManager::drawTextEditNodesDataLocked(
 
     // Prepare info to later draw cursors for text edit UI nodes.
     struct CursorDrawInfo {
-        glm::vec2 screenPos = glm::vec2(0.0F, 0.0F);
-        float height = 0.0F;
+        glm::vec2 screenPos = glm::vec2(0.0f, 0.0f);
+        float height = 0.0f;
     };
     std::vector<CursorDrawInfo> vCursorScreenPosToDraw;
 
@@ -1637,12 +1637,12 @@ void UiNodeManager::drawTextEditNodesDataLocked(
                     pTextEditNode->getSize().y * static_cast<float>(iWindowHeight) / textHeightInPixels);
 
                 const float verticalSize = std::min(
-                    1.0F,
+                    1.0f,
                     static_cast<float>(iAverageLineCountDisplayed) /
                         static_cast<float>(pTextEditNode->iNewLineCharCountInText));
 
                 const float verticalPos = std::min(
-                    1.0F,
+                    1.0f,
                     static_cast<float>(pTextEditNode->iCurrentScrollOffset) /
                         static_cast<float>(
                             std::max(pTextEditNode->iNewLineCharCountInText, static_cast<size_t>(1))));
@@ -1679,11 +1679,11 @@ void UiNodeManager::drawTextEditNodesDataLocked(
             // Draw cursors.
 
             // Set shader parameters.
-            pShaderProgram->setVector4ToActiveProgram("color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+            pShaderProgram->setVector4ToActiveProgram("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
             pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
             for (const auto& cursorInfo : vCursorScreenPosToDraw) {
-                const float cursorWidth = 2.0F;
+                const float cursorWidth = 2.0f;
                 const float cursorHeight = cursorInfo.height * static_cast<float>(iWindowHeight);
                 const auto screenPos = glm::vec2(
                     cursorInfo.screenPos.x, cursorInfo.screenPos.y - cursorHeight); // to draw from top
@@ -1755,12 +1755,12 @@ void UiNodeManager::drawLayoutScrollBarsDataLocked(
             (nodePos.x + nodeSize.x) * static_cast<float>(iWindowWidth) - widthInPixels,
             nodePos.y * static_cast<float>(iWindowHeight));
 
-        float verticalSize = 1.0F / pLayoutNode->totalScrollHeight;
-        if (pLayoutNode->totalScrollHeight < 1.0F) {
-            verticalSize = 1.0F;
+        float verticalSize = 1.0f / pLayoutNode->totalScrollHeight;
+        if (pLayoutNode->totalScrollHeight < 1.0f) {
+            verticalSize = 1.0f;
         }
         const float verticalPos = std::min(
-            1.0F,
+            1.0f,
             (static_cast<float>(pLayoutNode->iCurrentScrollOffset) * LayoutUiNode::scrollBarStepLocal) /
                 pLayoutNode->totalScrollHeight);
 
@@ -1811,8 +1811,8 @@ void UiNodeManager::drawScrollBarsDataLocked(
         pos.y += scrollBarInfo.verticalPos * scrollBarInfo.heightInPixels;
 
         // TODO: scroll bar goes under the UI node sometimes when near end of the text
-        if (scrollBarInfo.verticalPos + scrollBarInfo.verticalSize > 1.0F) {
-            height = (1.0F - scrollBarInfo.verticalPos) * scrollBarInfo.heightInPixels;
+        if (scrollBarInfo.verticalPos + scrollBarInfo.verticalSize > 1.0f) {
+            height = (1.0f - scrollBarInfo.verticalPos) * scrollBarInfo.heightInPixels;
         }
 
         drawQuad(

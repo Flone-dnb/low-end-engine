@@ -43,49 +43,49 @@ public:
         size_t iCulledLightSourceCount = 0;
 
         /** Time in milliseconds that the CPU spent doing the last tick. */
-        float cpuTickTimeMs = 0.0F;
+        float cpuTickTimeMs = 0.0f;
 
         /** Time in milliseconds that the CPU spent submitting the last frame. */
-        float cpuSubmitFrameTimeMs = 0.0F;
+        float cpuSubmitFrameTimeMs = 0.0f;
 
         /** Time in milliseconds that the CPU spent in the swap window function. */
-        float cpuTimeFlipSwapchainMs = 0.0F;
+        float cpuTimeFlipSwapchainMs = 0.0f;
 
         /** Time in milliseconds to submit shadow pass. */
-        float cpuTimeToSubmitShadowPassMs = 0.0F;
+        float cpuTimeToSubmitShadowPassMs = 0.0f;
 
         /** Time in milliseconds to submit shadow pass. */
-        float cpuTimeToSubmitDepthPrepassMs = 0.0F;
+        float cpuTimeToSubmitDepthPrepassMs = 0.0f;
 
         /** Time in milliseconds to submit meshes. */
-        float cpuTimeToSubmitMeshesMs = 0.0F;
+        float cpuTimeToSubmitMeshesMs = 0.0f;
 
         /** Time in milliseconds to submit UI. */
-        float cpuTimeToSubmitUiMs = 0.0F;
+        float cpuTimeToSubmitUiMs = 0.0f;
 
         /** Time in milliseconds to submit debug drawer things. */
-        float cpuTimeToSubmitDebugDrawMs = 0.0F;
+        float cpuTimeToSubmitDebugDrawMs = 0.0f;
 
         /** Time in milliseconds spent on the GPU drawing the last frame. */
-        float gpuTimeDrawFrameMs = -1.0F;
+        float gpuTimeDrawFrameMs = -1.0f;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
-        float gpuTimeDrawShadowPassMs = -1.0F;
+        float gpuTimeDrawShadowPassMs = -1.0f;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
-        float gpuTimeDrawDepthPrepassMs = -1.0F;
+        float gpuTimeDrawDepthPrepassMs = -1.0f;
 
         /** Time in milliseconds spent on the GPU drawing meshes. */
-        float gpuTimeDrawMeshesMs = -1.0F;
+        float gpuTimeDrawMeshesMs = -1.0f;
 
         /** Time in milliseconds spent on the GPU drawing skybox. */
-        float gpuTimeDrawSkyboxMs = -1.0F;
+        float gpuTimeDrawSkyboxMs = -1.0f;
 
         /** Time in milliseconds spent on the GPU drawing UI. */
-        float gpuTimeDrawUiMs = -1.0F;
+        float gpuTimeDrawUiMs = -1.0f;
 
         /** Time in milliseconds spent on the GPU drawing debug objects. */
-        float gpuTimeDrawDebug = -1.0F;
+        float gpuTimeDrawDebug = -1.0f;
     };
 
     DebugConsole(const DebugConsole&) = delete;
@@ -204,7 +204,7 @@ private:
     std::string sCurrentInput;
 
     /** Time in seconds since stats were updated the last time. */
-    float timeSinceLastStatsUpdateSec = 0.0F;
+    float timeSinceLastStatsUpdateSec = 0.0f;
 
     /** Current state. */
     bool bIsShown = false;

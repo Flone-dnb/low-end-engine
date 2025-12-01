@@ -330,10 +330,10 @@ private:
         JPH::BodyID hitBodyId{};
 
         /** World space contact position. */
-        glm::vec3 hitWorldPosition = glm::vec3(0.0F);
+        glm::vec3 hitWorldPosition = glm::vec3(0.0f);
 
         /** World space contact normal. */
-        glm::vec3 hitNormal = glm::vec3(0.0F);
+        glm::vec3 hitNormal = glm::vec3(0.0f);
     };
 
     /**
@@ -385,7 +385,7 @@ private:
     float maxWalkSlopeAngleDeg = 45.0f;
 
     /** Maximum height of the stairs to automatically step up on. */
-    float maxStepHeight = 0.4F;
+    float maxStepHeight = 0.4f;
 
     /** `true` if inside of @ref updateCharacterPosition. */
     bool bIsApplyingUpdateResults = false;

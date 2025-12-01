@@ -180,7 +180,7 @@ CharacterBodyNode::createAdjustedJoltShapeForCharacter(const CapsuleCollisionSha
 
     // Adjust to have bottom on (0, 0, 0).
     shapeResult = JPH::RotatedTranslatedShapeSettings(
-                      convertPosDirToJolt(glm::vec3(0.0F, shape.getHalfHeight() + shape.getRadius(), 0.0F)),
+                      convertPosDirToJolt(glm::vec3(0.0f, shape.getHalfHeight() + shape.getRadius(), 0.0f)),
                       JPH::Quat::sIdentity(),
                       shapeResult.Get())
                       .Create();
@@ -268,7 +268,7 @@ bool CharacterBodyNode::trySetNewShape(CapsuleCollisionShape& newShape) {
 
     const auto bSuccess = pCharacterBody->SetShape(
         pNewShape,
-        1.5F * physicsSystem.GetPhysicsSettings().mPenetrationSlop,
+        1.5f * physicsSystem.GetPhysicsSettings().mPenetrationSlop,
         physicsSystem.GetDefaultBroadPhaseLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING)),
         physicsSystem.GetDefaultLayerFilter(static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING)),
         *pBodyFilter,
@@ -291,7 +291,7 @@ void CharacterBodyNode::updateCharacterPosition(
 
     // Prepare to update the position.
     JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
-    updateSettings.mStickToFloorStepDown = -pCharacterBody->GetUp() * 0.2F;
+    updateSettings.mStickToFloorStepDown = -pCharacterBody->GetUp() * 0.2f;
     updateSettings.mWalkStairsStepUp = pCharacterBody->GetUp() * maxStepHeight;
 
     // Update position.
@@ -327,7 +327,7 @@ void CharacterBodyNode::onWorldLocationRotationScaleChanged() {
 #if defined(DEBUG)
     if (bIsApplyingUpdateResults && !bWarnedAboutFallingOutOfWorld) {
         const auto worldLocation = getWorldLocation();
-        if (worldLocation.y < -1000.0F) {
+        if (worldLocation.y < -1000.0f) {
             Log::warn(std::format(
                 "character body node \"{}\" seems to be falling out of the world, its world location is "
                 "({}, {}, {})",

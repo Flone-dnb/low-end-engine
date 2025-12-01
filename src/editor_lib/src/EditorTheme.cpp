@@ -67,32 +67,32 @@ std::string EditorTheme::formatVariableName(const std::string& sName) {
     return sOutputName;
 }
 
-float EditorTheme::getTextHeight() { return 0.0195F; }
+float EditorTheme::getTextHeight() { return 0.0195f; }
 
-float EditorTheme::getBigTextHeight() { return getTextHeight() * 1.1F; }
+float EditorTheme::getBigTextHeight() { return getTextHeight() * 1.1f; }
 
-float EditorTheme::getSmallTextHeight() { return getTextHeight() * 0.925F; }
+float EditorTheme::getSmallTextHeight() { return getTextHeight() * 0.925f; }
 
-float EditorTheme::getButtonSizeY() { return 0.025F; }
+float EditorTheme::getButtonSizeY() { return 0.025f; }
 
-float EditorTheme::getPadding() { return 0.0275F; }
+float EditorTheme::getPadding() { return 0.0275f; }
 
-float EditorTheme::getSpacing() { return 0.017F; }
+float EditorTheme::getSpacing() { return 0.017f; }
 
-float EditorTheme::getTypePropertyNameValueSpacing() { return getSpacing() * 2.0F; }
+float EditorTheme::getTypePropertyNameValueSpacing() { return getSpacing() * 2.0f; }
 
-float EditorTheme::getTypePropertySpacing() { return getTypePropertyNameValueSpacing() * 2.0F; }
+float EditorTheme::getTypePropertySpacing() { return getTypePropertyNameValueSpacing() * 2.0f; }
 
-float EditorTheme::getTypePropertyGroupSpacing() { return getSpacing() * 4.0F; }
+float EditorTheme::getTypePropertyGroupSpacing() { return getSpacing() * 4.0f; }
 
-glm::vec4 EditorTheme::getEditorBackgroundColor() { return glm::vec4(glm::vec3(0.12F), 1.0F); }
+glm::vec4 EditorTheme::getEditorBackgroundColor() { return glm::vec4(glm::vec3(0.12f), 1.0f); }
 
-glm::vec4 EditorTheme::getContainerBackgroundColor() { return glm::vec4(glm::vec3(0.15F), 1.0F); }
+glm::vec4 EditorTheme::getContainerBackgroundColor() { return glm::vec4(glm::vec3(0.15f), 1.0f); }
 
-glm::vec4 EditorTheme::getAccentColor() { return glm::vec4(0.85F, 0.35F, 0.2F, 1.0F); }
+glm::vec4 EditorTheme::getAccentColor() { return glm::vec4(0.85f, 0.35f, 0.2f, 1.0f); }
 
 glm::vec4 EditorTheme::getButtonColor() { return getEditorBackgroundColor(); }
 
-glm::vec4 EditorTheme::getButtonHoverColor() { return getEditorBackgroundColor() + 0.2F; }
+glm::vec4 EditorTheme::getButtonHoverColor() { return getEditorBackgroundColor() + 0.2f; }
 
-glm::vec4 EditorTheme::getButtonPressedColor() { return getEditorBackgroundColor() + 0.1F; }
+glm::vec4 EditorTheme::getButtonPressedColor() { return getEditorBackgroundColor() + 0.1f; }

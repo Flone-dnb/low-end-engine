@@ -15,30 +15,30 @@ FileDialogMenu::FileDialogMenu(
     const std::vector<std::string>& vFileExtensions,
     const std::function<void(const std::filesystem::path& path)>& onSelected)
     : RectUiNode("File Dialog"), onSelected(onSelected), vFileExtensions(vFileExtensions) {
-    setPosition(glm::vec2(0.0F, 0.0F));
-    setSize(glm::vec2(1.0F, 1.0F));
-    setColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.5F));
+    setPosition(glm::vec2(0.0f, 0.0f));
+    setSize(glm::vec2(1.0f, 1.0f));
+    setColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
     setUiLayer(UiLayer::LAYER2);
     setModal();
 
     const auto pMenuBackground = addChildNode(std::make_unique<RectUiNode>());
-    pMenuBackground->setPosition(glm::vec2(0.25F, 0.25F));
-    pMenuBackground->setSize(glm::vec2(0.5F, 0.5F));
+    pMenuBackground->setPosition(glm::vec2(0.25f, 0.25f));
+    pMenuBackground->setSize(glm::vec2(0.5f, 0.5f));
     pMenuBackground->setColor(EditorTheme::getContainerBackgroundColor());
     pMenuBackground->setPadding(EditorTheme::getPadding());
     {
         const auto pVerticalLayout = pMenuBackground->addChildNode(std::make_unique<LayoutUiNode>());
-        pVerticalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
+        pVerticalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0f);
         pVerticalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
         {
             // Current path + buttons.
             const auto pHorizontalLayout = pVerticalLayout->addChildNode(std::make_unique<LayoutUiNode>());
             pHorizontalLayout->setIsHorizontal(true);
-            pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
+            pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0f);
             pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
             {
                 const auto pButton = pHorizontalLayout->addChildNode(std::make_unique<ButtonUiNode>());
-                pButton->setPadding(EditorTheme::getPadding() * 2.0F);
+                pButton->setPadding(EditorTheme::getPadding() * 2.0f);
                 pButton->setExpandPortionInLayout(2);
                 pButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
                 pButton->setColor(EditorTheme::getButtonColor());
@@ -71,7 +71,7 @@ FileDialogMenu::FileDialogMenu(
 
                 // Close button.
                 const auto pCloseButton = pHorizontalLayout->addChildNode(std::make_unique<ButtonUiNode>());
-                pCloseButton->setPadding(EditorTheme::getPadding() * 2.0F);
+                pCloseButton->setPadding(EditorTheme::getPadding() * 2.0f);
                 pCloseButton->setExpandPortionInLayout(2);
                 pCloseButton->setSize(glm::vec2(pButton->getSize().x, EditorTheme::getButtonSizeY()));
                 pCloseButton->setColor(EditorTheme::getButtonColor());

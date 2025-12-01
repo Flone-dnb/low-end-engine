@@ -240,16 +240,16 @@ private:
     std::optional<SoundChannel> soundChannel;
 
     /** Distance under which the sound will be heard at its maximum volume, range [0.1; +inf]. */
-    float maxVolumeDistance = 1.0F; // NOLINT
+    float maxVolumeDistance = 1.0f; // NOLINT
 
     /** The greater the attenuation, the less it will be heard when the sound moves away from the listener. */
-    float attenuation = 2.0F; // NOLINT
+    float attenuation = 2.0f; // NOLINT
 
     /** Sound volume multiplier, positive number. */
-    float volume = 1.0F;
+    float volume = 1.0f;
 
     /** Pitch of the sound, positive number. */
-    float pitch = 1.0F;
+    float pitch = 1.0f;
 
     /** Whether to restart the sound after it ended or not. */
     bool bIsLooping = false;

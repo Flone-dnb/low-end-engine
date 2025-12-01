@@ -105,11 +105,11 @@ void SimpleCharacterBodyNode::setJumpPower(float newJumpPower) { jumpPower = new
 void SimpleCharacterBodyNode::setGravityMultiplier(float newMultiplier) { gravityMultiplier = newMultiplier; }
 
 void SimpleCharacterBodyNode::setAirMovementControlFactor(float factor) {
-    airMovementControlFactor = std::clamp(factor, 0.0F, 1.0F);
+    airMovementControlFactor = std::clamp(factor, 0.0f, 1.0f);
 }
 
 void SimpleCharacterBodyNode::setCrouchingHeightFactor(float factor) {
-    crouchingHeightFactor = std::clamp(factor, 0.1F, 1.0F);
+    crouchingHeightFactor = std::clamp(factor, 0.1f, 1.0f);
 }
 
 bool SimpleCharacterBodyNode::trySetIsCrouching(bool bIsCrouching) {
@@ -150,7 +150,7 @@ void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
     const auto groundVelocity = getGroundVelocity();
 
     // Setup base velocity.
-    glm::vec3 newVelocity = glm::vec3(0.0F);
+    glm::vec3 newVelocity = glm::vec3(0.0f);
     if (groundState == GroundState::OnGround && !isSlopeTooSteep(getGroundNormal())) {
         newVelocity = groundVelocity;
         if (bWantsToJump) {
@@ -174,7 +174,7 @@ void SimpleCharacterBodyNode::onBeforePhysicsUpdate(float deltaTime) {
         newVelocity += movementVec * movementSpeed;
     } else {
         const auto horizontalVelocity = getLinearVelocity() - verticalVelocity;
-        newVelocity += horizontalVelocity * (1.0F - airMovementControlFactor) +
+        newVelocity += horizontalVelocity * (1.0f - airMovementControlFactor) +
                        movementVec * movementSpeed * airMovementControlFactor;
     }
 

@@ -135,7 +135,7 @@ public:
 
 private:
     /** Half the size of the box. */
-    glm::vec3 halfExtent = glm::vec3(0.5F, 0.5F, 0.5F);
+    glm::vec3 halfExtent = glm::vec3(0.5f, 0.5f, 0.5f);
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ public:
 
 private:
     /** Radius of the sphere. */
-    float radius = 0.5F;
+    float radius = 0.5f;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -267,10 +267,10 @@ public:
 
 private:
     /** Half height of the capsule. */
-    float halfHeight = 0.8F;
+    float halfHeight = 0.8f;
 
     /** Radius of the capsule. */
-    float radius = 0.3F;
+    float radius = 0.3f;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -343,10 +343,10 @@ public:
 
 private:
     /** Half height of the cylinder. */
-    float halfHeight = 0.5F;
+    float halfHeight = 0.5f;
 
     /** Radius of the cylinder. */
-    float radius = 0.25F;
+    float radius = 0.25f;
 };
 
 // ------------------------------------------------------------------------------------------------

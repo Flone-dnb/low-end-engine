@@ -60,9 +60,9 @@ void ContextMenuNode::openMenu(
     }
     const auto cursorPos = *optCursorPos;
 
-    setPosition(cursorPos - 0.01F); // move slightly to make 1st menu item to be hovered
+    setPosition(cursorPos - 0.01f); // move slightly to make 1st menu item to be hovered
 
-    float totalSizeY = 0.0F;
+    float totalSizeY = 0.0f;
 
     if (!sTitle.empty()) {
         auto pText = std::make_unique<TextUiNode>();
@@ -98,6 +98,6 @@ void ContextMenuNode::openMenu(
         pButtonsLayout->addChildNode(std::move(pButton));
     }
 
-    setSize(glm::vec2(0.125F, totalSizeY));
+    setSize(glm::vec2(0.125f, totalSizeY));
     setIsVisible(true);
 }

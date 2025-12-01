@@ -22,7 +22,7 @@ std::string TextEditUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 TextEditUiNode::TextEditUiNode() : TextEditUiNode("Text Edit UI Node") {}
 TextEditUiNode::TextEditUiNode(const std::string& sNodeName) : TextUiNode(sNodeName) {
     // Text generally needs less size that default for nodes.
-    setSize(glm::vec2(0.2F, 0.03F));
+    setSize(glm::vec2(0.2f, 0.03f));
     setIsReceivingInput(true);
     setHandleNewLineChars(true);
     setIsWordWrapEnabled(true);
@@ -152,7 +152,7 @@ void TextEditUiNode::moveScrollToTextCharacter(size_t iTextCharOffset) {
     const auto sizeInPixels = glm::vec2(
         getSize().x * static_cast<float>(iWindowWidth), getSize().y * static_cast<float>(iWindowHeight));
 
-    float localX = 0.0F;
+    float localX = 0.0f;
     size_t iLineIndex = 0;
     const auto sText = getText();
 
@@ -165,7 +165,7 @@ void TextEditUiNode::moveScrollToTextCharacter(size_t iTextCharOffset) {
 
         // Handle new line.
         if (character == '\n' && getHandleNewLineChars()) {
-            localX = 0.0F;
+            localX = 0.0f;
             iLineIndex += 1;
             continue;
         }
@@ -178,8 +178,8 @@ void TextEditUiNode::moveScrollToTextCharacter(size_t iTextCharOffset) {
         const float glyphWidth = std::max(
             static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);
 
-        if (getIsWordWrapEnabled() && (localX + distanceToNextGlyph > 1.0F)) {
-            localX = 0.0F;
+        if (getIsWordWrapEnabled() && (localX + distanceToNextGlyph > 1.0f)) {
+            localX = 0.0f;
             iLineIndex += 1;
         }
 
@@ -520,7 +520,7 @@ size_t TextEditUiNode::convertCursorPosToTextOffset() {
 
     auto glyphGuard = fontManager.getGlyphs();
 
-    glm::vec2 localCurrentPos = glm::vec2(0.0F, 0.0F); // in range [0.0; 1.0]
+    glm::vec2 localCurrentPos = glm::vec2(0.0f, 0.0f); // in range [0.0; 1.0]
     size_t iOutputTextOffset = sText.size();           // put cursor after text by default
 
     // Switch to the first row of text.
@@ -540,7 +540,7 @@ size_t TextEditUiNode::convertCursorPosToTextOffset() {
                 break;
             }
 
-            localCurrentPos.x = 0.0F;
+            localCurrentPos.x = 0.0f;
             if (iLineIndex >= iLinesToSkip) {
                 localCurrentPos.y += textHeight + lineSpacing;
             }
@@ -558,7 +558,7 @@ size_t TextEditUiNode::convertCursorPosToTextOffset() {
             static_cast<float>(glyph.size.x) / sizeInPixels.x * textScaleFullscreen, distanceToNextGlyph);
 
         // Handle word wrap.
-        if (getIsWordWrapEnabled() && (localCurrentPos.x + distanceToNextGlyph > 1.0F)) {
+        if (getIsWordWrapEnabled() && (localCurrentPos.x + distanceToNextGlyph > 1.0f)) {
             if (textCursorPos.y >= localCurrentPos.y - (textHeight + lineSpacing) &&
                 textCursorPos.y <= localCurrentPos.y && textCursorPos.x >= localCurrentPos.x) {
                 // The user clicked after the text is ended on this line.
@@ -567,7 +567,7 @@ size_t TextEditUiNode::convertCursorPosToTextOffset() {
             }
 
             // Switch to a new line.
-            localCurrentPos.x = 0.0F;
+            localCurrentPos.x = 0.0f;
             if (iLineIndex >= iLinesToSkip) {
                 localCurrentPos.y += textHeight + lineSpacing;
             }

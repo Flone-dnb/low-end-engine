@@ -344,7 +344,7 @@ std::variant<std::string, Error> Serializable::serialize(
         COMPARE_AND_ADD_TO_TOML(typeInfo.reflectedVariables.unsignedInts);
         COMPARE_AND_ADD_TO_TOML(typeInfo.reflectedVariables.longLongs);
 
-        constexpr float floatEpsilon = 0.00001F;
+        constexpr float floatEpsilon = 0.00001f;
 
         // Unsigned long long.
         for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.unsignedLongLongs) {

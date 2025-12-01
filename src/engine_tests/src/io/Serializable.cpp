@@ -290,9 +290,9 @@ public:
     std::unique_ptr<SimpleSerializable> pSimpleSerializable;
     std::unique_ptr<SimpleSerializable> pNullptrSimpleSerializable;
     std::unique_ptr<EmptySerializable> pEmptySerializable;
-    glm::vec2 vec2 = glm::vec2(0.0F, 0.0F);
-    glm::vec3 vec3 = glm::vec3(0.0F, 0.0F, 0.0F);
-    glm::vec4 vec4 = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
+    glm::vec2 vec2 = glm::vec2(0.0f, 0.0f);
+    glm::vec3 vec3 = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec4 vec4 = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
     std::vector<int> vVectorInts;
     std::vector<std::string> vVectorStrings;
     std::vector<glm::vec3> vVectorVec3s;
@@ -447,27 +447,27 @@ TEST_CASE("serialize and deserialize a derived type") {
 
     // Fill mesh so suppress empty geometry warning.
     MeshNodeVertex vertex;
-    vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
-    vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
-    vertex.uv = glm::vec2(0.5F, 0.5F);
+    vertex.position = glm::vec3(1.0f, 2.0f, 3.0f);
+    vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertex.uv = glm::vec2(0.5f, 0.5f);
     pToSerialize->meshGeometry.getVertices().push_back(vertex);
-    vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+    vertex.position = glm::vec3(4.0f, 5.0f, 6.0f);
     pToSerialize->meshGeometry.getVertices().push_back(vertex);
-    vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+    vertex.position = glm::vec3(7.0f, 8.0f, 9.0f);
     pToSerialize->meshGeometry.getVertices().push_back(vertex);
     pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
 
     {
         SkeletalMeshNodeVertex vertex;
-        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
-        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
-        vertex.uv = glm::vec2(0.5F, 0.5F);
+        vertex.position = glm::vec3(1.0f, 2.0f, 3.0f);
+        vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
+        vertex.uv = glm::vec2(0.5f, 0.5f);
         vertex.vBoneIndices = {0, 1, 0, 0};
-        vertex.vBoneWeights = {0.5F, 0.5F, 0.0F, 0.0F};
+        vertex.vBoneWeights = {0.5f, 0.5f, 0.0f, 0.0f};
         pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        vertex.position = glm::vec3(4.0f, 5.0f, 6.0f);
         pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        vertex.position = glm::vec3(7.0f, 8.0f, 9.0f);
         pToSerialize->skeletalMeshGeometry.getVertices().push_back(vertex);
         pToSerialize->skeletalMeshGeometry.getIndices() = {0, 1, 2};
     }
@@ -510,13 +510,13 @@ TEST_CASE("deserialize with original object") {
 
         // Fill mesh.
         MeshNodeVertex vertex;
-        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
-        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
-        vertex.uv = glm::vec2(0.5F, 0.5F);
+        vertex.position = glm::vec3(1.0f, 2.0f, 3.0f);
+        vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
+        vertex.uv = glm::vec2(0.5f, 0.5f);
         pToSerialize1->meshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        vertex.position = glm::vec3(4.0f, 5.0f, 6.0f);
         pToSerialize1->meshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        vertex.position = glm::vec3(7.0f, 8.0f, 9.0f);
         pToSerialize1->meshGeometry.getVertices().push_back(vertex);
         pToSerialize1->meshGeometry.getIndices() = {0, 1, 2};
         {
@@ -626,13 +626,13 @@ TEST_CASE("deserialize, change, serialize in the same file (no reference to the 
 
         // Fill mesh to suppress empty geometry warning.
         MeshNodeVertex vertex;
-        vertex.position = glm::vec3(1.0F, 2.0F, 3.0F);
-        vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
-        vertex.uv = glm::vec2(0.5F, 0.5F);
+        vertex.position = glm::vec3(1.0f, 2.0f, 3.0f);
+        vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
+        vertex.uv = glm::vec2(0.5f, 0.5f);
         pToSerialize->meshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(4.0F, 5.0F, 6.0F);
+        vertex.position = glm::vec3(4.0f, 5.0f, 6.0f);
         pToSerialize->meshGeometry.getVertices().push_back(vertex);
-        vertex.position = glm::vec3(7.0F, 8.0F, 9.0F);
+        vertex.position = glm::vec3(7.0f, 8.0f, 9.0f);
         pToSerialize->meshGeometry.getVertices().push_back(vertex);
         pToSerialize->meshGeometry.getIndices() = {0, 1, 2};
 

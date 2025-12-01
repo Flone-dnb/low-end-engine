@@ -121,11 +121,11 @@ private:
     std::unique_ptr<TextureHandle> pForegroundTexture;
 
     /** Foreground color. */
-    glm::vec4 foregroundColor = glm::vec4(0.0F, 1.0F, 0.0F, 1.0F);
+    glm::vec4 foregroundColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
 
     /** Empty if not used, otherwise path to the texture (relative the `res` directory) to load. */
     std::string sPathToForegroundTextureRelativeRes;
 
     /** Value in range [0.0; 1.0]. */
-    float progressFactor = 0.5F;
+    float progressFactor = 0.5f;
 };

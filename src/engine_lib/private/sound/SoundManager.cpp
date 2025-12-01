@@ -32,7 +32,7 @@ SoundManager::~SoundManager() {
 }
 
 void SoundManager::setSoundVolume(float volume) {
-    sf::Listener::setGlobalVolume(std::clamp(volume, 0.0F, 2.0F) * 100.0F); // NOLINT
+    sf::Listener::setGlobalVolume(std::clamp(volume, 0.0f, 2.0f) * 100.0f); // NOLINT
 }
 
 void SoundManager::onBeforeNewFrame(CameraManager& cameraManager) {

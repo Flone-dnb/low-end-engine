@@ -964,9 +964,9 @@ inline NodeType* Node::addChildNode(
     }
 
     // Save world rotation/location/scale for later use.
-    glm::vec3 worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
-    glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
-    glm::vec3 worldScale = glm::vec3(1.0F, 1.0F, 1.0F);
+    glm::vec3 worldLocation = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 worldRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 worldScale = glm::vec3(1.0f, 1.0f, 1.0f);
     getNodeWorldLocationRotationScale(pNode, worldLocation, worldRotation, worldScale);
 
     std::scoped_lock spawnGuard(mtxIsSpawned.first);

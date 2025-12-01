@@ -14,7 +14,7 @@ SetNameMenu::SetNameMenu(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setUiLayer(UiLayer::LAYER2);
     setPadding(EditorTheme::getPadding());
     setColor(EditorTheme::getContainerBackgroundColor());
-    setSize(glm::vec2(0.15F, EditorTheme::getTextHeight() * 3.0F));
+    setSize(glm::vec2(0.15f, EditorTheme::getTextHeight() * 3.0f));
     setModal();
 
     const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
@@ -28,7 +28,7 @@ SetNameMenu::SetNameMenu(const std::string& sNodeName) : RectUiNode(sNodeName) {
 
         const auto pTextEditBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
         pTextEditBackground->setColor(EditorTheme::getButtonColor());
-        pTextEditBackground->setSize(glm::vec2(1.0F, EditorTheme::getBigTextHeight()));
+        pTextEditBackground->setSize(glm::vec2(1.0f, EditorTheme::getBigTextHeight()));
         {
             pTextEditNode = pTextEditBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEditNode->setTextHeight(EditorTheme::getTextHeight());
@@ -60,7 +60,7 @@ void SetNameMenu::onChildNodesSpawned() {
     }
     const auto cursorPos = *optCursorPos;
 
-    setPosition(cursorPos - 0.01F); // move slightly to be hovered
+    setPosition(cursorPos - 0.01f); // move slightly to be hovered
 
     pTextEditNode->setFocused();
 }

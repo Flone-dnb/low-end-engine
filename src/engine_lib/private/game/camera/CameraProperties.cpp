@@ -75,10 +75,10 @@ void CameraProperties::setFarClipPlaneDistance(float farClipPlaneDistance) {
 }
 
 void CameraProperties::setViewport(const glm::vec4& viewport) {
-    this->viewport.x = std::clamp(viewport.x, 0.0F, 1.0F);
-    this->viewport.y = std::clamp(viewport.y, 0.0F, 1.0F);
-    this->viewport.z = std::clamp(viewport.z, 0.0F, 1.0F);
-    this->viewport.w = std::clamp(viewport.w, 0.0F, 1.0F);
+    this->viewport.x = std::clamp(viewport.x, 0.0f, 1.0f);
+    this->viewport.y = std::clamp(viewport.y, 0.0f, 1.0f);
+    this->viewport.z = std::clamp(viewport.z, 0.0f, 1.0f);
+    this->viewport.w = std::clamp(viewport.w, 0.0f, 1.0f);
 }
 
 unsigned int CameraProperties::getVerticalFov() {
@@ -200,9 +200,9 @@ void CameraProperties::makeSureProjectionMatrixAndClipPlanesAreUpToDate() {
     projectionData.invProjectionMatrix = glm::inverse(projectionData.projectionMatrix);
 
     // Projection window width/height in normalized device coordinates.
-    constexpr float projectionWindowDimensionSize = 2.0F; // because view space window is [-1; 1]
+    constexpr float projectionWindowDimensionSize = 2.0f; // because view space window is [-1; 1]
 
-    const auto tanHalfFov = std::tan(0.5F * verticalFovInRadians);
+    const auto tanHalfFov = std::tan(0.5f * verticalFovInRadians);
 
     // Calculate clip planes height.
     projectionData.nearClipPlaneHeight =

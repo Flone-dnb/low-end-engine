@@ -3,7 +3,7 @@
 MeshNodeGeometry PrimitiveMeshGenerator::createCube(float size) {
     MeshNodeGeometry geometry;
     MeshNodeVertex vertex;
-    const auto halfSize = size * 0.5F;
+    const auto halfSize = size * 0.5f;
 
     static_assert(sizeof(MeshNodeVertex) == 32, "properly generate new mesh data"); // NOLINT: current size
 
@@ -13,93 +13,93 @@ MeshNodeGeometry PrimitiveMeshGenerator::createCube(float size) {
     geometry.getVertices().resize(24);
 
     // +X face.
-    vertex.normal = glm::vec3(1.0F, 0.0F, 0.0F);
+    vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
     vertex.position = glm::vec3(halfSize, -halfSize, -halfSize);
-    vertex.uv = glm::vec2(1.0F, 1.0F);
+    vertex.uv = glm::vec2(1.0f, 1.0f);
     geometry.getVertices().at(0) = vertex;
     vertex.position = glm::vec3(halfSize, halfSize, -halfSize);
-    vertex.uv = glm::vec2(0.0F, 1.0F);
+    vertex.uv = glm::vec2(0.0f, 1.0f);
     geometry.getVertices().at(1) = vertex;
     vertex.position = glm::vec3(halfSize, -halfSize, halfSize);
-    vertex.uv = glm::vec2(1.0F, 0.0F);
+    vertex.uv = glm::vec2(1.0f, 0.0f);
     geometry.getVertices().at(2) = vertex;
     vertex.position = glm::vec3(halfSize, halfSize, halfSize);
-    vertex.uv = glm::vec2(0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.0f, 0.0f);
     geometry.getVertices().at(3) = vertex;
 
     // -X face.
-    vertex.normal = glm::vec3(-1.0F, 0.0F, 0.0F);
+    vertex.normal = glm::vec3(-1.0f, 0.0f, 0.0f);
     vertex.position = glm::vec3(-halfSize, halfSize, -halfSize);
-    vertex.uv = glm::vec2(1.0F, 1.0F);
+    vertex.uv = glm::vec2(1.0f, 1.0f);
     geometry.getVertices().at(4) = vertex;
     vertex.position = glm::vec3(-halfSize, -halfSize, -halfSize);
-    vertex.uv = glm::vec2(0.0F, 1.0F);
+    vertex.uv = glm::vec2(0.0f, 1.0f);
     geometry.getVertices().at(5) = vertex;
     vertex.position = glm::vec3(-halfSize, halfSize, halfSize);
-    vertex.uv = glm::vec2(1.0F, 0.0F);
+    vertex.uv = glm::vec2(1.0f, 0.0f);
     geometry.getVertices().at(6) = vertex;
     vertex.position = glm::vec3(-halfSize, -halfSize, halfSize);
-    vertex.uv = glm::vec2(0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.0f, 0.0f);
     geometry.getVertices().at(7) = vertex;
 
     // +Y face.
-    vertex.normal = glm::vec3(0.0F, 1.0F, 0.0F);
+    vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f);
     vertex.position = glm::vec3(halfSize, halfSize, -halfSize);
-    vertex.uv = glm::vec2(1.0F, 1.0F);
+    vertex.uv = glm::vec2(1.0f, 1.0f);
     geometry.getVertices().at(8) = vertex;
     vertex.position = glm::vec3(-halfSize, halfSize, -halfSize);
-    vertex.uv = glm::vec2(0.0F, 1.0F);
+    vertex.uv = glm::vec2(0.0f, 1.0f);
     geometry.getVertices().at(9) = vertex;
     vertex.position = glm::vec3(halfSize, halfSize, halfSize);
-    vertex.uv = glm::vec2(1.0F, 0.0F);
+    vertex.uv = glm::vec2(1.0f, 0.0f);
     geometry.getVertices().at(10) = vertex;
     vertex.position = glm::vec3(-halfSize, halfSize, halfSize);
-    vertex.uv = glm::vec2(0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.0f, 0.0f);
     geometry.getVertices().at(11) = vertex;
 
     // -Y face.
-    vertex.normal = glm::vec3(0.0F, -1.0F, 0.0F);
+    vertex.normal = glm::vec3(0.0f, -1.0f, 0.0f);
     vertex.position = glm::vec3(-halfSize, -halfSize, -halfSize);
-    vertex.uv = glm::vec2(1.0F, 1.0F);
+    vertex.uv = glm::vec2(1.0f, 1.0f);
     geometry.getVertices().at(12) = vertex;
     vertex.position = glm::vec3(halfSize, -halfSize, -halfSize);
-    vertex.uv = glm::vec2(0.0F, 1.0F);
+    vertex.uv = glm::vec2(0.0f, 1.0f);
     geometry.getVertices().at(13) = vertex;
     vertex.position = glm::vec3(-halfSize, -halfSize, halfSize);
-    vertex.uv = glm::vec2(1.0F, 0.0F);
+    vertex.uv = glm::vec2(1.0f, 0.0f);
     geometry.getVertices().at(14) = vertex;
     vertex.position = glm::vec3(halfSize, -halfSize, halfSize);
-    vertex.uv = glm::vec2(0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.0f, 0.0f);
     geometry.getVertices().at(15) = vertex;
 
     // +Z face.
-    vertex.normal = glm::vec3(0.0F, 0.0F, 1.0F);
+    vertex.normal = glm::vec3(0.0f, 0.0f, 1.0f);
     vertex.position = glm::vec3(-halfSize, -halfSize, halfSize);
-    vertex.uv = glm::vec2(1.0F, 1.0F);
+    vertex.uv = glm::vec2(1.0f, 1.0f);
     geometry.getVertices().at(16) = vertex;
     vertex.position = glm::vec3(halfSize, -halfSize, halfSize);
-    vertex.uv = glm::vec2(0.0F, 1.0F);
+    vertex.uv = glm::vec2(0.0f, 1.0f);
     geometry.getVertices().at(17) = vertex;
     vertex.position = glm::vec3(-halfSize, halfSize, halfSize);
-    vertex.uv = glm::vec2(1.0F, 0.0F);
+    vertex.uv = glm::vec2(1.0f, 0.0f);
     geometry.getVertices().at(18) = vertex;
     vertex.position = glm::vec3(halfSize, halfSize, halfSize);
-    vertex.uv = glm::vec2(0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.0f, 0.0f);
     geometry.getVertices().at(19) = vertex;
 
     // -Z face.
-    vertex.normal = glm::vec3(0.0F, 0.0F, -1.0F);
+    vertex.normal = glm::vec3(0.0f, 0.0f, -1.0f);
     vertex.position = glm::vec3(-halfSize, halfSize, -halfSize);
-    vertex.uv = glm::vec2(1.0F, 1.0F);
+    vertex.uv = glm::vec2(1.0f, 1.0f);
     geometry.getVertices().at(20) = vertex;
     vertex.position = glm::vec3(halfSize, halfSize, -halfSize);
-    vertex.uv = glm::vec2(0.0F, 1.0F);
+    vertex.uv = glm::vec2(0.0f, 1.0f);
     geometry.getVertices().at(21) = vertex;
     vertex.position = glm::vec3(-halfSize, -halfSize, -halfSize);
-    vertex.uv = glm::vec2(1.0F, 0.0F);
+    vertex.uv = glm::vec2(1.0f, 0.0f);
     geometry.getVertices().at(22) = vertex;
     vertex.position = glm::vec3(halfSize, -halfSize, -halfSize);
-    vertex.uv = glm::vec2(0.0F, 0.0F);
+    vertex.uv = glm::vec2(0.0f, 0.0f);
     geometry.getVertices().at(23) = vertex;
 
     // Indices:

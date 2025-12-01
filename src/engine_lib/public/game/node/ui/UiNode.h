@@ -383,10 +383,10 @@ private:
     void processVisibilityChange();
 
     /** Width and height in range [0.0; 1.0]. */
-    glm::vec2 size = glm::vec2(0.2F, 0.2F);
+    glm::vec2 size = glm::vec2(0.2f, 0.2f);
 
     /** Position on the screen in range [0.0; 1.0]. */
-    glm::vec2 position = glm::vec2(0.2F, 0.5F);
+    glm::vec2 position = glm::vec2(0.2f, 0.5f);
 
     /**
      * When this node is a child node of a layout node with an "expand child nodes rule" this value defines a

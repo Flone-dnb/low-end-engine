@@ -311,7 +311,7 @@ private:
         GamepadAxis trigger;
 
         /** Last received input position for @ref trigger in range [-1.0; 1.0]. */
-        float lastPosition = 0.0F;
+        float lastPosition = 0.0f;
     };
 
     /** State of an input action event. */
@@ -332,7 +332,7 @@ private:
         std::vector<AxisEventTriggerAxisState> vGamepadTriggers;
 
         /** State of this event in range [-1.0; 1.0] according to the state of all triggers. */
-        float state = 0.0F;
+        float state = 0.0f;
     };
 
     /**
@@ -415,7 +415,7 @@ private:
     std::unordered_map<unsigned int, AxisEventState> axisEventStates;
 
     /** Gamepad axis position that is lower than this value is ignored. Range for deadzone is [0.0; 1.0]. */
-    float gamepadDeadzone = 0.1F;
+    float gamepadDeadzone = 0.1f;
 
     /** Section name to store action events, used in .toml files. */
     static constexpr std::string_view sActionEventFileSectionName = "action event";

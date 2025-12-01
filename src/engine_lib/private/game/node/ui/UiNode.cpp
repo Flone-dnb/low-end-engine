@@ -80,15 +80,15 @@ UiNode::UiNode() : UiNode("UI Node") {}
 UiNode::UiNode(const std::string& sNodeName) : Node(sNodeName) {}
 
 void UiNode::setPosition(const glm::vec2& position) {
-    this->position.x = std::clamp(position.x, 0.0F, 1.0F);
-    this->position.y = std::clamp(position.y, 0.0F, 1.0F);
+    this->position.x = std::clamp(position.x, 0.0f, 1.0f);
+    this->position.y = std::clamp(position.y, 0.0f, 1.0f);
 
     onAfterPositionChanged();
 }
 
 void UiNode::setSize(const glm::vec2& size) {
-    this->size.x = std::clamp(size.x, 0.0F, 1.0F);
-    this->size.y = std::clamp(size.y, 0.0F, 1.0F);
+    this->size.x = std::clamp(size.x, 0.0f, 1.0f);
+    this->size.y = std::clamp(size.y, 0.0f, 1.0f);
 
     onAfterSizeChanged();
 }

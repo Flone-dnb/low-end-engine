@@ -200,7 +200,7 @@ void MeshNodeVertex::setVertexAttributes() {
 }
 
 bool MeshNodeVertex::operator==(const MeshNodeVertex& other) const {
-    constexpr auto delta = 0.00001F;
+    constexpr auto delta = 0.00001f;
 
     static_assert(sizeof(MeshNodeVertex) == 32, "add new fields here"); // NOLINT: current size
 

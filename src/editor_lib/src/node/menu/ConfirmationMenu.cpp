@@ -17,7 +17,7 @@ ConfirmationMenu::ConfirmationMenu(const std::string& sText, const std::function
     setUiLayer(UiLayer::LAYER2);
     setPadding(EditorTheme::getPadding());
     setColor(EditorTheme::getContainerBackgroundColor());
-    setSize(glm::vec2(0.1F, EditorTheme::getTextHeight() * 3.0F));
+    setSize(glm::vec2(0.1f, EditorTheme::getTextHeight() * 3.0f));
     setModal();
 
     const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
@@ -32,7 +32,7 @@ ConfirmationMenu::ConfirmationMenu(const std::string& sText, const std::function
         const auto pHorizontalLayout = pLayout->addChildNode(std::make_unique<LayoutUiNode>());
         pHorizontalLayout->setIsHorizontal(true);
         pHorizontalLayout->setPadding(EditorTheme::getPadding());
-        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 4.0F);
+        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 4.0f);
         pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
         {
             const auto pNoButton = pHorizontalLayout->addChildNode(std::make_unique<ButtonUiNode>());
@@ -82,7 +82,7 @@ void ConfirmationMenu::onChildNodesSpawned() {
     }
     const auto cursorPos = *optCursorPos;
 
-    setPosition(cursorPos - 0.01F); // move slightly to be hovered
+    setPosition(cursorPos - 0.01f); // move slightly to be hovered
 }
 
 void ConfirmationMenu::onMouseLeft() {

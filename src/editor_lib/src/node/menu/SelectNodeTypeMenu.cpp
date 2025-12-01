@@ -18,15 +18,15 @@ SelectNodeTypeMenu::SelectNodeTypeMenu(const std::string& sNodeName, Node* pPare
     setUiLayer(UiLayer::LAYER2);
     setPadding(EditorTheme::getPadding());
     setColor(EditorTheme::getEditorBackgroundColor());
-    setSize(glm::vec2(0.15F, 0.4F));
+    setSize(glm::vec2(0.15f, 0.4f));
 
     const auto pLayout = addChildNode(std::make_unique<LayoutUiNode>());
     pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     pLayout->setPadding(EditorTheme::getPadding());
-    pLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0F);
+    pLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 2.0f);
     {
         const auto pSearchBackground = pLayout->addChildNode(std::make_unique<RectUiNode>());
-        pSearchBackground->setPadding(EditorTheme::getPadding() * 2.0F);
+        pSearchBackground->setPadding(EditorTheme::getPadding() * 2.0f);
         pSearchBackground->setColor(EditorTheme::getContainerBackgroundColor());
         {
             pSearchTextEdit = pSearchBackground->addChildNode(std::make_unique<TextEditUiNode>());

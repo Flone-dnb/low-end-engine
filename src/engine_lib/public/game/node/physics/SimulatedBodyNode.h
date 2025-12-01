@@ -248,16 +248,16 @@ private:
     JPH::Body* pBody = nullptr;
 
     /** Uniform density of the interior of the convex object (kg / m^3). */
-    float density = 1000.0F;
+    float density = 1000.0f;
 
     /** Mass of the shape (kg). 0.0 to automatically calculate based on the shape and its density. */
-    float massKg = 0.0F;
+    float massKg = 0.0f;
 
     /**
      * Dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that
      * presses the two bodies together.
      */
-    float friction = 0.2F;
+    float friction = 0.2f;
 
     /** `false` to pause simulation for this body. */
     bool bIsSimulated = true;

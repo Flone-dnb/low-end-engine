@@ -223,16 +223,16 @@ private:
     static float snapToNearest(float value, float step);
 
     /** RGBA color of the base of the slider. */
-    glm::vec4 sliderColor = glm::vec4(0.25F, 0.25F, 0.25F, 1.0F);
+    glm::vec4 sliderColor = glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
 
     /** RGBA color of the handle for the slider. */
-    glm::vec4 sliderHandleColor = glm::vec4(0.35F, 0.35F, 0.35F, 1.0F);
+    glm::vec4 sliderHandleColor = glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);
 
     /** Position of the slider's handle in range [0.0; 1.0]. */
-    float handlePosition = 0.5F;
+    float handlePosition = 0.5f;
 
     /** Size of a single movement in handle position. 0 if can move freely. */
-    float sliderStep = 0.05F;
+    float sliderStep = 0.05f;
 
     /** Called after slider's handle position changed. */
     std::function<void(float handlePosition)> onHandlePositionChanged;

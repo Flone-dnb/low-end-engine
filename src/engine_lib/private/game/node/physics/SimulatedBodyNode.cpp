@@ -266,7 +266,7 @@ void SimulatedBodyNode::onWorldLocationRotationScaleChanged() {
 #if defined(DEBUG)
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
-            if (worldLocation.y < -1000.0F) {
+            if (worldLocation.y < -1000.0f) {
                 Log::warn(std::format(
                     "simulated node \"{}\" seems to be falling out of the world, its world location is "
                     "({}, {}, {})",

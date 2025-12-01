@@ -23,7 +23,7 @@
 ContentBrowser::ContentBrowser() : ContentBrowser("Content Browser") {}
 ContentBrowser::ContentBrowser(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setColor(EditorTheme::getContainerBackgroundColor());
-    setPadding(EditorTheme::getPadding() / 2.0F);
+    setPadding(EditorTheme::getPadding() / 2.0f);
 
     pResContentLayout = addChildNode(std::make_unique<LayoutUiNode>());
     pResContentLayout->setIsScrollBarEnabled(true);

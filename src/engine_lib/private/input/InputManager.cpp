@@ -513,7 +513,7 @@ float InputManager::getCurrentAxisEventState(unsigned int iAxisEventId) {
     // Find the specified axis event by ID.
     const auto stateIt = axisEventStates.find(iAxisEventId);
     if (stateIt == axisEventStates.end()) {
-        return 0.0F;
+        return 0.0f;
     }
 
     return stateIt->second.state;
@@ -754,7 +754,7 @@ std::optional<Error> InputManager::overwriteAxisEvent(
     axisEventStates[iAxisEventId] = AxisEventState{
         .vKeyboardTriggers = std::move(vKeyboardTriggerStates),
         .vGamepadTriggers = std::move(vGamepadTriggerStates),
-        .state = 0.0F};
+        .state = 0.0f};
 
     return {};
 }

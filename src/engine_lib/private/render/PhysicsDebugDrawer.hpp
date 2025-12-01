@@ -95,15 +95,15 @@ public:
 
         if (!vLinesToDraw.empty()) {
             DebugDrawer::drawLines(
-                vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0F, glm::vec4(collisionColor, 1.0F));
+                vLinesToDraw, glm::identity<glm::mat4x4>(), 0.0f, glm::vec4(collisionColor, 1.0f));
         }
 
         if (!vTrianglesToDraw.empty()) {
             DebugDrawer::drawMesh(
                 vTrianglesToDraw,
                 glm::identity<glm::mat4x4>(),
-                0.0F,
-                glm::vec4(collisionColor, 0.25F),
+                0.0f,
+                glm::vec4(collisionColor, 0.25f),
                 false);
         }
 
@@ -122,7 +122,7 @@ private:
     bool bDrawAsWireframe = false;
 
     /** Color of collision geometry. */
-    const glm::vec3 collisionColor = glm::vec3(1.0F, 0.0F, 1.0F);
+    const glm::vec3 collisionColor = glm::vec3(1.0f, 0.0f, 1.0f);
 };
 
 #endif

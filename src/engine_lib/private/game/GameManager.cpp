@@ -428,7 +428,7 @@ void GameManager::onBeforeNewFrame(float timeSincePrevCallInSec) {
     DebugConsole::get().onBeforeNewFrame(timeSincePrevCallInSec, pRenderer.get());
 
     DebugConsole::get().getStats().cpuTickTimeMs =
-        static_cast<float>(SDL_GetPerformanceCounter() - startCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceCounter() - startCounter) * 1000.0f /
         static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 }
@@ -813,9 +813,9 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
         }
 
         // Prepare a new state for this event.
-        float axisState = 0.0F;
+        float axisState = 0.0f;
         if (bIsPressedDown) {
-            axisState = bTriggersPositiveInput ? 1.0F : -1.0F;
+            axisState = bTriggersPositiveInput ? 1.0f : -1.0f;
         }
 
         if (!bIsPressedDown) {
@@ -823,12 +823,12 @@ void GameManager::triggerAxisEvents(KeyboardButton button, KeyboardModifiers mod
             // a notification about state being equal to 0. See if other button are pressed.
             for (const auto& state : axisEventState.vKeyboardTriggers) {
                 if (!bTriggersPositiveInput && state.bIsPositiveTriggerPressed) {
-                    axisState = 1.0F;
+                    axisState = 1.0f;
                     break;
                 }
 
                 if (bTriggersPositiveInput && state.bIsNegativeTriggerPressed) {
-                    axisState = -1.0F;
+                    axisState = -1.0f;
                     break;
                 }
             }
@@ -901,14 +901,14 @@ void GameManager::triggerAxisEvents(GamepadAxis gamepadAxis, float position) {
         const float oldEventState = axisEventState.state;
 
         if (static_cast<float>(std::abs(newEventState)) < inputManager.getGamepadDeadzone()) {
-            newEventState = 0.0F;
+            newEventState = 0.0f;
         }
 
         // Save new state.
         axisEventState.state = newEventState;
 
         if (static_cast<float>(std::abs(oldEventState)) < inputManager.getGamepadDeadzone() &&
-            newEventState == 0.0F) {
+            newEventState == 0.0f) {
             // Don't broadcast a notification since we had 0 input before and still have 0 input.
             continue;
         }

@@ -279,10 +279,10 @@ private:
     std::optional<std::pair<size_t, size_t>> optionalSelection;
 
     /** Color of the selected region of the text. */
-    glm::vec4 textSelectionColor = glm::vec4(0.5F, 0.5F, 0.5F, 0.5F);
+    glm::vec4 textSelectionColor = glm::vec4(0.5f, 0.5f, 0.5f, 0.5f);
 
     /** Color of the scroll bar. */
-    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F);
+    glm::vec4 scrollBarColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.4f);
 
     /** Offset of the scroll bar in lines of text. */
     size_t iCurrentScrollOffset = 0;

@@ -108,13 +108,13 @@ private:
     ozz::animation::Skeleton* pSkeleton = nullptr;
 
     /** Current position of the animation in range [0; 1] where 0 means animation start and 1 means end. */
-    float animationRatio = 0.0F;
+    float animationRatio = 0.0f;
 
     /** Playback speed for the animation. */
-    float playbackSpeed = 1.0F;
+    float playbackSpeed = 1.0f;
 
     /** Weight for animation blending, in range [0.0; 1.0]. */
-    float weight = 1.0F;
+    float weight = 1.0f;
 
     /** `true` to loop the animation. */
     bool bLoopAnimation = false;
@@ -286,7 +286,7 @@ private:
         std::vector<AnimationSampler*> vPlayingAnimations;
 
         /** Value in [0.0; 1.0] that determines which animation from @ref vPlayingAnimations to play. */
-        float blendFactor = 0.0F;
+        float blendFactor = 0.0f;
     };
 
     /**

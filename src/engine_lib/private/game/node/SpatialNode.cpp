@@ -68,9 +68,9 @@ void SpatialNode::setRelativeLocation(const glm::vec3& location) {
 void SpatialNode::setRelativeRotation(const glm::vec3& rotation) {
     std::scoped_lock guard(mtxWorldMatrix.first);
 
-    relativeRotation.x = MathHelpers::normalizeToRange(rotation.x, -360.0F, 360.0F); // NOLINT
-    relativeRotation.y = MathHelpers::normalizeToRange(rotation.y, -360.0F, 360.0F); // NOLINT
-    relativeRotation.z = MathHelpers::normalizeToRange(rotation.z, -360.0F, 360.0F); // NOLINT
+    relativeRotation.x = MathHelpers::normalizeToRange(rotation.x, -360.0f, 360.0f); // NOLINT
+    relativeRotation.y = MathHelpers::normalizeToRange(rotation.y, -360.0f, 360.0f); // NOLINT
+    relativeRotation.z = MathHelpers::normalizeToRange(rotation.z, -360.0f, 360.0f); // NOLINT
 
     recalculateLocalMatrix();
     recalculateWorldMatrix();
@@ -79,7 +79,7 @@ void SpatialNode::setRelativeRotation(const glm::vec3& rotation) {
 void SpatialNode::setRelativeScale(const glm::vec3& scale) {
 #if defined(DEBUG)
     // Make sure we don't have negative scale specified.
-    if (scale.x < 0.0F || scale.y < 0.0F || scale.z < 0.0F) [[unlikely]] {
+    if (scale.x < 0.0f || scale.y < 0.0f || scale.z < 0.0f) [[unlikely]] {
         Log::warn("avoid using negative scale as it may cause issues");
     }
 #endif
@@ -154,9 +154,9 @@ void SpatialNode::setWorldLocation(const glm::vec3& location) {
 
 void SpatialNode::setWorldRotation(const glm::vec3& rotation) {
     glm::vec3 targetWorldRotation;
-    targetWorldRotation.x = MathHelpers::normalizeToRange(rotation.x, -360.0F, 360.0F); // NOLINT
-    targetWorldRotation.y = MathHelpers::normalizeToRange(rotation.y, -360.0F, 360.0F); // NOLINT
-    targetWorldRotation.z = MathHelpers::normalizeToRange(rotation.z, -360.0F, 360.0F); // NOLINT
+    targetWorldRotation.x = MathHelpers::normalizeToRange(rotation.x, -360.0f, 360.0f); // NOLINT
+    targetWorldRotation.y = MathHelpers::normalizeToRange(rotation.y, -360.0f, 360.0f); // NOLINT
+    targetWorldRotation.z = MathHelpers::normalizeToRange(rotation.z, -360.0f, 360.0f); // NOLINT
 
     std::scoped_lock guard(mtxWorldMatrix.first, mtxSpatialParent.first);
 
@@ -179,7 +179,7 @@ void SpatialNode::setWorldRotation(const glm::vec3& rotation) {
 void SpatialNode::setWorldScale(const glm::vec3& scale) {
 #if defined(DEBUG)
     // Make sure we don't have negative scale specified.
-    if (scale.x < 0.0F || scale.y < 0.0F || scale.z < 0.0F) [[unlikely]] {
+    if (scale.x < 0.0f || scale.y < 0.0f || scale.z < 0.0f) [[unlikely]] {
         Log::warn("avoid using negative scale as it's not supported and may cause issues");
     }
 #endif
@@ -221,7 +221,7 @@ void SpatialNode::recalculateWorldMatrix(bool bNotifyChildren) {
     // Prepare some variables.
     glm::mat4x4 parentWorldMatrix = glm::identity<glm::mat4x4>();
     glm::quat parentWorldRotationQuat = glm::identity<glm::quat>();
-    glm::vec3 parentWorldScale = glm::vec3(1.0F, 1.0F, 1.0F);
+    glm::vec3 parentWorldScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     std::scoped_lock guard(mtxWorldMatrix.first, mtxLocalSpace.first);
 
@@ -246,7 +246,7 @@ void SpatialNode::recalculateWorldMatrix(bool bNotifyChildren) {
     // Save world location.
     mtxWorldMatrix.second.worldLocation =
         parentWorldMatrix *
-        glm::vec4(relativeLocation, 1.0F); // don't apply relative rotation/scale to world location
+        glm::vec4(relativeLocation, 1.0f); // don't apply relative rotation/scale to world location
 
     // Save world rotation.
     mtxWorldMatrix.second.worldRotationQuaternion =
@@ -259,11 +259,11 @@ void SpatialNode::recalculateWorldMatrix(bool bNotifyChildren) {
 
     // Calculate world forward direction.
     mtxWorldMatrix.second.worldForward =
-        glm::normalize(mtxWorldMatrix.second.worldMatrix * glm::vec4(Globals::WorldDirection::forward, 0.0F));
+        glm::normalize(mtxWorldMatrix.second.worldMatrix * glm::vec4(Globals::WorldDirection::forward, 0.0f));
 
     // Calculate world right direction.
     mtxWorldMatrix.second.worldRight =
-        glm::normalize(mtxWorldMatrix.second.worldMatrix * glm::vec4(Globals::WorldDirection::right, 0.0F));
+        glm::normalize(mtxWorldMatrix.second.worldMatrix * glm::vec4(Globals::WorldDirection::right, 0.0f));
 
     // Calculate world up direction.
     mtxWorldMatrix.second.worldUp =

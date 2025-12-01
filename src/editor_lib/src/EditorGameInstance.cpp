@@ -55,7 +55,7 @@ void EditorGameInstance::onGameStarted() {
 #endif
 
     getRenderer()->getFontManager().loadFont(
-        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf", 0.05F);
+        ProjectPaths::getPathToResDirectory(ResourceDirectory::ENGINE) / "font" / "font.ttf", 0.05f);
 
     gpuPickingData.pPickingProgram = getRenderer()->getShaderManager().getShaderProgram(
         EditorResourcePaths::getPathToShadersRelativeRes() + "Picking.comp.glsl");
@@ -268,10 +268,10 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
         return;
     }
 
-    static float timeBeforeStatsUpdate = 0.0F;
+    static float timeBeforeStatsUpdate = 0.0f;
     timeBeforeStatsUpdate -= timeSincePrevCallInSec;
 
-    if (timeBeforeStatsUpdate <= 0.0F) {
+    if (timeBeforeStatsUpdate <= 0.0f) {
         // Prepare stats to display.
         std::string sStatsText;
 
@@ -285,12 +285,12 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
 #if defined(ENGINE_ASAN_ENABLED)
         sStatsText += " (big RAM usage due to ASan)";
 #endif
-        if (ratio >= 0.9F) {
-            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
-        } else if (ratio >= 0.75F) {
-            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 1.0F, 0.0F, 1.0F));
+        if (ratio >= 0.9f) {
+            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        } else if (ratio >= 0.75f) {
+            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
         } else {
-            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+            gameWorldNodes.pStatsText->setTextColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         }
 
         // Render.
@@ -301,7 +301,7 @@ void EditorGameInstance::updateFrameStatsText(float timeSincePrevCallInSec) {
 
         // Done.
         gameWorldNodes.pStatsText->setText(utf::as_u16(sStatsText));
-        timeBeforeStatsUpdate = 1.0F;
+        timeBeforeStatsUpdate = 1.0f;
     }
 }
 
@@ -412,7 +412,7 @@ void EditorGameInstance::onFinishedSubmittingMeshDrawCommands() {
     }
     const glm::uvec2 cursorPosInPix = glm::uvec2(
         static_cast<unsigned int>(optCursorEditor->x * static_cast<float>(iFramebufferWidth)),
-        static_cast<unsigned int>((1.0F - optCursorEditor->y) * static_cast<float>(iFramebufferHeight)));
+        static_cast<unsigned int>((1.0f - optCursorEditor->y) * static_cast<float>(iFramebufferHeight)));
 
     gpuPickingData.pPickingProgram->setUvector2ToActiveProgram(
         "textureSize", glm::uvec2(iFramebufferWidth, iFramebufferHeight));
@@ -585,8 +585,8 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     editorWorldNodes.pContextMenu = pRootNode->addChildNode(std::make_unique<ContextMenuNode>());
 
     const auto pHorizontalLayout = pRootNode->addChildNode(std::make_unique<LayoutUiNode>());
-    pHorizontalLayout->setPosition(glm::vec2(0.0F, 0.0F));
-    pHorizontalLayout->setSize(glm::vec2(1.0F, 1.0F));
+    pHorizontalLayout->setPosition(glm::vec2(0.0f, 0.0f));
+    pHorizontalLayout->setSize(glm::vec2(1.0f, 1.0f));
     pHorizontalLayout->setIsHorizontal(true);
     pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
     {
@@ -595,7 +595,7 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
         pLeftRect->setColor(EditorTheme::getEditorBackgroundColor());
         {
             const auto pLayout = pLeftRect->addChildNode(std::make_unique<LayoutUiNode>());
-            pLayout->setPadding(EditorTheme::getPadding() / 2.0F);
+            pLayout->setPadding(EditorTheme::getPadding() / 2.0f);
             pLayout->setChildNodeSpacing(EditorTheme::getSpacing());
             pLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
             {
@@ -629,17 +629,17 @@ void EditorGameInstance::attachEditorNodes(Node* pRootNode) {
     createWorld(
         [this](Node* pGameRootNode) {
             auto pFloor = std::make_unique<MeshNode>("Floor");
-            pFloor->setRelativeScale(glm::vec3(10.0F, 1.0F, 10.0F));
-            pFloor->getMaterial().setDiffuseColor(glm::vec3(1.0F, 0.5F, 0.0F));
+            pFloor->setRelativeScale(glm::vec3(10.0f, 1.0f, 10.0f));
+            pFloor->getMaterial().setDiffuseColor(glm::vec3(1.0f, 0.5f, 0.0f));
             pGameRootNode->addChildNode(std::move(pFloor));
 
             auto pCube = std::make_unique<MeshNode>("Cube");
-            pCube->setRelativeLocation(glm::vec3(0.0F, 1.0F, -2.0F));
-            pCube->getMaterial().setDiffuseColor(glm::vec3(1.0F, 1.0F, 1.0F));
+            pCube->setRelativeLocation(glm::vec3(0.0f, 1.0f, -2.0f));
+            pCube->getMaterial().setDiffuseColor(glm::vec3(1.0f, 1.0f, 1.0f));
             pGameRootNode->addChildNode(std::move(pCube));
 
             auto pPointLight = std::make_unique<PointLightNode>("Point Light");
-            pPointLight->setRelativeLocation(glm::vec3(1.0F, 5.0F, -1.0F));
+            pPointLight->setRelativeLocation(glm::vec3(1.0f, 5.0f, -1.0f));
             pGameRootNode->addChildNode(std::move(pPointLight));
 
             onAfterGameWorldCreated(pGameRootNode);
@@ -663,7 +663,7 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
         "{}: editor viewport camera", // name must contain "editor" to make it active in the camera manager
         EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pViewportCamera->setSerialize(false);
-    gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(0.0F, 3.0F, 1.0F));
+    gameWorldNodes.pViewportCamera->setRelativeLocation(glm::vec3(0.0f, 3.0f, 1.0f));
     gameWorldNodes.pViewportCamera->makeActive();
     const auto pos = editorWorldNodes.pViewportUiPlaceholder->getPosition();
     const auto size = editorWorldNodes.pViewportUiPlaceholder->getSize();
@@ -676,30 +676,30 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
     gameWorldNodes.pStatsText = pRootNode->addChildNode(
         std::make_unique<TextUiNode>(std::format("{}: stats", EditorConstants::getHiddenNodeNamePrefix())));
     gameWorldNodes.pStatsText->setSerialize(false);
-    gameWorldNodes.pStatsText->setTextHeight(0.03F);
-    gameWorldNodes.pStatsText->setSize(glm::vec2(1.0F, 1.0F));
-    gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005F, 0.0F));
+    gameWorldNodes.pStatsText->setTextHeight(0.03f);
+    gameWorldNodes.pStatsText->setSize(glm::vec2(1.0f, 1.0f));
+    gameWorldNodes.pStatsText->setPosition(glm::vec2(0.005f, 0.0f));
 
     editorWorldNodes.pNodeTreeInspector->onGameNodeTreeLoaded(gameWorldNodes.pRoot);
 
     // Collision draw mode.
     {
         const auto pCollisionDrawModeText = pRootNode->addChildNode(std::make_unique<TextUiNode>());
-        pCollisionDrawModeText->setTextHeight(0.025F);
-        pCollisionDrawModeText->setPosition(glm::vec2(0.79F, 0.005F));
-        pCollisionDrawModeText->setSize(glm::vec2(0.2F, 0.05F));
+        pCollisionDrawModeText->setTextHeight(0.025f);
+        pCollisionDrawModeText->setPosition(glm::vec2(0.79f, 0.005f));
+        pCollisionDrawModeText->setSize(glm::vec2(0.2f, 0.05f));
         pCollisionDrawModeText->setText(u"draw collision as wireframe: ");
 
         auto& debugDrawer =
             pRootNode->getWorldWhileSpawned()->getGameManager().getPhysicsManager().getPhysicsDebugDrawer();
 
         const auto pCollisionDrawModeButton = pRootNode->addChildNode(std::make_unique<ButtonUiNode>());
-        pCollisionDrawModeButton->setPosition(glm::vec2(0.96F, 0.0075F));
-        pCollisionDrawModeButton->setSize(glm::vec2(0.03F, 0.03F));
-        pCollisionDrawModeButton->setPadding(0.05F);
+        pCollisionDrawModeButton->setPosition(glm::vec2(0.96f, 0.0075f));
+        pCollisionDrawModeButton->setSize(glm::vec2(0.03f, 0.03f));
+        pCollisionDrawModeButton->setPadding(0.05f);
 
         const auto pButtonText = pCollisionDrawModeButton->addChildNode(std::make_unique<TextUiNode>());
-        pButtonText->setTextHeight(0.02F);
+        pButtonText->setTextHeight(0.02f);
         pButtonText->setText(debugDrawer.getDrawAsWireframe() ? u"ON" : u"OFF");
 
         pCollisionDrawModeButton->setOnClicked([pButtonText, pRootNode]() {

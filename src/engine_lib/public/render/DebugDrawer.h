@@ -28,13 +28,13 @@ public:
         glm::mat4x4 worldMatrix = glm::identity<glm::mat4x4>();
 
         /** Color of the mesh. */
-        glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+        glm::vec4 color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
         /** VAO used for drawing the mesh. */
         std::unique_ptr<VertexArrayObject> pVao;
 
         /** Time after which the mesh should no longer be rendered. */
-        float timeLeftSec = 0.0F;
+        float timeLeftSec = 0.0f;
 
         /** `true` to draw as wireframe. */
         bool bDrawAsWireframe = true;
@@ -46,7 +46,7 @@ public:
         std::string sText = "text";
 
         /** Height of the text in range [0.0; 1.0] relative to screen height. */
-        float textHeight = 0.1F;
+        float textHeight = 0.1f;
 
         /**
          * If empty the text will appear in the corner of the screen and new
@@ -57,25 +57,25 @@ public:
         std::optional<glm::vec2> optForcePosition = {};
 
         /** Time after which the mesh should no longer be rendered. */
-        float timeLeftSec = 3.0F;
+        float timeLeftSec = 3.0f;
 
         /** Color of the text. */
-        glm::vec3 color = glm::vec3(1.0F, 1.0F, 1.0F);
+        glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
     };
 
     /** Data used to draw a rectangle on the screen. */
     struct ScreenRect {
         /** Position of the top-left corner in range [0.0; 1.0] relative to screen. */
-        glm::vec2 screenPos = glm::vec2(0.1F, 0.1F);
+        glm::vec2 screenPos = glm::vec2(0.1f, 0.1f);
 
         /** Width and height in range [0.0; 1.0] relative to screen. */
-        glm::vec2 screenSize = glm::vec2(0.25F, 0.25F);
+        glm::vec2 screenSize = glm::vec2(0.25f, 0.25f);
 
         /** Time after which the mesh should no longer be rendered. */
-        float timeLeftSec = 0.0F;
+        float timeLeftSec = 0.0f;
 
         /** Color of the rectangle. */
-        glm::vec3 color = glm::vec3(1.0F, 1.0F, 1.0F);
+        glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
     };
 
     DebugDrawer(const DebugDrawer&) = delete;
@@ -95,7 +95,7 @@ public:
         float size,
         const glm::vec3& worldPosition,
         float timeInSec,
-        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+        const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
     /**
      * Draws a sphere.
@@ -110,7 +110,7 @@ public:
         float radius,
         const glm::vec3& worldPosition,
         float timeInSec,
-        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+        const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
     /**
      * Draws a triangle mesh.
@@ -126,7 +126,7 @@ public:
         const std::vector<glm::vec3>& vTrianglePositions,
         const glm::mat4x4& worldMatrix,
         float timeInSec,
-        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F),
+        const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
         bool bDrawAsWireframe = true);
 
     /**
@@ -142,7 +142,7 @@ public:
         const std::vector<glm::vec3>& vLines,
         const glm::mat4x4& worldMatrix,
         float timeInSec,
-        const glm::vec4& color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+        const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
     /**
      * Draws text on the screen.
@@ -160,9 +160,9 @@ public:
     static void drawText(
         const std::string& sText,
         float timeInSec,
-        const glm::vec3& color = glm::vec3(1.0F, 1.0F, 1.0F),
+        const glm::vec3& color = glm::vec3(1.0f, 1.0f, 1.0f),
         const std::optional<glm::vec2>& optForcePosition = {},
-        float textHeight = 0.0325F);
+        float textHeight = 0.0325f);
 
     /**
      * Draws a 2D rectangle on the screen.

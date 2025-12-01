@@ -58,11 +58,11 @@ ProgressBarUiNode::ProgressBarUiNode() : ProgressBarUiNode("Progress Bar UI Node
 ProgressBarUiNode::ProgressBarUiNode(const std::string& sNodeName) : RectUiNode(sNodeName) {}
 
 void ProgressBarUiNode::setForegroundColor(const glm::vec4& foregroundColor) {
-    this->foregroundColor = glm::clamp(foregroundColor, 0.0F, 1.0F);
+    this->foregroundColor = glm::clamp(foregroundColor, 0.0f, 1.0f);
 }
 
 void ProgressBarUiNode::setProgressFactor(float progress) {
-    progressFactor = std::clamp(progress, 0.0F, 1.0F);
+    progressFactor = std::clamp(progress, 0.0f, 1.0f);
 }
 
 void ProgressBarUiNode::setPathToForegroundTexture(std::string sNewPathToForegroundTextureRelativeRes) {

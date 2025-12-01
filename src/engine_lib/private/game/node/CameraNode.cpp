@@ -45,7 +45,7 @@ void CameraNode::onWorldLocationRotationScaleChanged() {
             parentWorldMatrix = mtxSpatialParent.second->getWorldMatrix();
         }
 
-        localSpaceOriginInWorldSpace = parentWorldMatrix * glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+        localSpaceOriginInWorldSpace = parentWorldMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     }
 
     updateCameraProperties();
@@ -217,7 +217,7 @@ glm::vec3 CameraNode::getOrbitalTargetLocation() {
         Log::warn(
             "an attempt to get orbital camera's target location was ignored because the camera is not in "
             "the orbital mode");
-        return glm::vec3(0.0F, 0.0F, 0.0F);
+        return glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     if (orbitalCameraTargetInWorldSpace.has_value()) {

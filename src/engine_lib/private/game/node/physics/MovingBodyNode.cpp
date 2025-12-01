@@ -88,7 +88,7 @@ void MovingBodyNode::setAngularVelocity(const glm::vec3& velocity) {
 
 glm::vec3 MovingBodyNode::getLinearVelocity() {
     if (pBody == nullptr) {
-        return glm::vec3(0.0F);
+        return glm::vec3(0.0f);
     }
 
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
@@ -97,7 +97,7 @@ glm::vec3 MovingBodyNode::getLinearVelocity() {
 
 glm::vec3 MovingBodyNode::getAngularVelocity() {
     if (pBody == nullptr) {
-        return glm::vec3(0.0F);
+        return glm::vec3(0.0f);
     }
 
     auto& physicsManager = getWorldWhileSpawned()->getGameManager().getPhysicsManager();
@@ -150,7 +150,7 @@ void MovingBodyNode::onWorldLocationRotationScaleChanged() {
 #if defined(DEBUG)
         if (!bWarnedAboutFallingOutOfWorld) {
             const auto worldLocation = getWorldLocation();
-            if (worldLocation.y < -1000.0F) {
+            if (worldLocation.y < -1000.0f) {
                 Log::warn(std::format(
                     "moving node \"{}\" seems to be falling out of the world, its world location is "
                     "({}, {}, {})",

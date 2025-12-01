@@ -102,16 +102,16 @@ public:
 
 private:
     /** Color of the fog. */
-    glm::vec3 color = glm::vec3(1.0F, 1.0F, 1.0F);
+    glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
 
     /** Start (min fog) and end (max fog) positions in range [0.0; +inf] as distance from camera. */
-    glm::vec2 fogRange = glm::vec2(0.0F, 50.0F);
+    glm::vec2 fogRange = glm::vec2(0.0f, 50.0f);
 
     /**
      * When skybox is enabled defines how much of height (including the sky) the fog covers.
      * Value in range [0.0; 1.0].
      */
-    float fogHeightOnSky = 0.25F;
+    float fogHeightOnSky = 0.25f;
 };
 
 /** OpenGL ES renderer. */

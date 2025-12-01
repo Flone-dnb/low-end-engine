@@ -471,7 +471,7 @@ inline std::variant<Error, std::vector<std::unique_ptr<MeshNode>>> processGltfMe
             //         "very serious impact on the performance so you might want to avoid using them");
             //     meshMaterial.setEnableTransparency(true);
             //     meshMaterial.setOpacity(
-            //         1.0F - static_cast<float>(std::clamp(material.alphaCutoff, 0.0, 1.0)));
+            //         1.0f - static_cast<float>(std::clamp(material.alphaCutoff, 0.0, 1.0)));
             // }
 
             // Process base color.

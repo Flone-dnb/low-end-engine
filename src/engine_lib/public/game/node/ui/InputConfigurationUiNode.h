@@ -111,5 +111,5 @@ private:
     std::function<void()> onInputChanged;
 
     /** Size of the text. */
-    float textHeight = 0.03F;
+    float textHeight = 0.03f;
 };

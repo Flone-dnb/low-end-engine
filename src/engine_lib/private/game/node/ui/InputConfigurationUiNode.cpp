@@ -131,8 +131,8 @@ InputConfigurationUiNode::InputConfigurationUiNode()
     : InputConfigurationUiNode("Input Configuration UI Node") {}
 InputConfigurationUiNode::InputConfigurationUiNode(const std::string& sNodeName) : LayoutUiNode(sNodeName) {
     setIsScrollBarEnabled(true);
-    setChildNodeSpacing(0.05F);
-    setPadding(0.025F);
+    setChildNodeSpacing(0.05f);
+    setPadding(0.025f);
     setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
 }
 
@@ -219,10 +219,10 @@ void InputConfigurationUiNode::refreshDisplayedEvents() {
 
         const auto pHorizontalLayout = addChildNode(std::make_unique<LayoutUiNode>());
         pHorizontalLayout->setIsHorizontal(true);
-        pHorizontalLayout->setSize(glm::vec2(pHorizontalLayout->getSize().x, textHeight * 1.5F));
+        pHorizontalLayout->setSize(glm::vec2(pHorizontalLayout->getSize().x, textHeight * 1.5f));
         pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-        pHorizontalLayout->setPadding(0.025F);
-        pHorizontalLayout->setChildNodeSpacing(0.1F);
+        pHorizontalLayout->setPadding(0.025f);
+        pHorizontalLayout->setChildNodeSpacing(0.1f);
         {
             const auto pEventNameText = pHorizontalLayout->addChildNode(std::make_unique<TextUiNode>());
             pEventNameText->setTextHeight(textHeight);
@@ -230,7 +230,7 @@ void InputConfigurationUiNode::refreshDisplayedEvents() {
 
             auto pDeviceButtonsLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
             pDeviceButtonsLayout->setIsHorizontal(true);
-            pDeviceButtonsLayout->setChildNodeSpacing(0.1F);
+            pDeviceButtonsLayout->setChildNodeSpacing(0.1f);
             pDeviceButtonsLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
             const auto drawButtons =
                 [&](bool bIsKeyboardAndMouse,
@@ -266,11 +266,11 @@ void InputConfigurationUiNode::refreshDisplayedEvents() {
                             bFocusedFirstButton = true;
                             pUiButton->setFocused();
                         }
-                        pUiButton->setPadding(0.05F);
+                        pUiButton->setPadding(0.05f);
                         {
                             const auto pButtonNameText =
                                 pUiButton->addChildNode(std::make_unique<TextUiNode>());
-                            pButtonNameText->setTextHeight(textHeight * 0.9F);
+                            pButtonNameText->setTextHeight(textHeight * 0.9f);
                             pButtonNameText->setText(utf::as_u16(sButtonName));
 
                             pUiButton->setOnClicked([pUiButton, pButtonNameText]() {
@@ -313,7 +313,7 @@ void InputConfigurationUiNode::refreshDisplayedEvents() {
 
             pDeviceButtonsLayout = pHorizontalLayout->addChildNode(std::make_unique<LayoutUiNode>());
             pDeviceButtonsLayout->setIsHorizontal(true);
-            pDeviceButtonsLayout->setChildNodeSpacing(0.1F);
+            pDeviceButtonsLayout->setChildNodeSpacing(0.1f);
             pDeviceButtonsLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
             drawButtons(false, vGamepadButtons);
         }

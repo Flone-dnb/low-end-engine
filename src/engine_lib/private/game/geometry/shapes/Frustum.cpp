@@ -20,7 +20,7 @@ Frustum Frustum::create(
     //                \  |  <- frustum half height
     //                 \ |
     //                  \|
-    const auto tanHalfFov = std::tan(0.5F * verticalFovInRadians);
+    const auto tanHalfFov = std::tan(0.5f * verticalFovInRadians);
     const auto farClipPlaneHalfHeight = fapClipPlaneDistance * tanHalfFov;
     const auto farClipPlaneHalfWidth = farClipPlaneHalfHeight * aspectRatio;
     const auto rightDirection = glm::normalize(glm::cross(forwardDirection, upDirection));

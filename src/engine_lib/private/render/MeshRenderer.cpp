@@ -23,7 +23,7 @@
 MeshRenderDataGuard::~MeshRenderDataGuard() {
     if (pData->iDiffuseTextureId == 0) {
         // shaders expect -1 if diffuse texture is not set
-        pData->textureTilingMultiplier = glm::vec2(-1.0F, -1.0F);
+        pData->textureTilingMultiplier = glm::vec2(-1.0f, -1.0f);
     }
 
     pMeshRenderer->mtxRenderData.first.unlock();
@@ -120,7 +120,7 @@ MeshRenderer::addMeshForRendering(ShaderProgram* pShaderProgram, bool bEnableTra
     static bool bWarnedAboutCloseToLimit = false;
     if (!bWarnedAboutCloseToLimit &&
         data.iRegisteredMeshCount ==
-            static_cast<unsigned short>(static_cast<float>(data.vMeshRenderData.size()) * 0.9F)) {
+            static_cast<unsigned short>(static_cast<float>(data.vMeshRenderData.size()) * 0.9f)) {
         bWarnedAboutCloseToLimit = true;
         Log::warn(std::format(
             "adding another mesh for rendering, note the limit, current mesh count for rendering: {}, max: "
@@ -607,7 +607,7 @@ void MeshRenderer::drawMeshes(
 #if defined(ENGINE_DEBUG_TOOLS)
         // ADD not overwrite because there might be multiple worlds that use this function
         DebugConsole::getStats().cpuTimeToSubmitMeshesMs +=
-            static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
+            static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0f /
             static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
     }
@@ -700,7 +700,7 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
     }
 
     glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(0.9F, 0.0F); // <- slope bias for shadow mapping
+    glPolygonOffset(0.9f, 0.0f); // <- slope bias for shadow mapping
 
     // Process spotlights.
     for (const auto& pNode : spotlightData.visibleLightNodes) {
@@ -740,7 +740,7 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
     }
 
     // Restore state.
-    glPolygonOffset(0.0F, 0.0F);
+    glPolygonOffset(0.0f, 0.0f);
     glDisable(GL_POLYGON_OFFSET_FILL);
 
     // Insert a barrier before reading shadow maps.
@@ -749,7 +749,7 @@ MeshRenderer::LightCullingInfo MeshRenderer::drawShadowPass(
 #if defined(ENGINE_DEBUG_TOOLS)
     // ADD not overwrite because there might be multiple worlds that use this function
     DebugConsole::getStats().cpuTimeToSubmitShadowPassMs +=
-        static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0f /
         static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 
@@ -788,7 +788,7 @@ void MeshRenderer::drawDepthPrepass(
 #if defined(ENGINE_DEBUG_TOOLS)
     // ADD not overwrite because there might be multiple worlds that use this function
     DebugConsole::getStats().cpuTimeToSubmitDepthPrepassMs +=
-        static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0F /
+        static_cast<float>(SDL_GetPerformanceCounter() - cpuSubmitStartCounter) * 1000.0f /
         static_cast<float>(SDL_GetPerformanceFrequency());
 #endif
 }
@@ -875,7 +875,7 @@ void MeshRenderer::drawMeshes(
             lightCullingInfo.vIsPointLightCulled.data());
 
         // Distance fog.
-        glm::vec2 distanceFogRange = glm::vec2(-1.0F, -1.0F); // <- means disabled
+        glm::vec2 distanceFogRange = glm::vec2(-1.0f, -1.0f); // <- means disabled
         if (optDistanceFog.has_value()) {
             distanceFogRange = optDistanceFog->getFogRange();
             glm::vec3 color = optDistanceFog->getColor();

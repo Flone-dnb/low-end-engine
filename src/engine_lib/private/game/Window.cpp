@@ -279,8 +279,8 @@ std::pair<unsigned int, unsigned int> Window::getWindowSize() const { return win
 std::pair<unsigned int, unsigned int> Window::getCursorPosition() const {
     showErrorIfNotOnMainThread();
 
-    float xPos = 0.0F;
-    float yPos = 0.0F;
+    float xPos = 0.0f;
+    float yPos = 0.0f;
     SDL_GetMouseState(&xPos, &yPos);
 
     return {static_cast<unsigned int>(xPos), static_cast<unsigned int>(yPos)};

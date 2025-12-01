@@ -71,7 +71,7 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
                 [this](KeyboardModifiers modifiers) {
                     currentMovementSpeedMultiplier = speedIncreaseMultiplier;
                 },
-            .onReleased = [this](KeyboardModifiers modifiers) { currentMovementSpeedMultiplier = 1.0F; }};
+            .onReleased = [this](KeyboardModifiers modifiers) { currentMovementSpeedMultiplier = 1.0f; }};
 
         // Bind decrease movement speed.
         getActionEventBindings()[static_cast<unsigned int>(
@@ -80,7 +80,7 @@ EditorCameraNode::EditorCameraNode(const std::string& sNodeName) : CameraNode(sN
                 [this](KeyboardModifiers modifiers) {
                     currentMovementSpeedMultiplier = speedDecreaseMultiplier;
                 },
-            .onReleased = [this](KeyboardModifiers modifiers) { currentMovementSpeedMultiplier = 1.0F; }};
+            .onReleased = [this](KeyboardModifiers modifiers) { currentMovementSpeedMultiplier = 1.0f; }};
     }
 }
 
@@ -99,8 +99,8 @@ void EditorCameraNode::setIsMouseCaptured(bool bCaptured) {
         bIgnoreInput = true;
     }
 
-    lastKeyboardInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
-    currentMovementSpeedMultiplier = 1.0F;
+    lastKeyboardInputDirection = glm::vec3(0.0f, 0.0f, 0.0f);
+    currentMovementSpeedMultiplier = 1.0f;
 
     if (!bCaptured) {
         return;
@@ -115,15 +115,15 @@ void EditorCameraNode::onGamepadConnected(std::string_view sGamepadName) {
     bIgnoreInput = false;
     bIsGamepadConnected = true;
 
-    lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
-    lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
+    lastGamepadInputDirection = glm::vec3(0.0f, 0.0f, 0.0f);
+    lastGamepadLookInput = glm::vec2(0.0f, 0.0f);
 }
 
 void EditorCameraNode::onGamepadDisconnected() {
     CameraNode::onGamepadDisconnected();
 
-    lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
-    lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
+    lastGamepadInputDirection = glm::vec3(0.0f, 0.0f, 0.0f);
+    lastGamepadLookInput = glm::vec2(0.0f, 0.0f);
 
     if (!bIsMouseCaptured) {
         bIgnoreInput = true;
@@ -139,20 +139,20 @@ void EditorCameraNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
         return;
     }
 
-    if (!glm::all(glm::epsilonEqual(lastGamepadLookInput, glm::vec2(0.0F, 0.0F), inputEpsilon))) {
+    if (!glm::all(glm::epsilonEqual(lastGamepadLookInput, glm::vec2(0.0f, 0.0f), inputEpsilon))) {
         applyLookInput(lastGamepadLookInput.x, lastGamepadLookInput.y);
     }
 
     // Check for early exit and make sure input direction is not zero to avoid NaNs during `normalize` below.
-    glm::vec3 movementDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 movementDirection = glm::vec3(0.0f, 0.0f, 0.0f);
     if (bIsMouseCaptured &&
-        !glm::all(glm::epsilonEqual(lastKeyboardInputDirection, glm::vec3(0.0F, 0.0F, 0.0F), inputEpsilon))) {
+        !glm::all(glm::epsilonEqual(lastKeyboardInputDirection, glm::vec3(0.0f, 0.0f, 0.0f), inputEpsilon))) {
         // Normalize direction to avoid speed up on diagonal movement and apply speed.
         movementDirection = glm::normalize(lastKeyboardInputDirection) * timeSincePrevFrameInSec *
                             movementSpeed * currentMovementSpeedMultiplier;
     } else if (
         bIsGamepadConnected &&
-        !glm::all(glm::epsilonEqual(lastGamepadInputDirection, glm::vec3(0.0F, 0.0F, 0.0F), inputEpsilon))) {
+        !glm::all(glm::epsilonEqual(lastGamepadInputDirection, glm::vec3(0.0f, 0.0f, 0.0f), inputEpsilon))) {
         movementDirection = lastGamepadInputDirection * timeSincePrevFrameInSec * movementSpeed *
                             currentMovementSpeedMultiplier;
     } else {

@@ -26,7 +26,7 @@
 NodeTreeInspector::NodeTreeInspector() : NodeTreeInspector("Node Tree Inspector") {}
 NodeTreeInspector::NodeTreeInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setColor(EditorTheme::getContainerBackgroundColor());
-    setPadding(EditorTheme::getPadding() / 2.0F);
+    setPadding(EditorTheme::getPadding() / 2.0f);
 
     pLayoutNode = addChildNode(std::make_unique<LayoutUiNode>("Node Tree Inspector Layout"));
     pLayoutNode->setIsScrollBarEnabled(true);

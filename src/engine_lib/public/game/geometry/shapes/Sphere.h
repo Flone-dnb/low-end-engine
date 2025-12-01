@@ -27,8 +27,8 @@ struct Sphere {
     bool isBehindPlane(const Plane& plane) const;
 
     /** Location of the sphere's center point. */
-    glm::vec3 center = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Sphere's radius. */
-    float radius = 1.0F;
+    float radius = 1.0f;
 };

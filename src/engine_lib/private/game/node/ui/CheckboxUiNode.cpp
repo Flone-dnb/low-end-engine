@@ -17,7 +17,7 @@ std::string CheckboxUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 CheckboxUiNode::CheckboxUiNode() : CheckboxUiNode("Checkbox UI Node") {}
 CheckboxUiNode::CheckboxUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     setIsReceivingInput(true);
-    setSize(glm::vec2(0.04F, 0.04F));
+    setSize(glm::vec2(0.04f, 0.04f));
 }
 
 TypeReflectionInfo CheckboxUiNode::getReflectionInfo() {

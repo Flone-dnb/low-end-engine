@@ -71,7 +71,7 @@ public:
     /**
      * Sets vertical space between horizontal lines of text.
      *
-     * @param lineSpacing Spacing in range [0.0F; +inf] proportional to the height of the text.
+     * @param lineSpacing Spacing in range [0.0f; +inf] proportional to the height of the text.
      */
     void setTextLineSpacing(float lineSpacing);
 
@@ -111,7 +111,7 @@ public:
     float getTextHeight() const { return textHeight; }
 
     /**
-     * Returns vertical space between horizontal lines of text, in range [0.0F; +inf]
+     * Returns vertical space between horizontal lines of text, in range [0.0f; +inf]
      * proportional to the height of the text.
      *
      * @return Line spacing.
@@ -211,16 +211,16 @@ private:
     std::unique_ptr<TextRenderingHandle> pRenderingHandle;
 
     /** Color of the text in the RGBA format. */
-    glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    glm::vec4 color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     /**
-     * Vertical space between horizontal lines of text, in range [0.0F; +inf]
+     * Vertical space between horizontal lines of text, in range [0.0f; +inf]
      * proportional to the height of the text.
      */
-    float lineSpacing = 0.1F;
+    float lineSpacing = 0.1f;
 
     /** Height of the text in range [0.0; 1.0] relative to screen height. */
-    float textHeight = 0.035F;
+    float textHeight = 0.035f;
 
     /** Text to display. */
     std::u16string sText = u"text";

@@ -181,10 +181,10 @@ private:
     void deinitShaderProgramAndResources(MeshNode* pNode, Renderer* pRenderer);
 
     /** Diffuse light color. */
-    glm::vec4 diffuseColor = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    glm::vec4 diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     /** Texture tiling multiplier. */
-    glm::vec2 textureTilingMultiplier = glm::vec2(1.0F);
+    glm::vec2 textureTilingMultiplier = glm::vec2(1.0f);
 
     /**
      * Node that uses this material. It's safe to store a raw pointer here because the node will notify the

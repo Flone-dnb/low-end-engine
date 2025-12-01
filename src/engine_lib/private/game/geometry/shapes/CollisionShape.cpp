@@ -23,7 +23,7 @@ namespace {
     constexpr std::string_view sCylinderCollisionShapeTypeGuid = "a9dca02e-4283-4d62-bed7-85de22c9af7e";
     constexpr std::string_view sConvexCollisionShapeTypeGuid = "f7961b43-393a-43df-bf8c-07d5bf0148a0";
 
-    constexpr float minSize = 0.1F;
+    constexpr float minSize = 0.1f;
 }
 
 std::string CollisionShape::getTypeGuidStatic() { return sCollisionShapeTypeGuid.data(); }
@@ -269,7 +269,7 @@ JPH::Result<JPH::Ref<JPH::Shape>> ConvexCollisionShape::createShape(float densit
         }
     } else {
         // Use a placeholder geometry.
-        const auto geometry = PrimitiveMeshGenerator::createCube(1.0F);
+        const auto geometry = PrimitiveMeshGenerator::createCube(1.0f);
         const auto& positions = geometry.getVertices();
 
         vVertices.resize(positions.size());

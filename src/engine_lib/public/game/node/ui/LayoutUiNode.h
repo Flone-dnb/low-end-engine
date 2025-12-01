@@ -274,7 +274,7 @@ private:
     std::pair<std::recursive_mutex, LayoutUiNode*> mtxLayoutParent;
 
     /** Color of the scroll bar. */
-    glm::vec4 scrollBarColor = glm::vec4(1.0F, 1.0F, 1.0F, 0.4F);
+    glm::vec4 scrollBarColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.4f);
 
     /** Offset of the scroll bar in lines of text. */
     size_t iCurrentScrollOffset = 0;
@@ -283,16 +283,16 @@ private:
      * Total height of the layout including all child nodes, height is relative to the size of the layout
      * but can be bigger than 1.0.
      */
-    float totalScrollHeight = 0.0F;
+    float totalScrollHeight = 0.0f;
 
     /** Expand rule for child nodes. */
     ChildNodeExpandRule childExpandRule = ChildNodeExpandRule::DONT_EXPAND;
 
     /** Spacing between child nodes in range [0.0; 1.0] where 1.0 is full size of the layout. */
-    float childNodeSpacing = 0.0F;
+    float childNodeSpacing = 0.0f;
 
     /** Padding for child nodes in range [0.0; 0.5] where 1.0 is full size of the layout. */
-    float padding = 0.0F;
+    float padding = 0.0f;
 
     /** `false` for vertical layout, `true` for horizontal. */
     bool bIsHorizontal = false;
@@ -307,5 +307,5 @@ private:
     bool bAutoScrollToBottom = false;
 
     /** Scroll step in range [0.0; 1.0] where 1.0 means full size of the layout. */
-    static constexpr float scrollBarStepLocal = 0.05F;
+    static constexpr float scrollBarStepLocal = 0.05f;
 };

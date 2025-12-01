@@ -81,7 +81,7 @@ public:
      *
      * Example:
      * @code
-     * normalizeToRange(370.0F, -360.0F, 360.0F); // result is `-350`
+     * normalizeToRange(370.0f, -360.0f, 360.0f); // result is `-350`
      *
      * normalizeToRange(-730, -360, 360); // result is `-10`
      * @endcode
@@ -137,28 +137,28 @@ public:
 
 private:
     /** Default tolerance for floats to use. */
-    static inline const float smallFloatEpsilon = 0.000001F;
+    static inline const float smallFloatEpsilon = 0.000001f;
 };
 
 glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3& direction) {
     PROFILE_FUNC
 
     // Ignore zero vectors.
-    if (glm::all(glm::epsilonEqual(direction, glm::vec3(0.0F, 0.0F, 0.0F), smallFloatEpsilon))) {
-        return glm::vec3(0.0F, 0.0F, 0.0F);
+    if (glm::all(glm::epsilonEqual(direction, glm::vec3(0.0f, 0.0f, 0.0f), smallFloatEpsilon))) {
+        return glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
 #if defined(DEBUG)
     // Make sure we are given a normalized vector.
-    constexpr float lengthDelta = 0.001F; // NOLINT: don't use too small value here
+    constexpr float lengthDelta = 0.001f; // NOLINT: don't use too small value here
     const auto length = glm::length(direction);
-    if (!glm::epsilonEqual(length, 1.0F, lengthDelta)) [[unlikely]] {
+    if (!glm::epsilonEqual(length, 1.0f, lengthDelta)) [[unlikely]] {
         // show an error so that it will be instantly noticeable because we're in the debug build
         Error::showErrorAndThrowException("the specified direction vector should have been normalized");
     }
 #endif
 
-    glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 worldRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
     worldRotation.z = glm::degrees(std::atan2(direction.y, direction.x));
     worldRotation.y = glm::degrees(-std::asin(direction.z));
@@ -168,13 +168,13 @@ glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3&
         Log::warn(
             "found NaN in the Z component of the calculated rotation, setting this component's value to "
             "zero");
-        worldRotation.z = 0.0F;
+        worldRotation.z = 0.0f;
     }
     if (glm::isnan(worldRotation.y)) {
         Log::warn(
             "found NaN in the Y component of the calculated rotation, setting this component's value to "
             "zero");
-        worldRotation.y = 0.0F;
+        worldRotation.y = 0.0f;
     }
 
     // Use zero roll for now.
@@ -182,9 +182,9 @@ glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3&
     // Calculate roll:
     // See if we can use world up direction to find the right direction.
     // glm::vec3 vecToFindRight = worldUpDirection;
-    // if (std::abs(direction.z) > 0.999F) { // NOLINT: magic number
+    // if (std::abs(direction.z) > 0.999f) { // NOLINT: magic number
     //    // Use +X then.
-    //    vecToFindRight = glm::vec3(1.0F, 0.0F, 0.0F);
+    //    vecToFindRight = glm::vec3(1.0f, 0.0f, 0.0f);
     //}
     // const auto rightDirection = glm::normalize(glm::cross(direction, vecToFindRight));
 
@@ -194,14 +194,14 @@ glm::vec3 MathHelpers::convertNormalizedDirectionToRollPitchYaw(const glm::vec3&
 
     // Check roll for NaN.
     // if (glm::isnan(worldRotation.x)) {
-    //     worldRotation.x = 0.0F;
+    //     worldRotation.x = 0.0f;
     // }
 
     return worldRotation;
 }
 
 glm::vec3 MathHelpers::convertRollPitchYawToDirection(const glm::vec3& rotation) {
-    return buildRotationMatrix(rotation) * glm::vec4(Globals::WorldDirection::forward, 0.0F);
+    return buildRotationMatrix(rotation) * glm::vec4(Globals::WorldDirection::forward, 0.0f);
 }
 
 glm::vec3 MathHelpers::convertSphericalToCartesianCoordinates(float radius, float theta, float phi) {
@@ -228,30 +228,30 @@ glm::vec3 MathHelpers::calculateReciprocalVector(const glm::vec3& vector) {
     glm::vec3 reciprocal;
 
     if (std::abs(vector.x) < smallFloatEpsilon) [[unlikely]] {
-        reciprocal.x = 0.0F;
+        reciprocal.x = 0.0f;
     } else [[likely]] {
-        reciprocal.x = 1.0F / vector.x;
+        reciprocal.x = 1.0f / vector.x;
     }
 
     if (std::abs(vector.y) < smallFloatEpsilon) [[unlikely]] {
-        reciprocal.y = 0.0F;
+        reciprocal.y = 0.0f;
     } else [[likely]] {
-        reciprocal.y = 1.0F / vector.y;
+        reciprocal.y = 1.0f / vector.y;
     }
 
     if (std::abs(vector.z) < smallFloatEpsilon) [[unlikely]] {
-        reciprocal.z = 0.0F;
+        reciprocal.z = 0.0f;
     } else [[likely]] {
-        reciprocal.z = 1.0F / vector.z;
+        reciprocal.z = 1.0f / vector.z;
     }
 
     return reciprocal;
 }
 
 glm::mat4x4 MathHelpers::buildRotationMatrix(const glm::vec3& rotation) {
-    return glm::rotate(glm::radians(rotation.z), glm::vec3(0.0F, 0.0F, 1.0F)) *
-           glm::rotate(glm::radians(rotation.y), glm::vec3(0.0F, 1.0F, 0.0F)) *
-           glm::rotate(glm::radians(rotation.x), glm::vec3(1.0F, 0.0F, 0.0F));
+    return glm::rotate(glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f)) *
+           glm::rotate(glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)) *
+           glm::rotate(glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 float MathHelpers::normalizeToRange(float value, float min, float max) {
@@ -263,12 +263,12 @@ float MathHelpers::normalizeToRange(float value, float min, float max) {
 
 inline glm::vec2 MathHelpers::fixDiagonalMovementSpeedup(const glm::vec2& vector) {
     const auto squareSum = vector.x * vector.x + vector.y * vector.y;
-    if (squareSum < 0.1F) { // don't normalize if vector is zero or very small to avoid NaNs
+    if (squareSum < 0.1f) { // don't normalize if vector is zero or very small to avoid NaNs
         return vector;
     }
 
     const auto length = glm::sqrt(squareSum);
-    if (length <= 1.0F) { // only normalize when exceeding 1 to keep minor (small) thumbstick movements
+    if (length <= 1.0f) { // only normalize when exceeding 1 to keep minor (small) thumbstick movements
         return vector;
     }
 
@@ -280,7 +280,7 @@ glm::vec2 MathHelpers::normalizeSafely(const glm::vec2& vector) {
     const auto squareSum = vector.x * vector.x + vector.y * vector.y;
 
     if (squareSum < smallFloatEpsilon) {
-        return glm::vec2(0.0F, 0.0F);
+        return glm::vec2(0.0f, 0.0f);
     }
 
     return vector * glm::inversesqrt(squareSum);
@@ -290,7 +290,7 @@ glm::vec3 MathHelpers::normalizeSafely(const glm::vec3& vector) {
     const auto squareSum = vector.x * vector.x + vector.y * vector.y + vector.z * vector.z;
 
     if (squareSum < smallFloatEpsilon) {
-        return glm::vec3(0.0F, 0.0F, 0.0F);
+        return glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     return vector * glm::inversesqrt(squareSum);
@@ -302,7 +302,7 @@ float MathHelpers::calculateRayPlaneIntersection(
     const float denom = glm::dot(plane.normal, rayDirection);
 
     if (std::abs(denom) < smallFloatEpsilon) {
-        return -1.0F;
+        return -1.0f;
     }
 
     return -numer / denom;

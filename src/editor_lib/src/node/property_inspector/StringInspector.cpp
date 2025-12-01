@@ -27,12 +27,12 @@ StringInspector::StringInspector(
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
     setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
-    setSize(glm::vec2(getSize().x, 0.045F));
+    setSize(glm::vec2(getSize().x, 0.045f));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
         pTitle->setTextHeight(EditorTheme::getTextHeight());
         pTitle->setText(utf::as_u16(EditorTheme::formatVariableName(sVariableName)));
-        pTitle->setSize(glm::vec2(pTitle->getSize().x, EditorTheme::getSmallTextHeight() * 1.25F));
+        pTitle->setSize(glm::vec2(pTitle->getSize().x, EditorTheme::getSmallTextHeight() * 1.25f));
 
         auto pBackground = addChildNode(std::make_unique<RectUiNode>());
         pBackground->setPadding(EditorTheme::getPadding());
@@ -41,7 +41,7 @@ StringInspector::StringInspector(
         {
             const auto pTextEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEdit->setTextHeight(EditorTheme::getSmallTextHeight());
-            pTextEdit->setSize(glm::vec2(pTextEdit->getSize().x, EditorTheme::getSmallTextHeight() * 1.25F));
+            pTextEdit->setSize(glm::vec2(pTextEdit->getSize().x, EditorTheme::getSmallTextHeight() * 1.25f));
             pTextEdit->setText(utf::as_u16(variableIt->second.getter(pObject)));
             pTextEdit->setHandleNewLineChars(false);
             pTextEdit->setOnTextChanged([bChangingNodeName, this](std::u16string_view sNewText) {

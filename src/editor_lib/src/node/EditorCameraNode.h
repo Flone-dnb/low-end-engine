@@ -92,25 +92,25 @@ private:
     void applyLookInput(float xDelta, float yDelta);
 
     /** Last received user input direction for moving the camera. */
-    glm::vec3 lastKeyboardInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 lastKeyboardInputDirection = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Same as @ref lastKeyboardInputDirection but for gamepad input. */
-    glm::vec3 lastGamepadInputDirection = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 lastGamepadInputDirection = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Gamepad input for looking right (x) and up (y). */
-    glm::vec2 lastGamepadLookInput = glm::vec2(0.0F, 0.0F);
+    glm::vec2 lastGamepadLookInput = glm::vec2(0.0f, 0.0f);
 
     /** Editor camera's current movement speed. */
-    float currentMovementSpeed = 0.0F;
+    float currentMovementSpeed = 0.0f;
 
     /**
      * Stores @ref speedIncreaseMultiplier or @ref speedDecreaseMultiplier when the user holds
      * a special button.
      */
-    float currentMovementSpeedMultiplier = 1.0F;
+    float currentMovementSpeedMultiplier = 1.0f;
 
     /** Rotation multiplier for editor's camera. */
-    float rotationSensitivity = 0.1F;
+    float rotationSensitivity = 0.1f;
 
     /** Tells if the movement is currently enabled (captured) or not. */
     bool bIsMouseCaptured = false;
@@ -122,17 +122,17 @@ private:
     bool bIgnoreInput = true;
 
     /** Constant multiplier for gamepad's rotation input. */
-    static constexpr float gamepadLookInputMult = 10.0F;
+    static constexpr float gamepadLookInputMult = 10.0f;
 
     /** Speed of editor camera's movement. */
-    static constexpr float movementSpeed = 5.0F;
+    static constexpr float movementSpeed = 5.0f;
 
     /** Camera speed multiplier when fast movement mode is enabled (for ex. Shift is pressed). */
-    static constexpr float speedIncreaseMultiplier = 2.0F;
+    static constexpr float speedIncreaseMultiplier = 2.0f;
 
     /** Camera speed multiplier when slow movement mode is enabled (for ex. Ctrl is pressed). */
-    static constexpr float speedDecreaseMultiplier = 0.5F;
+    static constexpr float speedDecreaseMultiplier = 0.5f;
 
     /** Used to compare input to zero. */
-    static constexpr float inputEpsilon = 0.0001F;
+    static constexpr float inputEpsilon = 0.0001f;
 };

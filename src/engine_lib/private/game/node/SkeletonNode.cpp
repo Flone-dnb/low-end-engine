@@ -33,9 +33,9 @@ void AnimationSampler::prepareForPlaying(bool bLoop) {
         vLocalTransforms[i] = pSkeleton->joint_rest_poses()[i];
     }
 
-    animationRatio = 0.0F;
-    playbackSpeed = 1.0F;
-    weight = 1.0F;
+    animationRatio = 0.0f;
+    playbackSpeed = 1.0f;
+    weight = 1.0f;
     bLoopAnimation = bLoop;
 }
 
@@ -47,7 +47,7 @@ void AnimationSampler::updateAnimation(float deltaTime, bool bSampleBoneMatrices
         animationRatio = animationRatio - loopCount;
     } else {
         // Clamp to [0; 1] interval.
-        animationRatio = std::clamp(animationRatio, 0.0F, 1.0F);
+        animationRatio = std::clamp(animationRatio, 0.0f, 1.0f);
     }
 
     if (!bSampleBoneMatrices) {
@@ -201,7 +201,7 @@ void SkeletonNode::playAnimation(const std::string& sRelativePathToAnimation, bo
 }
 
 void SkeletonNode::setBlendFactor(float blendFactor) {
-    animState.blendFactor = std::clamp(blendFactor, 0.0F, 1.0F);
+    animState.blendFactor = std::clamp(blendFactor, 0.0f, 1.0f);
 }
 
 void SkeletonNode::playBlendedAnimations(
@@ -250,16 +250,16 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
     if (animState.vPlayingAnimations.size() > 1) {
         // Calculate weights for blending.
         const size_t iIntervalCount = animState.vPlayingAnimations.size() - 1;
-        const float intervalSize = 1.0F / static_cast<float>(iIntervalCount);
+        const float intervalSize = 1.0f / static_cast<float>(iIntervalCount);
         for (size_t i = 0; i < animState.vPlayingAnimations.size(); ++i) {
             const float intervalStart = static_cast<float>(i) * intervalSize;
             float weight = animState.blendFactor - intervalStart;
-            weight = ((weight < 0.0F ? weight : -weight) + intervalSize) * static_cast<float>(iIntervalCount);
-            animState.vPlayingAnimations[i]->setWeight(ozz::math::Max(0.0F, weight));
+            weight = ((weight < 0.0f ? weight : -weight) + intervalSize) * static_cast<float>(iIntervalCount);
+            animState.vPlayingAnimations[i]->setWeight(ozz::math::Max(0.0f, weight));
         }
 
         // Selects 2 samplers that define interval that contains blend factor.
-        const float clampedFactor = ozz::math::Clamp(0.0F, animState.blendFactor, 0.999F);
+        const float clampedFactor = ozz::math::Clamp(0.0f, animState.blendFactor, 0.999f);
         const size_t iLeftSamplerIndex =
             static_cast<size_t>(clampedFactor * static_cast<float>(iIntervalCount));
         const auto pLeftSampler = animState.vPlayingAnimations[iLeftSamplerIndex];
@@ -270,7 +270,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
                                    pRightSampler->getDuration() * pRightSampler->getWeight();
 
         // Calculate speed for all samplers.
-        const float invLoopDuration = 1.0F / loopDuration;
+        const float invLoopDuration = 1.0f / loopDuration;
         for (const auto& pSampler : animState.vPlayingAnimations) {
             const float speed = pSampler->getDuration() * invLoopDuration;
             pSampler->setPlaybackSpeed(speed);
@@ -279,7 +279,7 @@ void SkeletonNode::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
     // Update each playing animation (no blending yet).
     for (auto& pSampler : animState.vPlayingAnimations) {
-        pSampler->updateAnimation(timeSincePrevFrameInSec, pSampler->getWeight() > 0.0F);
+        pSampler->updateAnimation(timeSincePrevFrameInSec, pSampler->getWeight() > 0.0f);
     }
 
     if (animState.vPlayingAnimations.size() > 1) {

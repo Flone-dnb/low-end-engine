@@ -309,19 +309,19 @@ private:
          * World location of this node.
          * This value contains the location component of @ref worldMatrix.
          */
-        glm::vec3 worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
+        glm::vec3 worldLocation = glm::vec3(0.0f, 0.0f, 0.0f);
 
         /**
          * World rotation (pitch, yaw, roll in degrees) of this node.
          * This value contains the rotation component of @ref worldMatrix.
          */
-        glm::vec3 worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
+        glm::vec3 worldRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
         /**
          * World space of this node.
          * This value contains the scale component of @ref worldMatrix.
          */
-        glm::vec3 worldScale = glm::vec3(1.0F, 1.0F, 1.0F);
+        glm::vec3 worldScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
         /** Forward direction of this node in world space. */
         glm::vec3 worldForward = Globals::WorldDirection::forward;
@@ -361,21 +361,21 @@ private:
      * relative to the first SpatialNode in the parent chain, otherwise if there is no SpatialNode
      * in the parent chain, relative to the world.
      */
-    glm::vec3 relativeLocation = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 relativeLocation = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /**
      * Node's rotation in degrees, if there is another SpatialNode in the parent chain then
      * this rotation is relative to the first SpatialNode in the parent chain, otherwise if there
      * is no SpatialNode in the parent chain, relative to the world.
      */
-    glm::vec3 relativeRotation = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 relativeRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /**
      * Node's scale, if there is another SpatialNode in the parent chain then this scale is
      * relative to the first SpatialNode in the parent chain, otherwise if there is no SpatialNode
      * in the parent chain, relative to the world.
      */
-    glm::vec3 relativeScale = glm::vec3(1.0F, 1.0F, 1.0F);
+    glm::vec3 relativeScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     /** First (most closer to this node) spatial node in the parent chain. */
     std::pair<std::recursive_mutex, SpatialNode*> mtxSpatialParent;

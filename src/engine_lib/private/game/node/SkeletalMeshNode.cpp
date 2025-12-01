@@ -84,7 +84,7 @@ AABB SkeletalMeshNode::calculateBoundingBoxFromGeometry() {
     }
 
     AABB aabb{};
-    aabb.center = glm::vec3((min.x + max.x) * 0.5F, (min.y + max.y) * 0.5F, (min.z + max.z) * 0.5F);
+    aabb.center = glm::vec3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, (min.z + max.z) * 0.5f);
     aabb.extents = glm::vec3(max.x - aabb.center.x, max.y - aabb.center.y, max.z - aabb.center.z);
 
     return aabb;

@@ -83,11 +83,11 @@ std::unique_ptr<ScreenQuadGeometry> GpuResourceManager::createScreenQuad(
 
     // Prepare initial vertex buffer (full screen quad with positions in normalized device coordinates).
     std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0F, -1.0F), .uv = glm::vec2(0.0F, 0.0F)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0f, 1.0f), .uv = glm::vec2(1.0f, 1.0f)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0f, 1.0f), .uv = glm::vec2(0.0f, 1.0f)},
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(-1.0f, -1.0f), .uv = glm::vec2(0.0f, 0.0f)},
 
-        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, -1.0F), .uv = glm::vec2(1.0F, 0.0F)}};
+        ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0f, -1.0f), .uv = glm::vec2(1.0f, 0.0f)}};
 
     std::array<unsigned short, ScreenQuadGeometry::iIndexCount> vIndices = {0, 1, 2, 3, 0, 2};
 

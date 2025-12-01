@@ -78,7 +78,7 @@ void DirectionalLightNode::onSpawning() {
     SpatialNode::onSpawning();
 
     // Set up to date parameters.
-    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0f);
 
     addToRendering();
 }
@@ -105,7 +105,7 @@ void DirectionalLightNode::setIsVisible(bool bNewVisible) {
 }
 
 void DirectionalLightNode::setLightIntensity(float intensity) {
-    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
+    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0f, 1.0f);
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -126,7 +126,7 @@ void DirectionalLightNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
     // Update direction for shaders.
-    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0F);
+    shaderProperties.direction = glm::vec4(getWorldForwardDirection(), 0.0f);
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {

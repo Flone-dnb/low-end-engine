@@ -16,8 +16,8 @@
 
 #if defined(ENGINE_DEBUG_TOOLS)
 namespace {
-    constexpr float debugTextHeight = 0.025F;
-    constexpr float debugTextTimeSec = 6.0F;
+    constexpr float debugTextHeight = 0.025f;
+    constexpr float debugTextTimeSec = 6.0f;
 }
 #endif
 
@@ -76,7 +76,7 @@ void Log::warn(std::string_view sText, const std::source_location location) {
     }
 
 #if defined(ENGINE_DEBUG_TOOLS) && !defined(ENGINE_EDITOR)
-    DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 1.0F, 0.0F), {}, debugTextHeight);
+    DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0f, 1.0f, 0.0f), {}, debugTextHeight);
 #endif
 }
 
@@ -95,7 +95,7 @@ void Log::error(std::string_view sText, const std::source_location location) {
     }
 
 #if defined(ENGINE_DEBUG_TOOLS) && !defined(ENGINE_EDITOR)
-    DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0F, 0.0F, 0.0F), {}, debugTextHeight);
+    DebugDrawer::drawText(sMessage, debugTextTimeSec, glm::vec3(1.0f, 0.0f, 0.0f), {}, debugTextHeight);
 #endif
 }
 

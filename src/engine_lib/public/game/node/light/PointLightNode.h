@@ -15,14 +15,14 @@ public:
         ShaderProperties();
 
         /** Light position in world space. 4th component is not used. */
-        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+        alignas(ShaderAlignmentConstants::iVec4) glm::vec4 position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
         /** Light color and 4th component stores intensity in range [0.0; 1.0] */
         alignas(ShaderAlignmentConstants::iVec4) glm::vec4 colorAndIntensity =
-            glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+            glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
         /** Lit distance. Radius of the sphere. */
-        alignas(ShaderAlignmentConstants::iScalar) float distance = 15.0F;
+        alignas(ShaderAlignmentConstants::iScalar) float distance = 15.0f;
 
         /** Padding to 16 bytes. */
         float pad[3];

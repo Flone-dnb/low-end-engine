@@ -141,17 +141,17 @@ void Sound3dNode::setSoundChannel(SoundChannel channel) {
 }
 
 void Sound3dNode::setVolume(float volume) {
-    this->volume = std::max(0.0F, volume);
+    this->volume = std::max(0.0f, volume);
 
     if (!isSpawned()) {
         return;
     }
 
-    sfmlMusic.setVolume(volume * 100.0F); // NOLINT: SFML uses 0-100 volume
+    sfmlMusic.setVolume(volume * 100.0f); // NOLINT: SFML uses 0-100 volume
 }
 
 void Sound3dNode::setPitch(float pitch) {
-    this->pitch = std::max(0.0F, pitch);
+    this->pitch = std::max(0.0f, pitch);
 
     if (!isSpawned()) {
         return;
@@ -181,7 +181,7 @@ void Sound3dNode::setIsLooping(bool bEnableLooping) {
 void Sound3dNode::setAutoplayWhenSpawned(bool bAutoplay) { this->bAutoplayWhenSpawned = bAutoplay; }
 
 void Sound3dNode::setMaxVolumeDistance(float distance) {
-    maxVolumeDistance = std::max(0.1F, distance); // NOLINT: 0.0 is an invalid value according to SFML docs
+    maxVolumeDistance = std::max(0.1f, distance); // NOLINT: 0.0 is an invalid value according to SFML docs
 
     if (!isSpawned()) {
         return;
@@ -191,7 +191,7 @@ void Sound3dNode::setMaxVolumeDistance(float distance) {
 }
 
 void Sound3dNode::setAttenuation(float attenuation) {
-    this->attenuation = std::max(0.0F, attenuation);
+    this->attenuation = std::max(0.0f, attenuation);
 
     if (!isSpawned()) {
         return;
@@ -282,7 +282,7 @@ void Sound3dNode::loadAndPlay() {
     bFileOpened = true;
 
     sfmlMusic.setLooping(bIsLooping);
-    sfmlMusic.setVolume(volume * 100.0F); // SFML uses 0-100 volume
+    sfmlMusic.setVolume(volume * 100.0f); // SFML uses 0-100 volume
     sfmlMusic.setPitch(pitch);
 
     sfmlMusic.setMinDistance(maxVolumeDistance);

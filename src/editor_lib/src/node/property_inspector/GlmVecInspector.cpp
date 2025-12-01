@@ -16,7 +16,7 @@ namespace {
         Serializable* pObject, const std::string& sVariableName, GlmVecComponentCount componentCount) {
         const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(pObject->getTypeGuid());
 
-        glm::vec4 currentValue = glm::vec4(0.0F);
+        glm::vec4 currentValue = glm::vec4(0.0f);
 
         switch (componentCount) {
         case (GlmVecComponentCount::VEC2): {
@@ -25,7 +25,7 @@ namespace {
                 Error::showErrorAndThrowException(
                     std::format("expected to find reflected variable \"{}\"", sVariableName));
             }
-            currentValue = glm::vec4(variableIt->second.getter(pObject), 0.0F, 0.0F);
+            currentValue = glm::vec4(variableIt->second.getter(pObject), 0.0f, 0.0f);
             break;
         }
         case (GlmVecComponentCount::VEC3): {
@@ -34,7 +34,7 @@ namespace {
                 Error::showErrorAndThrowException(
                     std::format("expected to find reflected variable \"{}\"", sVariableName));
             }
-            currentValue = glm::vec4(variableIt->second.getter(pObject), 0.0F);
+            currentValue = glm::vec4(variableIt->second.getter(pObject), 0.0f);
             break;
         }
         case (GlmVecComponentCount::VEC4): {
@@ -113,7 +113,7 @@ GlmVecInspector::GlmVecInspector(
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
     setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-    setSize(glm::vec2(getSize().x, 0.05F));
+    setSize(glm::vec2(getSize().x, 0.05f));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
         pTitle->setTextHeight(EditorTheme::getTextHeight());
@@ -121,7 +121,7 @@ GlmVecInspector::GlmVecInspector(
 
         const auto pHorizontalLayout = addChildNode(std::make_unique<LayoutUiNode>());
         pHorizontalLayout->setIsHorizontal(true);
-        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 10.0F);
+        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 10.0f);
         pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_MAIN_AXIS);
         {
             auto pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
@@ -205,7 +205,7 @@ void GlmVecInspector::onValueChanged(
         sText = "";
     }
 
-    float newComponentValue = 0.0F;
+    float newComponentValue = 0.0f;
     if (!sText.empty()) {
         try {
             newComponentValue = EditorTheme::stringToFloat(sText);

@@ -20,7 +20,7 @@
 DebugDrawer::DebugDrawer() {
     // Precalculate cube positions.
     {
-        const auto cubeGeometry = PrimitiveMeshGenerator::createCube(1.0F);
+        const auto cubeGeometry = PrimitiveMeshGenerator::createCube(1.0f);
         const auto& vVertices = cubeGeometry.getVertices();
         const auto& vIndices = cubeGeometry.getIndices();
 
@@ -194,7 +194,7 @@ void DebugDrawer::drawQuad(
     const glm::vec2 windowSize =
         glm::vec2(static_cast<float>(iWindowWidth), static_cast<float>(iWindowHeight));
 
-    const glm::vec4 clipRect = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
+    const glm::vec4 clipRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 
     glUniform2fv(iScreenPosUniform, 1, glm::value_ptr(screenPos));
     glUniform2fv(iScreenSizeUniform, 1, glm::value_ptr(screenSize));
@@ -237,10 +237,10 @@ void DebugDrawer::drawDebugObjects(
 
         // Prepare screen quad in [0.0; 1.0].
         std::array<ScreenQuadGeometry::VertexLayout, ScreenQuadGeometry::iVertexCount> vVertices = {
-            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 0.0F), .uv = glm::vec2(0.0F, 0.0F)},
-            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0F, 1.0F), .uv = glm::vec2(0.0F, 1.0F)},
-            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 1.0F), .uv = glm::vec2(1.0F, 1.0F)},
-            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0F, 0.0F), .uv = glm::vec2(1.0F, 0.0F)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0f, 0.0f), .uv = glm::vec2(0.0f, 0.0f)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(0.0f, 1.0f), .uv = glm::vec2(0.0f, 1.0f)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0f, 1.0f), .uv = glm::vec2(1.0f, 1.0f)},
+            ScreenQuadGeometry::VertexLayout{.position = glm::vec2(1.0f, 0.0f), .uv = glm::vec2(1.0f, 0.0f)},
         };
         std::array<unsigned short, ScreenQuadGeometry::iIndexCount> vIndices = {0, 1, 2, 0, 2, 3};
         pScreenQuadGeometry = GpuResourceManager::createScreenQuad(vVertices, vIndices);
@@ -285,7 +285,7 @@ void DebugDrawer::drawDebugObjects(
 
         for (auto it = vRectsToDraw.begin(); it != vRectsToDraw.end();) {
             auto& rect = *it;
-            rectShaderInfo.pShaderProgram->setVector4ToActiveProgram("color", glm::vec4(rect.color, 1.0F));
+            rectShaderInfo.pShaderProgram->setVector4ToActiveProgram("color", glm::vec4(rect.color, 1.0f));
             rectShaderInfo.pShaderProgram->setBoolToActiveProgram("bIsUsingTexture", false);
 
             glm::vec2 pos = rect.screenPos;
@@ -322,20 +322,20 @@ void DebugDrawer::drawDebugObjects(
 
         // Prepare starting position for the first text (relative to screen's top-left corner).
         // x will be reset on every text so it's defined below
-        float screenY = static_cast<float>(iWindowHeight) * 0.1F;
+        float screenY = static_cast<float>(iWindowHeight) * 0.1f;
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         for (auto it = vTextToDraw.begin(); it != vTextToDraw.end();) {
             auto& text = *it;
 
-            float screenX = static_cast<float>(iWindowWidth) * 0.025F;
+            float screenX = static_cast<float>(iWindowWidth) * 0.025f;
             if (text.optForcePosition.has_value()) {
                 screenX = static_cast<float>(iWindowWidth) * text.optForcePosition->x;
             }
 
             textShaderInfo.pShaderProgram->setVector4ToActiveProgram(
-                "textColor", glm::vec4(text.color, 1.0F));
+                "textColor", glm::vec4(text.color, 1.0f));
 
             const auto fontScale = text.textHeight / fontManager.getFontHeightToLoad();
             const float textHeightInPixels =

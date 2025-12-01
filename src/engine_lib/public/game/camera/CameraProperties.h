@@ -37,13 +37,13 @@ public:
             OrbitalModeData();
 
             /** Radial distance or distance from camera to target point (look target). */
-            float distanceToTarget = 10.0F;
+            float distanceToTarget = 10.0f;
 
             /** Polar angle (in degrees). */
-            float theta = 0.0F;
+            float theta = 0.0f;
 
             /** Azimuthal angle (in degrees). */
-            float phi = 0.0F;
+            float phi = 0.0f;
         };
 
         /** Stores data used for view matrix. */
@@ -60,13 +60,13 @@ public:
             bool bViewMatrixNeedsUpdate = true;
 
             /** Location of the camera in world space. */
-            glm::vec3 worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
+            glm::vec3 worldLocation = glm::vec3(0.0f, 0.0f, 0.0f);
 
             /** Unit vector that points in camera's current up direction in world space. */
             glm::vec3 worldUpDirection = Globals::WorldDirection::up;
 
             /** Location of the point in world space that the camera should look at. */
-            glm::vec3 targetPointWorldLocation = glm::vec3(1.0F, 0.0F, 0.0F);
+            glm::vec3 targetPointWorldLocation = glm::vec3(1.0f, 0.0f, 0.0f);
         };
 
         /** Stores data used for projection matrix. */
@@ -95,10 +95,10 @@ public:
             bool bLightGridFrustumsNeedUpdate = true;
 
             /** Distance from camera (view) space origin to camera's near clip plane. */
-            float nearClipPlaneDistance = 0.2F;
+            float nearClipPlaneDistance = 0.2f;
 
             /** Distance to camera's far clip plane. */
-            float farClipPlaneDistance = 250.0F;
+            float farClipPlaneDistance = 250.0f;
 
             /** Vertical field of view. */
             unsigned int iVerticalFov = 90;
@@ -110,10 +110,10 @@ public:
             unsigned int iRenderTargetHeight = 600; // default value, will be changed at runtime
 
             /** Height of camera's near clip plane. */
-            float nearClipPlaneHeight = 0.0F;
+            float nearClipPlaneHeight = 0.0f;
 
             /** Height of camera's far clip plane. */
-            float farClipPlaneHeight = 0.0F;
+            float farClipPlaneHeight = 0.0f;
         };
 
         /**
@@ -144,7 +144,7 @@ public:
         OrbitalModeData orbitalModeData;
 
         /** Minimum allowed value for near clip plane distance and far clip plane distance. */
-        static inline const float minimumClipPlaneDistance = 0.00001F;
+        static inline const float minimumClipPlaneDistance = 0.00001f;
     };
 
     /**
@@ -313,8 +313,8 @@ private:
     std::pair<std::recursive_mutex, Data> mtxData{};
 
     /** Position of the top-left corner of the viewport rectangle in XY and size in ZW (in range [0; 1]). */
-    glm::vec4 viewport = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
+    glm::vec4 viewport = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 
     /** Delta to compare input to zero. */
-    static inline constexpr float floatDelta = 0.00001F;
+    static inline constexpr float floatDelta = 0.00001f;
 };

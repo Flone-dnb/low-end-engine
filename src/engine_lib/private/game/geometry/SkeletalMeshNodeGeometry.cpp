@@ -262,7 +262,7 @@ void SkeletalMeshNodeVertex::setVertexAttributes() {
 }
 
 bool SkeletalMeshNodeVertex::operator==(const SkeletalMeshNodeVertex& other) const {
-    constexpr auto delta = 0.00001F;
+    constexpr auto delta = 0.00001f;
 
 #if defined(DEBUG)
     static_assert(sizeof(SkeletalMeshNodeVertex) == 52, "add new fields here");

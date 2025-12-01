@@ -12,15 +12,15 @@
 #include "misc/MemoryUsage.hpp"
 
 namespace {
-    constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0F, 0.96F);
-    constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0F, 1.0F - consoleScreenPos.y);
+    constexpr glm::vec2 consoleScreenPos = glm::vec2(0.0f, 0.96f);
+    constexpr glm::vec2 consoleScreenSize = glm::vec2(1.0f, 1.0f - consoleScreenPos.y);
 
-    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0F, 0.3F);
+    constexpr glm::vec2 statsScreenPos = glm::vec2(0.0f, 0.3f);
 
-    constexpr float textPadding = consoleScreenSize.y * 0.1F;
-    constexpr float textHeight = 0.025F;
+    constexpr float textPadding = consoleScreenSize.y * 0.1f;
+    constexpr float textHeight = 0.025f;
 
-    constexpr float statsRefreshTimeSec = 2.0F;
+    constexpr float statsRefreshTimeSec = 2.0f;
 }
 
 void DebugConsole::registerStatsCommand() {
@@ -92,14 +92,14 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
         timeSinceLastStatsUpdateSec += timeSincePrevFrameInSec;
 
         // Draw background.
-        DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25F), 0.0F);
+        DebugDrawer::drawScreenRect(consoleScreenPos, consoleScreenSize, glm::vec3(0.25f), 0.0f);
 
         if (sCurrentInput.empty()) {
             DebugDrawer::drawText(
-                "type a command...", 0.0F, glm::vec3(0.5F), consoleScreenPos + textPadding, textHeight);
+                "type a command...", 0.0f, glm::vec3(0.5f), consoleScreenPos + textPadding, textHeight);
         } else {
             DebugDrawer::drawText(
-                sCurrentInput, 0.0F, glm::vec3(1.0F), consoleScreenPos + textPadding, textHeight);
+                sCurrentInput, 0.0f, glm::vec3(1.0f), consoleScreenPos + textPadding, textHeight);
         }
     }
 
@@ -107,7 +107,7 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
         timeSinceLastStatsUpdateSec += timeSincePrevFrameInSec;
 
         if (timeSinceLastStatsUpdateSec >= statsRefreshTimeSec) {
-            timeSinceLastStatsUpdateSec = 0.0F;
+            timeSinceLastStatsUpdateSec = 0.0f;
 
             glm::vec2 currentPos = statsScreenPos;
 
@@ -115,7 +115,7 @@ void DebugConsole::onBeforeNewFrame(float timeSincePrevFrameInSec, Renderer* pRe
                 DebugDrawer::drawText(
                     sText,
                     statsRefreshTimeSec,
-                    glm::vec3(1.0F),
+                    glm::vec3(1.0f),
                     glm::vec2(currentPos.x + textPadding, currentPos.y),
                     textHeight);
                 currentPos.y += textHeight + textPadding;
@@ -248,18 +248,18 @@ void DebugConsole::onKeyboardInput(
 }
 
 void DebugConsole::displayMessage(const std::string& sText) {
-    constexpr float messageTimeSec = 2.5F;
+    constexpr float messageTimeSec = 2.5f;
 
     DebugDrawer::drawScreenRect( // <- message background
         glm::vec2(consoleScreenPos.x, consoleScreenPos.y - consoleScreenSize.y),
         glm::vec2(consoleScreenSize.x, consoleScreenSize.y),
-        glm::vec3(0.25F),
+        glm::vec3(0.25f),
         messageTimeSec);
 
     DebugDrawer::drawText( // <- message
         sText,
         messageTimeSec,
-        glm::vec3(1.0F),
+        glm::vec3(1.0f),
         glm::vec2(consoleScreenPos.x + textPadding, consoleScreenPos.y - consoleScreenSize.y + textPadding),
         textHeight);
 }

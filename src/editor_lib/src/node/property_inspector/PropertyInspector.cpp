@@ -116,9 +116,9 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
     };
 
     auto pGroupBackground = std::make_unique<RectUiNode>();
-    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0f);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
-    pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05F));
+    pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05f));
 
     // Select shape.
     const auto pShapeSelectLayout =
@@ -132,7 +132,7 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
         pSelectShapeText->setHandleNewLineChars(false);
         pSelectShapeText->setText(u"Collision shape:");
         pSelectShapeText->setSize(
-            glm::vec2(pSelectShapeText->getSize().x, pSelectShapeText->getTextHeight() * 1.25F));
+            glm::vec2(pSelectShapeText->getSize().x, pSelectShapeText->getTextHeight() * 1.25f));
 
         // Display derived shapes.
         const auto& reflectedTypes = ReflectedTypeDatabase::getReflectedTypes();
@@ -149,7 +149,7 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
             if (getShape().getTypeGuid() == sTypeGuid) {
                 pButton->setColor(EditorTheme::getAccentColor());
             }
-            pButton->setSize(glm::vec2(pButton->getSize().x, 0.03F));
+            pButton->setSize(glm::vec2(pButton->getSize().x, 0.03f));
             pButton->setOnClicked([this, setShape, sCollisionTypeGuid = sTypeGuid]() {
                 auto pNewShape = std::unique_ptr<CollisionShape>(dynamic_cast<CollisionShape*>(
                     ReflectedTypeDatabase::getTypeInfo(sCollisionTypeGuid).createNewObject().release()));
@@ -170,14 +170,14 @@ void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
     // Add a spacer.
     const auto pSpacer = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
     pSpacer->setColor(EditorTheme::getAccentColor());
-    pSpacer->setSize(glm::vec2(pSpacer->getSize().x, 0.001F));
+    pSpacer->setSize(glm::vec2(pSpacer->getSize().x, 0.001f));
 }
 
 void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNode) {
     auto pGroupBackground = std::make_unique<RectUiNode>();
-    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0f);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
-    pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05F));
+    pGroupBackground->setSize(glm::vec2(pGroupBackground->getSize().x, 0.05f));
 
     // Preview animations.
     const auto pAnimLayout =
@@ -186,15 +186,15 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
     pAnimLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     {
         const auto pAnimPreviewTitle = pAnimLayout->addChildNode(std::make_unique<TextUiNode>());
-        pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight() * 0.92F);
+        pAnimPreviewTitle->setTextHeight(EditorTheme::getSmallTextHeight() * 0.92f);
         pAnimPreviewTitle->setSize(
-            glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4F));
+            glm::vec2(pAnimPreviewTitle->getSize().x, pAnimPreviewTitle->getTextHeight() * 1.4f));
         pAnimPreviewTitle->setText(u"Preview animation (path relative `res`)");
 
         const auto pBackground = pAnimLayout->addChildNode(std::make_unique<RectUiNode>());
         pBackground->setPadding(EditorTheme::getPadding());
         pBackground->setColor(EditorTheme::getButtonColor());
-        pBackground->setSize(glm::vec2(pBackground->getSize().x, 0.045F));
+        pBackground->setSize(glm::vec2(pBackground->getSize().x, 0.045f));
         {
             const auto pAnimPathEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pAnimPathEdit->setTextHeight(EditorTheme::getSmallTextHeight());
@@ -221,16 +221,16 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
     // Add a spacer.
     const auto pSpacer = pPropertyLayout->addChildNode(std::make_unique<RectUiNode>());
     pSpacer->setColor(EditorTheme::getAccentColor());
-    pSpacer->setSize(glm::vec2(pSpacer->getSize().x, 0.001F));
+    pSpacer->setSize(glm::vec2(pSpacer->getSize().x, 0.001f));
 }
 
 void PropertyInspector::displayPropertiesForType(
     LayoutUiNode* pLayoutToAddTo, const std::string& sTypeGuid, Serializable* pObject, bool bRecursive) {
     auto pGroupBackground = std::make_unique<RectUiNode>();
-    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0F);
+    pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0f);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
     pGroupBackground->setSize(
-        glm::vec2(pGroupBackground->getSize().x, 0.015F)); // initial height, will expand if needed
+        glm::vec2(pGroupBackground->getSize().x, 0.015f)); // initial height, will expand if needed
 
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
 
@@ -242,7 +242,7 @@ void PropertyInspector::displayPropertiesForType(
     {
         const auto pGroupTitle = pTypeGroupLayout->addChildNode(std::make_unique<TextUiNode>());
         pGroupTitle->setTextHeight(EditorTheme::getTextHeight());
-        pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.2F));
+        pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.2f));
         pGroupTitle->setText(utf::as_u16(typeInfo.sTypeName));
         pGroupTitle->setTextColor(EditorTheme::getAccentColor());
 

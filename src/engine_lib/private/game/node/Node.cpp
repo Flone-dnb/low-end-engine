@@ -912,9 +912,9 @@ Node::getInformationForSerialization(
 
 void Node::getNodeWorldLocationRotationScale(
     Node* pNode, glm::vec3& worldLocation, glm::vec3& worldRotation, glm::vec3& worldScale) {
-    worldLocation = glm::vec3(0.0F, 0.0F, 0.0F);
-    worldRotation = glm::vec3(0.0F, 0.0F, 0.0F);
-    worldScale = glm::vec3(1.0F, 1.0F, 1.0F);
+    worldLocation = glm::vec3(0.0f, 0.0f, 0.0f);
+    worldRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    worldScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     const auto pSpatialNode = dynamic_cast<SpatialNode*>(pNode);
     if (pSpatialNode != nullptr) {

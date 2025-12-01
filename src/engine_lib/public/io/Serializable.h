@@ -843,7 +843,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                     sFieldName,
                     typeInfo.sTypeName));
             }
-            glm::vec2 result = glm::vec2(0.0F, 0.0F);
+            glm::vec2 result = glm::vec2(0.0f, 0.0f);
 
             if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating()) [[unlikely]] {
                 Error::showErrorAndThrowException(std::format(
@@ -882,7 +882,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                     sFieldName,
                     typeInfo.sTypeName));
             }
-            glm::vec3 result = glm::vec3(0.0F, 0.0F, 0.0F);
+            glm::vec3 result = glm::vec3(0.0f, 0.0f, 0.0f);
 
             if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating() || !tomlArray[2].is_floating())
                 [[unlikely]] {
@@ -923,7 +923,7 @@ inline std::variant<std::unique_ptr<T>, Error> Serializable::deserializeFromSect
                     sFieldName,
                     typeInfo.sTypeName));
             }
-            glm::vec4 result = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
+            glm::vec4 result = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
             if (!tomlArray[0].is_floating() || !tomlArray[1].is_floating() || !tomlArray[2].is_floating() ||
                 !tomlArray[3].is_floating()) [[unlikely]] {

@@ -161,10 +161,10 @@ private:
     std::unique_ptr<TextureHandle> pTexture;
 
     /** Padding for child node in range [0.0; 0.5] where 1.0 is full size of the node. */
-    float padding = 0.0F;
+    float padding = 0.0f;
 
     /** Fill color. */
-    glm::vec4 color = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    glm::vec4 color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     /** Empty if not used, otherwise path to the texture (relative the `res` directory) to load. */
     std::string sPathToTextureRelativeRes;

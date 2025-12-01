@@ -25,7 +25,7 @@ std::string TextUiNode::getTypeGuid() const { return sTypeGuid.data(); }
 TextUiNode::TextUiNode() : TextUiNode("Text UI Node") {}
 TextUiNode::TextUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
     // Text generally needs less size that default for nodes.
-    setSize(glm::vec2(0.2F, 0.02F));
+    setSize(glm::vec2(0.2f, 0.02f));
 }
 TextUiNode::~TextUiNode() {}
 
@@ -116,7 +116,7 @@ void TextUiNode::setTextHeight(float height) {
 }
 
 void TextUiNode::setTextLineSpacing(float lineSpacing) {
-    this->lineSpacing = std::max(lineSpacing, 0.0F);
+    this->lineSpacing = std::max(lineSpacing, 0.0f);
     updateRenderData();
 }
 
@@ -195,7 +195,7 @@ void TextUiNode::updateRenderData() {
     const auto maxXForWordWrap = getSize().x;
     const auto yEndPos = getSize().y;
 
-    auto offset = glm::vec2(0.0F);
+    auto offset = glm::vec2(0.0f);
 
     // Switch to the first row of text.
     offset.y += glyphHeight;
@@ -205,7 +205,7 @@ void TextUiNode::updateRenderData() {
         if (character == '\n' && bHandleNewLineChars) {
             // Switch to a new line.
             offset.y += glyphHeight + glyphLineSpacing;
-            offset.x = 0.0F;
+            offset.x = 0.0f;
 
             if (offset.y > yEndPos) {
                 break;
@@ -228,7 +228,7 @@ void TextUiNode::updateRenderData() {
             if (bIsWordWrapEnabled) {
                 // Switch to a new line.
                 offset.y += glyphHeight + glyphLineSpacing;
-                offset.x = 0.0F;
+                offset.x = 0.0f;
 
                 if (offset.y > yEndPos) {
                     break;

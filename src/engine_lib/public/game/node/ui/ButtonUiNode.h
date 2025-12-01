@@ -254,13 +254,13 @@ private:
     std::unique_ptr<TextureHandle> pPressedTexture;
 
     /** Color while mouse cursor is floating over the node. */
-    glm::vec4 colorWhileHovered = glm::vec4(0.4F, 0.4F, 0.4F, 1.0F);
+    glm::vec4 colorWhileHovered = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
     /** Color while pressed. */
-    glm::vec4 colorWhilePressed = glm::vec4(0.2F, 0.2F, 0.2F, 1.0F);
+    glm::vec4 colorWhilePressed = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
 
     /** Temporary variable used while being hovered/clicked to restore the original color. */
-    glm::vec4 tempDefaultColor = glm::vec4(0.0F, 0.0F, 0.0F, 0.0F);
+    glm::vec4 tempDefaultColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
     /** Texture to display while mouse cursor is floating over the node. */
     std::string sPathToTextureWhileHovered;

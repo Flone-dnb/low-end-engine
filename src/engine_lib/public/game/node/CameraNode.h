@@ -157,9 +157,9 @@ private:
     /** If not empty used instead of @ref localSpaceOriginInWorldSpace. */
     std::optional<glm::vec3> orbitalCameraTargetInWorldSpace = {};
 
-    /** (0.0F, 0.0F, 0.0F) in local space converted to world space. */
-    glm::vec3 localSpaceOriginInWorldSpace = glm::vec3(0.0F, 0.0F, 0.0F);
+    /** (0.0f, 0.0f, 0.0f) in local space converted to world space. */
+    glm::vec3 localSpaceOriginInWorldSpace = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Delta to compare rotations. */
-    static constexpr float rotationDelta = 0.0001F;
+    static constexpr float rotationDelta = 0.0001f;
 };

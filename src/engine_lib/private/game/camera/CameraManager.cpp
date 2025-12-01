@@ -105,7 +105,7 @@ CameraManager::convertViewportPosToWorld(const glm::vec2& viewportPos) {
 
     // Convert [0; 1] screen pos to NDC [-1; 1].
     const auto ndcPos =
-        glm::vec4(viewportPos.x * 2.0F - 1.0F, (1.0F - viewportPos.y) * 2.0F - 1.0F, 0.0F, 1.0F);
+        glm::vec4(viewportPos.x * 2.0f - 1.0f, (1.0f - viewportPos.y) * 2.0f - 1.0f, 0.0f, 1.0f);
 
     // Convert to view space.
     const auto invProjMatrix = pCameraProperties->getInverseProjectionMatrix();

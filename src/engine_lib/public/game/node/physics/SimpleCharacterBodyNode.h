@@ -60,7 +60,7 @@ public:
     void setJumpPower(float newJumpPower);
 
     /**
-     * Sets multiplier for gravity in range [0.0F; +inf].
+     * Sets multiplier for gravity in range [0.0f; +inf].
      *
      * @param newMultiplier New multiplier.
      */
@@ -68,16 +68,16 @@ public:
 
     /**
      * Defines if movement (movement control using input) in the air is possible or not and how much.
-     * Value in range [0.0F; 1.0F] where 0.0 means input is ignored while in the air.
+     * Value in range [0.0f; 1.0f] where 0.0 means input is ignored while in the air.
      *
-     * @param factor Value in range [0.0F; 1.0F].
+     * @param factor Value in range [0.0f; 1.0f].
      */
     void setAirMovementControlFactor(float factor);
 
     /**
-     * Sets a value in range [0.0F; 1.0F] that defines how to change character height when crouching.
+     * Sets a value in range [0.0f; 1.0f] that defines how to change character height when crouching.
      *
-     * @param factor Value in range [0.0F; 1.0F].
+     * @param factor Value in range [0.0f; 1.0f].
      */
     void setCrouchingHeightFactor(float factor);
 
@@ -107,7 +107,7 @@ public:
     float getJumpPower() const { return jumpPower; }
 
     /**
-     * Returns multiplier for gravity in range [0.0F; +inf].
+     * Returns multiplier for gravity in range [0.0f; +inf].
      *
      * @return Multiplier.
      */
@@ -115,14 +115,14 @@ public:
 
     /**
      * Defines if movement (movement control using input) in the air is possible or not and how much.
-     * Value in range [0.0F; 1.0F] where 0.0 means input is ignored while in the air.
+     * Value in range [0.0f; 1.0f] where 0.0 means input is ignored while in the air.
      *
-     * @return Value in range [0.0F; 1.0F].
+     * @return Value in range [0.0f; 1.0f].
      */
     float getAirMovementControlFactor() const { return airMovementControlFactor; }
 
     /**
-     * Return value in range [0.0F; 1.0F] that defines how to change character height when crouching.
+     * Return value in range [0.0f; 1.0f] that defines how to change character height when crouching.
      *
      * @return Crouching height factor.
      */
@@ -137,14 +137,14 @@ public:
 
 protected:
     /**
-     * Sets the current input for moving forward/back in range [1.0F; -1.0F].
+     * Sets the current input for moving forward/back in range [1.0f; -1.0f].
      *
      * @param input Current input.
      */
     void setForwardMovementInput(float input);
 
     /**
-     * Sets the current input for moving right/left in range [1.0F; -1.0F].
+     * Sets the current input for moving right/left in range [1.0f; -1.0f].
      *
      * @param input Current input.
      */
@@ -172,31 +172,31 @@ private:
     virtual void onBeforePhysicsUpdate(float deltaTime) override;
 
     /**
-     * Stores forward movement in the X component in range [1.0F; -1.0F] and right movement in the Y
+     * Stores forward movement in the X component in range [1.0f; -1.0f] and right movement in the Y
      * component. Normalized vector.
      */
-    glm::vec2 movementInput = glm::vec2(0.0F, 0.0F);
+    glm::vec2 movementInput = glm::vec2(0.0f, 0.0f);
 
     /** Speed of movement. */
-    float movementSpeed = 5.0F;
+    float movementSpeed = 5.0f;
 
     /** The bigger this value to higher the jump. */
-    float jumpPower = 8.0F;
+    float jumpPower = 8.0f;
 
     /**
      * Defines if movement (movement control using input) in the air is possible or not and how much.
-     * Value in range [0.0F; 1.0F] where 0.0 means input is ignored while in the air.
+     * Value in range [0.0f; 1.0f] where 0.0 means input is ignored while in the air.
      */
-    float airMovementControlFactor = 1.0F;
+    float airMovementControlFactor = 1.0f;
 
     /** Multiplier for gravity. */
-    float gravityMultiplier = 2.0F;
+    float gravityMultiplier = 2.0f;
 
-    /** Value in range [0.0F; 1.0F] that defines how to change character height when crouching. */
-    float crouchingHeightFactor = 0.45F;
+    /** Value in range [0.0f; 1.0f] that defines how to change character height when crouching. */
+    float crouchingHeightFactor = 0.45f;
 
     /** Initial half height of the character before crouching. */
-    float charHalfHeightBeforeCrouching = 0.0F;
+    float charHalfHeightBeforeCrouching = 0.0f;
 
     /** `true` if @ref jump was called. */
     bool bWantsToJump = false;

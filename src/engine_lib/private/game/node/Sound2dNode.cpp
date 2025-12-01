@@ -134,17 +134,17 @@ void Sound2dNode::setSoundChannel(SoundChannel channel) {
 }
 
 void Sound2dNode::setVolume(float volume) {
-    this->volume = std::max(0.0F, volume);
+    this->volume = std::max(0.0f, volume);
 
     if (!isSpawned()) {
         return;
     }
 
-    sfmlMusic.setVolume(volume * 100.0F); // NOLINT: SFML uses 0-100 volume
+    sfmlMusic.setVolume(volume * 100.0f); // NOLINT: SFML uses 0-100 volume
 }
 
 void Sound2dNode::setPitch(float pitch) {
-    this->pitch = std::max(0.0F, pitch);
+    this->pitch = std::max(0.0f, pitch);
 
     if (!isSpawned()) {
         return;
@@ -154,7 +154,7 @@ void Sound2dNode::setPitch(float pitch) {
 }
 
 void Sound2dNode::setPan(float pan) {
-    this->pan = std::clamp(pan, -1.0F, 1.0F);
+    this->pan = std::clamp(pan, -1.0f, 1.0f);
 
     if (!isSpawned()) {
         return;
@@ -265,7 +265,7 @@ void Sound2dNode::loadAndPlay() {
     bFileOpened = true;
 
     sfmlMusic.setLooping(bIsLooping);
-    sfmlMusic.setVolume(volume * 100.0F); // SFML uses 0-100 volume
+    sfmlMusic.setVolume(volume * 100.0f); // SFML uses 0-100 volume
     sfmlMusic.setPitch(pitch);
     sfmlMusic.setPan(pan);
 

@@ -353,8 +353,8 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
     unsigned long long iPrevTimeCounter = 0;
 
     // Some variables in case we need to only render after input.
-    float timeSinceLastTickSec = 0.0F;
-    constexpr float forceTickIntervalSec = 0.25F;
+    float timeSinceLastTickSec = 0.0f;
+    constexpr float forceTickIntervalSec = 0.25f;
 
     // Run game loop.
     bQuitRequested = false;
@@ -383,7 +383,7 @@ inline void Window::processEvents(bool bRenderOnlyAfterInput) {
         if (!bRenderOnlyAfterInput || bHaveEventsToProcess || timeSinceLastTickSec >= forceTickIntervalSec) {
             // Process game tick.
             pGameManager->onBeforeNewFrame(deltaTimeInSec);
-            timeSinceLastTickSec = 0.0F;
+            timeSinceLastTickSec = 0.0f;
 
             // Draw frame.
             pRenderer->drawNextFrame(deltaTimeInSec);

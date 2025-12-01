@@ -26,10 +26,10 @@ struct AABB {
     inline AABB convertToWorldSpace(const glm::mat4& worldMatrix) const;
 
     /** Center of the AABB in model space. */
-    glm::vec3 center = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Half extension (size) of the AABB in model space. */
-    glm::vec3 extents = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 extents = glm::vec3(0.0f, 0.0f, 0.0f);
 };
 
 bool AABB::isBehindPlane(const Plane& plane) const {
@@ -52,15 +52,15 @@ AABB AABB::convertToWorldSpace(const glm::mat4& worldMatrix) const {
     AABB aabb;
 
     // Calculate AABB center.
-    aabb.center = worldMatrix * glm::vec4(center, 1.0F);
+    aabb.center = worldMatrix * glm::vec4(center, 1.0f);
 
     // Calculate OBB directions in world space
     // (directions are considered to point from OBB's center).
     const glm::vec3 obbScaledForward =
-        worldMatrix * glm::vec4(Globals::WorldDirection::forward, 0.0F) * extents.z;
+        worldMatrix * glm::vec4(Globals::WorldDirection::forward, 0.0f) * extents.z;
     const glm::vec3 obbScaledRight =
-        worldMatrix * glm::vec4(Globals::WorldDirection::right, 0.0F) * extents.x;
-    const glm::vec3 obbScaledUp = worldMatrix * glm::vec4(Globals::WorldDirection::up, 0.0F) * extents.y;
+        worldMatrix * glm::vec4(Globals::WorldDirection::right, 0.0f) * extents.x;
+    const glm::vec3 obbScaledUp = worldMatrix * glm::vec4(Globals::WorldDirection::up, 0.0f) * extents.y;
 
     // If the specified world matrix contained a rotation OBB's directions are no longer aligned
     // with world axes. We need to adjust these OBB directions to be world axis aligned and save them
@@ -71,21 +71,21 @@ AABB AABB::convertToWorldSpace(const glm::mat4& worldMatrix) const {
 
     // Calculate X extent.
     aabb.extents.x =
-        std::abs(glm::dot(obbScaledForward, glm::vec3(1.0F, 0.0F, 0.0F))) + // project OBB X on world X
-        std::abs(glm::dot(obbScaledRight, glm::vec3(1.0F, 0.0F, 0.0F))) +   // project OBB Y on world X
-        std::abs(glm::dot(obbScaledUp, glm::vec3(1.0F, 0.0F, 0.0F)));       // project OBB Z on world X
+        std::abs(glm::dot(obbScaledForward, glm::vec3(1.0f, 0.0f, 0.0f))) + // project OBB X on world X
+        std::abs(glm::dot(obbScaledRight, glm::vec3(1.0f, 0.0f, 0.0f))) +   // project OBB Y on world X
+        std::abs(glm::dot(obbScaledUp, glm::vec3(1.0f, 0.0f, 0.0f)));       // project OBB Z on world X
 
     // Calculate Y extent.
     aabb.extents.y =
-        std::abs(glm::dot(obbScaledForward, glm::vec3(0.0F, 1.0F, 0.0F))) + // project OBB X on world Y
-        std::abs(glm::dot(obbScaledRight, glm::vec3(0.0F, 1.0F, 0.0F))) +   // project OBB Y on world Y
-        std::abs(glm::dot(obbScaledUp, glm::vec3(0.0F, 1.0F, 0.0F)));       // project OBB Z on world Y
+        std::abs(glm::dot(obbScaledForward, glm::vec3(0.0f, 1.0f, 0.0f))) + // project OBB X on world Y
+        std::abs(glm::dot(obbScaledRight, glm::vec3(0.0f, 1.0f, 0.0f))) +   // project OBB Y on world Y
+        std::abs(glm::dot(obbScaledUp, glm::vec3(0.0f, 1.0f, 0.0f)));       // project OBB Z on world Y
 
     // Calculate Z extent.
     aabb.extents.z =
-        std::abs(glm::dot(obbScaledForward, glm::vec3(0.0F, 0.0F, 1.0F))) + // project OBB X on world Z
-        std::abs(glm::dot(obbScaledRight, glm::vec3(0.0F, 0.0F, 1.0F))) +   // project OBB Y on world Z
-        std::abs(glm::dot(obbScaledUp, glm::vec3(0.0F, 0.0F, 1.0F)));       // project OBB Z on world Z
+        std::abs(glm::dot(obbScaledForward, glm::vec3(0.0f, 0.0f, 1.0f))) + // project OBB X on world Z
+        std::abs(glm::dot(obbScaledRight, glm::vec3(0.0f, 0.0f, 1.0f))) +   // project OBB Y on world Z
+        std::abs(glm::dot(obbScaledUp, glm::vec3(0.0f, 0.0f, 1.0f)));       // project OBB Z on world Z
 
     return aabb;
 }

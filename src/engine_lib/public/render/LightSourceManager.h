@@ -92,5 +92,5 @@ private:
     std::unique_ptr<Texture> pSpotlightShadowMapArray;
 
     /** Constant light that will be added. */
-    glm::vec3 ambientLightColor = glm::vec3(0.1F, 0.1F, 0.1F);
+    glm::vec3 ambientLightColor = glm::vec3(0.1f, 0.1f, 0.1f);
 };

@@ -126,9 +126,9 @@ protected:
      * void MyMovingBodyNode::onBeforePhysicsUpdate(float deltaTime) {
      *     totalTime += deltaTime;
      *
-     *     constexpr float height = 3.0F;
+     *     constexpr float height = 3.0f;
      *     setVelocityToBeAt(
-     *         getWorldLocation() + glm::vec3(0.0F, 0.0F, height * std::sin(totalTime)),
+     *         getWorldLocation() + glm::vec3(0.0f, 0.0f, height * std::sin(totalTime)),
      *         getWorldRotation(),
      *         deltaTime);
      * }

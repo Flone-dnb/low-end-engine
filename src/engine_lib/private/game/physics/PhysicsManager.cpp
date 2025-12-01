@@ -295,11 +295,11 @@ void PhysicsManager::onBeforeNewFrame(float timeSincePrevFrameInSec) {
 
     // If the framerate is too low we will try to make sure bodies don't fall through each other but the
     // physics will slow down (it might seem like we're in slow motion).
-    constexpr float MIN_UPDATE_TIME = 1.0F / 25.0F;
+    constexpr float MIN_UPDATE_TIME = 1.0f / 25.0f;
 
 #if !defined(ENGINE_EDITOR)
-    float deltaTimeLeftToSimulate = std::min(timeSincePrevFrameInSec, 2.0F * MIN_UPDATE_TIME);
-    for (size_t i = 0; (i < 2) && (deltaTimeLeftToSimulate > 0.001F); i++) { // do at max 2 iterations
+    float deltaTimeLeftToSimulate = std::min(timeSincePrevFrameInSec, 2.0f * MIN_UPDATE_TIME);
+    for (size_t i = 0; (i < 2) && (deltaTimeLeftToSimulate > 0.001f); i++) { // do at max 2 iterations
         PROFILE_SCOPE("physics tick")
 
         const float deltaTime = std::min(MIN_UPDATE_TIME, deltaTimeLeftToSimulate);
@@ -712,7 +712,7 @@ void PhysicsManager::createBodyForNode(SimulatedBodyNode* pNode) {
         static_cast<JPH::ObjectLayer>(ObjectLayer::MOVING));
 
     bodySettings.mFriction = pNode->friction;
-    if (pNode->massKg > 0.0F) {
+    if (pNode->massKg > 0.0f) {
         bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
         bodySettings.mMassPropertiesOverride.mMass = pNode->massKg;
     }

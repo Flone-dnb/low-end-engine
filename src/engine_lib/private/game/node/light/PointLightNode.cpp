@@ -70,7 +70,7 @@ PointLightNode::PointLightNode(const std::string& sNodeName) : SpatialNode(sNode
 void PointLightNode::onSpawning() {
     SpatialNode::onSpawning();
 
-    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
+    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0f);
 
     if (bIsVisible) {
         // Add to rendering.
@@ -118,7 +118,7 @@ void PointLightNode::setLightColor(const glm::vec3& color) {
 }
 
 void PointLightNode::setLightIntensity(float intensity) {
-    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0F, 1.0F);
+    shaderProperties.colorAndIntensity.w = std::clamp(intensity, 0.0f, 1.0f);
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -127,7 +127,7 @@ void PointLightNode::setLightIntensity(float intensity) {
 }
 
 void PointLightNode::setLightDistance(float distance) {
-    shaderProperties.distance = glm::max(distance, 0.0F);
+    shaderProperties.distance = glm::max(distance, 0.0f);
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {
@@ -140,7 +140,7 @@ void PointLightNode::setLightDistance(float distance) {
 void PointLightNode::onWorldLocationRotationScaleChanged() {
     SpatialNode::onWorldLocationRotationScaleChanged();
 
-    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0F);
+    shaderProperties.position = glm::vec4(getWorldLocation(), 1.0f);
 
     // Update shader data.
     if (pActiveLightHandle != nullptr) {

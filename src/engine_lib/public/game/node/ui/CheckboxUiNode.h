@@ -160,10 +160,10 @@ private:
     std::function<void(bool)> onStateChanged;
 
     /** Fill color when unchecked. */
-    glm::vec4 backgroundColor = glm::vec4(0.25F, 0.25F, 0.25F, 1.0F);
+    glm::vec4 backgroundColor = glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
 
     /** Bounds color and color of the element in the middle when checked. */
-    glm::vec4 foregroundColor = glm::vec4(0.5F, 0.5F, 0.5F, 1.0F);
+    glm::vec4 foregroundColor = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
 
     /** `true` if checkbox is enabeld. */
     bool bIsChecked = false;

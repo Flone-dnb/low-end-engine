@@ -53,12 +53,12 @@ public:
      *
      * @param pathToFont       Font to load.
      * @param fontHeightToLoad Font height (relative to screen height, width is determines automatically) in
-     * range [0.0F; 1.0F] to load. This value will be used as the base size but most likely will be scaled
+     * range [0.0f; 1.0f] to load. This value will be used as the base size but most likely will be scaled
      * when drawing text nodes according to the size of each text node. This value must be equal to an average
      * size of the text, if it's too small big text will be blurry, if it will be too big small text will look
      * bad.
      */
-    void loadFont(const std::filesystem::path& pathToFont, float fontHeightToLoad = 0.1F);
+    void loadFont(const std::filesystem::path& pathToFont, float fontHeightToLoad = 0.1f);
 
     /**
      * Ensures the specified range of characters are loaded in the memory (does nothing if already loaded).
@@ -111,7 +111,7 @@ private:
     Renderer* const pRenderer = nullptr;
 
     /** Last specified font height to load from @ref loadFont. */
-    float fontHeightToLoad = 0.0F;
+    float fontHeightToLoad = 0.0f;
 
     /** FreeType library. */
     FT_Library pFtLibrary = nullptr;

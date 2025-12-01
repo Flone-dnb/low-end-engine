@@ -102,13 +102,13 @@ private:
          * Relative (to parent node) position/rotation/scale of the controlled node when the tracking was
          * started.
          */
-        glm::vec3 originalRelativeTransform = glm::vec3(0.0F);
+        glm::vec3 originalRelativeTransform = glm::vec3(0.0f);
 
         /** World position of the controlled node when the tracking was started. */
-        glm::vec3 originalWorldPos = glm::vec3(0.0F);
+        glm::vec3 originalWorldPos = glm::vec3(0.0f);
 
         /** Offset (along @ref axis) at the moment when we started tracking mouse cursor movement. */
-        float offsetToGizmoPivot = 0.0F;
+        float offsetToGizmoPivot = 0.0f;
     };
 
     /**

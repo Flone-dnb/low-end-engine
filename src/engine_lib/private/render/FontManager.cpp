@@ -57,7 +57,7 @@ void FontManager::loadFont(const std::filesystem::path& pathToFont, float fontHe
             std::format("the specified path to font {} does not exist", pathToFont.string()));
     }
 
-    fontHeightToLoad = std::clamp(fontHeightToLoad, 0.0F, 1.0F);
+    fontHeightToLoad = std::clamp(fontHeightToLoad, 0.0f, 1.0f);
     this->fontHeightToLoad = fontHeightToLoad;
     this->pathToFont = pathToFont;
 

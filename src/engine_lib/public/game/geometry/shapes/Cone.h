@@ -34,16 +34,16 @@ struct Cone {
     inline bool isBehindPlane(const Plane& plane) const;
 
     /** Location of cone's tip. */
-    glm::vec3 location = glm::vec3(0.0F, 0.0F, 0.0F);
+    glm::vec3 location = glm::vec3(0.0f, 0.0f, 0.0f);
 
     /** Height of the cone. */
-    float height = 1.0F;
+    float height = 1.0f;
 
     /** Direction unit vector from cone's tip. */
-    glm::vec3 direction = glm::vec3(1.0F, 0.0F, 0.0F);
+    glm::vec3 direction = glm::vec3(1.0f, 0.0f, 0.0f);
 
     /** Radius of the bottom part of the cone. */
-    float bottomRadius = 1.0F;
+    float bottomRadius = 1.0f;
 };
 
 bool Cone::isBehindPlane(const Plane& plane) const {

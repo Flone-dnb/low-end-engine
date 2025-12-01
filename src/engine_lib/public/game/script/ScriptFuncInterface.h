@@ -45,7 +45,7 @@ public:
      *
      * Example:
      * @code
-     * glm::vec2 vec(2.0F, 3.5F);
+     * glm::vec2 vec(2.0f, 3.5f);
      * setArgValueType(0, &vec);
      * @endcode
      *

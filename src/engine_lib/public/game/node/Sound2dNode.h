@@ -215,13 +215,13 @@ private:
     std::optional<SoundChannel> soundChannel;
 
     /** Sound volume multiplier, positive number. */
-    float volume = 1.0F;
+    float volume = 1.0f;
 
     /** Pitch of the sound, positive number. */
-    float pitch = 1.0F;
+    float pitch = 1.0f;
 
     /** Sound panning in range [-1.0; 1.0]. */
-    float pan = 0.0F;
+    float pan = 0.0f;
 
     /** Whether to restart the sound after it ended or not. */
     bool bIsLooping = false;

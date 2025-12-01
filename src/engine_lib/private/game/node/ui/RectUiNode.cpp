@@ -58,7 +58,7 @@ RectUiNode::RectUiNode() : RectUiNode("Rect UI Node") {}
 RectUiNode::RectUiNode(const std::string& sNodeName) : UiNode(sNodeName) {}
 
 void RectUiNode::setColor(const glm::vec4& color) {
-    this->color = glm::clamp(color, 0.0F, 1.0F);
+    this->color = glm::clamp(color, 0.0f, 1.0f);
 
     if (isSpawned()) {
         onColorChangedWhileSpawned();
@@ -110,7 +110,7 @@ void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
 }
 
 void RectUiNode::setPadding(float padding) {
-    this->padding = std::clamp(padding, 0.0F, 0.5F); // NOLINT
+    this->padding = std::clamp(padding, 0.0f, 0.5f); // NOLINT
 
     updateChildNodePosAndSize();
 }
@@ -193,7 +193,7 @@ void RectUiNode::updateChildNodePosAndSize() {
     const auto paddingRealSize = std::min(size.x, size.y) * padding;
 
     pUiChild->setPosition(getPosition() + paddingRealSize);
-    pUiChild->setSize(size - paddingRealSize * 2.0F);
+    pUiChild->setSize(size - paddingRealSize * 2.0f);
 
     if (!isVisible() && pUiChild->isVisible()) {
         pUiChild->setIsVisible(false);
@@ -202,5 +202,5 @@ void RectUiNode::updateChildNodePosAndSize() {
 
 void RectUiNode::onChildLayoutExpanded(const glm::vec2& layoutNewSize) {
     const auto paddingRealSize = std::min(layoutNewSize.x, layoutNewSize.y) * padding;
-    setSize(layoutNewSize + paddingRealSize * 2.0F);
+    setSize(layoutNewSize + paddingRealSize * 2.0f);
 }
