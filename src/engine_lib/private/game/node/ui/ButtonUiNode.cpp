@@ -190,15 +190,18 @@ bool ButtonUiNode::onMouseButtonReleasedOnUiNode(MouseButton button, KeyboardMod
 void ButtonUiNode::onGamepadButtonPressedWhileFocused(GamepadButton button) {
     RectUiNode::onGamepadButtonPressedWhileFocused(button);
 
-    // Simulate left mouse click.
-    onMouseButtonPressedOnUiNode(MouseButton::LEFT, KeyboardModifiers(0));
+    if (button == GamepadButton::DPAD_LEFT || button == GamepadButton::DPAD_RIGHT ||
+        button == GamepadButton::DPAD_UP || button == GamepadButton::DPAD_DOWN) {
+        // Do nothing, "on button released" will navigate the UI.
+        return;
+    } else {
+        // Simulate left mouse click.
+        onMouseButtonPressedOnUiNode(MouseButton::LEFT, KeyboardModifiers(0));
+    }
 }
 
 void ButtonUiNode::onGamepadButtonReleasedWhileFocused(GamepadButton button) {
     RectUiNode::onGamepadButtonReleasedWhileFocused(button);
-
-    // Simulate left mouse click.
-    onMouseButtonReleasedOnUiNode(MouseButton::LEFT, KeyboardModifiers(0));
 
     if (button == GamepadButton::DPAD_LEFT) {
         getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, false, false);
@@ -208,6 +211,9 @@ void ButtonUiNode::onGamepadButtonReleasedWhileFocused(GamepadButton button) {
         getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, true, true);
     } else if (button == GamepadButton::DPAD_DOWN) {
         getWorldWhileSpawned()->getUiNodeManager().makeNextFocusedNode(this, true, false);
+    } else {
+        // Simulate left mouse click.
+        onMouseButtonReleasedOnUiNode(MouseButton::LEFT, KeyboardModifiers(0));
     }
 }
 
