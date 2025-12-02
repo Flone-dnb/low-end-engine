@@ -62,6 +62,7 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
     info.iDiffuseColorUniform = pShaderProgram->getShaderUniformLocation("diffuseColor");
     info.iTextureTilingMultiplierUniform =
         pShaderProgram->getShaderUniformLocation("textureTilingMultiplier");
+    info.iTextureUvOffsetUniform = pShaderProgram->getShaderUniformLocation("textureUvOffset");
     info.iDiffuseTextureUniform = pShaderProgram->getShaderUniformLocation("diffuseTexture");
 
     info.iSkinningMatricesUniform = pShaderProgram->tryGetShaderUniformLocation("vSkinningMatrices[0]");
@@ -920,6 +921,7 @@ void MeshRenderer::drawMeshes(
                 shaderInfo.iTextureTilingMultiplierUniform,
                 1,
                 glm::value_ptr(meshData.textureTilingMultiplier));
+            glUniform2fv(shaderInfo.iTextureUvOffsetUniform, 1, glm::value_ptr(meshData.textureUvOffset));
             if (shaderInfo.iSkinningMatricesUniform != -1) {
                 glUniformMatrix4fv(
                     shaderInfo.iSkinningMatricesUniform,

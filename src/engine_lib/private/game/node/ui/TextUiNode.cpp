@@ -2,6 +2,7 @@
 
 // Custom.
 #include "game/GameInstance.h"
+#include "misc/Profiler.hpp"
 #include "render/FontManager.h"
 #include "render/Renderer.h"
 #include "render/UiNodeManager.h"
@@ -167,6 +168,8 @@ void TextUiNode::initRenderingHandle() {
 }
 
 void TextUiNode::updateRenderData() {
+    PROFILE_FUNC
+
     if (pRenderingHandle == nullptr) {
         return;
     }

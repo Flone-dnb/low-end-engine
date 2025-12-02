@@ -61,6 +61,17 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return material.getTextureTilingMultiplier();
         }};
 
+    variables.vec2s["materialTextureUvOffset"] = ReflectedVariableInfo<glm::vec2>{
+        .setter =
+            [](Serializable* pThis, const glm::vec2& newValue) {
+                auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
+                material.setTextureUvOffset(newValue);
+            },
+        .getter = [](Serializable* pThis) -> glm::vec2 {
+            auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
+            return material.getTextureUvOffset();
+        }};
+
     variables.strings["materialCustomVertexShader"] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {
@@ -237,6 +248,8 @@ void MeshNode::registerToRendering() {
 }
 
 void MeshNode::updateRenderData(bool bJustRegistered) {
+    PROFILE_FUNC
+
     if (pRenderingHandle == nullptr) {
         return;
     }
@@ -253,6 +266,7 @@ void MeshNode::updateRenderData(bool bJustRegistered) {
     data.normalMatrix = glm::transpose(glm::inverse(data.worldMatrix));
     data.diffuseColor = glm::vec4(material.getDiffuseColor(), material.getOpacity());
     data.textureTilingMultiplier = material.getTextureTilingMultiplier();
+    data.textureUvOffset = material.getTextureUvOffset();
     data.iDiffuseTextureId = material.getDiffuseTextureId();
     data.iVertexArrayObject = pVao->getVertexArrayObjectId();
     data.iIndexCount = pVao->getIndexCount();

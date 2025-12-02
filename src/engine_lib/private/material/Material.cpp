@@ -54,6 +54,14 @@ void Material::setOpacity(float opacity) {
     }
 }
 
+void Material::setTextureUvOffset(const glm::vec2& offset) {
+    textureUvOffset = offset;
+
+    if (pOwnerNode != nullptr) {
+        pOwnerNode->updateRenderData();
+    }
+}
+
 void Material::setPathToDiffuseTexture(std::string sPathToTextureRelativeRes) {
     // Normalize slash.
     for (size_t i = 0; i < sPathToTextureRelativeRes.size(); i++) {

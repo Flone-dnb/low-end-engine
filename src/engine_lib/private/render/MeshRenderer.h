@@ -37,10 +37,10 @@ struct alignas(hardware_constructive_interference_size) MeshRenderData {
     glm::vec4 diffuseColor;
     glm::vec2 textureTilingMultiplier;
     unsigned int iDiffuseTextureId = 0; // 0 if not used
-
     AABB aabbWorld;
     unsigned int iVertexArrayObject = 0;
     int iIndexCount = 0;
+    glm::vec2 textureUvOffset;
 
     // for skeletal meshes:
     const float* pSkinningMatrices = nullptr;
@@ -162,6 +162,7 @@ public:
             int iNormalMatrixUniform = 0;
             int iDiffuseColorUniform = 0;
             int iTextureTilingMultiplierUniform = 0;
+            int iTextureUvOffsetUniform = 0;
             int iDiffuseTextureUniform = 0;
 
             int iSkinningMatricesUniform = -1;

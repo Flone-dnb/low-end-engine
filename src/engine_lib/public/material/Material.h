@@ -70,6 +70,13 @@ public:
     void setOpacity(float opacity);
 
     /**
+     * Sets offset for UVs.
+     *
+     * @param offset Offset.
+     */
+    void setTextureUvOffset(const glm::vec2& offset);
+
+    /**
      * Sets path to diffuse texture to load (if it was not loaded in the memory yet) when spawning and use.
      *
      * @param sPathToTextureRelativeRes Path to the texture file relative to the `res` directory.
@@ -102,7 +109,14 @@ public:
      *
      * @return Diffuse light color.
      */
-    glm::vec3 getDiffuseColor() { return diffuseColor; }
+    glm::vec3 getDiffuseColor() const { return diffuseColor; }
+
+    /**
+     * Returns offset of UVs.
+     *
+     * @return Offset.
+     */
+    glm::vec2 getTextureUvOffset() const { return textureUvOffset; }
 
     /**
      * Returns value in range [0.0; 1.0] where 1 means opaque and 0 means transparent.
@@ -185,6 +199,9 @@ private:
 
     /** Texture tiling multiplier. */
     glm::vec2 textureTilingMultiplier = glm::vec2(1.0f);
+
+    /** Offset for UVs. */
+    glm::vec2 textureUvOffset = glm::vec2(0.0f, 0.0f);
 
     /**
      * Node that uses this material. It's safe to store a raw pointer here because the node will notify the

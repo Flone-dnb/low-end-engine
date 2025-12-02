@@ -9,6 +9,7 @@ uniform vec4 diffuseColor;
 
 uniform sampler2D diffuseTexture;
 uniform vec2 textureTilingMultiplier; // stores -1 if diffuseTexture is not set
+uniform vec2 textureUvOffset;
 
 // Distance fog settings.
 uniform vec3 distanceFogColor;
@@ -37,7 +38,7 @@ void main() {
     vec4 fragmentDiffuseColor = diffuseColor;
     bool bIsUsingDiffuseTexture = textureTilingMultiplier.x >= 0.0F;
     if (bIsUsingDiffuseTexture) {
-        fragmentDiffuseColor *= texture(diffuseTexture, fragmentUv * textureTilingMultiplier);
+        fragmentDiffuseColor *= texture(diffuseTexture, (fragmentUv + textureUvOffset) * textureTilingMultiplier);
     }
 
     // Light.
