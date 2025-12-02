@@ -125,7 +125,7 @@ add_dependencies(${PROJECT_NAME} ${ENGINE_LIB_TARGET_FOR_EDITOR})
 
 if (DEFINED GAME_PROJECT_NAME)
     # Include game lib target to allow using custom game types in the editor.
-    set(GAME_LIB_TARGET game_lib)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${GAME_LIB_TARGET})
-    add_dependencies(${PROJECT_NAME} ${GAME_LIB_TARGET})
+    set(GAME_LIB_TARGET_FOR_EDITOR game_lib_for_editor)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${GAME_LIB_TARGET_FOR_EDITOR})
+    add_dependencies(${PROJECT_NAME} ${GAME_LIB_TARGET_FOR_EDITOR})
 endif()
