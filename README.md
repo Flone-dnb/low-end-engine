@@ -21,7 +21,6 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Skeletal animations
 - [X] Minimal scripting
 - [X] Shadow mapping 
-- [ ] Pathfinding
 - [ ] Particle effects
 
 # Documentation
