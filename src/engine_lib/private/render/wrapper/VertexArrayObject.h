@@ -12,10 +12,6 @@
  * @remark RAII-like object that automatically deletes OpenGL objects during destruction.
  */
 class VertexArrayObject {
-    // Only these are expected to create objects of this type.
-    friend class GpuResourceManager;
-    friend class UiNodeManager;
-
 public:
     VertexArrayObject() = delete;
 
@@ -25,6 +21,22 @@ public:
     VertexArrayObject& operator=(VertexArrayObject&&) noexcept = delete;
 
     ~VertexArrayObject();
+
+    /**
+     * Initializes a new object.
+     *
+     * @param iVertexArrayObjectId  ID of the vertex array object.
+     * @param iVertexBufferObjectId ID of the vertex buffer object.
+     * @param iVertexCount          Number of vertices in the vertex buffer.
+     * @param iIndexBufferObjectId  ID of the index buffer object (if used).
+     * @param iIndexCount           Number of indices to draw (from used index buffer).
+     */
+    VertexArrayObject(
+        unsigned int iVertexArrayObjectId,
+        unsigned int iVertexBufferObjectId,
+        unsigned int iVertexCount,
+        std::optional<unsigned int> iIndexBufferObjectId = {},
+        std::optional<int> iIndexCount = {});
 
     /**
      * Returns VAO.
@@ -62,22 +74,6 @@ public:
     }
 
 private:
-    /**
-     * Initializes a new object.
-     *
-     * @param iVertexArrayObjectId  ID of the vertex array object.
-     * @param iVertexBufferObjectId ID of the vertex buffer object.
-     * @param iVertexCount          Number of vertices in the vertex buffer.
-     * @param iIndexBufferObjectId  ID of the index buffer object (if used).
-     * @param iIndexCount           Number of indices to draw (from used index buffer).
-     */
-    VertexArrayObject(
-        unsigned int iVertexArrayObjectId,
-        unsigned int iVertexBufferObjectId,
-        unsigned int iVertexCount,
-        std::optional<unsigned int> iIndexBufferObjectId = {},
-        std::optional<int> iIndexCount = {});
-
     /** ID of the vertex array object. */
     unsigned int iVertexArrayObjectId = 0;
 

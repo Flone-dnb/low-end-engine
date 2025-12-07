@@ -34,6 +34,9 @@ public:
 
     virtual ~GlmVecInspector() override = default;
 
+    /** Reads value from inspected property and displays the up to date value. */
+    void refreshDisplayedValue();
+
 private:
     /** Determines which component of the vector is edited. */
     enum class VectorComponent : uint8_t {
@@ -53,14 +56,23 @@ private:
     void onValueChanged(TextEditUiNode* pTextEdit, VectorComponent component, std::u16string_view sNewText);
 
     /**
-     * Sets a new value to @ref pObject.
+     * Called after the value was manually inputted.
      *
      * @param value Value to set.
      */
-    void setNewValue(const glm::vec4& value);
+    void setManuallyInputtedValueToObject(const glm::vec4& value);
 
     /** Object that owns the variable. */
     Serializable* const pObject = nullptr;
+
+    /** UI element for a vec component. */
+    TextEditUiNode* pXComponentText = nullptr;
+
+    /** UI element for a vec component. */
+    TextEditUiNode* pYComponentText = nullptr;
+
+    /** UI element for a vec component. */
+    TextEditUiNode* pZComponentText = nullptr;
 
     /** Name of the variable to inspect. */
     const std::string sVariableName;

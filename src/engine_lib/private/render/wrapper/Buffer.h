@@ -6,14 +6,23 @@
  * @remark RAII-like object that automatically deletes OpenGL objects during destruction.
  */
 class Buffer {
-    // Only GPU resource manager is expected to create objects of this type.
-    friend class GpuResourceManager;
-
 public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
     Buffer(Buffer&&) noexcept = delete;
     Buffer& operator=(Buffer&&) noexcept = delete;
+
+    Buffer() = delete;
+
+    /**
+     * Initializes the object.
+     *
+     * @param iSizeInBytes Size of the buffer in bytes.
+     * @param iBufferId    ID of the Buffer.
+     * @param iGlType      OpenGL type of this buffer.
+     * @param bCpuWriteAccess `true` if buffer data can be updated from the CPU.
+     */
+    Buffer(unsigned int iSizeInBytes, unsigned int iBufferId, int iGlType, bool bCpuWriteAccess);
 
     ~Buffer();
 
@@ -23,6 +32,13 @@ public:
      * @return ID.
      */
     unsigned int getBufferId() const { return iBufferId; }
+
+    /**
+     * Returns size of the buffer in bytes.
+     *
+     * @return Size in bytes.
+     */
+    unsigned int getSizeInBytes() const { return iSizeInBytes; }
 
     /**
      * If this buffer was created with CPU-write access copies data from the specified pointer
@@ -35,16 +51,6 @@ public:
     void copyDataToBuffer(unsigned int iStartOffset, unsigned int iDataSize, const void* pData) const;
 
 private:
-    /**
-     * Initializes the object.
-     *
-     * @param iSizeInBytes Size of the buffer in bytes.
-     * @param iBufferId    ID of the Buffer.
-     * @param iGlType      OpenGL type of this buffer.
-     * @param bCpuWriteAccess   `true` if buffer data can be updated from the CPU.
-     */
-    Buffer(unsigned int iSizeInBytes, unsigned int iBufferId, int iGlType, bool bCpuWriteAccess);
-
     /** Size of the buffer in bytes. */
     const unsigned int iSizeInBytes = 0;
 

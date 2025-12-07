@@ -6,6 +6,7 @@
 class LayoutUiNode;
 class SkeletonNode;
 class CollisionNode;
+class GlmVecInspector;
 
 /** Displays reflected fields of an object. */
 class PropertyInspector : public RectUiNode {
@@ -35,14 +36,32 @@ public:
     /** Clears and displays all inspected properties again (if inspected node was previously set). */
     void refreshInspectedProperties();
 
+    /** Called after the gizmo was moved to change location/rotation/scale. */
+    void onAfterGizmoMoved();
+
     /**
      * Returns currently inspected node (if exists).
      *
      * @return `nullptr` if not inspecting.
      */
-    Node* getInspectedNode() const { return pInspectedNode; }
+    Node* getInspectedNode() const { return inspectedNodeData.pNode; }
 
 private:
+    /** Groups data related to inspected node. */
+    struct InspectedNodeData {
+        /** `nullptr` if nothing displayed. */
+        Node* pNode = nullptr;
+
+        /** If not `nullptr` then inspector for SpatialNode property. */
+        GlmVecInspector* pLocationInspector = nullptr;
+
+        /** If not `nullptr` then inspector for SpatialNode property. */
+        GlmVecInspector* pRotationInspector = nullptr;
+
+        /** If not `nullptr` then inspector for SpatialNode property. */
+        GlmVecInspector* pScaleInspector = nullptr;
+    };
+
     /**
      * Displays reflected fields of the specified type by taking the current
      * values from the specified object.
@@ -52,7 +71,7 @@ private:
      * @param pObject    Object to read/write fields.
      * @param bRecursive `true` to display parent variables (of the specified GUID).
      */
-    static void displayPropertiesForType(
+    void displayPropertiesForType(
         LayoutUiNode* pLayoutToAddTo,
         const std::string& sTypeGuid,
         Serializable* pObject,
@@ -75,6 +94,6 @@ private:
     /** Layout to add properties. */
     LayoutUiNode* pPropertyLayout = nullptr;
 
-    /** `nullptr` if nothing displayed. */
-    Node* pInspectedNode = nullptr;
+    /** `nullptr` in node if nothing displayed. */
+    InspectedNodeData inspectedNodeData;
 };

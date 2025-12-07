@@ -18,6 +18,7 @@ class CameraManager;
 class UiNodeManager;
 class MeshRenderer;
 class LightSourceManager;
+class ParticleRenderer;
 
 /** Tiny RAII-like class that locks a mutex and changes a boolean while alive. */
 class ReceivingInputNodesGuard {
@@ -156,11 +157,18 @@ public:
     UiNodeManager& getUiNodeManager() const;
 
     /**
-     * Returns mesh node manager.
+     * Returns mesh renderer.
      *
-     * @return Manager.
+     * @return Renderer.
      */
     MeshRenderer& getMeshRenderer() const;
+
+    /**
+     * Returns particle renderer.
+     *
+     * @return Renderer.
+     */
+    ParticleRenderer& getParticleRenderer() const;
 
     /**
      * Returns manager used to add/remove light sources to/from rendering.
@@ -350,8 +358,11 @@ private:
     /** Manages all UI nodes. */
     std::unique_ptr<UiNodeManager> pUiNodeManager;
 
-    /** Manages all 3D mesh nodes. */
+    /** Manages mesh rendering. */
     std::unique_ptr<MeshRenderer> pMeshRenderer;
+
+    /** Manages particle rendering. */
+    std::unique_ptr<ParticleRenderer> pParticleRenderer;
 
     /** Manages light sources (nodes). */
     std::unique_ptr<LightSourceManager> pLightSourceManager;

@@ -816,10 +816,6 @@ void MeshRenderer::drawMeshes(
     const auto& optDistanceFog = pRenderer->getDistanceFogSettings();
 
     for (const auto& shaderInfo : vShaders) {
-        PROFILE_SCOPE("render mesh nodes of shader program")
-        PROFILE_ADD_SCOPE_TEXT(
-            shaderInfo.pShaderProgram->getName().data(), shaderInfo.pShaderProgram->getName().size());
-
         glUseProgram(shaderInfo.pShaderProgram->getShaderProgramId());
 
         shaderConstantsSetter.setConstantsToShader(shaderInfo.pShaderProgram);

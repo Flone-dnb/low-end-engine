@@ -383,9 +383,14 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             totalScrollHeight += lastChildSize;
 
             if (bIsScrollBarEnabled) {
-                if (yOffsetForScrollToSkip + lastChildSize < 0.0f ||
-                    currentChildPos.y + childNewSize.y > layoutPos.y + layoutSize.y) {
-                    //  Partially outside of the visible area - don't render (TODO: for now).
+                if (yOffsetForScrollToSkip + lastChildSize < 0.0f) {
+                    // Above the layout area.
+                    yOffsetForScrollToSkip += lastChildSize;
+                    pUiChild->setAllowRendering(false);
+                    continue;
+                }
+                if (currentChildPos.y > layoutPos.y + layoutSize.y) {
+                    // Fully below the layout area.
                     yOffsetForScrollToSkip += lastChildSize;
                     pUiChild->setAllowRendering(false);
                     continue;

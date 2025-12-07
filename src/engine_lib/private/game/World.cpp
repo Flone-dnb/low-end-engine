@@ -10,6 +10,7 @@
 #include "render/MeshRenderer.h"
 #include "render/LightSourceManager.h"
 #include "render/GpuTimeQuery.hpp"
+#include "render/ParticleRenderer.h"
 #if !defined(ENGINE_UI_ONLY)
 #include "game/physics/PhysicsManager.h"
 #endif
@@ -44,6 +45,7 @@ World::World(GameManager* pGameManager, const std::string& sName, std::unique_pt
 
 #if !defined(ENGINE_UI_ONLY)
     pMeshRenderer = std::unique_ptr<MeshRenderer>(new MeshRenderer());
+    pParticleRenderer = std::unique_ptr<ParticleRenderer>(new ParticleRenderer(pGameManager->getRenderer()));
     pLightSourceManager = std::unique_ptr<LightSourceManager>(new LightSourceManager());
 #endif
 
@@ -221,14 +223,21 @@ UiNodeManager& World::getUiNodeManager() const { return *pUiNodeManager; }
 
 MeshRenderer& World::getMeshRenderer() const {
 #if defined(ENGINE_UI_ONLY)
-    Error::showErrorAndThrowException("mesh node manager is not used in UI only apps");
+    Error::showErrorAndThrowException("mesh renderer is not used in UI only apps");
 #endif
     return *pMeshRenderer;
 }
 
+ParticleRenderer& World::getParticleRenderer() const {
+#if defined(ENGINE_UI_ONLY)
+    Error::showErrorAndThrowException("particle renderer is not used in UI only apps");
+#endif
+    return *pParticleRenderer;
+}
+
 LightSourceManager& World::getLightSourceManager() const {
 #if defined(ENGINE_UI_ONLY)
-    Error::showErrorAndThrowException("mesh node manager is not used in UI only apps");
+    Error::showErrorAndThrowException("light source manager is not used in UI only apps");
 #endif
     return *pLightSourceManager;
 }

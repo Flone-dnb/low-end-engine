@@ -292,7 +292,7 @@ void GizmoNode::stopTrackingMouseMovement() {
     }
 
     if (pGameInstance->getPropertyInspector()->getInspectedNode() == pControlledNode) {
-        pGameInstance->getPropertyInspector()->refreshInspectedProperties();
+        pGameInstance->getPropertyInspector()->onAfterGizmoMoved();
     }
 
     optTrackingInfo = {};

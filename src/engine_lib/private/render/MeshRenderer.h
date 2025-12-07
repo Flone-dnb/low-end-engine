@@ -4,8 +4,8 @@
 #include <mutex>
 #include <array>
 #include <vector>
-#include <new>
 #include <memory>
+#include <new>
 
 // Custom.
 #include "game/geometry/shapes/AABB.h"
@@ -15,6 +15,12 @@
 #include "render/LightSourceLimits.hpp"
 #include "math/GLMath.hpp"
 
+#ifdef __cpp_lib_hardware_interference_size
+using std::hardware_constructive_interference_size;
+#else
+constexpr std::size_t hardware_constructive_interference_size = 64;
+#endif
+
 class ShaderProgram;
 class MeshRenderingHandle;
 class CameraProperties;
@@ -23,12 +29,6 @@ class LightSourceManager;
 class Texture;
 
 /// @cond UNDOCUMENTED
-
-#ifdef __cpp_lib_hardware_interference_size
-using std::hardware_constructive_interference_size;
-#else
-constexpr std::size_t hardware_constructive_interference_size = 64;
-#endif
 
 /** Groups data needed to submit a mesh for drawing. */
 struct alignas(hardware_constructive_interference_size) MeshRenderData {

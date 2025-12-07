@@ -17,6 +17,7 @@
 #include "render/wrapper/VertexArrayObject.h"
 #include "render/GpuTimeQuery.hpp"
 #include "render/GpuDebugMarker.hpp"
+#include "render/ParticleRenderer.h"
 
 // External.
 #include "glad/glad.h"
@@ -38,6 +39,11 @@ void GLAPIENTRY debugMessageCallback(
     GLsizei length,
     const GLchar* message,
     const void* userParam) {
+    if (source == GL_DEBUG_SOURCE_SHADER_COMPILER) {
+        // We display shader compilation errors using ShaderManager.
+        return;
+    }
+
     if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
         Error::showErrorAndThrowException(std::format("GL debug message: {}", message));
     }
@@ -308,6 +314,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
         glm::ivec4 viewportSize;
         glm::mat4 viewProjectionMatrix;
         glm::mat4 viewMatrix;
+        glm::mat4 projectionMatrix;
         unsigned int iGlQueryToDrawShadowPass = 0;
         unsigned int iGlQueryToDrawDepthPrepass = 0;
         unsigned int iGlQueryToDrawMeshes = 0;
@@ -348,6 +355,7 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                  .viewProjectionMatrix =
                      pCameraProperties->getProjectionMatrix() * pCameraProperties->getViewMatrix(),
                  .viewMatrix = pCameraProperties->getViewMatrix(),
+                 .projectionMatrix = pCameraProperties->getProjectionMatrix(),
                  .iGlQueryToDrawShadowPass = vWorldQueries.iGlQueryToDrawShadowPass,
                  .iGlQueryToDrawDepthPrepass = vWorldQueries.iGlQueryToDrawDepthPrepass,
                  .iGlQueryToDrawMeshes = vWorldQueries.iGlQueryToDrawMeshes}});
@@ -400,16 +408,31 @@ void Renderer::drawNextFrame(float timeSincePrevCallInSec) {
                     sizeof(WorldRenderInfo::viewProjectionMatrix) > 1,
                     "because we requested view and projection matrix the frustum here is up to date");
 
+                const auto& renderData = mtxActiveCamera.second;
+
                 pWorld->getMeshRenderer().drawMeshes(
                     this,
                     viewportSize,
-                    mtxActiveCamera.second.viewMatrix,
-                    mtxActiveCamera.second.viewProjectionMatrix,
+                    renderData.viewMatrix,
+                    renderData.viewProjectionMatrix,
                     frustum,
                     pWorld->getLightSourceManager(),
-                    mtxActiveCamera.second.iGlQueryToDrawShadowPass,
-                    mtxActiveCamera.second.iGlQueryToDrawDepthPrepass,
-                    mtxActiveCamera.second.iGlQueryToDrawMeshes);
+                    renderData.iGlQueryToDrawShadowPass,
+                    renderData.iGlQueryToDrawDepthPrepass,
+                    renderData.iGlQueryToDrawMeshes);
+            }
+        }
+
+        // Draw particles.
+        {
+            for (const auto& mtxActiveCamera : vActiveCameras) {
+                GPU_MARKER_SCOPED("draw particles of a world");
+
+                const auto pWorld = mtxActiveCamera.second.pWorld;
+                const auto& renderData = mtxActiveCamera.second;
+
+                pWorld->getParticleRenderer().drawParticles(
+                    renderData.viewMatrix, renderData.projectionMatrix);
             }
         }
 

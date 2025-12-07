@@ -7,7 +7,7 @@ class MeshRenderer;
  * if you destroy this handle the mesh will be removed from the rendering.
  */
 class MeshRenderingHandle {
-    // Mesh renderer provides a handle when you register a mesh to be rendered.
+    // Provides the handle when you register.
     friend class MeshRenderer;
 
 public:
@@ -35,4 +35,41 @@ private:
      * This index can be changed by the mesh renderer.
      */
     unsigned short iMeshRenderDataIndex = 0;
+};
+
+class ParticleRenderer;
+
+/**
+ * While you hold an object of this type the particles will be rendered,
+ * if you destroy this handle the particles will be removed from the rendering.
+ */
+class ParticleRenderingHandle {
+    // Provides the handle when you register.
+    friend class ParticleRenderer;
+
+public:
+    ParticleRenderingHandle() = delete;
+    ~ParticleRenderingHandle();
+
+    ParticleRenderingHandle(const ParticleRenderingHandle&) = delete;
+    ParticleRenderingHandle& operator=(const ParticleRenderingHandle&) = delete;
+
+private:
+    /**
+     * Creates a new handle.
+     *
+     * @param pRenderer Renderer.
+     * @param iRenderDataIndex Index into the render data array.
+     */
+    ParticleRenderingHandle(ParticleRenderer* pRenderer, unsigned short iRenderDataIndex)
+        : pRenderer(pRenderer), iRenderDataIndex(iRenderDataIndex) {}
+
+    /** Object that created this handle. */
+    ParticleRenderer* const pRenderer = nullptr;
+
+    /**
+     * Index into the render data array.
+     * This index can be changed by the renderer.
+     */
+    unsigned short iRenderDataIndex = 0;
 };

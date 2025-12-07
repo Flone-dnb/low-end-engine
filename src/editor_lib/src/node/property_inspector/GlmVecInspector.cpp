@@ -55,7 +55,7 @@ namespace {
     }
 }
 
-void GlmVecInspector::setNewValue(const glm::vec4& value) {
+void GlmVecInspector::setManuallyInputtedValueToObject(const glm::vec4& value) {
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(pObject->getTypeGuid());
 
     switch (componentCount) {
@@ -128,12 +128,12 @@ GlmVecInspector::GlmVecInspector(
             pBackground->setPadding(EditorTheme::getPadding());
             pBackground->setColor(EditorTheme::getButtonColor());
             {
-                const auto pComponentXEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                pComponentXEdit->setTextHeight(EditorTheme::getSmallTextHeight());
-                pComponentXEdit->setHandleNewLineChars(false);
-                pComponentXEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.x)));
-                pComponentXEdit->setOnTextChanged([this, pComponentXEdit](std::u16string_view sNewText) {
-                    onValueChanged(pComponentXEdit, VectorComponent::X, sNewText);
+                pXComponentText = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
+                pXComponentText->setTextHeight(EditorTheme::getSmallTextHeight());
+                pXComponentText->setHandleNewLineChars(false);
+                pXComponentText->setText(utf::as_u16(EditorTheme::floatToString(currentValue.x)));
+                pXComponentText->setOnTextChanged([this](std::u16string_view sNewText) {
+                    onValueChanged(pXComponentText, VectorComponent::X, sNewText);
                 });
             }
 
@@ -141,12 +141,12 @@ GlmVecInspector::GlmVecInspector(
             pBackground->setPadding(EditorTheme::getPadding());
             pBackground->setColor(EditorTheme::getButtonColor());
             {
-                const auto pComponentYEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                pComponentYEdit->setTextHeight(EditorTheme::getSmallTextHeight());
-                pComponentYEdit->setHandleNewLineChars(false);
-                pComponentYEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.y)));
-                pComponentYEdit->setOnTextChanged([this, pComponentYEdit](std::u16string_view sNewText) {
-                    onValueChanged(pComponentYEdit, VectorComponent::Y, sNewText);
+                pYComponentText = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
+                pYComponentText->setTextHeight(EditorTheme::getSmallTextHeight());
+                pYComponentText->setHandleNewLineChars(false);
+                pYComponentText->setText(utf::as_u16(EditorTheme::floatToString(currentValue.y)));
+                pYComponentText->setOnTextChanged([this](std::u16string_view sNewText) {
+                    onValueChanged(pYComponentText, VectorComponent::Y, sNewText);
                 });
             }
 
@@ -156,13 +156,12 @@ GlmVecInspector::GlmVecInspector(
                 pBackground->setPadding(EditorTheme::getPadding());
                 pBackground->setColor(EditorTheme::getButtonColor());
                 {
-                    const auto pComponentZEdit =
-                        pBackground->addChildNode(std::make_unique<TextEditUiNode>());
-                    pComponentZEdit->setTextHeight(EditorTheme::getSmallTextHeight());
-                    pComponentZEdit->setHandleNewLineChars(false);
-                    pComponentZEdit->setText(utf::as_u16(EditorTheme::floatToString(currentValue.z)));
-                    pComponentZEdit->setOnTextChanged([this, pComponentZEdit](std::u16string_view sNewText) {
-                        onValueChanged(pComponentZEdit, VectorComponent::Z, sNewText);
+                    pZComponentText = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
+                    pZComponentText->setTextHeight(EditorTheme::getSmallTextHeight());
+                    pZComponentText->setHandleNewLineChars(false);
+                    pZComponentText->setText(utf::as_u16(EditorTheme::floatToString(currentValue.z)));
+                    pZComponentText->setOnTextChanged([this](std::u16string_view sNewText) {
+                        onValueChanged(pZComponentText, VectorComponent::Z, sNewText);
                     });
                 }
             }
@@ -184,6 +183,13 @@ GlmVecInspector::GlmVecInspector(
             }
         }
     }
+}
+
+void GlmVecInspector::refreshDisplayedValue() {
+    const auto currentValue = getCurrentValue(pObject, sVariableName, componentCount);
+    pXComponentText->setText(utf::as_u16(EditorTheme::floatToString(currentValue.x)));
+    pYComponentText->setText(utf::as_u16(EditorTheme::floatToString(currentValue.y)));
+    pZComponentText->setText(utf::as_u16(EditorTheme::floatToString(currentValue.z)));
 }
 
 void GlmVecInspector::onValueChanged(
@@ -235,7 +241,7 @@ void GlmVecInspector::onValueChanged(
         break;
     }
     }
-    setNewValue(value);
+    setManuallyInputtedValueToObject(value);
 
     if (bErasedSomeText) {
         // Overwrite invalid text.

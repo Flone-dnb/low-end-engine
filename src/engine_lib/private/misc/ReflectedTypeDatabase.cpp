@@ -14,6 +14,7 @@
 #include "game/node/SkeletonNode.h"
 #include "game/node/SkeletonBoneAttachmentNode.h"
 #include "game/node/SkeletalMeshNode.h"
+#include "game/node/ParticleEmitterNode.h"
 #include "game/node/light/DirectionalLightNode.h"
 #include "game/node/light/PointLightNode.h"
 #include "game/node/light/SpotlightNode.h"
@@ -44,6 +45,7 @@ void ReflectedTypeDatabase::registerEngineTypes() {
     registerType(SpatialNode::getTypeGuidStatic(), SpatialNode::getReflectionInfo());
     registerType(CameraNode::getTypeGuidStatic(), CameraNode::getReflectionInfo());
     registerType(MeshNode::getTypeGuidStatic(), MeshNode::getReflectionInfo());
+    registerType(ParticleEmitterNode::getTypeGuidStatic(), ParticleEmitterNode::getReflectionInfo());
 
     // Sound.
     registerType(Sound2dNode::getTypeGuidStatic(), Sound2dNode::getReflectionInfo());

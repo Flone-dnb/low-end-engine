@@ -6,7 +6,7 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 
 > Running games made with this engine on `libmali` drivers (which your handheld's OS might use) may cause issues and crashes (for example loading a texture may cause black screen and/or out of memory error) instead prefer to use `panfrost` drivers if your OS provides them. Most of the testing is done on Rocknix which provides an option to change used driver in the settings.
 
-# Roadmap
+# Features
 
 - [X] Node system (Godot-like ECS alternative)
 - [X] Config management (progress, settings, etc.)
@@ -21,7 +21,7 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 - [X] Skeletal animations
 - [X] Minimal scripting
 - [X] Shadow mapping 
-- [ ] Particle effects
+- [X] Particle effects
 
 # Documentation
 

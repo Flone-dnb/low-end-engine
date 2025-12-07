@@ -69,6 +69,8 @@ set(PROJECT_SOURCES
     private/render/GpuDebugMarker.hpp
     private/render/MeshRenderer.h
     private/render/MeshRenderer.cpp
+    private/render/ParticleRenderer.h
+    private/render/ParticleRenderer.cpp
     private/render/RenderingHandle.h
     private/render/RenderingHandle.cpp
     public/render/ShaderAlignmentConstants.hpp
@@ -157,6 +159,8 @@ set(PROJECT_SOURCES
     private/game/node/MeshNode.cpp
     public/game/node/SkeletalMeshNode.h
     private/game/node/SkeletalMeshNode.cpp
+    public/game/node/ParticleEmitterNode.h
+    private/game/node/ParticleEmitterNode.cpp
     public/game/node/Sound2dNode.h
     private/game/node/Sound2dNode.cpp
     public/game/node/Sound3dNode.h

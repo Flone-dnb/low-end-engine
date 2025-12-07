@@ -24,6 +24,7 @@
 #include "node/property_inspector/BoolInspector.h"
 
 // External.
+#include "nameof.hpp"
 #include "utf/utf.hpp"
 
 PropertyInspector::PropertyInspector() : PropertyInspector("Property Inspector") {}
@@ -38,7 +39,8 @@ PropertyInspector::PropertyInspector(const std::string& sNodeName) : RectUiNode(
 }
 
 void PropertyInspector::setNodeToInspect(Node* pNode) {
-    pInspectedNode = pNode;
+    inspectedNodeData = {};
+    inspectedNodeData.pNode = pNode;
 
     refreshInspectedProperties();
 }
@@ -54,12 +56,22 @@ void PropertyInspector::onAfterInspectedNodeMoved() {
         return;
     }
 
-    const auto pSpatialNode = dynamic_cast<SpatialNode*>(pInspectedNode);
+    const auto pSpatialNode = dynamic_cast<SpatialNode*>(inspectedNodeData.pNode);
     if (pSpatialNode == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected a spatial node");
     }
 
     pGizmoNode->setWorldLocation(pSpatialNode->getWorldLocation());
+}
+
+void PropertyInspector::onAfterGizmoMoved() {
+    if (inspectedNodeData.pLocationInspector == nullptr) {
+        return;
+    }
+
+    inspectedNodeData.pLocationInspector->refreshDisplayedValue();
+    inspectedNodeData.pRotationInspector->refreshDisplayedValue();
+    inspectedNodeData.pScaleInspector->refreshDisplayedValue();
 }
 
 void PropertyInspector::refreshInspectedProperties() {
@@ -72,22 +84,23 @@ void PropertyInspector::refreshInspectedProperties() {
         }
     }
 
-    if (pInspectedNode == nullptr) {
+    if (inspectedNodeData.pNode == nullptr) {
         return;
     }
 
     // Display special UI elements for some nodes.
-    if (auto pSkeletonNode = dynamic_cast<SkeletonNode*>(pInspectedNode)) {
+    if (auto pSkeletonNode = dynamic_cast<SkeletonNode*>(inspectedNodeData.pNode)) {
         addSkeletonNodeSpecialOptions(pSkeletonNode);
     }
-    if (dynamic_cast<CollisionNode*>(pInspectedNode) != nullptr ||
-        dynamic_cast<SimulatedBodyNode*>(pInspectedNode) != nullptr ||
-        dynamic_cast<TriggerVolumeNode*>(pInspectedNode) != nullptr) {
-        addCollisionShapeSelection(pInspectedNode);
+    if (dynamic_cast<CollisionNode*>(inspectedNodeData.pNode) != nullptr ||
+        dynamic_cast<SimulatedBodyNode*>(inspectedNodeData.pNode) != nullptr ||
+        dynamic_cast<TriggerVolumeNode*>(inspectedNodeData.pNode) != nullptr) {
+        addCollisionShapeSelection(inspectedNodeData.pNode);
     }
 
     // Display node properties.
-    displayPropertiesForType(pPropertyLayout, pInspectedNode->getTypeGuid(), pInspectedNode);
+    displayPropertiesForType(
+        pPropertyLayout, inspectedNodeData.pNode->getTypeGuid(), inspectedNodeData.pNode);
 }
 
 void PropertyInspector::addCollisionShapeSelection(Node* pCollisionNode) {
@@ -226,16 +239,16 @@ void PropertyInspector::addSkeletonNodeSpecialOptions(SkeletonNode* pSkeletonNod
 
 void PropertyInspector::displayPropertiesForType(
     LayoutUiNode* pLayoutToAddTo, const std::string& sTypeGuid, Serializable* pObject, bool bRecursive) {
+    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
+
     auto pGroupBackground = std::make_unique<RectUiNode>();
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0f);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
     pGroupBackground->setSize(
         glm::vec2(pGroupBackground->getSize().x, 0.015f)); // initial height, will expand if needed
 
-    const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
-
     const auto pTypeGroupLayout = pGroupBackground->addChildNode(
-        std::make_unique<LayoutUiNode>(std::format("type group {}", typeInfo.sTypeName)));
+        std::make_unique<LayoutUiNode>(std::format("property group for type \"{}\"", typeInfo.sTypeName)));
     pTypeGroupLayout->setChildNodeSpacing(EditorTheme::getSpacing());
     pTypeGroupLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
 
@@ -273,11 +286,19 @@ void PropertyInspector::displayPropertiesForType(
             }
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.vec3s) {
                 CONTINUE_IF_PARENT_VAR(vec3s);
-                pTypePropertiesLayout->addChildNode(std::make_unique<GlmVecInspector>(
+                const auto pInspector = pTypePropertiesLayout->addChildNode(std::make_unique<GlmVecInspector>(
                     std::format("inspector for variable \"{}\"", sVariableName),
                     pObject,
                     sVariableName,
                     GlmVecComponentCount::VEC3));
+
+                if (sVariableName == "relativeLocation") {
+                    inspectedNodeData.pLocationInspector = pInspector;
+                } else if (sVariableName == "relativeRotation") {
+                    inspectedNodeData.pRotationInspector = pInspector;
+                } else if (sVariableName == "relativeScale") {
+                    inspectedNodeData.pScaleInspector = pInspector;
+                }
             }
             for (const auto& [sVariableName, variableInfo] : typeInfo.reflectedVariables.vec2s) {
                 CONTINUE_IF_PARENT_VAR(vec2s);
