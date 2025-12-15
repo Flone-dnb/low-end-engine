@@ -153,7 +153,7 @@ std::variant<std::unique_ptr<TextureHandle>, Error> TextureManager::loadTextureA
 
     std::scoped_lock guard(mtxLoadedTextures.first, GpuResourceManager::mtx);
 
-    if (usage != TextureUsage::CUBEMAP) {
+    if (usage != TextureUsage::CUBEMAP_NO_MIPMAP) {
         // Construct full path to the texture.
         auto pathToTexture =
             ProjectPaths::getPathToResDirectory(ResourceDirectory::ROOT) / sPathToTextureRelativeRes;
