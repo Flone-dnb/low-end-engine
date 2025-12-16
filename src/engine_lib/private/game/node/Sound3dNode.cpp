@@ -168,6 +168,8 @@ void Sound3dNode::setPlayingOffset(float seconds) {
     sfmlMusic.setPlayingOffset(sf::seconds(seconds));
 }
 
+float Sound3dNode::getPlayingOffset() const { return sfmlMusic.getPlayingOffset().asSeconds(); }
+
 void Sound3dNode::setIsLooping(bool bEnableLooping) {
     bIsLooping = bEnableLooping;
 

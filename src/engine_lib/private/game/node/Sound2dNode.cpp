@@ -171,6 +171,8 @@ void Sound2dNode::setPlayingOffset(float seconds) {
     sfmlMusic.setPlayingOffset(sf::seconds(seconds));
 }
 
+float Sound2dNode::getPlayingOffset() const { return sfmlMusic.getPlayingOffset().asSeconds(); }
+
 void Sound2dNode::setIsLooping(bool bEnableLooping) {
     bIsLooping = bEnableLooping;
 

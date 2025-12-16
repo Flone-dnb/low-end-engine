@@ -142,6 +142,13 @@ public:
     std::optional<SoundChannel> getSoundChannel() const { return soundChannel; }
 
     /**
+     * Returns the current offset (in seconds) of the sound.
+     *
+     * @return Time in seconds.
+     */
+    float getPlayingOffset() const;
+
+    /**
      * Returns volume multiplier of the sound.
      *
      * @return Positive number where 1.0 means no changes in sound and 0.0 means no sound (mute).
