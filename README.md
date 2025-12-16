@@ -8,20 +8,20 @@ This engine is most suited for small non open world 3D games with low-poly-ish g
 
 # Features
 
-- [X] Node system (Godot-like ECS alternative)
-- [X] Config management (progress, settings, etc.)
-- [X] Type reflection
-- [X] Forward renderer using OpenGL ES 3.1
-- [X] GLTF/GLB import
-- [X] Profiler
-- [X] GUI
-- [X] Audio
-- [X] Simple editor
-- [X] Physics engine
-- [X] Skeletal animations
-- [X] Minimal scripting
-- [X] Shadow mapping 
-- [X] Particle effects
+- Node system (Godot-like ECS alternative)
+- Config management (progress, settings, etc.)
+- Type reflection
+- Forward renderer using OpenGL ES 3.1
+- GLTF/GLB import
+- Profiler
+- GUI
+- Audio
+- Simple editor
+- Physics engine
+- Skeletal animations
+- Minimal scripting
+- Shadow mapping 
+- Particle effects
 
 # Documentation
 
