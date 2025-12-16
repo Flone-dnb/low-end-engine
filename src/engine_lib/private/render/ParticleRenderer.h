@@ -123,7 +123,7 @@ public:
     /**
      * Returns render data of particles to initialize/modify.
      *
-     * @param handle Handle of the particles from @ref addParticlesForRendering.
+     * @param handle Handle of the particles from @ref registerParticleEmitter.
      *
      * @return Data guard used to modify the data.
      */

@@ -767,7 +767,7 @@ private:
 
 Debug tools include things like debug drawer (for quick debugging) and debug console (for dev cheat commands and performance stats). Debug tools are disabled in the "Release" build mode but for test builds you can enable them if you pass -DENGINE_ENABLE_DEBUG_TOOLS=ON while configuring cmake, cmake will then print a message that debug tools are enabled.
 
-Note that in case you created a custom node and want it to (for example) draw something when used in the editor you can use #ifdef ENGINE_EDITOR macro for code that will only run in the editor.
+Note that in case you created a custom node and want it to (for example) draw something when used in the editor you can use `ifdef ENGINE_EDITOR` macro for code that will only run in the editor.
 
 ### Debug drawer
 

@@ -156,14 +156,18 @@ public:
     void setRelativePathToTexture(std::string sNewRelativePathToTexture);
 
     /**
-     * Value in range [0.0; 1.0] where 0 is time when particle is created and 1 is time when particle is
+     * Sets value in range [0.0; 1.0] where 0 is time when particle is created and 1 is time when particle is
      * destroyed.
+     *
+     * @param portion Portion.
      */
     void setFadeInLifePortion(float portion) { fadeInLifePortion = std::clamp(portion, 0.0f, 1.0f); }
 
     /**
-     * Value in range [0.0; 1.0] where 0 is time when particle is created and 1 is time when particle is
+     * Sets value in range [0.0; 1.0] where 0 is time when particle is created and 1 is time when particle is
      * destroyed.
+     *
+     * @param portion Portion.
      */
     void setFadeOutLifePortion(float portion) { fadeOutLifePortion = std::clamp(portion, 0.0f, 1.0f); }
 
@@ -441,7 +445,7 @@ private:
 
     /**
      * Each component stores a non-negative value that will be randomely added
-     * to @ref velocity as [-value; +value].
+     * to @ref spawnVelocity as [-value; +value].
      */
     glm::vec3 spawnVelocityRandomization = glm::vec3(0.0f, 0.0f, 0.0f);
 
