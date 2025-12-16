@@ -1,6 +1,6 @@
 # Manual
 
-This is a manual - a step-by-step guide to introduce you to various aspects of the engine. More specific documentation can be always found in the class/function/variable documentation in the source code or on this page (use side panel for navigation), every code entity is documented so you should not get lost.
+This is a manual - a step-by-step guide to introduce you to various aspects of the engine. This manual will not explain every piece of code, only some high-level entities and their usage, more specific documentation can be always found in the class/function/variable documentation in the source code, every code entity (even private) is documented so you should not get lost.
 
 This manual expects that you have a solid knowledge in writing programs using C++ language.
 
@@ -16,7 +16,7 @@ The engine relies on CMake as its build system. CMake is a very common build sys
 
 See our project manager: https://github.com/Flone-dnb/low-end-engine-project-manager
 
-Project manager is used to create new game projects and update engine for already created game projects. If you create a new project there will be some small amount of default game code than provides a first person character with keyboard+mouse / gamepad controls so you can have a quick start to your game.
+Project manager is used to create new game projects and update engine for already created game projects. The generated project will have some default game code than provides a first person character with keyboard+mouse / gamepad controls so you can have a quick start to your game.
 
 Note for Visual Studio users:
 > If you use Visual Studio to open the engine/game `CMakeLists.txt` files as C++ projects you need to open up Visual Studio without any code then press `File` -> `Open` -> `CMake` (this option is available if you installed CMake Tools in the Visual Studio Installer) and select the root `CMakeLists.txt` file of the generated game project (the one next to the `docs` directory). Then a tab called `CMake Overview Pages` should appear in which you need to click `Open CMake Settings Editor` and inside of that remove "x64-Debug" build configuration and add a new "x64-Release" configuration and save (Ctrl+S, this will trigger cmake configuration), this build configuration is used because the development is done in the "release with debug info" mode to speed up engine/editor workflow. By default optimizations are enabled but in order to disable them (for debugging) next to some target's CMakeLists.txt file you need to create a new file called `debug.cmake` (for example in src/engine_lib), when created CMakeLists.txt files will look for this file and disable optimizations. Some CMakeLists.txt files support this and some not (you might need to check this to be sure). After configuration in Visual Studio near the green button to run your project you might see a text `Select Startup Item...`, you should press a litte arrow near this text to expand a list of available targets to use. Then select a target that you want to build/use (see below about game targets). In case you can't find game's or engine's targets in the solution explorer (the folder view) you need to right click on any CMakeLists.txt file and select "Switch to cmake targets view" then you will find engine/game targets in the `PROJECT` folder.
@@ -100,57 +100,28 @@ Note that this engine does not have a garbage collector so nodes have a specific
 
 In order to start your game you create a `Window`, a window creates `GameManager` - the heart of your game, the most important manager of your game, but generally you don't interact with `GameManager` directly since it's located in the `src/engine_lib/private` directory, the `GameManager` creates essential game objects such as renderer, physics engine, audio manager and your `GameInstance`. While the window that your have created is not closed the `GameInstance` lives and your game runs. Once the user closes your window or your game code submits a "close window" command the `GameManager` starts to destroy all created systems: `World` (which despawns and destroys all nodes), `GameInstance`, renderer and other things.
 
-When `GameInstance` is created and everything is setup for the game to start `GameInstance::onGameStarted` is called. In this function you generally create/load a game world and spawn some nodes. Generally there is no need to store pointers to nodes in your `GameInstance` since nodes are self-contained and each node knows what to do except that nodes sometimes ask `GameInstance` for various global information by using the static function `Node::getGameInstance`.
+When `GameInstance` is created and everything is setup for the game to start `GameInstance::onGameStarted` is called. In this function you generally create/load a game world and spawn some nodes. Generally there is no need to store pointers to nodes in your `GameInstance` since nodes are self-contained and each node knows what to do except that nodes sometimes ask `GameInstance` for various global information by using the function `Node::getGameInstanceWhileSpawned`.
 
 So "global" (world independent) classes/objects are generally stored in `GameInstance` but sometimes they can be represented by a node.
 
 ## Error handling
 
-The engine uses the `Error` class (`misc/Error.h`) to handle and propagate errors. Some engine functions return it and you should know how to use them.
+The engine uses the `Error` class (`misc/Error.h`) to handle and propagate errors. Here are the things you need to know:
 
-The `Error` class stores 2 things:
-  - initial error message (description of what went wrong)
-  - "error call stack" (not an actual call stack, see below)
-
-When you construct an `Error` object it will use `std::source_location` to capture the name of the source file it was constructed from, plus a line where this `Error` object was constructed.
-
-After constructing an `Error` object you can use `Error::addEntry` to capture the name of the source file this function is called from, plus a line where this function was called from.
-
-To get the string that contains the initial error message and all captured source "entries" you can use `Error::getFullErrorMessage`.
-
-To show a message box with the full error message and additionally print it to the log you can use `Error::showError`.
-
-Let's see how this works together in an example of window creation:
-
-```Cpp
-// inside of your main.cpp
-
-auto result = WindowBuilder().title("my game").fullscreen().build();
-if (std::holds_alternative<Error>(result)) {
-    // An error occurred while creating the window.
-    Error error = std::get<Error>(std::move(result));
-    error.addCurrentLocationToErrorStack(); // add this line to the error stack
-
-    // Since here we won't propagate the error up (because we are in the `main.cpp` file) we show an error message.
-    // If we want to propagate the error up we can return the error object after using the `Error::addCurrentLocationToErrorStack`.
-    error.showErrorAndThrowException();
-}
-
-// Window was created successfully.
-const std::unique_ptr<Window> pMainWindow = std::get<std::unique_ptr<Window>>(std::move(result));
-```
+- if you want proper error propagation either create an `Error` object or call `Error::addCurrentLocationToErrorStack` on an object you've received, then return this `Error` object from your function
+- in the end use `Error::getFullErrorMessage` or `Error::showErrorAndThrowException`
 
 ## Logging
 
 The engine has a simple `Log` class (`io/Log.h`) that you can use to write to log files and to console (note that logging to console is disabled in release builds).
 
-On Windows log files are located at `%%localappdata%/low-end-engine/*yourtargetname*/logs`.
+On Windows log files are located at `%localappdata%/low-end-engine/*yourtargetname*/logs`.
 On Linux log files are located at `~/.config/low-end-engine/*yourtargetname*/logs`.
 
 Here is an example of `Log` usage:
 
 ```Cpp
-void foo(){
+void foo() {
     Log::info("some information");
     Log::warn("some warning");
     Log::error("some error");
@@ -164,7 +135,7 @@ You can also combine `std::format` with logger:
 
 void bar(){
     int iAnswer = 42;
-    Log::info(std::format("the value of the variable is {}", iAnswer));
+    Log::info(std::format("the answer is {}", iAnswer));
 }
 ```
 
@@ -174,12 +145,12 @@ Then your log file might look like this:
 [16:14:49] [info] [MyFile.cpp, 31] some information
 [16:14:49] [warning] [MyFile.cpp, 32] some warning
 [16:14:49] [error] [MyFile.cpp, 33] some error
-[16:14:49] [info] [MyFile.cpp, 46] the value of the variable is 42
+[16:14:49] [info] [MyFile.cpp, 46] the answer is 42
 ```
 
 As you can see each log entry has a file name and a line number included.
 
-Looking at your logs and finding if there were any warnings/errors might be tiresome if you have a big game with lots of systems (even if you just use Ctrl+F), to instantly identify if your game had warnings/errors in the log when you close your game the last log entry will be summary of total warnings/errors logged (if there was any, if there was no warnings/errors nothing will be logged in the end), it might look like this:
+Looking at your logs and finding if there were any warnings/errors might be tiresome if you have a big game with lots of systems (even if you just use Ctrl+F), to instantly identify if your game had warnings/errors in the log when you close your game the last log entry will be summary of the total warnings/errors logged (if there was any, if there was no warnings/errors nothing will be logged in the end), it might look like this:
 
 ```
 [16:14:50] [info]
@@ -193,9 +164,11 @@ You will see this message in the console and in the log files as the last messag
 
 ## Project paths
 
-In order for your game to be able to access files in the `res` directory when you build your project the engine creates symlinks to the `res` directory next to the build binaries of you game. This means that if you need to access some file from the `res` directory, in your app you can just type `"res/game/somepath"`. For release builds the engine will not create symlinks and will require you to copy your `res` directory manually but we will talk about this in more details in one of the next sections.
+The directory to store all engine/editor/game assets is called `res` (short for resources).
 
-Instead of hardcoding you paths like `"res/game/somepath"` you should use `ProjectPaths` (`misc/ProjectPaths.h`). This class provides static functions to access various paths, here are a few examples:
+In order for your game to be able to access files in the `res` directory when you build your project the engine creates symlinks to the `res` directory next to the built binaries of you game. This means that if you need to access some file from the `res` directory, in your app you can just type `"res/game/somepath"`. For release builds the engine will not create symlinks and will require you to copy your `res` directory manually but we will talk about this in more details in one of the next sections.
+
+In some cases you would need to provide an `std::filesystem::path` in this case you should use `ProjectPaths` (`misc/ProjectPaths.h`). This class provides static functions to access various paths, here are a few examples:
 
 ```Cpp
 // same as "res/game/myfile.png"
@@ -223,7 +196,7 @@ run your program that runs this code and after your program is finished you shou
 
 ### About raw pointers
 
-Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For more information read the documentation for the functions you are using.
+Some engine functions return raw pointers. Generally, when the engine returns a raw pointer to you this means that you should not free/delete it and it is guaranteed to be valid for the (most) time of its usage. For example nodes can receive a raw pointer to the game instance and that pointer is guaranteed to be valid while the node is spawned, after the node is despawned it will probably still be valid but it depends on how you use your nodes. For more information read the documentation for the functions you are using.
 
 ## Creating or loading a new world
 
@@ -245,17 +218,17 @@ Run the `editor` CMake target and in the content browser (left-bottom panel) rig
 
 In the opened node tree you should have only a single node - root node (see top-left panel - node tree inspector). To add more nodes right click on any node in the node tree inspector and select the appropriate option.
 
-Use WASD keys while holding right mouse button to move viewport camera.
+Use WASD keys while holding the right mouse button to move the viewport camera.
 
 ### Creating or loading a world using C++
 
-You can create node tree using the editor or the code but a world can only be created using the code. Your generated project should already have a call to `createWorld` in `GameInstance::onGameStarted` which creates a world with a single node - root node. In order to load a node tree as a new world you should call `GameInstance::loadNodeTreeAsWorld` this function deserializes and loads the node tree in a non-main thread then spawns it in the main thread and replaces the current world. This means that if you want to have a loading screen just call `loadNodeTreeAsWorld` then show a loading screen, once the `onLoaded` callback (that you specified in `loadNodeTreeAsWorld`) is called this means that the previous world is already destroyed and your loading screen was removed so now you can spawn a new character/camera to start the game on a new level.
+You can create node tree using the editor or the code but a world can only be created using the code, for example your generated project (that you created using the project manager) should already have a call to `createWorld` in `GameInstance::onGameStarted`. In order to load a node tree as a new world you should call `GameInstance::loadNodeTreeAsWorld` this function deserializes and loads the node tree in a non-main thread then spawns it in the main thread and replaces the current world. This means that if you want to have a loading screen just call `loadNodeTreeAsWorld` then show a loading screen, once the `onLoaded` callback (that you specified in `loadNodeTreeAsWorld`) is called this means that the previous world is already destroyed (your loading screen was removed) and a new world is finished spawning.
 
-After creating the world you would also need a camera to see your world. Default `CameraNode` class does not support input so it will be a static camera (probably located in 0, 0, 0). To understand how to control your camera you can generate a new project, look at the generated character node and see how it uses the camera.
+After creating a world you would also need a camera to see your world. Default `CameraNode` class does not support input so it will be a static camera (probably located at xyz 0, 0, 0). To understand how to control your camera you can generate a new project, look at the character node in the generated project and see how it uses the camera.
 
 ### Level streaming
 
-In case you don't want to replace the whole world but only a part of the node tree you can easily do that by deserializing a node tree (sublevel that you want to load) in a non-main thread and after that attaching it to the main (spawned) node tree where you player is, here's an example:
+In case you don't want to replace the whole world but only a part of the node tree you can easily do that by deserializing a node tree (sublevel that you want to load) in a non-main thread and then (in the main thread) attaching it to the main (spawned) node tree where you player is, here's an example:
 
 ```Cpp
 void GameInstance::loadSublevel(const std::filesystem::path& pathToNodeTree) {
@@ -270,8 +243,9 @@ void GameInstance::loadSublevel(const std::filesystem::path& pathToNodeTree) {
         std::scoped_lock guard(mtxLoadedSublevel.first); // pair<mutex, node>
         mtxLoadedSublevel.second = std::move(pRootNode);
 
-        TODO; // in the main thread (for example in `onBeforeNewFrame`) check `mtxLoadedSublevel`
-              // and attach it to some spawned node in your main game node tree to spawn
+        TODO; // in the main thread (for example in `GameInstance::onBeforeNewFrame`)
+              // check `mtxLoadedSublevel` and attach it to some spawned node
+              // in your main game node tree to spawn
     });
 }
 ```
@@ -281,56 +255,6 @@ void GameInstance::loadSublevel(const std::filesystem::path& pathToNodeTree) {
 `PointLightNode`, `SpotlightNode` and `DirectionalLightNode` provide lighting. On top of that you can configure ambient light color using the light source manager: `getWorldWhileSpawned()->getLightSourceManager().setAmbientLightColor(color)`.
 
 Note that only `SpotlightNode` has an option to enable shadow casting (disabled by default).
-
-## Skybox
-
-In order display a cubemap or draw a procedural sky you must set skybox settings.
-
-If you want to display a skybox then you need to import 6 textures "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png" into a single directory (using the editor) then load them and set the skybox settings:
-
-```Cpp
-#include "render/Renderer.h"
-#include "material/TextureManager.h"
-
-// Load 6 textures from a directory.
-auto result = getRenderer()->getTextureManager().getTexture("game/skybox_textures", TextureUsage::CUBEMAP);
-if (std::holds_alternative<Error>(result)) [[unlikely]] {
-    TODO; // handle error
-}
-
-// Set skybox.
-SkyboxSettings settings;
-settings.pOptSkyboxCubemap = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
-getRenderer()->setSkybox(std::move(settings));
-```
-
-If you want to display a simple procedural skybox then just specify default skybox settings:
-
-```Cpp
-Renderer::SkyboxSettings settings;
-getRenderer()->setSkybox(std::move(settings));
-```
-
-If you want to display a procedural skybox using your custom shader you need to create a new fragment shader (you can copy-paste the default skybox shader from "res/engine/shaders" and use it as a starting point):
-
-```Cpp
-Renderer::SkyboxSettings settings;
-settings.sRelativePathToFragmentShader = "game/shaders/skybox.frag.glsl" // <- relative to the "res" directory
-getRenderer()->setSkybox(std::move(settings));
-```
-
-## Distance fog
-
-Distance fog can be configured using the following code:
-
-```Cpp
-DistanceFogSettings settings;
-// TODO: configure `settings` here if needed
-getRenderer()->setDistanceFogSettings(settings);
-
-// in case you don't want to render things which are fully covered by the fog:
-pCameraNode->getCameraProperties()->setFarClipPlaneDistance(settings.getFogRange().y);
-```
 
 ## Handling user input
 
@@ -506,15 +430,15 @@ const auto pImportedRootNode = getWorldRootNode()->addChildNode(std::get<std::un
 
 ## Working with UIs
 
-UI is also build as a node tree, in the directory `engine_lib/public/game/node/ui` you will find all available UI elements. These UI nodes can be attached to any node in your level but generally you can't attach 3D nodes to UI nodes (for example attaching a mesh node to a UI node will result in an error).
+UI is also a node tree, in the directory `engine_lib/public/game/node/ui` you will find all available UI elements. These UI nodes can be attached to any node in your level but generally you can't attach 3D nodes to UI nodes (for example attaching a mesh node to a UI node will result in an error).
 
-The base `UiNode` provides various functionality on top of the basic position, size and visibility, functionality such as being a modal UI element (takes all the input) or having a focus (for text input) or changing UI layer or changing node's portion in the layout and so on.
+The base `UiNode` provides various basic features such as position, size and visibility, it also provides functionality such as being a modal UI element (takes all the input) or having a focus (for text input) or changing UI layer or changing node's portion in the layout and so on.
 
-Vertical or horizontal layouts are implemented as the `LayoutUiNode` so this node type is a container node but other UI nodes can also be containers for example: `ButtonUiNode` provides button functionality on which you can click but you can add a child `TextUiNode` to it to have a text on the button. Some UI nodes don't allow child nodes to be attached for example `CheckboxUiNode`. In order to know which nodes don't allow child nodes every UI node type may override the `UiNode::getMaxChildCount` which is used in the editor to determine if attaching child nodes is allowed or not.
+Vertical or horizontal layouts are implemented as the `LayoutUiNode` so this node type is a container node but other UI nodes can also be containers for example: `ButtonUiNode` provides button functionality on which you can click but you can add a child `TextUiNode` to it to have a text on the button. Some UI nodes don't allow child nodes to be attached for example `CheckboxUiNode`. In order to know which nodes don't allow child nodes UI node types may override the `UiNode::getMaxChildCount` which is used in the editor to determine if attaching child nodes is allowed or not.
 
 ## Texture import and texture filtering
 
-There's no texture import, just copy your image to the `res` directory.
+There's no texture import, just copy your image somewhere to the `res` directory.
 
 In order to use the imported texture (for example on a mesh) you need to assign it using the editor or using the code like so:
 
@@ -523,7 +447,7 @@ auto pCube = std::make_unique<MeshNode>();
 pCube->getMaterial().setPathToDiffuseTexture("game/textures/cube.png"); // located at `res/game/...`
 ```
 
-Of course when you import a GLTF file meshes and textures will be automatically imported (copied) to the `res` directory and meshes that use textures will have paths to textures saved in the TOML file.
+When you import a GLTF/GLB file meshes and textures will be automatically imported (copied) to the `res` directory and meshes that use textures will have paths to textures saved in the TOML file.
 
 By default the engine uses point filtering for all textures if you want to use linear filtering use the following code:
 
@@ -535,6 +459,56 @@ void MyGameInstance::onGameStarted() {
 
     // ... your game code here ...
 }
+```
+
+## Skybox
+
+In order to display a skybox cubemap or draw a procedural sky you must set skybox settings.
+
+If you want to display a skybox then you need to import 6 textures "right.png", "left.png", "top.png", "bottom.png", "front.png", "back.png" into a single directory then load them and set the skybox settings:
+
+```Cpp
+#include "render/Renderer.h"
+#include "material/TextureManager.h"
+
+// Load 6 textures from a directory.
+auto result = getRenderer()->getTextureManager().getTexture("game/skybox_textures", TextureUsage::CUBEMAP);
+if (std::holds_alternative<Error>(result)) [[unlikely]] {
+    TODO; // handle error
+}
+
+// Set skybox.
+SkyboxSettings settings;
+settings.pOptSkyboxCubemap = std::get<std::unique_ptr<TextureHandle>>(std::move(result));
+getRenderer()->setSkybox(std::move(settings));
+```
+
+If you want to display a simple procedural skybox then just specify default skybox settings:
+
+```Cpp
+Renderer::SkyboxSettings settings;
+getRenderer()->setSkybox(std::move(settings));
+```
+
+If you want to display a procedural skybox using your custom shader you need to create a new fragment shader (you can copy-paste the default skybox shader from "res/engine/shaders" and use it as a starting point):
+
+```Cpp
+Renderer::SkyboxSettings settings;
+settings.sRelativePathToFragmentShader = "game/shaders/skybox.frag.glsl" // <- relative to the "res" directory
+getRenderer()->setSkybox(std::move(settings));
+```
+
+## Distance fog
+
+Distance fog can be configured using the following code:
+
+```Cpp
+DistanceFogSettings settings;
+// TODO: configure `settings` here if needed
+getRenderer()->setDistanceFogSettings(settings);
+
+// in case you don't want to render things which are fully covered by the fog:
+pCameraNode->getCameraProperties()->setFarClipPlaneDistance(settings.getFogRange().y);
 ```
 
 ## Skeletal animations
@@ -916,7 +890,7 @@ As it was shown `InputManager` can be acquired using `GameInstance::getInputMana
 
 ### General
 
-The engine has AngelScript integrated (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html), it's a scripting language which is very similar to C++. The main purpose of a scripting language in this engine is to provide support for advanced modding for your game.
+Engine has AngelScript integrated (https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script.html), it's a scripting language which is very similar to C++. The main purpose of a scripting language in this engine is to provide support for advanced modding for your game.
 
 The process goes like this:
 1. expose your game's custom node type and node's functions to scripts
