@@ -251,17 +251,7 @@ MeshRenderer::addMeshForRendering(ShaderProgram* pShaderProgram, bool bEnableTra
         newShaderInfo.iMeshCount = 1;
 
         if (!bEnableTransparency) {
-            // Add mesh to new opaque shader.
-            iNewMeshIndex = 0;
-
-            if (!data.vOpaqueShaders.empty()) {
-                const auto& last = data.vOpaqueShaders.back();
-                iNewMeshIndex = static_cast<unsigned short>(last.iFirstMeshIndex + last.iMeshCount);
-            }
-
-            newShaderInfo.iFirstMeshIndex = iNewMeshIndex;
-            data.vOpaqueShaders.push_back(newShaderInfo);
-
+            // First, shift all transparent shaders to create a place for a new opaque mesh.
             if (!data.vTransparentShaders.empty()) {
                 // Shift all next shaders.
                 size_t iShiftItemCount = 0;
@@ -280,8 +270,7 @@ MeshRenderer::addMeshForRendering(ShaderProgram* pShaderProgram, bool bEnableTra
                 }
 
                 // Shift data to the right.
-                size_t iDstIndex =
-                    data.vTransparentShaders[0].iFirstMeshIndex + data.vTransparentShaders[0].iMeshCount;
+                size_t iDstIndex = data.vTransparentShaders[0].iFirstMeshIndex;
                 size_t iSrcIndex = iDstIndex - 1;
                 std::memmove(
                     &data.vMeshRenderData[iDstIndex],
@@ -293,6 +282,17 @@ MeshRenderer::addMeshForRendering(ShaderProgram* pShaderProgram, bool bEnableTra
                     sizeof(data.vIndexToHandle[0]) * // NOLINT: need sizeof pointer, not value
                         iShiftItemCount);
             }
+
+            // Add mesh to new opaque shader.
+            iNewMeshIndex = 0;
+
+            if (!data.vOpaqueShaders.empty()) {
+                const auto& last = data.vOpaqueShaders.back();
+                iNewMeshIndex = static_cast<unsigned short>(last.iFirstMeshIndex + last.iMeshCount);
+            }
+
+            newShaderInfo.iFirstMeshIndex = iNewMeshIndex;
+            data.vOpaqueShaders.push_back(newShaderInfo);
         } else {
             // Add mesh to new transparent shader.
             iNewMeshIndex = 0;

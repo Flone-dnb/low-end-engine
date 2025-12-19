@@ -1040,9 +1040,6 @@ void UiNodeManager::drawUiOnActiveFramebuffer() {
                 drawSliderNodesDataLocked(iLayer, iWindowWidth, iWindowHeight);
                 drawCheckboxNodesDataLocked(iLayer, iWindowWidth, iWindowHeight);
                 drawLayoutScrollBarsDataLocked(iLayer, iWindowWidth, iWindowHeight);
-
-                // Make sure the current layer finished drawing before drawing the next one.
-                glMemoryBarrier(GL_ALL_BARRIER_BITS);
             }
         }
         glDisable(GL_BLEND);

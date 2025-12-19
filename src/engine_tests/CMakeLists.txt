@@ -25,6 +25,7 @@ set(PROJECT_SOURCES
     src/node/MeshNode.cpp
     src/node/LayoutUiNode.cpp
     src/io/Serializable.cpp
+    src/render/MeshRenderer.cpp
     # add your .h/.cpp files here
 )
 
