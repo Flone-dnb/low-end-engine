@@ -12,7 +12,9 @@ class UiNode : public Node {
     friend class UiNodeManager;
 
     // Disables rendering of the node if the node is outside of the visible area of layout.
+    // Only containers (layout and rect) can control Y clipping.
     friend class LayoutUiNode;
+    friend class RectUiNode;
 
 public:
     UiNode();
@@ -173,6 +175,15 @@ public:
      * @return Number of child nodes.
      */
     virtual size_t getMaxChildCount() const;
+
+    /**
+     * X component stores clip start in range [0.0; 1.0] and Y component stores clip size
+     * in [0.0; 1.0]. This is used for layouts with scrollbars to "cut" parts of the UI node outside of the
+     * layout.
+     *
+     * @return Clip range.
+     */
+    glm::vec2 getYClip() const { return yClip; }
 
 protected:
     /**
@@ -361,6 +372,23 @@ protected:
     virtual void onAfterNewDirectChildAttached(Node* pNewDirectChild) override;
 
     /**
+     * Called after Y-axis clipping (see @ref getYClip) was changed for container nodes to apply new clipping
+     * range to the child nodes.
+     */
+    virtual void onAfterYClipChanged() {}
+
+    /**
+     * Calculates Y clip range for a child node. Considers this (parent) node's
+     * Y clip range.
+     *
+     * @param childPos  Position of the child node.
+     * @param childSize Size of the child node.
+     *
+     * @return (1.0f, 0.0f) if child should not be rendered, otherwise Y clip range for child node.
+     */
+    glm::vec2 calculateYClipForChild(const glm::vec2& childPos, const glm::vec2& childSize);
+
+    /**
      * Tells if the UI node is allowed to be rendered or not (has higher priority over visibility).
      *
      * @return `false` if should not be rendered.
@@ -382,11 +410,26 @@ private:
     /** Called after @ref bIsVisible or @ref bAllowRendering is changed. */
     void processVisibilityChange();
 
+    /**
+     * X component stores clip start in range [0.0; 1.0] and Y component stores clip size in [0.0; 1.0].
+     * This is used for layouts with scrollbars to "cut" parts of the UI node outside of the layout.
+     *
+     * @param clip Clip range.
+     */
+    void setYClip(const glm::vec2& clip);
+
     /** Width and height in range [0.0; 1.0]. */
     glm::vec2 size = glm::vec2(0.2f, 0.2f);
 
     /** Position on the screen in range [0.0; 1.0]. */
     glm::vec2 position = glm::vec2(0.2f, 0.5f);
+
+    /**
+     * Stores Y axis (from top to bottom) clipping for rendering.
+     * X component stores clip start in range [0.0; 1.0] and Y component stores clip size in [0.0; 1.0].
+     * This is used for layouts with scrollbars to "cut" parts of the UI node outside of the layout.
+     */
+    glm::vec2 yClip = glm::vec2(0.0f, 1.0f);
 
     /**
      * When this node is a child node of a layout node with an "expand child nodes rule" this value defines a

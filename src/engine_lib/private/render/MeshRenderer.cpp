@@ -17,7 +17,7 @@
 #include "render/GpuDebugMarker.hpp"
 
 // External.
-#include "SDL3/SDL.h"
+#include "SDL3/SDL_timer.h"
 #include "glad/glad.h"
 
 MeshRenderDataGuard::~MeshRenderDataGuard() {
@@ -300,7 +300,7 @@ MeshRenderer::addMeshForRendering(ShaderProgram* pShaderProgram, bool bEnableTra
             if (data.vTransparentShaders.empty() && !data.vOpaqueShaders.empty()) {
                 const auto& last = data.vOpaqueShaders.back();
                 iNewMeshIndex = last.iFirstMeshIndex + last.iMeshCount;
-            } else {
+            } else if (!data.vTransparentShaders.empty()) {
                 const auto& last = data.vTransparentShaders.back();
                 iNewMeshIndex = static_cast<unsigned short>(last.iFirstMeshIndex + last.iMeshCount);
             }

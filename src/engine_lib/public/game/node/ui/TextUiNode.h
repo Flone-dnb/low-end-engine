@@ -200,12 +200,23 @@ protected:
     /** Called after text is changed. */
     virtual void onAfterTextChanged() {}
 
+    /**
+     * Called after Y-axis clipping (see @ref getYClip) was changed for container nodes to apply new clipping
+     * range to the child nodes.
+     */
+    virtual void onAfterYClipChanged() override;
+
 private:
     /** Initializes @ref pRenderingHandle. */
     void initRenderingHandle();
 
-    /** Updates render data using @ref pRenderingHandle. */
-    void updateRenderData();
+    /**
+     * Updates render data using @ref pRenderingHandle.
+     *
+     * @param bRecalculateGlyphs Specify `true` if something related to glyph position/size/spacing was
+     * changed.
+     */
+    void updateRenderData(bool bRecalculateGlyphs);
 
     /** Not `nullptr` if this node is rendered. */
     std::unique_ptr<TextRenderingHandle> pRenderingHandle;
@@ -221,6 +232,9 @@ private:
 
     /** Height of the text in range [0.0; 1.0] relative to screen height. */
     float textHeight = 0.035f;
+
+    /** Actual height in range [0.0; 1.0] (relative to screen height) of the text (including all lines). */
+    float contentHeight = 0.035f;
 
     /** Text to display. */
     std::u16string sText = u"text";

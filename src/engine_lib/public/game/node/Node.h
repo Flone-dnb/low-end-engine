@@ -411,7 +411,7 @@ protected:
 
     /**
      * Called after @ref onSpawning when this node and all of node's child nodes (at the moment
-     * of spawning) were spawned.
+     * of spawning) were spawned (called even if this node has no children).
      *
      * @warning If overriding you must call the parent's version of this function first
      * (before executing your logic) to execute parent's logic.

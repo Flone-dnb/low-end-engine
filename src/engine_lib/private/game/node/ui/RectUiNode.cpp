@@ -110,7 +110,7 @@ void RectUiNode::setPathToTexture(std::string sPathToTextureRelativeRes) {
 }
 
 void RectUiNode::setPadding(float padding) {
-    this->padding = std::clamp(padding, 0.0f, 0.5f); // NOLINT
+    this->padding = std::clamp(padding, 0.0f, 0.5f);
 
     updateChildNodePosAndSize();
 }
@@ -189,11 +189,24 @@ void RectUiNode::updateChildNodePosAndSize() {
         Error::showErrorAndThrowException("expected a UI node");
     }
 
+    const auto pos = getPosition();
     const auto size = getSize();
     const auto paddingRealSize = std::min(size.x, size.y) * padding;
 
-    pUiChild->setPosition(getPosition() + paddingRealSize);
-    pUiChild->setSize(size - paddingRealSize * 2.0f);
+    const auto childSize = size - paddingRealSize * 2.0f;
+    const auto childPos = pos + paddingRealSize;
+
+    pUiChild->setPosition(childPos);
+    pUiChild->setSize(childSize);
+
+    // Update child Y clip.
+    const auto childYClip = calculateYClipForChild(childPos, childSize);
+    if (childYClip.x >= 1.0f || childYClip.y <= 0.0f) {
+        pUiChild->setAllowRendering(false);
+    } else {
+        pUiChild->setAllowRendering(true);
+        pUiChild->setYClip(childYClip);
+    }
 
     if (!isVisible() && pUiChild->isVisible()) {
         pUiChild->setIsVisible(false);
@@ -203,4 +216,10 @@ void RectUiNode::updateChildNodePosAndSize() {
 void RectUiNode::onChildLayoutExpanded(const glm::vec2& layoutNewSize) {
     const auto paddingRealSize = std::min(layoutNewSize.x, layoutNewSize.y) * padding;
     setSize(layoutNewSize + paddingRealSize * 2.0f);
+}
+
+void RectUiNode::onAfterYClipChanged() {
+    UiNode::onAfterYClipChanged();
+
+    updateChildNodePosAndSize();
 }

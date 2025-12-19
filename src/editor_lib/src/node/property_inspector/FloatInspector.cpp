@@ -22,16 +22,17 @@ FloatInspector::FloatInspector(
     }
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
-    setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-    setSize(glm::vec2(getSize().x, 0.05f));
+    setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight() * 2.25f));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
         pTitle->setTextHeight(EditorTheme::getTextHeight());
         pTitle->setText(utf::as_u16(EditorTheme::formatVariableName(sVariableName)));
+        pTitle->setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight()));
 
         auto pBackground = addChildNode(std::make_unique<RectUiNode>());
-        pBackground->setPadding(EditorTheme::getPadding());
+        pBackground->setPadding(EditorTheme::getPadding() * 2.0f);
         pBackground->setColor(EditorTheme::getButtonColor());
+        pBackground->setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight() * 1.25f));
         {
             const auto pTextEdit = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
             pTextEdit->setTextHeight(EditorTheme::getSmallTextHeight());

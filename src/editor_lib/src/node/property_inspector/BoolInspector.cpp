@@ -23,14 +23,15 @@ BoolInspector::BoolInspector(
     }
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
-    setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-    setSize(glm::vec2(getSize().x, 0.05f));
+    setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight() * 2.25f));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
         pTitle->setTextHeight(EditorTheme::getTextHeight());
         pTitle->setText(utf::as_u16(EditorTheme::formatVariableName(sVariableName)));
+        pTitle->setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight()));
 
         const auto pCheckbox = addChildNode(std::make_unique<CheckboxUiNode>());
+        pCheckbox->setSize(glm::vec2(EditorTheme::getSmallTextHeight() * 1.25f));
         pCheckbox->setIsChecked(variableIt->second.getter(pObject));
         pCheckbox->setOnStateChanged([this](bool bNewValue) {
             // Set new value.

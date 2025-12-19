@@ -75,7 +75,7 @@ float EditorTheme::getSmallTextHeight() { return getTextHeight() * 0.925f; }
 
 float EditorTheme::getButtonSizeY() { return 0.025f; }
 
-float EditorTheme::getPadding() { return 0.0275f; }
+float EditorTheme::getPadding() { return 0.0125f; }
 
 float EditorTheme::getSpacing() { return 0.017f; }
 

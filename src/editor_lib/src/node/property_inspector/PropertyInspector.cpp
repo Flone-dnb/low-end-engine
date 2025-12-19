@@ -31,7 +31,7 @@ PropertyInspector::PropertyInspector() : PropertyInspector("Property Inspector")
 PropertyInspector::PropertyInspector(const std::string& sNodeName) : RectUiNode(sNodeName) {
     setColor(EditorTheme::getEditorBackgroundColor());
 
-    pPropertyLayout = addChildNode(std::make_unique<LayoutUiNode>());
+    pPropertyLayout = addChildNode(std::make_unique<LayoutUiNode>("property inspector layout"));
     pPropertyLayout->setPadding(EditorTheme::getPadding());
     pPropertyLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
     pPropertyLayout->setIsScrollBarEnabled(true);
@@ -241,11 +241,12 @@ void PropertyInspector::displayPropertiesForType(
     LayoutUiNode* pLayoutToAddTo, const std::string& sTypeGuid, Serializable* pObject, bool bRecursive) {
     const auto& typeInfo = ReflectedTypeDatabase::getTypeInfo(sTypeGuid);
 
-    auto pGroupBackground = std::make_unique<RectUiNode>();
+    auto pGroupBackground =
+        std::make_unique<RectUiNode>(std::format("background for group of type \"{}\"", typeInfo.sTypeName));
     pGroupBackground->setPadding(EditorTheme::getPadding() / 2.0f);
     pGroupBackground->setColor(EditorTheme::getContainerBackgroundColor());
     pGroupBackground->setSize(
-        glm::vec2(pGroupBackground->getSize().x, 0.015f)); // initial height, will expand if needed
+        glm::vec2(pGroupBackground->getSize().x, 0.05f)); // initial height, will expand if needed
 
     const auto pTypeGroupLayout = pGroupBackground->addChildNode(
         std::make_unique<LayoutUiNode>(std::format("property group for type \"{}\"", typeInfo.sTypeName)));
@@ -253,13 +254,15 @@ void PropertyInspector::displayPropertiesForType(
     pTypeGroupLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
 
     {
-        const auto pGroupTitle = pTypeGroupLayout->addChildNode(std::make_unique<TextUiNode>());
+        const auto pGroupTitle = pTypeGroupLayout->addChildNode(
+            std::make_unique<TextUiNode>(std::format("property group title \"{}\"", typeInfo.sTypeName)));
         pGroupTitle->setTextHeight(EditorTheme::getTextHeight());
         pGroupTitle->setSize(glm::vec2(pGroupTitle->getSize().x, pGroupTitle->getTextHeight() * 1.2f));
         pGroupTitle->setText(utf::as_u16(typeInfo.sTypeName));
         pGroupTitle->setTextColor(EditorTheme::getAccentColor());
 
-        const auto pTypePropertiesLayout = pTypeGroupLayout->addChildNode(std::make_unique<LayoutUiNode>());
+        const auto pTypePropertiesLayout = pTypeGroupLayout->addChildNode(std::make_unique<LayoutUiNode>(
+            std::format("inspectors holder for type \"{}\"", typeInfo.sTypeName)));
         pTypePropertiesLayout->setChildNodeSpacing(EditorTheme::getTypePropertySpacing());
         pTypePropertiesLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_SECONDARY_AXIS);
         pTypePropertiesLayout->setSize(

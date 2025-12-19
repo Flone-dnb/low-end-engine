@@ -2,6 +2,7 @@
 
 // Custom.
 #include "game/GameInstance.h"
+#include "misc/Profiler.hpp"
 #include "render/Renderer.h"
 #include "render/UiNodeManager.h"
 #include "game/node/ui/LayoutUiNode.h"
@@ -80,8 +81,8 @@ UiNode::UiNode() : UiNode("UI Node") {}
 UiNode::UiNode(const std::string& sNodeName) : Node(sNodeName) {}
 
 void UiNode::setPosition(const glm::vec2& position) {
-    this->position.x = std::clamp(position.x, 0.0f, 1.0f);
-    this->position.y = std::clamp(position.y, 0.0f, 1.0f);
+    // Note: don't clamp to [0; 1] because layout with scroll can cause this to have negative Y (which is OK).
+    this->position = position;
 
     onAfterPositionChanged();
 }
@@ -212,6 +213,10 @@ void UiNode::onChangedReceivingInputWhileSpawned(bool bEnabledNow) {
 
 void UiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
     Node::onAfterAttachedToNewParent(bThisNodeBeingAttached);
+
+    // Reset clipping that was possibly set by some node in the parent hierarchy.
+    setYClip(glm::vec2(0.0f, 1.0f));
+    setAllowRendering(true);
 
     {
         const auto mtxParent = getParentNode();
@@ -352,4 +357,39 @@ void UiNode::processVisibilityChange() {
             onMouseLeft();
         }
     }
+}
+
+void UiNode::setYClip(const glm::vec2& clip) {
+    yClip = clip;
+    onAfterYClipChanged();
+}
+
+glm::vec2 UiNode::calculateYClipForChild(const glm::vec2& childPos, const glm::vec2& childSize) {
+    PROFILE_FUNC
+
+    const auto pos = getPosition();
+
+    float yClipStart = pos.y + yClip.x * size.y;
+    float yClipSize = yClip.y * size.y;
+    auto childYClip = glm::vec2(0.0f, 1.0f);
+
+    if (yClipStart > childPos.y) {
+        childYClip.x = std::min((yClipStart - childPos.y) / childSize.y, 1.0f);
+    }
+
+    if (yClipStart + yClipSize < childPos.y + childSize.y) {
+        if (yClipStart + yClipSize <= childPos.y) {
+            childYClip.y = 0.0f;
+        } else {
+            if (yClipStart <= childPos.y) {
+                childYClip.y = (yClipStart + yClipSize - childPos.y) / childSize.y;
+            } else {
+                childYClip.y = yClipSize / childSize.y;
+            }
+        }
+    } else {
+        childYClip.y = 1.0f - childYClip.x;
+    }
+
+    return childYClip;
 }

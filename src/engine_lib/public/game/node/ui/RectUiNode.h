@@ -146,6 +146,12 @@ protected:
     /** Called after size of this UI node was changed. */
     virtual void onAfterSizeChanged() override;
 
+    /**
+     * Called after Y-axis clipping was changed for container nodes to apply new clipping range to the child
+     * nodes.
+     */
+    virtual void onAfterYClipChanged() override;
+
 private:
     /** Updates position and size of the child node to the current position and size of the node. */
     void updateChildNodePosAndSize();

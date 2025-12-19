@@ -685,7 +685,8 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
 
     // Collision draw mode.
     {
-        const auto pCollisionDrawModeText = pRootNode->addChildNode(std::make_unique<TextUiNode>());
+        const auto pCollisionDrawModeText = pRootNode->addChildNode(
+            std::make_unique<TextUiNode>(std::string(EditorConstants::getHiddenNodeNamePrefix())));
         pCollisionDrawModeText->setTextHeight(0.025f);
         pCollisionDrawModeText->setPosition(glm::vec2(0.79f, 0.005f));
         pCollisionDrawModeText->setSize(glm::vec2(0.2f, 0.05f));
@@ -694,12 +695,14 @@ void EditorGameInstance::onAfterGameWorldCreated(Node* pRootNode) {
         auto& debugDrawer =
             pRootNode->getWorldWhileSpawned()->getGameManager().getPhysicsManager().getPhysicsDebugDrawer();
 
-        const auto pCollisionDrawModeButton = pRootNode->addChildNode(std::make_unique<ButtonUiNode>());
+        const auto pCollisionDrawModeButton = pRootNode->addChildNode(
+            std::make_unique<ButtonUiNode>(std::string(EditorConstants::getHiddenNodeNamePrefix())));
         pCollisionDrawModeButton->setPosition(glm::vec2(0.96f, 0.0075f));
         pCollisionDrawModeButton->setSize(glm::vec2(0.03f, 0.03f));
         pCollisionDrawModeButton->setPadding(0.05f);
 
-        const auto pButtonText = pCollisionDrawModeButton->addChildNode(std::make_unique<TextUiNode>());
+        const auto pButtonText = pCollisionDrawModeButton->addChildNode(
+            std::make_unique<TextUiNode>(std::string(EditorConstants::getHiddenNodeNamePrefix())));
         pButtonText->setTextHeight(0.02f);
         pButtonText->setText(debugDrawer.getDrawAsWireframe() ? u"ON" : u"OFF");
 

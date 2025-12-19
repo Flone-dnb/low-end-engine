@@ -4,6 +4,7 @@
 #include "game/node/ui/RectUiNode.h"
 
 // External.
+#include "misc/Profiler.hpp"
 #include "nameof.hpp"
 
 namespace {
@@ -95,24 +96,32 @@ LayoutUiNode::LayoutUiNode(const std::string& sNodeName) : UiNode(sNodeName) {
 }
 
 void LayoutUiNode::onAfterPositionChanged() {
+    PROFILE_FUNC
+
     UiNode::onAfterPositionChanged();
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterSizeChanged() {
+    PROFILE_FUNC
+
     UiNode::onAfterSizeChanged();
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterChildNodePositionChanged(size_t iIndexFrom, size_t iIndexTo) {
+    PROFILE_FUNC
+
     UiNode::onAfterChildNodePositionChanged(iIndexFrom, iIndexTo);
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 bool LayoutUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
+    PROFILE_FUNC
+
     if (!bIsScrollBarEnabled) {
         return UiNode::onMouseScrollMoveWhileHovered(iOffset);
     }
@@ -133,30 +142,40 @@ bool LayoutUiNode::onMouseScrollMoveWhileHovered(int iOffset) {
 }
 
 void LayoutUiNode::setIsHorizontal(bool bIsHorizontal) {
+    PROFILE_FUNC
+
     this->bIsHorizontal = bIsHorizontal;
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::setChildNodeSpacing(float spacing) {
+    PROFILE_FUNC
+
     childNodeSpacing = std::clamp(spacing, 0.0f, 1.0f);
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::setChildNodeExpandRule(ChildNodeExpandRule expandRule) {
+    PROFILE_FUNC
+
     childExpandRule = expandRule;
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::setPadding(float padding) {
-    this->padding = std::clamp(padding, 0.0f, 0.5f); // NOLINT
+    PROFILE_FUNC
+
+    this->padding = std::clamp(padding, 0.0f, 0.5f);
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::setIsScrollBarEnabled(bool bEnable) {
+    PROFILE_FUNC
+
     bIsScrollBarEnabled = bEnable;
 
     setIsReceivingInput(bIsScrollBarEnabled);
@@ -165,6 +184,8 @@ void LayoutUiNode::setIsScrollBarEnabled(bool bEnable) {
 }
 
 void LayoutUiNode::setScrollBarOffset(size_t iOffset) {
+    PROFILE_FUNC
+
     iCurrentScrollOffset = iOffset;
     recalculatePosAndSizeForDirectChildNodes();
 }
@@ -179,29 +200,33 @@ void LayoutUiNode::onAfterDeserialized() {
     setIsReceivingInput(bIsScrollBarEnabled);
 }
 
-void LayoutUiNode::onSpawning() {
-    UiNode::onSpawning();
-
-    recalculatePosAndSizeForDirectChildNodes();
-}
-
 void LayoutUiNode::onVisibilityChanged() {
+    PROFILE_FUNC
+
     UiNode::onVisibilityChanged();
 
-    if (!bIsScrollBarEnabled) {
-        return;
+    const auto bIsVisible = isVisible() && bAllowRendering;
+
+    if (bIsScrollBarEnabled) {
+        setIsReceivingInput(bIsVisible);
     }
 
-    setIsReceivingInput(isVisible());
+    if (bIsVisible) {
+        recalculatePosAndSizeForDirectChildNodes();
+    }
 }
 
 void LayoutUiNode::onChildNodesSpawned() {
+    PROFILE_FUNC
+
     UiNode::onChildNodesSpawned();
 
     recalculatePosAndSizeForDirectChildNodes();
 }
 
 void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
+    PROFILE_FUNC
+
     UiNode::onAfterNewDirectChildAttached(pNewDirectChild);
 
     if (bIsScrollBarEnabled && bAutoScrollToBottom) {
@@ -215,6 +240,8 @@ void LayoutUiNode::onAfterNewDirectChildAttached(Node* pNewDirectChild) {
 }
 
 void LayoutUiNode::onAfterDirectChildDetached(Node* pDetachedDirectChild) {
+    PROFILE_FUNC
+
     UiNode::onAfterDirectChildDetached(pDetachedDirectChild);
 
     iCurrentScrollOffset = 0;
@@ -227,19 +254,39 @@ void LayoutUiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
 
     // Find a layout node in the parent chain and save it.
     std::scoped_lock parentGuard(mtxLayoutParent.first);
-
     mtxLayoutParent.second = getParentNodeOfType<LayoutUiNode>();
 }
 
-void LayoutUiNode::onDirectChildNodeVisibilityChanged() { recalculatePosAndSizeForDirectChildNodes(); }
+void LayoutUiNode::onDirectChildNodeVisibilityChanged() {
+    PROFILE_FUNC
+    recalculatePosAndSizeForDirectChildNodes();
+}
 
 void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
+    PROFILE_FUNC
+#if defined(ENGINE_PROFILER_ENABLED)
+    const auto sName = getNodeName();
+    PROFILE_ADD_SCOPE_TEXT(sName.data(), sName.size());
+#endif
+
     if (!isSpawned()) {
         return;
     }
 
     const auto mtxChildNodes = getChildNodes();
     std::scoped_lock childGuard(*mtxChildNodes.first);
+
+    if (!bAllowRendering) {
+        // Just hide everything.
+        for (const auto& pChildNode : mtxChildNodes.second) {
+            const auto pUiChild = reinterpret_cast<UiNode*>(pChildNode);
+            if (pUiChild == nullptr) [[unlikely]] {
+                Error::showErrorAndThrowException("unexpected state");
+            }
+            pUiChild->setAllowRendering(false);
+        }
+        return;
+    }
 
     if (bIsCurrentlyUpdatingChildNodes) {
         return;
@@ -251,11 +298,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
         float expandPortionSum = 0.0f;
         bool bAtLeastOneChildVisible = false;
         for (const auto& pChildNode : mtxChildNodes.second) {
-            // Cast type.
-            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
-            if (pUiChild == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("unexpected state");
-            }
+            const auto pUiChild = reinterpret_cast<UiNode*>(pChildNode);
 
             if (!pUiChild->isVisible() && !pUiChild->getOccupiesSpaceEvenIfInvisible()) {
                 continue;
@@ -319,11 +362,7 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
 
         // Update position and size for all direct child nodes.
         for (const auto& pChildNode : mtxChildNodes.second) {
-            // Cast type.
-            const auto pUiChild = dynamic_cast<UiNode*>(pChildNode);
-            if (pUiChild == nullptr) [[unlikely]] {
-                Error::showErrorAndThrowException("unexpected state");
-            }
+            const auto pUiChild = reinterpret_cast<UiNode*>(pChildNode);
 
             if (!pUiChild->isVisible() && !pUiChild->getOccupiesSpaceEvenIfInvisible()) {
                 continue;
@@ -383,22 +422,31 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             totalScrollHeight += lastChildSize;
 
             if (bIsScrollBarEnabled) {
-                if (yOffsetForScrollToSkip + lastChildSize < 0.0f) {
-                    // Above the layout area.
+                if ((yOffsetForScrollToSkip + lastChildSize <= 0.0f) ||
+                    (currentChildPos.y >= layoutPos.y + layoutSize.y)) {
+                    // Fully above or below the layout area (fully not visible).
                     yOffsetForScrollToSkip += lastChildSize;
                     pUiChild->setAllowRendering(false);
                     continue;
                 }
-                if (currentChildPos.y > layoutPos.y + layoutSize.y) {
-                    // Fully below the layout area.
-                    yOffsetForScrollToSkip += lastChildSize;
-                    pUiChild->setAllowRendering(false);
-                    continue;
+                // Some part of the child is inside of the layout (visible).
+                if (yOffsetForScrollToSkip < 0.0f) {
+                    // Adjust child pos (pivot). Note that yOffset is negative.
+                    currentChildPos.y += yOffsetForScrollToSkip;
                 }
                 yOffsetForScrollToSkip += lastChildSize;
             }
 
-            pUiChild->setAllowRendering(bAllowRendering);
+            // TODO: we should update Y clip somewhere here but since I feel how my sanity is fading
+            // I leave it for a brave champion somewhere in the future. Good luck there champ!
+            // const auto childYClip = calculateYClipForChild(pUiChild->getPosition(),
+            // pUiChild->getSize()); if (childYClip.x >= 1.0f || childYClip.y <= 0.0f) {
+            //     pUiChild->setAllowRendering(false);
+            // } else {
+            //     pUiChild->setYClip(childYClip);
+            // }
+
+            pUiChild->setAllowRendering(true);
             pUiChild->setSize(childNewSize);
             pUiChild->setPosition(currentChildPos);
 
@@ -437,9 +485,9 @@ void LayoutUiNode::recalculatePosAndSizeForDirectChildNodes() {
             if (auto pRect = dynamic_cast<RectUiNode*>(mtxParent.second)) {
                 pRect->onChildLayoutExpanded(getSize());
             }
-        }
-        if (mtxLayoutParent.second != nullptr) {
-            mtxLayoutParent.second->recalculatePosAndSizeForDirectChildNodes();
+            if (mtxLayoutParent.second != nullptr) {
+                mtxLayoutParent.second->recalculatePosAndSizeForDirectChildNodes();
+            }
         }
     }
     bIsCurrentlyUpdatingChildNodes = false;

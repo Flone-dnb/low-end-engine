@@ -1096,12 +1096,14 @@ void UiNodeManager::drawRectNodesDataLocked(
             size = glm::vec2(
                 size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
 
+            const auto yClip = pRectNode->getYClip();
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
                 shaderInfo.iClipRectUniform,
                 pos,
-                size);
+                size,
+                glm::vec4(0.0f, yClip.x, 1.0f, yClip.y));
         }
     }
 
@@ -1155,12 +1157,14 @@ void UiNodeManager::drawProgressBarNodesDataLocked(
             auto size = glm::vec2(
                 relativeSize.x * static_cast<float>(iWindowWidth),
                 relativeSize.y * static_cast<float>(iWindowHeight));
+            const auto yClip = pProgressBarNode->getYClip();
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
                 shaderInfo.iClipRectUniform,
                 pos,
-                size);
+                size,
+                glm::vec4(0.0f, yClip.x, 1.0f, yClip.y));
 
             // Set foreground shader parameters.
             pShaderProgram->setVector4ToActiveProgram("color", pProgressBarNode->getForegroundColor());
@@ -1173,7 +1177,7 @@ void UiNodeManager::drawProgressBarNodesDataLocked(
             }
 
             // Draw foreground.
-            const auto clipRect = glm::vec4(0.0f, 0.0f, pProgressBarNode->getProgressFactor(), 1.0f);
+            const auto clipRect = glm::vec4(0.0f, yClip.x, pProgressBarNode->getProgressFactor(), yClip.y);
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
@@ -1238,12 +1242,15 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
                 pos.x * static_cast<float>(iWindowWidth), pos.y * static_cast<float>(iWindowHeight));
             size = glm::vec2(
                 size.x * static_cast<float>(iWindowWidth), size.y * static_cast<float>(iWindowHeight));
+            const auto yClip = pCheckboxNode->getYClip();
+            const auto clipRect = glm::vec4(0.0f, yClip.x, 1.0f, yClip.y);
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
                 shaderInfo.iClipRectUniform,
                 pos,
-                size);
+                size,
+                clipRect);
 
             // Draw background.
             pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getBackgroundColor());
@@ -1254,7 +1261,8 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
                 shaderInfo.iScreenSizeUniform,
                 shaderInfo.iClipRectUniform,
                 pos,
-                size);
+                size,
+                clipRect);
 
             if (pCheckboxNode->isChecked()) {
                 pShaderProgram->setVector4ToActiveProgram("color", pCheckboxNode->getForegroundColor());
@@ -1265,7 +1273,8 @@ void UiNodeManager::drawCheckboxNodesDataLocked(
                     shaderInfo.iScreenSizeUniform,
                     shaderInfo.iClipRectUniform,
                     pos,
-                    size);
+                    size,
+                    clipRect);
             }
         }
     }
@@ -1313,6 +1322,8 @@ void UiNodeManager::drawSliderNodesDataLocked(
             // Draw slider base.
             pShaderProgram->setVector4ToActiveProgram("color", pSliderNode->getSliderColor());
             const auto baseHeight = size.y * sliderHeightToWidthRatio;
+            const auto yClip = pSliderNode->getYClip();
+            const auto clipRect = glm::vec4(0.0f, yClip.x, 1.0f, yClip.y);
             drawQuad(
                 shaderInfo.iScreenPosUniform,
                 shaderInfo.iScreenSizeUniform,
@@ -1322,7 +1333,8 @@ void UiNodeManager::drawSliderNodesDataLocked(
                     (pos.y + size.y / 2.0f - baseHeight / 2.0f) * static_cast<float>(iWindowHeight)),
                 glm::vec2(
                     size.x * static_cast<float>(iWindowWidth),
-                    baseHeight * static_cast<float>(iWindowHeight)));
+                    baseHeight * static_cast<float>(iWindowHeight)),
+                clipRect);
 
             // Draw slider handle.
             pShaderProgram->setVector4ToActiveProgram("color", pSliderNode->getSliderHandleColor());
@@ -1337,7 +1349,8 @@ void UiNodeManager::drawSliderNodesDataLocked(
                     handleCenterPos.y * static_cast<float>(iWindowHeight)),
                 glm::vec2(
                     handleWidth * static_cast<float>(iWindowWidth),
-                    size.y * static_cast<float>(iWindowHeight)));
+                    size.y * static_cast<float>(iWindowHeight)),
+                clipRect);
         }
     }
 
@@ -1368,6 +1381,8 @@ void UiNodeManager::drawTextNodesDataLocked(
     for (size_t i = 0; i < vTextRenderData.size(); i++) {
         const auto& renderData = vTextRenderData[i];
 
+        const auto clipRect = glm::vec4(0.0f, renderData.yClip.x, 1.0f, renderData.yClip.y);
+
         glUniform4fv(shaderInfo.iTextColorUniform, 1, glm::value_ptr(renderData.textColor));
 
         // Render each glyph.
@@ -1378,7 +1393,8 @@ void UiNodeManager::drawTextNodesDataLocked(
                 shaderInfo.iScreenSizeUniform,
                 shaderInfo.iClipRectUniform,
                 (renderData.pos + glyph.relativePos) * windowSize,
-                glyph.screenSize);
+                glyph.screenSize,
+                clipRect);
         }
     }
 
@@ -1436,6 +1452,9 @@ void UiNodeManager::drawTextEditNodesDataLocked(
                                                            // (it will wait on our mutex)
                 vInputNodesRendered.push_back(pTextEditNode);
             }
+
+            const auto yClip = pTextEditNode->getYClip();
+            const auto clipRect = glm::vec4(0.0f, yClip.x, 1.0f, yClip.y);
 
             // Check cursor and selection.
             const auto optionalCursorOffset = pTextEditNode->optionalCursorOffset;
@@ -1597,7 +1616,8 @@ void UiNodeManager::drawTextEditNodesDataLocked(
                             shaderInfo.iScreenSizeUniform,
                             shaderInfo.iClipRectUniform,
                             glm::vec2(xpos, ypos),
-                            glm::vec2(width, height));
+                            glm::vec2(width, height),
+                            clipRect);
 
                         iRenderedCharCount += 1;
                     }

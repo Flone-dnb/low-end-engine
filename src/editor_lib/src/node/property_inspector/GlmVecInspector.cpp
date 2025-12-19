@@ -112,21 +112,29 @@ GlmVecInspector::GlmVecInspector(
     const glm::vec4 currentValue = getCurrentValue(pObject, sVariableName, componentCount);
 
     setChildNodeSpacing(EditorTheme::getTypePropertyNameValueSpacing());
-    setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_BOTH_AXIS);
-    setSize(glm::vec2(getSize().x, 0.05f));
+    setSize(glm::vec2(getSize().x / 1.25f, EditorTheme::getSmallTextHeight() * 2.25f));
     {
         const auto pTitle = addChildNode(std::make_unique<TextUiNode>());
         pTitle->setTextHeight(EditorTheme::getTextHeight());
         pTitle->setText(utf::as_u16(EditorTheme::formatVariableName(sVariableName)));
+        pTitle->setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight()));
 
         const auto pHorizontalLayout = addChildNode(std::make_unique<LayoutUiNode>());
         pHorizontalLayout->setIsHorizontal(true);
-        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing() * 10.0f);
-        pHorizontalLayout->setChildNodeExpandRule(ChildNodeExpandRule::EXPAND_ALONG_MAIN_AXIS);
+        pHorizontalLayout->setChildNodeSpacing(EditorTheme::getSpacing());
+        pHorizontalLayout->setSize(glm::vec2(getSize().x, EditorTheme::getSmallTextHeight() * 1.25f));
         {
+            glm::vec2 componentSize = glm::vec2(getSize().x / 2.0f, pHorizontalLayout->getSize().y);
+            if (componentCount == GlmVecComponentCount::VEC3) {
+                componentSize = glm::vec2(getSize().x / 3.0f, pHorizontalLayout->getSize().y);
+            } else if (componentCount == GlmVecComponentCount::VEC4) {
+                componentSize = glm::vec2(getSize().x / 4.0f, pHorizontalLayout->getSize().y);
+            }
+
             auto pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
             pBackground->setPadding(EditorTheme::getPadding());
             pBackground->setColor(EditorTheme::getButtonColor());
+            pBackground->setSize(componentSize);
             {
                 pXComponentText = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                 pXComponentText->setTextHeight(EditorTheme::getSmallTextHeight());
@@ -140,6 +148,7 @@ GlmVecInspector::GlmVecInspector(
             pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
             pBackground->setPadding(EditorTheme::getPadding());
             pBackground->setColor(EditorTheme::getButtonColor());
+            pBackground->setSize(componentSize);
             {
                 pYComponentText = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                 pYComponentText->setTextHeight(EditorTheme::getSmallTextHeight());
@@ -155,6 +164,7 @@ GlmVecInspector::GlmVecInspector(
                 pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
                 pBackground->setPadding(EditorTheme::getPadding());
                 pBackground->setColor(EditorTheme::getButtonColor());
+                pBackground->setSize(componentSize);
                 {
                     pZComponentText = pBackground->addChildNode(std::make_unique<TextEditUiNode>());
                     pZComponentText->setTextHeight(EditorTheme::getSmallTextHeight());
@@ -170,6 +180,7 @@ GlmVecInspector::GlmVecInspector(
                 pBackground = pHorizontalLayout->addChildNode(std::make_unique<RectUiNode>());
                 pBackground->setPadding(EditorTheme::getPadding());
                 pBackground->setColor(EditorTheme::getButtonColor());
+                pBackground->setSize(componentSize);
                 {
                     const auto pComponentWEdit =
                         pBackground->addChildNode(std::make_unique<TextEditUiNode>());

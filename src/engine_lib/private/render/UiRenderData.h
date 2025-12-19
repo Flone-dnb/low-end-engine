@@ -31,6 +31,9 @@ struct TextRenderData {
 
     /** Top-left corner of the text in range [0.0; 1.0] relative to screen. */
     glm::vec2 pos;
+
+    /** Y-axis clip rect (start and size). */
+    glm::vec2 yClip;
 };
 
 // ------------------------------------------------------------------------------------------------

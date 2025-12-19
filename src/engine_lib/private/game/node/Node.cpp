@@ -666,8 +666,8 @@ void Node::spawn() {
     }
 
     {
-        // Notify user code.
-        PROFILE_SCOPE("on child nodes spawned");
+        // Notify user code (even if the node has no children).
+        PROFILE_SCOPE("on child nodes spawned (user code)");
         PROFILE_ADD_SCOPE_TEXT(sNodeName.c_str(), sNodeName.size());
         onChildNodesSpawned();
     }

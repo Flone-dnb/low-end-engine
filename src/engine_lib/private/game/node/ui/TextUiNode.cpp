@@ -103,32 +103,32 @@ void TextUiNode::setText(std::u16string_view sNewText) {
         bIsCallingOnAfterTextChanged = false;
     }
 
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::setTextColor(const glm::vec4& color) {
     this->color = color;
-    updateRenderData();
+    updateRenderData(false);
 }
 
 void TextUiNode::setTextHeight(float height) {
     this->textHeight = height;
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::setTextLineSpacing(float lineSpacing) {
     this->lineSpacing = std::max(lineSpacing, 0.0f);
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::setIsWordWrapEnabled(bool bIsEnabled) {
     bIsWordWrapEnabled = bIsEnabled;
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::setHandleNewLineChars(bool bHandleNewLineChars) {
     this->bHandleNewLineChars = bHandleNewLineChars;
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::onSpawning() {
@@ -163,12 +163,22 @@ void TextUiNode::initRenderingHandle() {
         pRenderingHandle = uiManager.addTextForRendering(getUiLayer());
 
         // Initialize render data.
-        updateRenderData();
+        updateRenderData(true);
     }
 }
 
-void TextUiNode::updateRenderData() {
+void TextUiNode::onAfterYClipChanged() {
+    UiNode::onAfterYClipChanged();
+
+    updateRenderData(false);
+}
+
+void TextUiNode::updateRenderData(bool bRecalculateGlyphs) {
     PROFILE_FUNC
+#if defined(ENGINE_PROFILER_ENABLED)
+    const auto sName = getNodeName();
+    PROFILE_ADD_SCOPE_TEXT(sName.data(), sName.size());
+#endif
 
     if (pRenderingHandle == nullptr) {
         return;
@@ -182,53 +192,33 @@ void TextUiNode::updateRenderData() {
     data.pos = getPosition();
     data.textColor = color;
 
-    // Prepare glyph info.
-    data.vGlyphs.clear();
+    const auto size = getSize();
 
-    // If window size will change we will be notified and will re-run this code.
-    const auto [iWindowWidth, iWindowHeight] = getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
+    if (bRecalculateGlyphs) {
+        data.vGlyphs.clear();
 
-    auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
-    auto glyphGuard = fontManager.getGlyphs();
+        // If window size will change we will be notified and will re-run this code.
+        const auto [iWindowWidth, iWindowHeight] =
+            getGameInstanceWhileSpawned()->getWindow()->getWindowSize();
 
-    const float glyphScale = textHeight / fontManager.getFontHeightToLoad();
-    const float glyphHeight = fontManager.getFontHeightToLoad() * glyphScale;
-    const float glyphLineSpacing = lineSpacing * glyphHeight;
+        auto& fontManager = getGameInstanceWhileSpawned()->getRenderer()->getFontManager();
+        auto glyphGuard = fontManager.getGlyphs();
 
-    const auto maxXForWordWrap = getSize().x;
-    const auto yEndPos = getSize().y;
+        const float glyphScale = textHeight / fontManager.getFontHeightToLoad();
+        const float glyphHeight = fontManager.getFontHeightToLoad() * glyphScale;
+        const float glyphLineSpacing = lineSpacing * glyphHeight;
 
-    auto offset = glm::vec2(0.0f);
+        const auto maxXForWordWrap = size.x;
+        const auto yEndPos = size.y;
 
-    // Switch to the first row of text.
-    offset.y += glyphHeight;
+        auto offset = glm::vec2(0.0f);
 
-    for (const auto& character : sText) {
-        // Handle new line.
-        if (character == '\n' && bHandleNewLineChars) {
-            // Switch to a new line.
-            offset.y += glyphHeight + glyphLineSpacing;
-            offset.x = 0.0f;
+        // Switch to the first row of text.
+        offset.y += glyphHeight;
 
-            if (offset.y > yEndPos) {
-                break;
-            }
-
-            continue; // don't render \n
-        }
-
-        const auto& glyph = glyphGuard.getGlyph(character);
-
-        const float distanceToNextGlyph =
-            static_cast<float>(
-                static_cast<double>(glyph.advance >> 6) // bitshift by 6 to get value in pixels (2^6 = 64)
-                / static_cast<double>(iWindowWidth)) *
-            glyphScale;
-
-        // Handle word wrap.
-        // TODO: do per-character wrap for now, rework later
-        if (offset.x + distanceToNextGlyph > maxXForWordWrap) {
-            if (bIsWordWrapEnabled) {
+        for (const auto& character : sText) {
+            // Handle new line.
+            if (character == '\n' && bHandleNewLineChars) {
                 // Switch to a new line.
                 offset.y += glyphHeight + glyphLineSpacing;
                 offset.x = 0.0f;
@@ -236,32 +226,61 @@ void TextUiNode::updateRenderData() {
                 if (offset.y > yEndPos) {
                     break;
                 }
-            } else {
-                break;
+
+                continue; // don't render \n
             }
+
+            const auto& glyph = glyphGuard.getGlyph(character);
+
+            const float distanceToNextGlyph =
+                static_cast<float>(
+                    static_cast<double>(glyph.advance >> 6) // bitshift by 6 to get value in pixels (2^6 = 64)
+                    / static_cast<double>(iWindowWidth)) *
+                glyphScale;
+
+            // Handle word wrap.
+            // TODO: do per-character wrap for now, rework later
+            if (offset.x + distanceToNextGlyph > maxXForWordWrap) {
+                if (bIsWordWrapEnabled) {
+                    // Switch to a new line.
+                    offset.y += glyphHeight + glyphLineSpacing;
+                    offset.x = 0.0f;
+
+                    if (offset.y > yEndPos) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            // Space character has 0 width so don't submit any rendering.
+            if (glyph.size.x != 0) {
+                const auto relativePos = glm::vec2(
+                    offset.x + static_cast<float>(
+                                   static_cast<double>(glyph.bearing.x) / static_cast<double>(iWindowWidth)) *
+                                   glyphScale,
+                    offset.y -
+                        static_cast<float>(
+                            static_cast<double>(glyph.bearing.y) / static_cast<double>(iWindowHeight)) *
+                            glyphScale);
+
+                data.vGlyphs.push_back(GlythRenderData{
+                    .relativePos = relativePos,
+                    .screenSize = glm::vec2(
+                        static_cast<float>(glyph.size.x) * glyphScale,
+                        static_cast<float>(glyph.size.y) * glyphScale),
+                    .iTextureId = glyph.pTexture->getTextureId()});
+            }
+
+            // Switch to next glyph.
+            offset.x += distanceToNextGlyph;
         }
-
-        // Space character has 0 width so don't submit any rendering.
-        if (glyph.size.x != 0) {
-            const auto relativePos = glm::vec2(
-                offset.x + static_cast<float>(
-                               static_cast<double>(glyph.bearing.x) / static_cast<double>(iWindowWidth)) *
-                               glyphScale,
-                offset.y - static_cast<float>(
-                               static_cast<double>(glyph.bearing.y) / static_cast<double>(iWindowHeight)) *
-                               glyphScale);
-
-            data.vGlyphs.push_back(GlythRenderData{
-                .relativePos = relativePos,
-                .screenSize = glm::vec2(
-                    static_cast<float>(glyph.size.x) * glyphScale,
-                    static_cast<float>(glyph.size.y) * glyphScale),
-                .iTextureId = glyph.pTexture->getTextureId()});
-        }
-
-        // Switch to next glyph.
-        offset.x += distanceToNextGlyph;
+        contentHeight = offset.y;
     }
+
+    data.yClip = glm::vec2(0.0f, 1.0f);
+    // data.yClip = calculateYClipForChild(glm::vec2(0.0f, 0.0f), glm::vec2(size.x, contentHeight));
 }
 
 void TextUiNode::onDespawning() {
@@ -286,19 +305,19 @@ void TextUiNode::onVisibilityChanged() {
 void TextUiNode::onWindowSizeChanged() {
     UiNode::onWindowSizeChanged();
 
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::onAfterPositionChanged() {
     UiNode::onAfterPositionChanged();
 
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::onAfterSizeChanged() {
     UiNode::onAfterSizeChanged();
 
-    updateRenderData();
+    updateRenderData(true);
 }
 
 void TextUiNode::onAfterAttachedToNewParent(bool bThisNodeBeingAttached) {
