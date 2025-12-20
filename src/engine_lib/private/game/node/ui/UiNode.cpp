@@ -88,8 +88,9 @@ void UiNode::setPosition(const glm::vec2& position) {
 }
 
 void UiNode::setSize(const glm::vec2& size) {
-    this->size.x = std::clamp(size.x, 0.0f, 1.0f);
-    this->size.y = std::clamp(size.y, 0.0f, 1.0f);
+    // Note: don't clamp to [0; 1] in some cases it might be needed.
+    this->size.x = std::max(size.x, 0.001f);
+    this->size.y = std::max(size.y, 0.001f);
 
     onAfterSizeChanged();
 }
