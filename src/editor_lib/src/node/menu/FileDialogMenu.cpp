@@ -18,12 +18,11 @@ FileDialogMenu::FileDialogMenu(
     setPosition(glm::vec2(0.0f, 0.0f));
     setSize(glm::vec2(1.0f, 1.0f));
     setColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
+    setPadding(0.25f);
     setUiLayer(UiLayer::LAYER2);
     setModal();
 
     const auto pMenuBackground = addChildNode(std::make_unique<RectUiNode>());
-    pMenuBackground->setPosition(glm::vec2(0.25f, 0.25f));
-    pMenuBackground->setSize(glm::vec2(0.5f, 0.5f));
     pMenuBackground->setColor(EditorTheme::getContainerBackgroundColor());
     pMenuBackground->setPadding(EditorTheme::getPadding());
     {
