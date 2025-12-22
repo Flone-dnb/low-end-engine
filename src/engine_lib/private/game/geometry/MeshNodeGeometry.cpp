@@ -3,6 +3,7 @@
 // Standard.
 #include <fstream>
 #include <format>
+#include <cstdint>
 
 // Custom.
 #include "misc/Error.h"
@@ -10,13 +11,20 @@
 // External.
 #include "glad/glad.h"
 
+namespace {
+    constexpr uint16_t iSupportedFileVersion = 0;
+}
+
 void MeshNodeGeometry::serialize(const std::filesystem::path& pathToFile) const {
     std::ofstream file(pathToFile, std::ios::binary);
     if (!file.is_open()) [[unlikely]] {
         Error::showErrorAndThrowException(std::format("unable to create file \"{}\"", pathToFile.string()));
     }
 
-    // Write indices first.
+    // Write file version.
+    file.write(reinterpret_cast<const char*>(&iSupportedFileVersion), sizeof(iSupportedFileVersion));
+
+    // Write indices.
     if (vIndices.size() > std::numeric_limits<unsigned int>::max()) [[unlikely]] {
         Error::showErrorAndThrowException("index count exceeds type limit");
     }
@@ -77,6 +85,21 @@ MeshNodeGeometry MeshNodeGeometry::deserialize(const std::filesystem::path& path
     file.seekg(0);
 
     size_t iReadByteCount = 0;
+
+    // Read file version.
+    uint16_t iFileVersion = 0;
+    file.read(reinterpret_cast<char*>(&iFileVersion), sizeof(iFileVersion));
+    iReadByteCount += sizeof(iFileVersion);
+
+    // Check file version.
+    // TODO: add backwards compatibility here when needed.
+    if (iSupportedFileVersion != iFileVersion) [[unlikely]] {
+        Error::showErrorAndThrowException(std::format(
+            "file \"{}\" has unsupported format version {} while the supported version is {}",
+            pathToFile.string(),
+            iFileVersion,
+            iSupportedFileVersion));
+    }
 
     // Read index count.
     unsigned int iIndexCount = 0;
@@ -148,6 +171,7 @@ MeshNodeGeometry MeshNodeGeometry::deserialize(const std::filesystem::path& path
     }
 
 #if defined(DEBUG)
+    //                        ALSO UPDATE FILE VERSION and backwards compatibility checks
     static_assert(sizeof(MeshNodeVertex) == 32, "add new variables here");
     static_assert(sizeof(MeshNodeGeometry) == 48, "add new variables here");
 #endif
