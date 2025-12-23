@@ -105,6 +105,13 @@ public:
     void setTextureTilingMultiplier(const glm::vec2& mult);
 
     /**
+     * Sets width of the mesh outline.
+     *
+     * @param width Width of the outline (0 to disable).
+     */
+    void setOutlineWidth(float width);
+
+    /**
      * Returns color of the diffuse light.
      *
      * @return Diffuse light color.
@@ -124,6 +131,13 @@ public:
      * @return Opacity.
      */
     float getOpacity() const { return diffuseColor.w; }
+
+    /**
+     * Returns width of the mesh outline.
+     *
+     * @return Outline width.
+     */
+    float getOutlineWidth() const { return outlineWidth; }
 
     /**
      * Determines if transparency is ignored or not.
@@ -202,6 +216,9 @@ private:
 
     /** Offset for UVs. */
     glm::vec2 textureUvOffset = glm::vec2(0.0f, 0.0f);
+
+    /** Width of the mesh outline. */
+    float outlineWidth = 0.0f;
 
     /**
      * Node that uses this material. It's safe to store a raw pointer here because the node will notify the

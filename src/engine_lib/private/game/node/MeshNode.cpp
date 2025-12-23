@@ -29,7 +29,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->isVisible();
         }};
 
-    variables.vec4s["materialDiffuseColor"] = ReflectedVariableInfo<glm::vec4>{
+    variables.vec4s["diffuseColor"] = ReflectedVariableInfo<glm::vec4>{
         .setter =
             [](Serializable* pThis, const glm::vec4& newValue) {
                 auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
@@ -41,7 +41,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return glm::vec4(material.getDiffuseColor(), material.getOpacity());
         }};
 
-    variables.strings["materialDiffuseTexture"] = ReflectedVariableInfo<std::string>{
+    variables.strings["sDiffuseTexture"] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {
                 reinterpret_cast<MeshNode*>(pThis)->getMaterial().setPathToDiffuseTexture(sNewValue);
@@ -50,7 +50,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToDiffuseTexture();
         }};
 
-    variables.vec2s["materialTextureTilingMultiplier"] = ReflectedVariableInfo<glm::vec2>{
+    variables.vec2s["textureTilingMultiplier"] = ReflectedVariableInfo<glm::vec2>{
         .setter =
             [](Serializable* pThis, const glm::vec2& newValue) {
                 auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
@@ -61,7 +61,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return material.getTextureTilingMultiplier();
         }};
 
-    variables.vec2s["materialTextureUvOffset"] = ReflectedVariableInfo<glm::vec2>{
+    variables.vec2s["textureUvOffset"] = ReflectedVariableInfo<glm::vec2>{
         .setter =
             [](Serializable* pThis, const glm::vec2& newValue) {
                 auto& material = reinterpret_cast<MeshNode*>(pThis)->getMaterial();
@@ -72,7 +72,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return material.getTextureUvOffset();
         }};
 
-    variables.strings["materialCustomVertexShader"] = ReflectedVariableInfo<std::string>{
+    variables.strings["sCustomVertexShader"] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {
                 reinterpret_cast<MeshNode*>(pThis)->getMaterial().setPathToCustomVertexShader(sNewValue);
@@ -81,7 +81,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToCustomVertexShader();
         }};
 
-    variables.strings["materialCustomFragmentShader"] = ReflectedVariableInfo<std::string>{
+    variables.strings["sCustomFragmentShader"] = ReflectedVariableInfo<std::string>{
         .setter =
             [](Serializable* pThis, const std::string& sNewValue) {
                 reinterpret_cast<MeshNode*>(pThis)->getMaterial().setPathToCustomFragmentShader(sNewValue);
@@ -90,7 +90,16 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getPathToCustomFragmentShader();
         }};
 
-    variables.floats["materialOpacity"] = ReflectedVariableInfo<float>{
+    variables.floats["outlineWidth"] = ReflectedVariableInfo<float>{
+        .setter =
+            [](Serializable* pThis, const float& newValue) {
+                reinterpret_cast<MeshNode*>(pThis)->getMaterial().setOutlineWidth(newValue);
+            },
+        .getter = [](Serializable* pThis) -> float {
+            return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getOutlineWidth();
+        }};
+
+    variables.floats["opacity"] = ReflectedVariableInfo<float>{
         .setter =
             [](Serializable* pThis, const float& newValue) {
                 reinterpret_cast<MeshNode*>(pThis)->getMaterial().setOpacity(newValue);
@@ -99,7 +108,7 @@ TypeReflectionInfo MeshNode::getReflectionInfo() {
             return reinterpret_cast<MeshNode*>(pThis)->getMaterial().getOpacity();
         }};
 
-    variables.bools["materialTransparencyEnabled"] = ReflectedVariableInfo<bool>{
+    variables.bools["bEnableTransparency"] = ReflectedVariableInfo<bool>{
         .setter =
             [](Serializable* pThis, const bool& bNewValue) {
                 reinterpret_cast<MeshNode*>(pThis)->getMaterial().setEnableTransparency(bNewValue);
@@ -270,6 +279,7 @@ void MeshNode::updateRenderData(bool bJustRegistered) {
     data.iDiffuseTextureId = material.getDiffuseTextureId();
     data.iVertexArrayObject = pVao->getVertexArrayObjectId();
     data.iIndexCount = pVao->getIndexCount();
+    data.outlineWidth = material.getOutlineWidth();
 #if defined(ENGINE_EDITOR)
     auto iNodeId = *getNodeId();
     if (iNodeId > std::numeric_limits<unsigned int>::max()) [[unlikely]] {

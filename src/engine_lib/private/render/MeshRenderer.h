@@ -46,6 +46,8 @@ struct alignas(hardware_constructive_interference_size) MeshRenderData {
     const float* pSkinningMatrices = nullptr;
     int iSkinningMatrixCount = 0;
 
+    float outlineWidth = 0.0f;
+
 #if defined(ENGINE_EDITOR)
     unsigned int iNodeId = 0;
 #endif
@@ -155,6 +157,7 @@ public:
             int iVertexOnlySkinningMatricesUniform = -1;
             int iVertexOnlyViewMatrixUniform = 0;
             int iVertexOnlyViewProjectionMatrixUniform = 0;
+            int iVertexOnlyOutlineWidthUniform = 0;
 
             // Uniforms for the original shader program (with both vertex and fragment shaders):
 
@@ -164,6 +167,7 @@ public:
             int iTextureTilingMultiplierUniform = 0;
             int iTextureUvOffsetUniform = 0;
             int iDiffuseTextureUniform = 0;
+            int iOutlineWidthUniform = 0;
 
             int iSkinningMatricesUniform = -1;
 

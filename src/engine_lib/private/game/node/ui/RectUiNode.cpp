@@ -148,6 +148,7 @@ void RectUiNode::onVisibilityChanged() {
 
     // Notify manager.
     if (isSpawned()) {
+        updateChildNodePosAndSize();
         getWorldWhileSpawned()->getUiNodeManager().onSpawnedNodeChangedVisibility(this);
     }
 }
@@ -171,6 +172,10 @@ void RectUiNode::onAfterPositionChanged() {
 }
 
 void RectUiNode::updateChildNodePosAndSize() {
+    if (!isRenderingAllowed() || !isVisible()) {
+        return;
+    }
+
     const auto mtxChildNodes = getChildNodes();
     std::scoped_lock guard(*mtxChildNodes.first);
 
@@ -187,6 +192,10 @@ void RectUiNode::updateChildNodePosAndSize() {
     const auto pUiChild = dynamic_cast<UiNode*>(mtxChildNodes.second[0]);
     if (pUiChild == nullptr) [[unlikely]] {
         Error::showErrorAndThrowException("expected a UI node");
+    }
+
+    if (!pUiChild->isVisible() || !pUiChild->isRenderingAllowed()) {
+        return;
     }
 
     const auto pos = getPosition();

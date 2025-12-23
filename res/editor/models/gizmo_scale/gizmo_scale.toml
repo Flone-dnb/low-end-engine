@@ -1,13 +1,13 @@
 ["0.bea29d45-274d-4a50-91ec-8ca09897ce4d"]
-materialDiffuseColor = [1.0, 1.0, 1.0, 1.0]
+diffuseColor = [1.0, 1.0, 1.0, 1.0]
 relativeLocation = [0.0, 0.0, 0.0]
-materialDiffuseTexture = ""
-materialCustomVertexShader = ""
-materialCustomFragmentShader = ""
+sDiffuseTexture = ""
+sCustomVertexShader = ""
+sCustomFragmentShader = ""
 sNodeName = "arrow"
 relativeRotation = [0.0, 0.0, 0.0]
-materialOpacity = 1.0
+opacity = 1.0
 relativeScale = [1.0, 1.0, 1.0]
 bIsVisible = true
-materialTransparencyEnabled = false
+bEnableTransparency = false
 

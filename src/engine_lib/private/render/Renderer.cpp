@@ -44,6 +44,10 @@ void GLAPIENTRY debugMessageCallback(
         return;
     }
 
+    if (type != GL_DEBUG_TYPE_ERROR) {
+        return;
+    }
+
     if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
         Error::showErrorAndThrowException(std::format("GL debug message: {}", message));
     }

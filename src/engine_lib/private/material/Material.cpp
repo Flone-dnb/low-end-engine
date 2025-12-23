@@ -194,6 +194,14 @@ void Material::setTextureTilingMultiplier(const glm::vec2& mult) {
     }
 }
 
+void Material::setOutlineWidth(float width) {
+    outlineWidth = std::max(0.0f, width);
+
+    if (pOwnerNode != nullptr) {
+        pOwnerNode->updateRenderData();
+    }
+}
+
 void Material::initShaderProgramAndResources(MeshNode* pNode, Renderer* pRenderer) {
     PROFILE_FUNC
 

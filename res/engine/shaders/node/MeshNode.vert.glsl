@@ -11,10 +11,11 @@ uniform mat4 worldMatrix;
 uniform mat3 normalMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 viewProjectionMatrix;
+uniform float outlineWidth;
 
 void main() {
     // Calculate position.
-    vec4 posWorldSpace = worldMatrix * vec4(position, 1.0F);
+    vec4 posWorldSpace = worldMatrix * vec4(position + normalize(position) * outlineWidth, 1.0F);
     gl_Position = viewProjectionMatrix * posWorldSpace;
 
     viewSpacePosition = (viewMatrix * posWorldSpace).xyz;

@@ -55,6 +55,7 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
         info.iVertexOnlySkinningMatricesUniform = getVertexOnlyUniform("vSkinningMatrices[0]");
         info.iVertexOnlyViewMatrixUniform = getVertexOnlyUniform("viewMatrix");
         info.iVertexOnlyViewProjectionMatrixUniform = getVertexOnlyUniform("viewProjectionMatrix");
+        info.iVertexOnlyOutlineWidthUniform = getVertexOnlyUniform("outlineWidth");
     }
 
     info.iWorldMatrixUniform = pShaderProgram->getShaderUniformLocation("worldMatrix");
@@ -64,6 +65,7 @@ MeshRenderer::RenderData::ShaderInfo::create(ShaderProgram* pShaderProgram) {
         pShaderProgram->getShaderUniformLocation("textureTilingMultiplier");
     info.iTextureUvOffsetUniform = pShaderProgram->getShaderUniformLocation("textureUvOffset");
     info.iDiffuseTextureUniform = pShaderProgram->getShaderUniformLocation("diffuseTexture");
+    info.iOutlineWidthUniform = pShaderProgram->getShaderUniformLocation("outlineWidth");
 
     info.iSkinningMatricesUniform = pShaderProgram->tryGetShaderUniformLocation("vSkinningMatrices[0]");
     info.iSpotShadowMapsUniform = pShaderProgram->getShaderUniformLocation("spotShadowMaps");
@@ -658,6 +660,14 @@ void MeshRenderer::drawMeshesVertexShaderOnly(
                     meshData.pSkinningMatrices);
             }
 
+            if (meshData.outlineWidth > 0.0f) {
+                glUniform1f(shaderInfo.iVertexOnlyOutlineWidthUniform, meshData.outlineWidth);
+                glCullFace(GL_FRONT);
+                glDrawElements(GL_TRIANGLES, meshData.iIndexCount, GL_UNSIGNED_SHORT, nullptr);
+                glCullFace(GL_BACK);
+            }
+
+            glUniform1f(shaderInfo.iVertexOnlyOutlineWidthUniform, 0.0f);
             glDrawElements(GL_TRIANGLES, meshData.iIndexCount, GL_UNSIGNED_SHORT, nullptr);
         }
     }
@@ -913,6 +923,7 @@ void MeshRenderer::drawMeshes(
             glUniformMatrix3fv(
                 shaderInfo.iNormalMatrixUniform, 1, GL_FALSE, glm::value_ptr(meshData.normalMatrix));
             glUniform4fv(shaderInfo.iDiffuseColorUniform, 1, glm::value_ptr(meshData.diffuseColor));
+            glUniform1f(shaderInfo.iOutlineWidthUniform, 0.0f); // <- don't extrude in main pass
             glUniform2fv(
                 shaderInfo.iTextureTilingMultiplierUniform,
                 1,
