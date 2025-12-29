@@ -2,10 +2,10 @@
 message(STATUS "${PROJECT_NAME}: build type: ${CMAKE_BUILD_TYPE}.")
 
 # Prepare variable for build type.
-if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug" OR CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-    set(IS_RELEASE_BUILD OFF CACHE BOOL "" FORCE)
-else()
+if(CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
     set(IS_RELEASE_BUILD ON CACHE BOOL "" FORCE)
+else()
+    set(IS_RELEASE_BUILD OFF CACHE BOOL "" FORCE)
 endif()
 
 # Add `DEBUG` macro in debug builds.
